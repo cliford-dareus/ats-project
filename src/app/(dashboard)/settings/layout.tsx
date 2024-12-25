@@ -2,7 +2,7 @@ type Props = {
     children: React.ReactNode
 }
 
-const AuthLayout = ({children}: Props) =>{
+const SettingLayout = ({children}: Props) =>{
     return (
         <div className="min-h-screen flex flex-col justify-center items-center">
             {children}
@@ -10,4 +10,4 @@ const AuthLayout = ({children}: Props) =>{
     )
 }
 
-export default AuthLayout;
+export default SettingLayout;
