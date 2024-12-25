@@ -7,6 +7,10 @@ const settingsData = [
         url: "/"
     },
     {
+        title: "Create Organization",
+        url: "/create-organization",
+    },
+    {
         title: "Organization",
         url: "/organization"
     }

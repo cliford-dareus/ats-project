@@ -8,7 +8,7 @@ import {Input} from "@/components/ui/input";
 const CreateOrganization = () => {
     const user = useUser();
     const [orgName, setOrgName] = useState<string>("")
-    const {createOrganization} = useOrganizationList();
+    const {createOrganization, setActive} = useOrganizationList();
 
     if (!user) return
 
@@ -16,7 +16,8 @@ const CreateOrganization = () => {
         e.preventDefault();
         try {
             if (createOrganization) {
-                await createOrganization({name: orgName});
+                const new_org = await createOrganization({name: orgName});
+                await setActive({organization: new_org.id})
             }
         } catch (err) {
             console.log(err)

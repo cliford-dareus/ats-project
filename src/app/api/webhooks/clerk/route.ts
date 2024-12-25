@@ -47,6 +47,8 @@ export async function POST(req: Request) {
         }
         case "user.deleted": {
         }
+        case "organization.created": {
+        }
     }
 
     return new Response("", {status: 200})
