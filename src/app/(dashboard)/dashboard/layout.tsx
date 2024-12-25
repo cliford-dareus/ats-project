@@ -1,5 +1,5 @@
-import {auth, currentUser} from "@clerk/nextjs/server";
 import AuthOrgProvider from "@/providers/auth-org-provider";
+import React from "react";
 
 type Props = {
     children: React.ReactNode

@@ -1,4 +1,3 @@
-import AuthOrgProvider from "@/providers/auth-org-provider";
 import {SidebarInset, SidebarProvider, SidebarTrigger} from "@/components/ui/sidebar";
 import {AppSidebar} from "@/components/app-sidebar";
 import React from "react";

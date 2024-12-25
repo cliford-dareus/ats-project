@@ -4,11 +4,11 @@ import {
     Sidebar,
     SidebarContent, SidebarFooter,
     SidebarGroup, SidebarGroupContent,
-    SidebarHeader, SidebarInput,
+    SidebarHeader,
     SidebarMenu, SidebarMenuButton,
     SidebarMenuItem, useSidebar
 } from "@/components/ui/sidebar"
-import {ArchiveX, Command, Inbox, Send, Trash2, File, LucideLayoutDashboard} from "lucide-react";
+import {ArchiveX, Command, Send, Trash2, File, LucideLayoutDashboard} from "lucide-react";
 import React from "react";
 import {useRouter} from "next/navigation";
 import SidebarSettings from "@/components/sidebar-settings";
