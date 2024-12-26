@@ -4,7 +4,6 @@ import {ColumnDef} from "@tanstack/react-table"
 import {Organization, OrganizationMembership} from "@clerk/backend";
 import {OrganizationCustomRoleKey, PublicUserData, UpdateOrganizationMembershipParams} from "@clerk/types";
 import {Button} from "@/components/ui/button";
-
 import {SelectRole} from "@/app/(dashboard)/settings/_components/selectRole";
 
 // This type is used to define the shape of our data.
@@ -54,9 +53,12 @@ export const columns: ColumnDef<OrganizationMember>[] = [
         cell: ({row}) => {
             const org = row.original
             return (
-                <Button onClick={async () => {
+                <Button
+                    onClick={async () => {
                     await org.destroy()
-                }}>Delete</Button>
+                }}>
+                    Remove
+                </Button>
             )
         }
     }

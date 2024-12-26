@@ -10,11 +10,11 @@ const Layout = ({children}: Props) => {
     return (
         <SidebarProvider
             style={
-            {
-                "--sidebar-width": "350px",
-            } as React.CSSProperties
-        }>
-            <AppSidebar />
+                {
+                    "--sidebar-width": "350px",
+                } as React.CSSProperties
+            }>
+            <AppSidebar/>
             <SidebarInset>
                 <header className="sticky top-0 flex shrink-0 items-center gap-2 border-b bg-background p-4">
                     <SidebarTrigger className="-ml-1"/>
@@ -31,13 +31,11 @@ const Layout = ({children}: Props) => {
                     {/*    </BreadcrumbList>*/}
                     {/*</Breadcrumb>*/}
                 </header>
-                <div className="min-h-screen flex flex-col justify-center items-center ">
+                <main>
                     {children}
-                </div>
+                </main>
             </SidebarInset>
-
         </SidebarProvider>
-
     )
 }
 

@@ -3,6 +3,7 @@
 import React, {createContext, useEffect} from 'react';
 import {useUser} from "@clerk/nextjs";
 import {useRouter} from "next/navigation";
+import CreateOrganization from "@/app/(dashboard)/settings/_components/create-organization";
 
 type  Props = {
     children: React.ReactNode,

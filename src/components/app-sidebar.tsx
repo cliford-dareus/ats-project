@@ -4,13 +4,13 @@ import {
     Sidebar,
     SidebarContent, SidebarFooter,
     SidebarGroup, SidebarGroupContent,
-    SidebarHeader,
+    SidebarHeader, SidebarInput,
     SidebarMenu, SidebarMenuButton,
     SidebarMenuItem, useSidebar
 } from "@/components/ui/sidebar"
 import {ArchiveX, Command, Send, Trash2, File, LucideLayoutDashboard} from "lucide-react";
-import React from "react";
-import {useRouter} from "next/navigation";
+import React, {useLayoutEffect} from "react";
+import {usePathname, useRouter} from "next/navigation";
 import SidebarSettings from "@/components/sidebar-settings";
 
 const data = {
@@ -54,9 +54,15 @@ const data = {
 }
 
 export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
-    const [activeItem, setActiveItem] = React.useState(data.navMain[0])
+    const pathname = usePathname()
+    const [activeItem, setActiveItem] = React.useState(data.navMain[0]);
     const {setOpen} = useSidebar()
     const router = useRouter()
+
+    useLayoutEffect(() => {
+        setActiveItem(data.navMain.find(nav => pathname.startsWith(nav.url))!)
+    }, [pathname])
+
 
     return (
         <Sidebar
@@ -129,7 +135,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
                         {/*    <Switch className="shadow-none"/>*/}
                         {/*</Label>*/}
                     </div>
-                    {/*<SidebarInput placeholder="Type to search..."/>*/}
+                    {activeItem.title !== "Settings" && <SidebarInput placeholder="Type to search..."/>}
                 </SidebarHeader>
 
                 <SidebarContent>
