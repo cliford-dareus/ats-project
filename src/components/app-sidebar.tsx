@@ -11,7 +11,8 @@ import {
 import {ArchiveX, Command, Send, Trash2, File, LucideLayoutDashboard} from "lucide-react";
 import React, {useLayoutEffect} from "react";
 import {usePathname, useRouter} from "next/navigation";
-import SidebarSettings from "@/components/sidebar-settings";
+import SidebarSettings from "@/app/(dashboard)/settings/_components/sidebar-settings";
+import JobListingSidebar from "@/app/(dashboard)/job-listings/_components/job-listing-sidebar";
 
 const data = {
     user: {
@@ -143,8 +144,8 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
                         <SidebarGroupContent>
                             {activeItem.title === "Dashboard" ? (
                                 <h1>Dashboard</h1>
-                            ) : activeItem.title === "Job-Listings" ? (
-                                <div className="">Job</div>
+                            ) : activeItem.title === "Job Listings" ? (
+                                <JobListingSidebar />
                             ) : activeItem.title === "Candidates" ? (
                                 <div className="">Candidates</div>
                             ) : activeItem.title === "Settings" ? (

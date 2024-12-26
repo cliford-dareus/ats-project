@@ -1,4 +1,4 @@
-import {int, mysqlTable, varchar, mysqlEnum, text, timestamp} from 'drizzle-orm/mysql-core';
+import {int, mysqlTable, varchar, mysqlEnum, timestamp} from 'drizzle-orm/mysql-core';
 import {relations} from "drizzle-orm";
 
 export const usersTable = mysqlTable('users_table', {
@@ -18,6 +18,8 @@ export const job_listings = mysqlTable('job_listing', {
     location: varchar({length: 255}).notNull(),
     description: varchar({length: 255}).notNull(),
     salary_up_to: varchar({length: 255}).notNull(),
+    // department: varchar({length: 255}).notNull(),
+    // status: mysqlEnum('status', ['Not Publish', 'Publish', 'Archive']).default('Not Publish'),
     createdBy: varchar('created_by',{length: 255}).references(() => usersTable.id).notNull(),
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
@@ -78,8 +80,8 @@ export const stagesRelations = relations(stages, ({one}) => ({
 
 export const candidates = mysqlTable('candidate', {
     id: int('id').primaryKey().autoincrement(),
-    job_id: text(),
-    current_stage_id: text(),
+    job_id: int(),
+    current_stage_id: int(),
     name: varchar({length: 255}).notNull(),
     email: varchar({length: 255}).notNull().unique(),
     cv_path: varchar({length: 255}).notNull(),
@@ -97,5 +99,7 @@ export const candidates_relations = relations(candidates, ({one}) => ({
         references: [stages.id]
     })
 }))
+
+export type JobListingType = typeof job_listings.$inferInsert
 
 
