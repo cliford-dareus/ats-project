@@ -70,7 +70,7 @@ const PaginationElement = ({pageCount}: Props) => {
         [searchParams]
     );
     return (
-        <>
+        <div className="mt-4">
             <Pagination>
                 <PaginationContent>
                     <PaginationItem>
@@ -107,7 +107,7 @@ const PaginationElement = ({pageCount}: Props) => {
                     </PaginationItem>
                 </PaginationContent>
             </Pagination>
-        </>
+        </div>
     );
 };
 

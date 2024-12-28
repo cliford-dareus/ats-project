@@ -1,6 +1,7 @@
 import React from 'react';
 import {get_all_job_listings} from "@/server/db/job-listings";
 import JobListingsList from "@/app/(dashboard)/job-listings/_components/job-listings-list";
+import {JobResponseType} from "@/types/job-listings-types";
 
 type Props = {
     searchParams: {
@@ -20,11 +21,10 @@ const Page = async ({searchParams}: Props) => {
     });
 
     const pageCount = Math.ceil((len as number) / limit);
+
     return (
-        <div className="p-4">
-            <div>
-                <JobListingsList jobs={jobs} pageCount={pageCount}/>
-            </div>
+        <div className="md:p-4">
+            <JobListingsList jobs={jobs as JobResponseType[]} pageCount={pageCount}/>
         </div>
     );
 };

@@ -1,9 +1,9 @@
 import {db} from "@/drizzle/db";
 import {candidates, job_listings, stages} from "@/drizzle/schema";
 import {and, eq} from "drizzle-orm";
+import type {CandidateType} from "@/types/job-listings-types";
 
-
-export const create_candidate = async (data: typeof candidates.$inferInsert) => {
+export const create_candidate = async (data: CandidateType) => {
     const [current_stage] = await db
         .select()
         .from(stages)

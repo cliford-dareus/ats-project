@@ -31,9 +31,9 @@ const Layout = ({children}: Props) => {
                     {/*    </BreadcrumbList>*/}
                     {/*</Breadcrumb>*/}
                 </header>
-                <main>
+                <>
                     {children}
-                </main>
+                </>
             </SidebarInset>
         </SidebarProvider>
     )
