@@ -1,26 +1,28 @@
 'use client'
 
-import {DragEvent, useState} from "react";
+import React, {Dispatch, DragEvent, SetStateAction, useState} from "react";
 import Card from "@/components/kanban/card";
 import {JobListingWithCandidatesType} from "@/types/job-listings-types";
 import DropIndicator from "@/components/kanban/drop-indicator";
+import {update_candidate_stage_action} from "@/server/actions/job-listings-actions";
 
 type Props = {
     title: string;
     headingColor: string;
+    stage: number;
     cards: JobListingWithCandidatesType[];
     column: "New Candidate" | "Screening" | "Phone Interview" | "Offer" | null;
-    setCards: (cards: JobListingWithCandidatesType[]) => void;
+    setCards: Dispatch<SetStateAction<JobListingWithCandidatesType[] | undefined>>
 }
 
-const Column = ({title, headingColor, cards, column, setCards}: Props) => {
+const Column = ({title, headingColor, cards, column, setCards, stage}: Props) => {
     const [active, setActive] = useState(false);
 
     const handleDragStart = (e: DragEvent<HTMLDivElement>, i: number) => {
-        e.dataTransfer.setData("cardId", String(i));
+        (e as DragEvent).dataTransfer.setData("cardId", String(i));
     };
 
-    const handleDragEnd = (e: DragEvent<HTMLDivElement>) => {
+    const handleDragEnd = async (e: DragEvent<HTMLDivElement>) => {
         const cardId = Number(e.dataTransfer.getData("cardId"));
 
         setActive(false);
@@ -30,12 +32,12 @@ const Column = ({title, headingColor, cards, column, setCards}: Props) => {
         const {element} = getNearestIndicator(e, indicators);
 
         const before = Number(element?.dataset.before) || -1;
+        const dropStage = Number(element?.dataset.stage);
+
+        console.log("dropStage", dropStage);
 
         if (before !== cardId) {
             let copy = [...cards];
-
-            console.log(copy);
-
             let cardToTransfer = copy.find((c) => c.candidate_id === cardId);
 
             if (!cardToTransfer) return;
@@ -52,7 +54,10 @@ const Column = ({title, headingColor, cards, column, setCards}: Props) => {
                 if (insertAtIndex === undefined) return;
                 copy.splice(insertAtIndex, 0, cardToTransfer!);
             }
-
+            if(!dropStage || dropStage !== cardToTransfer.stage_order_id){
+                console.log("drop stage", dropStage, cardToTransfer.candidate_id);
+                await update_candidate_stage_action({candidateId: cardToTransfer.candidate_id, current_stage_id: dropStage})
+            }
             setCards(copy);
         }
     };
@@ -113,29 +118,31 @@ const Column = ({title, headingColor, cards, column, setCards}: Props) => {
         setActive(false);
     };
 
-    const filteredCards = cards.filter((c) => c.stageName?.toLowerCase() === column);
+    const filteredCards = cards?.filter((c) => c.stageName === column);
 
     return (
         <div className="w-56 shrink-0">
             <div className="mb-3 flex items-center justify-between">
                 <h3 className={`font-medium ${headingColor}`}>{title}</h3>
-                <span className="rounded text-sm text-neutral-400">
-          {filteredCards.length}
-        </span>
+                <span className="rounded text-sm text-neutral-400">{filteredCards?.length}</span>
             </div>
             <div
-                // ref={}
                 onDrop={handleDragEnd}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
-                className={`h-full w-full transition-colors ${
+                className={`h-full w-full transition-colors relative ${
                     active ? "bg-neutral-800/50" : "bg-neutral-800/0"
                 }`}
             >
-                {filteredCards.map((c: JobListingWithCandidatesType) => {
-                    return <Card key={c.candidate_id} data={c} id={c.candidate_id} handleDragStart={(e: DragEvent<HTMLDivElement>) =>handleDragStart(e, c.candidate_id)} />;
+                {filteredCards?.map((c: JobListingWithCandidatesType) => {
+                    return <Card
+                        key={c.candidate_id}
+                        stage={stage}
+                        data={c}
+                        handleDragStart={(e) => handleDragStart(e, c.candidate_id)}
+                    />;
                 })}
-                <DropIndicator beforeId={null} column={column} />
+                <DropIndicator beforeId={null} stage={stage} column={column}/>
             </div>
         </div>
     );

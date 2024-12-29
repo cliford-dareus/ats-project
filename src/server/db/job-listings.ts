@@ -2,8 +2,29 @@ import {candidates, job_listings, stages} from "@/drizzle/schema";
 import {db} from "@/drizzle/db";
 import {and, eq, inArray, SQL} from "drizzle-orm";
 import {filterJobType} from "@/types/job-listings-types";
+import {CACHE_TAGS, dbCache, getGlobalTag, getIdTag} from "@/lib/cache";
 
-export const get_all_job_listings = async (filter: filterJobType) => {
+export const get_job_listings_stages = (jobId: number) => {
+    const cacheFn = dbCache(get_job_listings_stages_db,{
+        tags: [
+            getIdTag(String(jobId), CACHE_TAGS.stages)
+        ]
+    })
+
+    return cacheFn(jobId)
+}
+
+export const get_all_job_listings = (filter: filterJobType) => {
+    const cacheFn = dbCache(get_all_job_listings_db,{
+        tags: [
+            getGlobalTag(CACHE_TAGS.jobs)
+        ]
+    })
+
+    return cacheFn(filter)
+}
+
+export const get_all_job_listings_db = async (filter: filterJobType) => {
     const filters: SQL[] = []
 
     if (filter.location) filters.push(inArray(job_listings.location, filter.location as string[]))
@@ -40,7 +61,8 @@ export const get_job_listing_with_candidate = async (jobId: number) => {
             updated_at: job_listings.updated_at,
             createdBy: job_listings.createdBy,
             stageName: stages.stage_name,
-            candidate_id: candidates.id
+            candidate_id: candidates.id,
+            stage_order_id: stages.stage_order_id,
         })
         .from(job_listings)
         .innerJoin(candidates, eq(candidates.job_id, job_listings.id))
@@ -48,6 +70,14 @@ export const get_job_listing_with_candidate = async (jobId: number) => {
         .where(eq(job_listings.id, jobId))
 
         return result
+}
+
+export const get_job_listings_stages_db = async (jobId: number) => {
+    const result= await db.select()
+        .from(stages)
+        .where(eq(stages.job_id, jobId))
+
+    return result
 }
 
 export const create_job_listing = async (data: typeof job_listings.$inferInsert) => {
@@ -63,6 +93,6 @@ export const create_job_listing = async (data: typeof job_listings.$inferInsert)
 
 // export const update_job_listing = async (data: Partial<filterJobType>) => {
 // }
-//
+
 // export const delete_job_listing = async (data) => {
 // }

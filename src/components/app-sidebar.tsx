@@ -9,10 +9,10 @@ import {
     SidebarMenuItem, useSidebar
 } from "@/components/ui/sidebar"
 import {ArchiveX, Command, Send, Trash2, File, LucideLayoutDashboard} from "lucide-react";
-import React, {useLayoutEffect} from "react";
+import React, {useEffect} from "react";
 import {usePathname, useRouter} from "next/navigation";
 import SidebarSettings from "@/app/(dashboard)/settings/_components/sidebar-settings";
-import JobListingSidebar from "@/app/(dashboard)/job-listings/_components/job-listing-sidebar";
+import JobListingSidebar from "@/app/(dashboard)/jobs/_components/job-listing-sidebar";
 
 const data = {
     user: {
@@ -28,8 +28,8 @@ const data = {
             isActive: true,
         },
         {
-            title: "Job Listings",
-            url: "/job-listings",
+            title: "Jobs",
+            url: "/jobs",
             icon: File,
             isActive: false,
         },
@@ -47,7 +47,7 @@ const data = {
         },
         {
             title: "Trash",
-            url: "#",
+            url: "/trash",
             icon: Trash2,
             isActive: false,
         },
@@ -60,10 +60,9 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
     const {setOpen} = useSidebar()
     const router = useRouter()
 
-    useLayoutEffect(() => {
+    useEffect(() => {
         setActiveItem(data.navMain.find(nav => pathname.startsWith(nav.url))!)
     }, [pathname])
-
 
     return (
         <Sidebar
@@ -96,15 +95,15 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
                         <SidebarGroupContent className="px-1.5 md:px-0">
                             <SidebarMenu>
                                 {data.navMain.map((item) => (
-                                    <SidebarMenuItem key={item.title}>
+                                    <SidebarMenuItem key={item.url}>
                                         <SidebarMenuButton
                                             tooltip={{
                                                 children: item.title,
                                                 hidden: false,
                                             }}
                                             onClick={() => {
-                                                setActiveItem(item)
                                                 router.push(`${item.url}`)
+                                                // setActiveItem(item)
                                                 setOpen(true)
                                             }}
                                             isActive={activeItem.title === item.title}
@@ -144,7 +143,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
                         <SidebarGroupContent>
                             {activeItem.title === "Dashboard" ? (
                                 <h1>Dashboard</h1>
-                            ) : activeItem.title === "Job Listings" ? (
+                            ) : activeItem.title === "Jobs" ? (
                                 <JobListingSidebar />
                             ) : activeItem.title === "Candidates" ? (
                                 <div className="">Candidates</div>

@@ -1,7 +1,8 @@
 import React from 'react';
 import {get_all_job_listings} from "@/server/db/job-listings";
-import JobListingsList from "@/app/(dashboard)/job-listings/_components/job-listings-list";
+import JobListingsList from "@/app/(dashboard)/jobs/_components/job-listings-list";
 import {JobResponseType} from "@/types/job-listings-types";
+import {Button} from "@/components/ui/button";
 
 type Props = {
     searchParams: {
@@ -10,7 +11,7 @@ type Props = {
 }
 
 const Page = async ({searchParams}: Props) => {
-    const {location, page, per_page} = searchParams ?? {};
+    const {location, page, per_page} = await searchParams ?? {};
 
     const limit = typeof per_page === "string" ? parseInt(per_page) : 8;
     const offset = typeof page === "string" ? (parseInt(page) - 1) * limit : 0;
@@ -24,6 +25,14 @@ const Page = async ({searchParams}: Props) => {
 
     return (
         <div className="md:p-4">
+            <div className="flex items-center justify-between p-4 bg-muted rounded mb-2">
+                <div className="items-center flex gap-2">
+                    <h1 className="text-2xl font-bold text-gray-900">JOBS</h1>
+                    <span className="px-2 bg-slate-300 flex items-center justify-center rounded">{len as number}</span>
+                </div>
+                <Button>Add Job</Button>
+            </div>
+
             <JobListingsList jobs={jobs as JobResponseType[]} pageCount={pageCount}/>
         </div>
     );

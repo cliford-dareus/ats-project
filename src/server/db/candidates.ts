@@ -18,6 +18,13 @@ export const create_candidate = async (data: CandidateType) => {
     } catch (err) {
         console.log(err);
     }
+};
+
+export const update_candidate_stage = async (data: {candidateId: number, current_stage_id: number}) => {
+    await db.update(candidates).set({
+        current_stage_id: data.current_stage_id
+    })
+        .where(eq(candidates.id, data.candidateId as number) )
 }
 
 export const get_candidate_with_details = async (candidateId: number) => {

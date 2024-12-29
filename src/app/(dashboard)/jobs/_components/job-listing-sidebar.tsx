@@ -38,7 +38,7 @@ const JobListingSidebar = () => {
     }, [locations]);
 
     return (
-        <div className="p-4">
+        <div className="p-4 flex flex-col h-full">
             <div className="font-medium text-2xl">Filters</div>
 
             {/* LOCATION */}
@@ -70,7 +70,7 @@ const JobListingSidebar = () => {
 
 
             {/*    CLEAR FILTERS*/}
-            <div className="">
+            <div className="mt-auto">
                 <Button onClick={() => {
                     setLocations([])
                 }}>Clear all filter</Button>
