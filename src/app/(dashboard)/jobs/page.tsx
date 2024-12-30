@@ -3,6 +3,8 @@ import {get_all_job_listings} from "@/server/db/job-listings";
 import JobListingsList from "@/app/(dashboard)/jobs/_components/job-listings-list";
 import {JobResponseType} from "@/types/job-listings-types";
 import {Button} from "@/components/ui/button";
+import {Dialog, DialogContent, DialogTrigger} from "@/components/ui/dialog";
+import CreateJobListingModal from "@/app/(dashboard)/jobs/_components/create-job-listing-modal";
 
 type Props = {
     searchParams: {
@@ -30,9 +32,16 @@ const Page = async ({searchParams}: Props) => {
                     <h1 className="text-2xl font-bold text-gray-900">JOBS</h1>
                     <span className="px-2 bg-slate-300 flex items-center justify-center rounded">{len as number}</span>
                 </div>
-                <Button>Add Job</Button>
-            </div>
 
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button>Add Job</Button>
+                    </DialogTrigger>
+                    <DialogContent className="rounded-none">
+                       <CreateJobListingModal />
+                    </DialogContent>
+                </Dialog>
+            </div>
             <JobListingsList jobs={jobs as JobResponseType[]} pageCount={pageCount}/>
         </div>
     );
