@@ -1,11 +1,11 @@
 'use client'
 
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {Input} from "@/components/ui/input";
 import {Separator} from "@/components/ui/separator";
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
-import {BriefcaseBusiness, ChevronDownCircle, Command, FlaskConical} from "lucide-react";
+import {BriefcaseBusiness, CalendarIcon, ChevronDownCircle, Command, FlaskConical, ListStart} from "lucide-react";
 import {motion} from "motion/react";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
 import {z} from 'zod'
@@ -14,73 +14,105 @@ import {zodResolver} from "@hookform/resolvers/zod";
 import {Button} from "@/components/ui/button";
 import {Badge} from "@/components/ui/badge";
 import MultiSelect from "@/components/multi-select";
+import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
+import {cn} from "@/lib/utils";
+import {format} from "date-fns";
+import {Calendar} from "@/components/ui/calendar";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from "@/components/ui/select";
+import {create_job_action} from "@/server/actions/job-listings-actions";
+import {formSchema, JOB_STAGES, stageSchema, techSchema} from "@/schema";
 
-export const formSchema = z.object({
-    jobInfo: z.object({
-        job_name: z.string(),
-        job_description: z.string(),
-        job_location: z.string(),
-        // salary_up_to: z.string(),
-        // created_by: z.string(),
-    }).required(),
-    jobTechnology: z.array(
-            z.object({
-                technology: z.string(),
-                year_of_experience: z.string(),
-            })
-        )
-})
+
+const STEPS = [
+    {step: 1, status: 'In-Complete', open: true},
+    {step: 2, status: 'In-Complete', open: false},
+    {step: 3, status: 'In-Complete', open: false},
+    {step: 4, status: 'In-Complete', open: false}
+];
 
 const CreateJobListingModal = () => {
-    // const [] = useState()
-    const [isOpen, setIsOpen] = useState([true,false, false]);
-
+    const [isOpen, setIsOpen] = useState(STEPS);
+    // const [isLoading, setIsLoading] = useState(false);
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            jobInfo: {
-                job_name: "",
-                job_description: "",
-                job_location: "",
-            }
+            jobInfo: {job_name: "", job_description: "", job_location: "", salary_up_to: ""},
+            jobTechnology: [],
+            jobStages: [],
+            jobOptional: {job_effective_date: new Date(), job_agency: ""}
         }
     });
 
-    const onSubmit = (data: z.infer<typeof formSchema>) => {
-        console.log(data)
-    }
+    const onSubmit = async (data: z.infer<typeof formSchema>) => {
+        console.log(data);
+        try {
+            const job = await create_job_action(data);
+            if (!job) {
+                console.log(job)
+            }
+        } catch (err) {
+            console.log(err)
+        }
+    };
 
-    // const checkFormStatus = () => {
-    //     const object = form.getValues();
-    //
-    //     switch (isOpen) {
-    //         case isOpen[0]:
-    //             const jobInfo = object.jobInfo as { [key: string]: string };
-    //             if (!jobInfo) return false;
-    //             return Object.keys(jobInfo).every(s => jobInfo[s] !== '');
-    //         case "jobTechnology":
-    //     }
-    // }
+    const checkFormStatus = (args: string) => {
+        const object = form.getValues();
+        switch (args) {
+            case "jobInfo":
+                const jobInfo = object.jobInfo as { [key: string]: string };
+                if (!jobInfo) return false;
+                return Object.keys(jobInfo).every(s => jobInfo[s] !== '');
+            case "jobTechnology":
+                const jobTech = object.jobTechnology as { [key: string]: string }[];
+                if (!jobTech.length) return false;
+                return jobTech.length > 4
+            case "jobOptional":
+                return true
+        }
+    };
 
-    useEffect(() => {
-
-    }, []);
+    const changeForm = (index: number) => {
+        setIsOpen((prevIsOpen) =>
+            prevIsOpen.map((s) => {
+                if (s.step === index) {
+                    return {...s, open: true};
+                }
+                if (s.step === index - 1) {
+                    const status = checkFormStatus(index - 1 === 0 || index - 1 === 1 ? "jobInfo" :
+                        index - 1 === 2 ? 'jobTechnology' : 'jobOptional',
+                    )
+                    console.log('status', status);
+                    return {
+                        ...s,
+                        open: false,
+                        status: !status ? "In-Complete" : "Complete",
+                    };
+                }
+                return {...s, open: false};
+            })
+        );
+    };
 
     return (
         <>
             <DialogHeader className="flex flex-row gap-4 items-center">
-                <div className="flex aspect-square w-[52px] items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                    <Command />
+                <div
+                    className="flex aspect-square w-[52px] items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                    <Command/>
                 </div>
                 <div className="">
                     <DialogTitle className="text-2xl">Create Job Opening</DialogTitle>
                     <DialogDescription>Complete each step to create a job opening!</DialogDescription>
                 </div>
             </DialogHeader>
-
             <Separator/>
-
-            <motion.div className="w-full">
+            <div>
                 <Form {...form}>
                     <form
                         onSubmit={form.handleSubmit(onSubmit)}
@@ -94,11 +126,10 @@ const CreateJobListingModal = () => {
                             </div>
                             <Collapsible
                                 className="w-full flex gap-4 flex-col"
-                                open={isOpen[0]}
+                                open={isOpen[0].open}
                                 onOpenChange={() => {
-                                    if (!isOpen[0] && isOpen.includes(true)) {
-                                        setIsOpen([true, false, false]);
-                                    }
+                                    if (!isOpen[0].open) changeForm(1)
+                                    // setStepActives(STEPS[0])
                                 }}
                             >
                                 <CollapsibleTrigger>
@@ -109,53 +140,88 @@ const CreateJobListingModal = () => {
                                             <p className="text-sm text-muted-foreground">Provided required info</p>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <Badge>In Progress</Badge>
+                                            <Badge>{isOpen[0].status}</Badge>
                                             <ChevronDownCircle size={24}/>
                                         </div>
                                     </div>
                                 </CollapsibleTrigger>
                                 <CollapsibleContent>
-                                    <FormField
-                                        control={form.control}
-                                        name="jobInfo.job_name"
-                                        render={({field}) => (
-                                            <FormItem>
-                                                <FormLabel>Job Name</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="shadcn" {...field} />
-                                                </FormControl>
-                                                <FormMessage/>
-                                            </FormItem>
-                                        )}
-                                    />
+                                    <motion.div
+                                        initial={{height: 0, opacity: 0}}
+                                        animate={{height: "auto", opacity: 1}}
+                                        exit={{height: 0, opacity: 0}}
+                                        // key={stepActive.step}
+                                        transition={{duration: 0.2,}}
+                                        className={cn(isOpen[0].open ? "p-4 border" : "", "flex flex-col gap-2 rounded-lg")}
+                                    >
+                                        <FormField
+                                            control={form.control}
+                                            name="jobInfo.job_name"
+                                            render={({field}) => (
+                                                <FormItem className="flex items-center gap-4 justify-between">
+                                                    <FormLabel>Job Name</FormLabel>
+                                                    <FormControl>
+                                                        <Input className="w-[260px]"
+                                                               placeholder="Acme" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage/>
+                                                </FormItem>
+                                            )}
+                                        />
 
-                                    <FormField
-                                        control={form.control}
-                                        name="jobInfo.job_location"
-                                        render={({field}) => (
-                                            <FormItem>
-                                                <FormLabel>Job Location</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="shadcn" {...field} />
-                                                </FormControl>
-                                                <FormMessage/>
-                                            </FormItem>
-                                        )}
-                                    />
 
-                                    <FormField
-                                        control={form.control}
-                                        name="jobInfo.job_description"
-                                        render={({field}) => (
-                                            <FormItem>
-                                                <FormLabel>Job Description</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="shadcn" {...field} />
-                                                </FormControl>
-                                                <FormMessage/>
-                                            </FormItem>
-                                        )}
-                                    />
+                                        <FormField
+                                            control={form.control}
+                                            name="jobInfo.job_location"
+                                            render={({field}) => (
+                                                <FormItem className="flex items-center gap-4 justify-between">
+                                                    <FormLabel>Job Location</FormLabel>
+                                                    <FormControl>
+                                                        <Input className="w-[260px]"
+                                                               placeholder="New York" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage/>
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        <FormField
+                                            control={form.control}
+                                            name="jobInfo.job_description"
+                                            render={({field}) => (
+                                                <FormItem className="flex items-center gap-4 justify-between">
+                                                    <FormLabel>Job Description</FormLabel>
+                                                    <FormControl>
+                                                        <Input className="w-[260px]"
+                                                               placeholder="Description..." {...field} />
+                                                    </FormControl>
+                                                    <FormMessage/>
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        <FormField
+                                            control={form.control}
+                                            name="jobInfo.salary_up_to"
+                                            render={({field}) => (
+                                                <FormItem className="flex items-center gap-4 justify-between">
+                                                    <FormLabel>Job Salary</FormLabel>
+                                                    <FormControl>
+                                                        <Input className="w-[260px]"
+                                                               placeholder="30000/year" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage/>
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        <Button
+                                            onClick={() => changeForm(2)}
+                                            className="self-end px-16"
+                                        >
+                                            Next
+                                        </Button>
+                                    </motion.div>
                                 </CollapsibleContent>
                             </Collapsible>
                         </div>
@@ -167,11 +233,10 @@ const CreateJobListingModal = () => {
                                 <FlaskConical size={24}/>
                             </div>
                             <Collapsible
-                                open={isOpen[1]}
+                                open={isOpen[1].open}
                                 onOpenChange={() => {
-                                    if (!isOpen[1] && isOpen.includes(true)) {
-                                        setIsOpen([false, true, false]);
-                                    }
+                                    if (!isOpen[1].open) changeForm(2)
+                                    // setStepActives(STEPS[1])
                                 }}
                                 className="w-full flex gap-4 flex-col"
                             >
@@ -182,11 +247,252 @@ const CreateJobListingModal = () => {
                                                 Experience</h2>
                                             <p className="text-sm text-muted-foreground">Provided required info</p>
                                         </div>
-                                        <ChevronDownCircle size={24}/>
+                                        <div className="flex items-center gap-2">
+                                            <Badge>{isOpen[1].status}</Badge>
+                                            <ChevronDownCircle size={24}/>
+                                        </div>
                                     </div>
                                 </CollapsibleTrigger>
                                 <CollapsibleContent>
-                                    <MultiSelect setValue={form.setValue} getValues={form.getValues}/>
+                                    <motion.div
+                                        initial={{height: 0, opacity: 0}}
+                                        animate={{height: "auto", opacity: 1}}
+                                        exit={{height: 0, opacity: 0}}
+                                        // key={stepActive.step}
+                                        transition={{duration: 0.2, ease: "easeInOut"}}
+                                    >
+                                        <MultiSelect
+                                            schema={techSchema}
+                                            fieldName={"jobTechnology"}
+                                            setValue={form.setValue}
+                                            getValues={form.getValues}
+                                            renderForm={(onSubmit, forms) => (
+                                                <>
+                                                    <FormItem className="flex items-center gap-4 justify-between">
+                                                        <FormLabel>Job Name</FormLabel>
+                                                        <FormControl>
+                                                            <Input {...forms.register("technology")}
+                                                                   className="w-[260px]" placeholder="Acme"/>
+                                                        </FormControl>
+                                                        <FormMessage/>
+                                                    </FormItem>
+
+                                                    <FormItem className="flex items-center gap-4 justify-between">
+                                                        <FormLabel>Job Name</FormLabel>
+                                                        <FormControl>
+                                                            <Input {...forms.register("year_of_experience")}
+                                                                   className="w-[260px]" placeholder="Acme"/>
+                                                        </FormControl>
+                                                        <FormMessage/>
+                                                    </FormItem>
+                                                </>
+                                            )}
+                                            renderSelectedItems={(items, onRemove) => (
+                                                <div className="flex flex-wrap gap-2">
+                                                    {items.map((item, index) => (
+                                                        <Badge key={index} className="flex">
+                                                            {item.technology} - {item.year_of_experience}
+                                                            <button onClick={() => onRemove(index)}>×</button>
+                                                        </Badge>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        />
+
+                                        <Button
+                                            onClick={() => changeForm(3)}
+                                            className="self-end px-16"
+                                        >Next</Button>
+                                    </motion.div>
+
+                                </CollapsibleContent>
+                            </Collapsible>
+                        </div>
+                        {/* JOB STAGES */}
+                        <div className="flex gap-4 w-full">
+                            <div
+                                className="w-[60px] h-[50px] border rounded-full flex items-center justify-center "
+                            >
+                                <ListStart size={24}/>
+                            </div>
+                            <Collapsible
+                                open={isOpen[2].open}
+                                onOpenChange={() => {
+                                    if (!isOpen[2].open) changeForm(3)
+                                    // setStepActives(STEPS[1])
+                                }}
+                                className="w-full flex gap-4 flex-col"
+                            >
+                                <CollapsibleTrigger>
+                                    <div className="flex items-center justify-between h-[50px]">
+                                        <div className="flex flex-col items-start">
+                                            <h2 className="text-lg font-semibold leading-none tracking-tight">Job
+                                                Stages</h2>
+                                            <p className="text-sm text-muted-foreground">Provided required info</p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Badge>{isOpen[2].status}</Badge>
+                                            <ChevronDownCircle size={24}/>
+                                        </div>
+                                    </div>
+                                </CollapsibleTrigger>
+                                <CollapsibleContent>
+                                    <motion.div
+                                        initial={{height: 0, opacity: 0}}
+                                        animate={{height: "auto", opacity: 1}}
+                                        exit={{height: 0, opacity: 0}}
+                                        // key={stepActive.step}
+                                        transition={{duration: 0.2, ease: "easeInOut"}}
+                                    >
+                                        <MultiSelect
+                                            schema={stageSchema}
+                                            fieldName="jobStages"
+                                            setValue={form.setValue}
+                                            getValues={form.getValues}
+                                            renderForm={(onSubmit, forms) => (
+                                                <>
+                                                    <Select
+                                                        {...forms.register("stage_name")}
+                                                        onValueChange={(e) => forms.setValue("stage_name", e)}
+                                                    >
+                                                        <SelectTrigger className="w-[180px]">
+                                                            <SelectValue placeholder="Select a fruit"/>
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {JOB_STAGES.map(stage => (
+                                                                <SelectItem key={stage} value={stage}>{stage}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <Input {...forms.register('stage_assign_to')}
+                                                           placeholder="Years of Experience"/>
+                                                </>
+                                            )}
+                                            renderSelectedItems={(items, onRemove) => (
+                                                <div className="flex flex-wrap gap-2">
+                                                    {items.map((item, index) => (
+                                                        <Badge key={index} className="flex">
+                                                            {item.stage_name} - {item.stage_assign_to}
+                                                            <button onClick={() => onRemove(index)}>×</button>
+                                                        </Badge>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        />
+                                        <Button
+                                            onClick={() => changeForm(4)}
+                                            className="self-end px-16"
+                                        >Next</Button>
+                                    </motion.div>
+
+                                </CollapsibleContent>
+                            </Collapsible>
+                        </div>
+                        {/* OPTIONAL INFO*/}
+                        <div className="flex gap-4 w-full">
+                            <div
+                                className="w-[60px] h-[50px] border rounded-full flex items-center justify-center ">
+                                <BriefcaseBusiness size={24}/>
+                            </div>
+                            <Collapsible
+                                className="w-full flex gap-4 flex-col"
+                                open={isOpen[3].open}
+                                onOpenChange={() => {
+                                    if (!isOpen[3].open) changeForm(4)
+                                    // setStepActives(STEPS[2])
+                                }}
+
+                            >
+                                <CollapsibleTrigger>
+                                    <div className="flex items-center justify-between h-[50px]">
+                                        <div className="flex flex-col items-start">
+                                            <h2 className="text-lg font-semibold leading-none tracking-tight">Job
+                                                Information</h2>
+                                            <p className="text-sm text-muted-foreground">Provided required info</p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Badge>{isOpen[3].status}</Badge>
+                                            <ChevronDownCircle size={24}/>
+                                        </div>
+                                    </div>
+                                </CollapsibleTrigger>
+                                <CollapsibleContent>
+                                    <motion.div
+                                        initial={{height: 0, opacity: 0}}
+                                        animate={{height: "auto", opacity: 1}}
+                                        exit={{height: 0, opacity: 0}}
+                                        // key={stepActive.step}
+                                        transition={{duration: 0.2, ease: "easeInOut"}}
+                                        className={cn(isOpen[0].open ? "p-4 border" : "", "flex flex-col gap-2 rounded-lg")}
+                                    >
+                                        <FormField
+                                            control={form.control}
+                                            name="jobOptional.job_agency"
+                                            render={({field}) => (
+                                                <FormItem className="flex items-center gap-4 justify-between">
+                                                    <FormLabel>Agency Name</FormLabel>
+                                                    <FormControl>
+                                                        <Input className="w-[260px]"
+                                                               placeholder="shadcn" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage/>
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        <FormField
+                                            control={form.control}
+                                            name="jobOptional.job_effective_date"
+                                            render={({field}) => (
+                                                <FormItem>
+                                                    <Popover>
+                                                        <div className="flex items-center gap-4 justify-between">
+                                                            <FormLabel>End date</FormLabel>
+                                                            <PopoverTrigger asChild>
+                                                                <FormControl>
+                                                                    <Button
+                                                                        variant={"outline"}
+                                                                        className={cn(
+                                                                            "w-[260px] pl-3 text-left font-normal",
+                                                                            !field.value && "text-muted-foreground"
+                                                                        )}
+                                                                    >
+                                                                        {field.value ? (
+                                                                            format(field.value, "PPP")
+                                                                        ) : (
+                                                                            <span>Pick a date</span>
+                                                                        )}
+                                                                        <CalendarIcon
+                                                                            className="ml-auto h-4 w-4 opacity-50"/>
+                                                                    </Button>
+                                                                </FormControl>
+                                                            </PopoverTrigger>
+                                                        </div>
+
+                                                        <PopoverContent className="w-auto p-0" align="start">
+                                                            <Calendar
+                                                                mode="single"
+                                                                selected={field.value}
+                                                                onSelect={field.onChange}
+                                                                disabled={(date) =>
+                                                                    date > new Date() || date < new Date("1900-01-01")
+                                                                }
+                                                                // initialFocus
+                                                            />
+                                                        </PopoverContent>
+                                                    </Popover>
+                                                    <FormMessage/>
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        <Button
+                                            onClick={() => changeForm(5)}
+                                            className="self-end px-16"
+                                        >
+                                            Next
+                                        </Button>
+                                    </motion.div>
                                 </CollapsibleContent>
                             </Collapsible>
                         </div>
@@ -196,7 +502,7 @@ const CreateJobListingModal = () => {
                         </div>
                     </form>
                 </Form>
-            </motion.div>
+            </div>
         </>
     )
 };

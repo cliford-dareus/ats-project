@@ -19,7 +19,7 @@ export const job_listings = mysqlTable('job_listing', {
     description: varchar({length: 255}).notNull(),
     salary_up_to: varchar({length: 255}).notNull(),
     // department: varchar({length: 255}).notNull(),
-    // status: mysqlEnum('status', ['Not Publish', 'Publish', 'Archive']).default('Not Publish'),
+    // status: mysqlEnum('status', ['Not Publish', 'Actively Hiring', 'Archive']).default('Not Publish'),
     createdBy: varchar('created_by',{length: 255}).references(() => usersTable.id).notNull(),
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
@@ -42,7 +42,7 @@ export const technologiesRelations = relations(technologies, ({many}) => ({
 }))
 
 export const job_technologies = mysqlTable('job_technologies', {
-    id: int().primaryKey().autoincrement(),
+    id: int('id').primaryKey().autoincrement(),
     job_id: int().notNull().references(() => job_listings.id),
     technology_id: int().notNull().references(() => technologies.id),
 })

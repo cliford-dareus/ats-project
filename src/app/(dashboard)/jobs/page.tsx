@@ -10,14 +10,14 @@ type Props = {
     searchParams: {
         [key: string]: string | string[] | undefined;
     }
-}
+};
 
 const Page = async ({searchParams}: Props) => {
     const {location, page, per_page} = await searchParams ?? {};
 
     const limit = typeof per_page === "string" ? parseInt(per_page) : 8;
     const offset = typeof page === "string" ? (parseInt(page) - 1) * limit : 0;
-    const locations = location ? (location as string).split(',') : undefined
+    const locations = location ? (location as string).split(',') : undefined;
 
     const [len, jobs] = await get_all_job_listings({
         offset, limit, location: locations
@@ -38,7 +38,7 @@ const Page = async ({searchParams}: Props) => {
                         <Button>Add Job</Button>
                     </DialogTrigger>
                     <DialogContent className="rounded-none">
-                       <CreateJobListingModal />
+                        <CreateJobListingModal/>
                     </DialogContent>
                 </Dialog>
             </div>

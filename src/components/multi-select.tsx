@@ -1,100 +1,104 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {z} from "zod";
 import {useForm, UseFormSetValue, UseFormGetValues} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
-import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
-import {Input} from "@/components/ui/input";
+import {Form} from "@/components/ui/form";
 import {Button} from "@/components/ui/button";
-import {Badge} from "@/components/ui/badge";
-import {formSchema} from "@/app/(dashboard)/jobs/_components/create-job-listing-modal";
 import {Plus} from "lucide-react";
 
-const techSchema = z.object({
-    technology: z.string(),
-    year_of_experience: z.string(),
-})
+type SchemaType = z.ZodObject<any>;
 
-type Props = {
-    getValues: UseFormGetValues<z.infer<typeof formSchema>>;
-    setValue: UseFormSetValue<z.infer<typeof formSchema>>;
+interface MultiSelectProps<T extends SchemaType> {
+    schema: T;
+    fieldName: string;
+    setValue: UseFormSetValue<any>;
+    getValues: UseFormGetValues<any>;
+    renderForm: (onSubmit: (data: z.infer<T>) => void, form: ReturnType<typeof useForm>) => React.ReactNode;
+    renderSelectedItems: (items: z.infer<T>[], onRemove: (index: number) => void) => React.ReactNode;
 }
 
-const MultiSelect = ({setValue, getValues}: Props) => {
-    const [selected, setSelected] = React.useState<z.infer<typeof techSchema>[]>([]);
+// Modular Components
+const Forms = <T extends SchemaType>({onSubmit, schema, children}: {
+    onSubmit: (data: z.infer<T>) => void;
+    schema: T;
+    children: (form: ReturnType<typeof useForm<z.infer<T>>>) => React.ReactNode;
+}) => {
+    const forms = useForm<z.infer<T>>({
+        resolver: zodResolver(schema),
+    });
 
-    const form = useForm<z.infer<typeof techSchema>>({
-        resolver: zodResolver(techSchema),
-        defaultValues: {
-            year_of_experience: '',
-            technology: ''
-        }
-    })
-
-    const add = (data: z.infer<typeof techSchema>) => {
-        setSelected((prev) => [...(prev as z.infer<typeof techSchema>[] || []), data])
-        setValue('jobTechnology', [...(selected as z.infer<typeof techSchema>[] || []), data])
-    }
-
-    useEffect(() => {
-        if (!getValues().jobTechnology) return;
-        setSelected([...getValues().jobTechnology])
-    }, []);
+    console.log(forms.watch())
 
     return (
-        <div className="flex flex-col gap-4 w-full">
-            <div className="">
-                <Popover>
-                    <PopoverTrigger className="flex gap-4 items-center">
-                        <Plus/>
-                        <span>Experience</span>
-
-                    </PopoverTrigger>
-                    <PopoverContent>
-                    <Form {...form}>
-                            <form onSubmit={form.handleSubmit(add)}>
-                                <FormField
-                                    control={form.control}
-                                    name="technology"
-                                    render={({field}) => (
-                                        <FormItem>
-                                            <FormLabel>Technology</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="shadcn" {...field} />
-                                            </FormControl>
-                                            <FormMessage/>
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="year_of_experience"
-                                    render={({field}) => (
-                                        <FormItem>
-                                            <FormLabel>Year of Experience</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="shadcn" {...field} />
-                                            </FormControl>
-                                            <FormMessage/>
-                                        </FormItem>
-                                    )}
-                                />
-                                <Button type={"submit"}>Add</Button>
-                            </form>
-                        </Form>
-                    </PopoverContent>
-                </Popover>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 border bg-muted min-h-8 p-2 rounded">
-                {selected.map((tech, i) => (
-                    <Badge className="flex" key={i}>
-                        <p>{tech.technology}-{tech.year_of_experience}</p>
-                    </Badge>
-                ))}
-            </div>
-        </div>
+        <Form {...forms}>
+            <form>
+                {children(forms)}
+            </form>
+            <Button onClick={() => onSubmit(forms.watch())}>Add</Button>
+        </Form>
     );
 };
 
+const SelectedItems = <T extends object>({items, onRemove, renderItem}: {
+    items: T[];
+    onRemove: (index: number) => void;
+    renderItem: (item: T, index: number) => React.ReactNode;
+}) => (
+    <div className="flex flex-wrap items-center gap-2 border bg-muted min-h-8 p-2 rounded">
+        {items.map((item, index) => (
+            <div key={index}>
+                {renderItem(item, index)}
+                <button onClick={() => onRemove(index)}>Remove</button>
+            </div>
+        ))}
+    </div>
+);
+
+// Main Component
+function MultiSelect<T extends SchemaType>({schema, fieldName, setValue, getValues, renderForm, renderSelectedItems}: MultiSelectProps<T>) {
+    const [selected, setSelected] = useState<z.infer<T>[]>([]);
+
+    const add = (data: z.infer<T>) => {
+        setSelected(prev => [...prev, data]);
+        setValue(fieldName, [...selected, data]);
+    };
+
+    const remove = (index: number) => {
+        const newSelected = selected.filter((_, i) => i !== index);
+        setSelected(newSelected);
+        setValue(fieldName, newSelected);
+    };
+
+    useEffect(() => {
+        const values = getValues()[fieldName];
+        if (values) {
+            setSelected(values);
+        }
+    }, [getValues, fieldName]);
+
+    return (
+        <div>
+            <Popover>
+                <PopoverTrigger className="flex gap-4 items-center">
+                    <Plus/>
+                    <span>Experience</span>
+                </PopoverTrigger>
+                <PopoverContent>
+                    <Forms onSubmit={add} schema={schema}>
+                        {(forms) => renderForm(add, forms)}
+                    </Forms>
+                </PopoverContent>
+            </Popover>
+
+            <SelectedItems
+                items={selected}
+                onRemove={remove}
+                renderItem={(item, index) => renderSelectedItems([item], () => remove(index))}
+            />
+        </div>
+    );
+}
+
 export default MultiSelect;
+
