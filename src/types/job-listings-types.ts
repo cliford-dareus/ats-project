@@ -31,8 +31,8 @@ export type JobListingWithCandidatesType = {
     created_at: Date
     updated_at: Date
     createdBy: string
-    candidate_id: number
+    candidate_id: number | null
     stageName: "New Candidate" | "Screening" | "Phone Interview" | "Offer" | null;
-    stage_order_id: number;
+    stage_order_id: number | null
 }
 

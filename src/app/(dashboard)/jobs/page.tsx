@@ -4,7 +4,7 @@ import JobListingsList from "@/app/(dashboard)/jobs/_components/job-listings-lis
 import {JobResponseType} from "@/types/job-listings-types";
 import {Button} from "@/components/ui/button";
 import {Dialog, DialogContent, DialogTrigger} from "@/components/ui/dialog";
-import CreateJobListingModal from "@/app/(dashboard)/jobs/_components/create-job-listing-modal";
+import CreateJobListingModal from "@/components/modal/create-job-listing-modal";
 
 type Props = {
     searchParams: {

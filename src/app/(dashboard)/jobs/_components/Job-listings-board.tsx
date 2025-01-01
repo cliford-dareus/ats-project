@@ -26,7 +26,7 @@ const JobListingsBoard = ({data, stages}: Props) => {
         <div className="flex flex-col md:flex-row h-full w-full gap-3">
             {stages?.map((stage) => (
                 <Column
-                    key={stage.stage_order_id}
+                    key={stage.id}
                     title={stage.stage_name as string}
                     column={stage.stage_name}
                     stage={stage.stage_order_id}

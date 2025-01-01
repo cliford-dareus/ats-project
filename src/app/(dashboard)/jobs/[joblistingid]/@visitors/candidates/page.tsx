@@ -10,8 +10,6 @@ type Props = {
 
 const Page = async ({params}: Props) => {
     const {joblistingid} = await params;
-
-    // Call those in actions
     const data = await get_job_listing_with_candidate(Number(joblistingid));
     const stages = await get_job_listings_stages(data[0]?.job_id);
 

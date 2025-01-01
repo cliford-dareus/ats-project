@@ -1,7 +1,7 @@
 CREATE TABLE `candidate` (
 	`id` int AUTO_INCREMENT NOT NULL,
-	`job_id` text,
-	`current_stage_id` text,
+	`job_id` int,
+	`current_stage_id` int,
 	`name` varchar(255) NOT NULL,
 	`email` varchar(255) NOT NULL,
 	`cv_path` varchar(255) NOT NULL,
@@ -18,14 +18,15 @@ CREATE TABLE `job_listing` (
 	`location` varchar(255) NOT NULL,
 	`description` varchar(255) NOT NULL,
 	`salary_up_to` varchar(255) NOT NULL,
-	`createdBy` varchar(255) NOT NULL,
+	`status` enum('Not Publish','Actively Hiring','Archive') DEFAULT 'Not Publish',
+	`created_by` varchar(255) NOT NULL,
 	`created_at` timestamp NOT NULL DEFAULT (now()),
 	`updated_at` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
 	CONSTRAINT `job_listing_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
 CREATE TABLE `job_technologies` (
-	`id` int NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`job_id` int NOT NULL,
 	`technology_id` int NOT NULL,
 	CONSTRAINT `job_technologies_id` PRIMARY KEY(`id`)
@@ -48,7 +49,7 @@ CREATE TABLE `technologies` (
 );
 --> statement-breakpoint
 CREATE TABLE `users_table` (
-	`id` int AUTO_INCREMENT NOT NULL,
+	`id` varchar(255) NOT NULL,
 	`name` varchar(255) NOT NULL,
 	`age` int NOT NULL,
 	`email` varchar(255) NOT NULL,
@@ -56,6 +57,5 @@ CREATE TABLE `users_table` (
 	CONSTRAINT `users_table_email_unique` UNIQUE(`email`)
 );
 --> statement-breakpoint
-ALTER TABLE `job_listing` ADD CONSTRAINT `job_listing_createdBy_users_table_id_fk` FOREIGN KEY (`createdBy`) REFERENCES `users_table`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `job_technologies` ADD CONSTRAINT `job_technologies_job_id_job_listing_id_fk` FOREIGN KEY (`job_id`) REFERENCES `job_listing`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `job_technologies` ADD CONSTRAINT `job_technologies_technology_id_technologies_id_fk` FOREIGN KEY (`technology_id`) REFERENCES `technologies`(`id`) ON DELETE no action ON UPDATE no action;

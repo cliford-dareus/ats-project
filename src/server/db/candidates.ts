@@ -2,6 +2,7 @@ import {db} from "@/drizzle/db";
 import {candidates, job_listings, stages} from "@/drizzle/schema";
 import {and, eq} from "drizzle-orm";
 import type {CandidateType} from "@/types/job-listings-types";
+import {CACHE_TAGS, revalidateDbCache} from "@/lib/cache";
 
 export const create_candidate = async (data: CandidateType) => {
     const [current_stage] = await db
@@ -20,11 +21,17 @@ export const create_candidate = async (data: CandidateType) => {
     }
 };
 
-export const update_candidate_stage = async (data: {candidateId: number, current_stage_id: number}) => {
-    await db.update(candidates).set({
-        current_stage_id: data.current_stage_id
-    })
-        .where(eq(candidates.id, data.candidateId as number) )
+export const update_candidate_stage = async (data: { candidateId: number, current_stage_id: number }) => {
+    const [{fieldCount}]= await db.update(candidates)
+        .set({current_stage_id: data.current_stage_id})
+        .where(eq(candidates.id, data.candidateId as number))
+
+
+    console.log(fieldCount)
+    // revalidateDbCache({
+    //     tag: CACHE_TAGS.candidates,
+    //     id: String(candidates.id),
+    // })
 }
 
 export const get_candidate_with_details = async (candidateId: number) => {

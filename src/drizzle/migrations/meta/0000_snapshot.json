@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "2085d4f3-84a0-4a02-9654-25ab1cca081a",
+  "id": "66041e5a-0052-49de-ab13-0d271ffc49fe",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "candidate": {
@@ -16,14 +16,14 @@
         },
         "job_id": {
           "name": "job_id",
-          "type": "text",
+          "type": "int",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "current_stage_id": {
           "name": "current_stage_id",
-          "type": "text",
+          "type": "int",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -129,8 +129,16 @@
           "notNull": true,
           "autoincrement": false
         },
-        "createdBy": {
-          "name": "createdBy",
+        "status": {
+          "name": "status",
+          "type": "enum('Not Publish','Actively Hiring','Archive')",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'Not Publish'"
+        },
+        "created_by": {
+          "name": "created_by",
           "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true,
@@ -155,21 +163,7 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {
-        "job_listing_createdBy_users_table_id_fk": {
-          "name": "job_listing_createdBy_users_table_id_fk",
-          "tableFrom": "job_listing",
-          "tableTo": "users_table",
-          "columnsFrom": [
-            "createdBy"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {
         "job_listing_id": {
           "name": "job_listing_id",
@@ -189,7 +183,7 @@
           "type": "int",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
+          "autoincrement": true
         },
         "job_id": {
           "name": "job_id",
@@ -341,10 +335,10 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "int",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": true
+          "autoincrement": false
         },
         "name": {
           "name": "name",

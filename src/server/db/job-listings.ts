@@ -37,10 +37,10 @@ export const create_job_listing = async (data: z.infer<typeof formSchema> & { us
         }
 
         await trx.insert(stages).values(
-            data.jobStages.map((item) => ({
+            data.jobStages.map((item, i) => ({
                 job_id: inserted_job.id,
                 stage_name: item.stage_name,
-                stage_order_id: 1,
+                stage_order_id: i,
                 assign_to: 'sss',
             }))
         );
@@ -89,8 +89,8 @@ export const get_job_listing_with_candidate = async (jobId: number) => {
             stage_order_id: stages.stage_order_id,
         })
         .from(job_listings)
-        .innerJoin(candidates, eq(candidates.job_id, job_listings.id))
-        .innerJoin(stages, eq(candidates.current_stage_id, stages.stage_order_id))
+        .leftJoin(candidates, eq(candidates.job_id, job_listings.id))
+        .leftJoin(stages, eq(candidates.current_stage_id, stages.stage_order_id))
         .where(eq(job_listings.id, jobId))
 
     return result

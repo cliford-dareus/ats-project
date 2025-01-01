@@ -4,7 +4,7 @@ import React, {Dispatch, DragEvent, SetStateAction, useState} from "react";
 import Card from "@/components/kanban/card";
 import {JobListingWithCandidatesType} from "@/types/job-listings-types";
 import DropIndicator from "@/components/kanban/drop-indicator";
-import {update_candidate_stage_action} from "@/server/actions/job-listings-actions";
+import {update_candidate_stage_action} from "@/server/actions/candidate_actions";
 
 type Props = {
     title: string;
@@ -56,7 +56,7 @@ const Column = ({title, headingColor, cards, column, setCards, stage}: Props) =>
             }
             if(!dropStage || dropStage !== cardToTransfer.stage_order_id){
                 console.log("drop stage", dropStage, cardToTransfer.candidate_id);
-                await update_candidate_stage_action({candidateId: cardToTransfer.candidate_id, current_stage_id: dropStage})
+                await update_candidate_stage_action({candidateId: cardToTransfer.candidate_id!, current_stage_id: dropStage})
             }
             setCards(copy);
         }
@@ -139,7 +139,7 @@ const Column = ({title, headingColor, cards, column, setCards, stage}: Props) =>
                         key={c.candidate_id}
                         stage={stage}
                         data={c}
-                        handleDragStart={(e) => handleDragStart(e, c.candidate_id)}
+                        handleDragStart={(e) => handleDragStart(e, c.candidate_id!)}
                     />;
                 })}
                 <DropIndicator beforeId={null} stage={stage} column={column}/>

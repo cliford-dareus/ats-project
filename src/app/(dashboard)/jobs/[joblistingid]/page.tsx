@@ -5,6 +5,8 @@ import {Button} from "@/components/ui/button";
 import {CustomTabsTrigger, Tabs, TabsList} from "@/components/ui/tabs";
 import Link from "next/link";
 import {BriefcaseBusiness, CircleUser} from "lucide-react";
+import {Dialog, DialogContent, DialogTrigger} from "@/components/ui/dialog";
+import CreateCandidateModal from "@/components/modal/create-candidate-modal";
 
 type Props = {
     params: {
@@ -15,11 +17,6 @@ type Props = {
 const Page = async ({params}: Props) => {
     const { joblistingid } = await params;
     const d = await get_job_listing_with_candidate(Number(joblistingid));
-
-    if(d.length==0){
-        // Create a Page for no Candidate
-        return
-    }
 
     return (
         <div className="">
@@ -36,7 +33,14 @@ const Page = async ({params}: Props) => {
                     </div>
                 </div>
 
-                <Button>Add Applicant</Button>
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button>Add Applicant</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <CreateCandidateModal />
+                    </DialogContent>
+                </Dialog>
             </div>
 
             <div className="flex px-4 border-b">
