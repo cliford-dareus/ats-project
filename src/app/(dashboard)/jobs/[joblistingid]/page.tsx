@@ -6,7 +6,7 @@ import {CustomTabsTrigger, Tabs, TabsList} from "@/components/ui/tabs";
 import Link from "next/link";
 import {BriefcaseBusiness, CircleUser} from "lucide-react";
 import {Dialog, DialogContent, DialogTrigger} from "@/components/ui/dialog";
-import CreateCandidateModal from "@/components/modal/create-candidate-modal";
+import CreateApplicationModal from "@/components/modal/create-application-modal";
 
 type Props = {
     params: {
@@ -38,7 +38,7 @@ const Page = async ({params}: Props) => {
                         <Button>Add Applicant</Button>
                     </DialogTrigger>
                     <DialogContent>
-                        <CreateCandidateModal />
+                        <CreateApplicationModal job={d}/>
                     </DialogContent>
                 </Dialog>
             </div>

@@ -43,8 +43,8 @@ export const technologiesRelations = relations(technologies, ({many}) => ({
 
 export const job_technologies = mysqlTable('job_technologies', {
     id: int('id').primaryKey().autoincrement(),
-    job_id: int().notNull().references(() => job_listings.id),
-    technology_id: int().notNull().references(() => technologies.id),
+    job_id: int().notNull().references(() => job_listings.id, {onDelete: 'cascade'}),
+    technology_id: int().notNull().references(() => technologies.id, {onDelete: 'cascade'}),
 });
 
 export const jobTechnologyRelation = relations(job_technologies, ({one}) => ({
@@ -60,7 +60,7 @@ export const jobTechnologyRelation = relations(job_technologies, ({one}) => ({
 
 export const stages = mysqlTable('stages', {
     id: int('id').primaryKey().autoincrement(),
-    job_id: int().notNull(),
+    job_id: int().notNull().references(() => job_listings.id, {onDelete: 'cascade'}),
     stage_name: mysqlEnum('stage_name', ['New Candidate', 'Screening', 'Phone Interview', 'Offer']),
     stage_order_id: int().notNull(),
     assign_to: varchar({length: 255}),
@@ -80,44 +80,36 @@ export const stagesRelations = relations(stages, ({one}) => ({
 
 export const candidates = mysqlTable('candidate', {
     id: int('id').primaryKey().autoincrement(),
-    job_id: int(),
-    current_stage_id: int(),
     name: varchar({length: 255}).notNull(),
     email: varchar({length: 255}).notNull().unique(),
-    cv_path: varchar({length: 255}).notNull(),
     phone: varchar({length: 255}).notNull().unique(),
+    cv_path: varchar({length: 255}).notNull().unique(),
+    // location: varchar({length: 255}).notNull().unique(),
     status: mysqlEnum('status', ['Active', 'Rejected', 'Hired']).default('Active'),
 });
 
 export const candidates_relations = relations(candidates, ({one, many}) => ({
-    job_id: one(job_listings, {
-        fields: [candidates.job_id],
-        references: [job_listings.id]
-    }),
-    stage_id: one(stages, {
-        fields: [candidates.current_stage_id],
-        references: [stages.id]
-    }),
-    applications: many(applications)
+    applications: many(applications),
+    attachments: one(attachments),
 }));
 
 export const attachments = mysqlTable('attachments', {
     id: int('id').primaryKey().autoincrement(),
     file_name: varchar({length: 255}).notNull(),
     file_url: varchar({length: 255}).notNull(),
-    candidates_id: int().notNull().references(() => candidates.id),
+    candidates_id: int().notNull().references(() => candidates.id, {onDelete: 'cascade'}),
     attachment_type: mysqlEnum('attachment_type', ['RESUME', 'COVER_LETTER', 'OFFER_LETTER', "OTHER"])
 });
 
 export const attachments_relations = relations(attachments, ({one}) => ({
-    candidates_id: one(candidates, {fields: [attachments.candidates_id], references: [candidates.id]}),
+    candidates_id: one(candidates, {fields: [attachments.candidate_id], references: [candidates.id]}),
 }));
 
 export const applications = mysqlTable('applications', {
     id: int('id').primaryKey().autoincrement(),
-    job_id: int(),
+    job_id: int().references(() => job_listings.id),
     current_stage_id: int(),
-    candidate: int(),
+    candidate: int().references(() => candidates.id, {onDelete: 'cascade'}),
 });
 
 export const applications_relations = relations(applications, ({one}) => ({
@@ -129,7 +121,7 @@ export const applications_relations = relations(applications, ({one}) => ({
 
 export const interviews = mysqlTable('interviews', {
     id: int('id').primaryKey().autoincrement(),
-    applications_id: int().references(() => applications.id),
+    applications_id: int().references(() => applications.id, {onDelete: 'cascade'}),
     locations: varchar({length: 255}).notNull(),
     start_at: timestamp('start_at'),
     end_at: timestamp('end_at'),
@@ -144,7 +136,7 @@ export const interviews_relations = relations(interviews, ({one}) => ({
 export const scoreCards = mysqlTable('scoresCards', {
     id: int('id').primaryKey().autoincrement(),
     applications_id: int().references(() => applications.id),
-    interviews_id: int().references(() => interviews.id),
+    interviews_id: int().references(() => interviews.id, {onDelete: 'cascade'}),
     interviewer: varchar({length: 255}).notNull(),
     overall_recommendations: mysqlEnum('overall_recommendations', ["DEFINITELY_NO", "NO", "YES", "STRONG_YES", "NO_DECISION"]).default("NO_DECISION")
 });

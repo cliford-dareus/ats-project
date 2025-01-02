@@ -5,7 +5,7 @@ import {DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dial
 import {Input} from "@/components/ui/input";
 import {Separator} from "@/components/ui/separator";
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
-import {BriefcaseBusiness, CalendarIcon, ChevronDownCircle, Command, FlaskConical, ListStart} from "lucide-react";
+import {BriefcaseBusiness, CalendarIcon, ChevronDownCircle, Command, FlaskConical, ListStart, Plus} from "lucide-react";
 import {motion} from "motion/react";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
 import {z} from 'zod'
@@ -15,7 +15,7 @@ import {Button} from "@/components/ui/button";
 import {Badge} from "@/components/ui/badge";
 import MultiSelect from "@/components/multi-select";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
-import {cn} from "@/lib/utils";
+import {checkFormStatus, cn} from "@/lib/utils";
 import {format} from "date-fns";
 import {Calendar} from "@/components/ui/calendar";
 import {
@@ -61,22 +61,6 @@ const CreateJobListingModal = () => {
         }
     };
 
-    const checkFormStatus = (args: string) => {
-        const object = form.getValues();
-        switch (args) {
-            case "jobInfo":
-                const jobInfo = object.jobInfo as { [key: string]: string };
-                if (!jobInfo) return false;
-                return Object.keys(jobInfo).every(s => jobInfo[s] !== '');
-            case "jobTechnology":
-                const jobTech = object.jobTechnology as { [key: string]: string }[];
-                if (!jobTech.length) return false;
-                return jobTech.length > 4
-            case "jobOptional":
-                return true
-        }
-    };
-
     const changeForm = (index: number) => {
         setIsOpen((prevIsOpen) =>
             prevIsOpen.map((s) => {
@@ -85,7 +69,8 @@ const CreateJobListingModal = () => {
                 }
                 if (s.step === index - 1) {
                     const status = checkFormStatus(index - 1 === 0 || index - 1 === 1 ? "jobInfo" :
-                        index - 1 === 2 ? 'jobTechnology' : 'jobOptional',
+                        index - 1 === 2 ? 'jobTechnology' : 'jobOptional', form, index - 1 === 0 || index - 1 === 1 ? "jobInfo" :
+                        index - 1 === 2 ? 'jobTechnology' : 'jobOptional'
                     )
                     console.log('status', status);
                     return {
@@ -261,43 +246,53 @@ const CreateJobListingModal = () => {
                                         // key={stepActive.step}
                                         transition={{duration: 0.2, ease: "easeInOut"}}
                                     >
-                                        <MultiSelect
-                                            schema={techSchema}
-                                            fieldName={"jobTechnology"}
-                                            setValue={form.setValue}
-                                            getValues={form.getValues}
-                                            renderForm={(onSubmit, forms) => (
-                                                <>
-                                                    <FormItem className="flex items-center gap-4 justify-between">
-                                                        <FormLabel>Job Name</FormLabel>
-                                                        <FormControl>
-                                                            <Input {...forms.register("technology")}
-                                                                   className="w-[260px]" placeholder="Acme"/>
-                                                        </FormControl>
-                                                        <FormMessage/>
-                                                    </FormItem>
+                                        <Popover>
+                                            <PopoverTrigger className="flex gap-4 items-center">
+                                                <Plus/>
+                                                <span>Experience</span>
+                                            </PopoverTrigger>
+                                            <PopoverContent>
+                                                <MultiSelect
+                                                    schema={techSchema}
+                                                    fieldName={"jobTechnology"}
+                                                    setValue={form.setValue}
+                                                    getValues={form.getValues}
+                                                    renderForm={(onSubmit, forms) => (
+                                                        <>
+                                                            <FormItem
+                                                                className="flex items-center gap-4 justify-between">
+                                                                <FormLabel>Job Name</FormLabel>
+                                                                <FormControl>
+                                                                    <Input {...forms.register("technology")}
+                                                                           className="w-[260px]" placeholder="Acme"/>
+                                                                </FormControl>
+                                                                <FormMessage/>
+                                                            </FormItem>
 
-                                                    <FormItem className="flex items-center gap-4 justify-between">
-                                                        <FormLabel>Job Name</FormLabel>
-                                                        <FormControl>
-                                                            <Input {...forms.register("year_of_experience")}
-                                                                   className="w-[260px]" placeholder="Acme"/>
-                                                        </FormControl>
-                                                        <FormMessage/>
-                                                    </FormItem>
-                                                </>
-                                            )}
-                                            renderSelectedItems={(items, onRemove) => (
-                                                <div className="flex flex-wrap gap-2">
-                                                    {items.map((item, index) => (
-                                                        <Badge key={index} className="flex">
-                                                            {item.technology} - {item.year_of_experience}
-                                                            <button onClick={() => onRemove(index)}>×</button>
-                                                        </Badge>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        />
+                                                            <FormItem
+                                                                className="flex items-center gap-4 justify-between">
+                                                                <FormLabel>Job Name</FormLabel>
+                                                                <FormControl>
+                                                                    <Input {...forms.register("year_of_experience")}
+                                                                           className="w-[260px]" placeholder="Acme"/>
+                                                                </FormControl>
+                                                                <FormMessage/>
+                                                            </FormItem>
+                                                        </>
+                                                    )}
+                                                    renderSelectedItems={(items, onRemove) => (
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {items.map((item, index) => (
+                                                                <Badge key={index} className="flex">
+                                                                    {item.technology} - {item.year_of_experience}
+                                                                    <button onClick={() => onRemove(index)}>×</button>
+                                                                </Badge>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                />
+                                            </PopoverContent>
+                                        </Popover>
 
                                         <Button
                                             onClick={() => changeForm(3)}
@@ -344,41 +339,50 @@ const CreateJobListingModal = () => {
                                         // key={stepActive.step}
                                         transition={{duration: 0.2, ease: "easeInOut"}}
                                     >
-                                        <MultiSelect
-                                            schema={stageSchema}
-                                            fieldName="jobStages"
-                                            setValue={form.setValue}
-                                            getValues={form.getValues}
-                                            renderForm={(onSubmit, forms) => (
-                                                <>
-                                                    <Select
-                                                        {...forms.register("stage_name")}
-                                                        onValueChange={(e) => forms.setValue("stage_name", e)}
-                                                    >
-                                                        <SelectTrigger className="w-[180px]">
-                                                            <SelectValue placeholder="Select a fruit"/>
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {JOB_STAGES.map(stage => (
-                                                                <SelectItem key={stage} value={stage}>{stage}</SelectItem>
+                                        <Popover>
+                                            <PopoverTrigger className="flex gap-4 items-center">
+                                                <Plus/>
+                                                <span>Experience</span>
+                                            </PopoverTrigger>
+                                            <PopoverContent>
+                                                <MultiSelect
+                                                    schema={stageSchema}
+                                                    fieldName="jobStages"
+                                                    setValue={form.setValue}
+                                                    getValues={form.getValues}
+                                                    renderForm={(onSubmit, forms) => (
+                                                        <>
+                                                            <Select
+                                                                {...forms.register("stage_name")}
+                                                                onValueChange={(e) => forms.setValue("stage_name", e)}
+                                                            >
+                                                                <SelectTrigger className="w-[180px]">
+                                                                    <SelectValue placeholder="Select a fruit"/>
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    {JOB_STAGES.map(stage => (
+                                                                        <SelectItem key={stage}
+                                                                                    value={stage}>{stage}</SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <Input {...forms.register('stage_assign_to')}
+                                                                   placeholder="Years of Experience"/>
+                                                        </>
+                                                    )}
+                                                    renderSelectedItems={(items, onRemove) => (
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {items.map((item, index) => (
+                                                                <Badge key={index} className="flex">
+                                                                    {item.stage_name} - {item.stage_assign_to}
+                                                                    <button onClick={() => onRemove(index)}>×</button>
+                                                                </Badge>
                                                             ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <Input {...forms.register('stage_assign_to')}
-                                                           placeholder="Years of Experience"/>
-                                                </>
-                                            )}
-                                            renderSelectedItems={(items, onRemove) => (
-                                                <div className="flex flex-wrap gap-2">
-                                                    {items.map((item, index) => (
-                                                        <Badge key={index} className="flex">
-                                                            {item.stage_name} - {item.stage_assign_to}
-                                                            <button onClick={() => onRemove(index)}>×</button>
-                                                        </Badge>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        />
+                                                        </div>
+                                                    )}
+                                                />
+                                            </PopoverContent>
+                                        </Popover>
                                         <Button
                                             onClick={() => changeForm(4)}
                                             className="self-end px-16"

@@ -56,7 +56,14 @@ const SelectedItems = <T extends object>({items, onRemove, renderItem}: {
 );
 
 // Main Component
-function MultiSelect<T extends SchemaType>({schema, fieldName, setValue, getValues, renderForm, renderSelectedItems}: MultiSelectProps<T>) {
+function MultiSelect<T extends SchemaType>({
+                                               schema,
+                                               fieldName,
+                                               setValue,
+                                               getValues,
+                                               renderForm,
+                                               renderSelectedItems
+                                           }: MultiSelectProps<T>) {
     const [selected, setSelected] = useState<z.infer<T>[]>([]);
 
     const add = (data: z.infer<T>) => {
@@ -79,17 +86,9 @@ function MultiSelect<T extends SchemaType>({schema, fieldName, setValue, getValu
 
     return (
         <div>
-            <Popover>
-                <PopoverTrigger className="flex gap-4 items-center">
-                    <Plus/>
-                    <span>Experience</span>
-                </PopoverTrigger>
-                <PopoverContent>
-                    <Forms onSubmit={add} schema={schema}>
-                        {(forms) => renderForm(add, forms)}
-                    </Forms>
-                </PopoverContent>
-            </Popover>
+            <Forms onSubmit={add} schema={schema}>
+                {(forms) => renderForm(add, forms)}
+            </Forms>
 
             <SelectedItems
                 items={selected}

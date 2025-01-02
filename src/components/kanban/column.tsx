@@ -4,7 +4,7 @@ import React, {Dispatch, DragEvent, SetStateAction, useState} from "react";
 import Card from "@/components/kanban/card";
 import {JobListingWithCandidatesType} from "@/types/job-listings-types";
 import DropIndicator from "@/components/kanban/drop-indicator";
-import {update_candidate_stage_action} from "@/server/actions/candidate_actions";
+import {update_application_stage_action} from "@/server/actions/application_actions";
 
 type Props = {
     title: string;
@@ -38,25 +38,28 @@ const Column = ({title, headingColor, cards, column, setCards, stage}: Props) =>
 
         if (before !== cardId) {
             let copy = [...cards];
-            let cardToTransfer = copy.find((c) => c.candidate_id === cardId);
+            let cardToTransfer = copy.find((c) => c.application_id === cardId);
 
             if (!cardToTransfer) return;
             cardToTransfer = {...cardToTransfer, stageName: column};
 
-            copy = copy.filter((c) => c.candidate_id !== cardId);
+            copy = copy.filter((c) => c.application_id !== cardId);
 
             const moveToBack = before === -1;
 
             if (moveToBack) {
                 copy.push(cardToTransfer!);
             } else {
-                const insertAtIndex = copy.findIndex((el) => el.candidate_id === before);
+                const insertAtIndex = copy.findIndex((el) => el.application_id === before);
                 if (insertAtIndex === undefined) return;
                 copy.splice(insertAtIndex, 0, cardToTransfer!);
             }
-            if(!dropStage || dropStage !== cardToTransfer.stage_order_id){
-                console.log("drop stage", dropStage, cardToTransfer.candidate_id);
-                await update_candidate_stage_action({candidateId: cardToTransfer.candidate_id!, current_stage_id: dropStage})
+            if (!dropStage || dropStage !== cardToTransfer.stage_order_id) {
+                console.log("drop stage", dropStage, cardToTransfer.application_id);
+                await update_application_stage_action({
+                    candidateId: cardToTransfer.application_id!,
+                    current_stage_id: dropStage
+                })
             }
             setCards(copy);
         }
@@ -136,10 +139,10 @@ const Column = ({title, headingColor, cards, column, setCards, stage}: Props) =>
             >
                 {filteredCards?.map((c: JobListingWithCandidatesType) => {
                     return <Card
-                        key={c.candidate_id}
+                        key={c.application_id}
                         stage={stage}
                         data={c}
-                        handleDragStart={(e) => handleDragStart(e, c.candidate_id!)}
+                        handleDragStart={(e) => handleDragStart(e, c.application_id!)}
                     />;
                 })}
                 <DropIndicator beforeId={null} stage={stage} column={column}/>

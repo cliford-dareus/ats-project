@@ -36,3 +36,20 @@ export const stageSchema = z.object({
     stage_name: z.string(),
     stage_assign_to: z.string(),
 });
+
+
+export const candidateForm = z.object({
+    candidate_info: z.object({
+        first_name: z.string(),
+        last_name: z.string(),
+        email: z.string(),
+        phone: z.string(),
+        location: z.string(),
+    }).nullish(),
+    candidate_file: z.object({
+        resume: z.array(z.object({})),
+        cover_letter: z.array(z.object({}))
+    }),
+    candidate: z.string().nullish(),
+    job: z.string().nullish(),
+})

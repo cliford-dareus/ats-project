@@ -1,4 +1,4 @@
-import {candidates, job_listings, job_technologies, stages, technologies} from "@/drizzle/schema";
+import {applications, job_listings, job_technologies, stages, technologies} from "@/drizzle/schema";
 import {db} from "@/drizzle/db";
 import {and, eq, inArray, SQL} from "drizzle-orm";
 import {filterJobType} from "@/types/job-listings-types";
@@ -85,12 +85,12 @@ export const get_job_listing_with_candidate = async (jobId: number) => {
             updated_at: job_listings.updated_at,
             createdBy: job_listings.createdBy,
             stageName: stages.stage_name,
-            candidate_id: candidates.id,
+            application_id: applications.id,
             stage_order_id: stages.stage_order_id,
         })
         .from(job_listings)
-        .leftJoin(candidates, eq(candidates.job_id, job_listings.id))
-        .leftJoin(stages, eq(candidates.current_stage_id, stages.stage_order_id))
+        .leftJoin(applications, eq(applications.job_id, job_listings.id))
+        .leftJoin(stages, eq(applications.current_stage_id, stages.stage_order_id))
         .where(eq(job_listings.id, jobId))
 
     return result
@@ -111,7 +111,7 @@ export const get_all_job_listings_db = async (filter: filterJobType) => {
         created_at: job_listings.created_at,
         updated_at: job_listings.updated_at,
         createdBy: job_listings.createdBy,
-        candidatesCount: db.$count(candidates, eq(candidates.job_id, job_listings.id))
+        candidatesCount: db.$count(applications, eq(applications.job_id, job_listings.id))
     })
         .from(job_listings)
         .where(and(...filters))
