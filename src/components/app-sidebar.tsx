@@ -13,6 +13,8 @@ import React, {useEffect} from "react";
 import {usePathname, useRouter} from "next/navigation";
 import SidebarSettings from "@/app/(dashboard)/settings/_components/sidebar-settings";
 import JobListingSidebar from "@/app/(dashboard)/jobs/_components/job-listing-sidebar";
+import SidebarCandidate from "@/app/(dashboard)/candidates/_components/sidebar-candidate";
+import {candidatesResponseType } from "@/types/job-listings-types";
 
 const data = {
     user: {
@@ -52,9 +54,11 @@ const data = {
             isActive: false,
         },
     ]
-}
+};
 
-export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar> & {
+    candidate: candidatesResponseType[]
+}) {
     const pathname = usePathname()
     const [activeItem, setActiveItem] = React.useState(data.navMain[0]);
     const {setOpen} = useSidebar()
@@ -66,6 +70,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
 
     return (
         <Sidebar
+            variant="floating"
             collapsible="icon"
             className="overflow-hidden [&>[data-sidebar=sidebar]]:flex-row"
             {...props}
@@ -130,10 +135,6 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
                         <div className="text-base font-medium text-foreground">
                             {activeItem.title}
                         </div>
-                        {/*<Label className="flex items-center gap-2 text-sm">*/}
-                        {/*    <span>Unreads</span>*/}
-                        {/*    <Switch className="shadow-none"/>*/}
-                        {/*</Label>*/}
                     </div>
                     {activeItem.title !== "Settings" && <SidebarInput placeholder="Type to search..."/>}
                 </SidebarHeader>
@@ -144,9 +145,9 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
                             {activeItem.title === "Dashboard" ? (
                                 <h1>Dashboard</h1>
                             ) : activeItem.title === "Jobs" ? (
-                                <JobListingSidebar />
+                                <JobListingSidebar/>
                             ) : activeItem.title === "Candidates" ? (
-                                <div className="">Candidates</div>
+                                <SidebarCandidate candidate={props.candidate}/>
                             ) : activeItem.title === "Settings" ? (
                                 <SidebarSettings/>
                             ) : null}

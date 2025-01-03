@@ -17,7 +17,7 @@ type Props = {
     }
 }
 
-const Page = async ({params}: Props) => {
+const Default = async ({params}: Props) => {
     const {joblistingid} = await params;
 
     // @ts-expect-error
@@ -25,9 +25,10 @@ const Page = async ({params}: Props) => {
     const [job] = await get_job_listing_with_candidate(Number(joblistingid));
     const candidates = await get_all_candidates_action();
 
+
     return (
         <div>
-            <div className="flex flex-col md:flex-row items-center justify-between w-full p-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between w-full p-4">
                 <div>
                     <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-4">
@@ -54,7 +55,7 @@ const Page = async ({params}: Props) => {
             </div>
 
             <div className="flex px-4 border-b">
-                <Tabs className="px-0 h-full" defaultValue="details">
+                <Tabs className="px-0 h-full" defaultValue="details" >
                     <TabsList className="bg-transparent rounded-none p-0">
                         <CustomTabsTrigger className="px-4 flex items-center gap-4" value="details">
                             <BriefcaseBusiness size={20}/>
@@ -71,4 +72,4 @@ const Page = async ({params}: Props) => {
     );
 };
 
-export default Page;
+export default Default;

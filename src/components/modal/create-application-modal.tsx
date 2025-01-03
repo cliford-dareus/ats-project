@@ -1,11 +1,11 @@
 'use client'
 
-import React, {useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
-import {BriefcaseBusiness, CalendarIcon, ChevronDownCircle, Command, Plus} from "lucide-react";
+import {BriefcaseBusiness, ChevronDownCircle, Command} from "lucide-react";
 import {Separator} from "@/components/ui/separator";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
-import {useForm, UseFormReturn} from "react-hook-form";
+import {useForm} from "react-hook-form";
 import {z} from "zod";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
@@ -14,51 +14,26 @@ import {motion} from "motion/react";
 import {checkFormStatus, cn} from "@/lib/utils";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
-import {format} from "date-fns";
-import {Calendar} from "@/components/ui/calendar";
 import {Switch} from "@/components/ui/switch";
-import MultiSelect from "@/components/multi-select";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
-import {candidates} from "@/drizzle/schema";
-import {JobListingWithCandidatesType} from "@/types/job-listings-types";
+import {Select, SelectContent, SelectItem, SelectTrigger} from "@/components/ui/select";
+import {candidatesResponseType, JobResponseType} from "@/types/job-listings-types";
 import {create_application_action} from "@/server/actions/application_actions";
-
-type candidateSchema = typeof candidates.$inferSelect;
+import {candidateForm} from "@/schema";
 
 const STEPS = [
     {step: 1, status: 'In-Complete', open: true},
     {step: 2, status: 'In-Complete', open: false},
 ];
 
-const candidateForm = z.object({
-    candidate_info: z.object({
-        first_name: z.string(),
-        last_name: z.string(),
-        email: z.string(),
-        phone: z.string(),
-        location: z.string(),
-    }).nullish(),
-    candidate_file: z.object({
-        resume: z.instanceof(FileList),
-        cover_letter: z.instanceof(FileList)
-    }),
-    candidate: z.string().nullish(),
-    job: z.string().nullish(),
-})
-
-const CreateApplicationModal = ({job}: { job: JobListingWithCandidatesType[] }) => {
+const CreateApplicationModal = ({job, candidates}: { job: JobResponseType[], candidates: candidatesResponseType[] }) => {
     const [isOpen, setIsOpen] = useState<{ step: number, status: string, open: boolean }[]>(STEPS);
-    const [selectedCandidate, setCandidateSelected] = useState();
+    const [selectedCandidate, setCandidateSelected] = useState<candidatesResponseType | null>(null);
+    const [files, setFiles] = useState<File[]>([]);
     const [searchTerm, setSearchTerm] = useState<string>("");
     const [isInDataBase, setIsInDataBase] = useState(false);
     const form = useForm<z.infer<typeof candidateForm>>({
         resolver: zodResolver(candidateForm),
-        defaultValues: {
-            candidate_info: {first_name: '', last_name: '', email: '', phone: '', location: ''},
-            candidate_file: {},
-            candidate: '',
-            job: ""
-        }
+        defaultValues: {}
     });
 
     const onsubmit = async (data: z.infer<typeof candidateForm>) => {
@@ -68,7 +43,19 @@ const CreateApplicationModal = ({job}: { job: JobListingWithCandidatesType[] }) 
             const response = await create_application_action({...data, candidate: null})
             console.log(response);
         }
-    }
+    };
+
+    useEffect(() => {
+        form.setValue("candidate", String(selectedCandidate?.id));
+        setSearchTerm('')
+    }, [selectedCandidate, form.setValue]);
+
+    const filterData = useMemo(() => {
+        if (candidates && searchTerm) {
+            return candidates.filter((candidate) => candidate.name.toLocaleLowerCase().includes(searchTerm.toLocaleLowerCase()));
+        }
+        return candidates;
+    }, [candidates, searchTerm]);
 
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>): void => {
         setSearchTerm(e.target.value);
@@ -134,7 +121,6 @@ const CreateApplicationModal = ({job}: { job: JobListingWithCandidatesType[] }) 
                                         open={isOpen[0].open}
                                         onOpenChange={() => {
                                             if (!isOpen[0].open) changeForm(1)
-                                            // setStepActives(STEPS[2])
                                         }}
 
                                     >
@@ -278,7 +264,7 @@ const CreateApplicationModal = ({job}: { job: JobListingWithCandidatesType[] }) 
                                             <div className="p-4 border flex flex-col gap-2 rounded-lg">
                                                 <FormField
                                                     disabled={!isInDataBase}
-                                                    control={form.control}
+                                                    // control={form.control}
                                                     name="candidate_file.resume"
                                                     render={() => (
                                                         <FormItem
@@ -289,7 +275,6 @@ const CreateApplicationModal = ({job}: { job: JobListingWithCandidatesType[] }) 
                                                                     type="file"
                                                                     className="w-[260px]"
                                                                     placeholder="shadcn"
-                                                                    {...form.register("candidate_file.resume")}
                                                                 />
                                                             </FormControl>
                                                             <FormMessage/>
@@ -310,7 +295,6 @@ const CreateApplicationModal = ({job}: { job: JobListingWithCandidatesType[] }) 
                                                                     type="file"
                                                                     className="w-[260px]"
                                                                     placeholder="Acme"
-                                                                    {...form.register("candidate_file.cover_letter")}
                                                                 />
                                                             </FormControl>
                                                             <FormMessage/>
@@ -365,7 +349,7 @@ const CreateApplicationModal = ({job}: { job: JobListingWithCandidatesType[] }) 
                                                         className="flex items-center gap-2 overflow-hidden w-[90%]">
                                                         <div
                                                             className="cursor-pointer rounded-md bg-slate-200 px-2 text-sm py-0.5">
-                                                            {selectedCandidate}
+                                                            {selectedCandidate.name}
                                                         </div>
                                                     </div>
                                                 ) : (
@@ -381,42 +365,53 @@ const CreateApplicationModal = ({job}: { job: JobListingWithCandidatesType[] }) 
                                                                     className="flex items-center gap-4 justify-between">
                                                                     <FormLabel>Search Candidate</FormLabel>
                                                                     <FormControl>
-                                                                        <Input value={searchTerm}
-                                                                               onChange={handleSearch}
-                                                                               className="w-[260px]"
-                                                                               placeholder="shadcn"/>
+                                                                        <Input
+                                                                            value={searchTerm}
+                                                                            onChange={handleSearch}
+                                                                            className="w-[260px]"
+                                                                            placeholder="shadcn"/>
                                                                     </FormControl>
                                                                     <FormMessage/>
                                                                 </FormItem>
                                                             )}
                                                         />
-                                                        {searchTerm && <div
-                                                            className="absolute w-full p-4 border bg-muted top-12 rounded">
-                                                            <div className="w-full ">
-
-                                                            </div>
-                                                        </div>}
+                                                        {searchTerm &&
+                                                            <div className="absolute bg-white w-full p-4 border top-12 rounded">
+                                                                <>
+                                                                    {candidates && filterData?.map((candidate) => (
+                                                                        <div
+                                                                            className="flex justify-between cursor-pointer items-center rounded border px-4 text-sm py-2 hover:bg-muted mt-1"
+                                                                            key={candidate.id}
+                                                                            onClick={() => setCandidateSelected(candidate)}
+                                                                        >
+                                                                            <h3>{candidate.name}</h3>
+                                                                            <Badge
+                                                                                className="mr-4">{candidate.status}</Badge>
+                                                                        </div>
+                                                                    ))}
+                                                                </>
+                                                            </div>}
                                                     </div>
 
-                                                    <FormField
-                                                        control={form.control}
-                                                        name="candidate"
-                                                        render={({field}) => (
-                                                            <FormItem
-                                                                className="flex items-center gap-4 justify-between">
-                                                                <FormLabel>Agency Name</FormLabel>
-                                                                <Select onValueChange={field.onChange}
-                                                                        defaultValue={field.value as string}>
-                                                                    <SelectTrigger></SelectTrigger>
-                                                                    <SelectContent>
-                                                                        <SelectItem
-                                                                            value="Jane Doa">Jane</SelectItem>
-                                                                    </SelectContent>
-                                                                </Select>
-                                                                <FormMessage/>
-                                                            </FormItem>
-                                                        )}
-                                                    />
+                                                    {/*<FormField*/}
+                                                    {/*    control={form.control}*/}
+                                                    {/*    name="candidate"*/}
+                                                    {/*    render={({field}) => (*/}
+                                                    {/*        <FormItem*/}
+                                                    {/*            className="flex items-center gap-4 justify-between">*/}
+                                                    {/*            <FormLabel>Agency Name</FormLabel>*/}
+                                                    {/*            <Select onValueChange={field.onChange}*/}
+                                                    {/*                    defaultValue={field.value as string}>*/}
+                                                    {/*                <SelectTrigger></SelectTrigger>*/}
+                                                    {/*                <SelectContent>*/}
+                                                    {/*                    <SelectItem*/}
+                                                    {/*                        value="Jane Doa">Jane</SelectItem>*/}
+                                                    {/*                </SelectContent>*/}
+                                                    {/*            </Select>*/}
+                                                    {/*            <FormMessage/>*/}
+                                                    {/*        </FormItem>*/}
+                                                    {/*    )}*/}
+                                                    {/*/>*/}
                                                 </>
                                                 <Button className="self-end px-16">Next</Button>
                                             </motion.div>
@@ -439,9 +434,8 @@ const CreateApplicationModal = ({job}: { job: JobListingWithCandidatesType[] }) 
                                                 defaultValue={field.value as string}>
                                             <SelectTrigger></SelectTrigger>
                                             <SelectContent>
-                                                {job?.map((job) => (
-                                                    <SelectItem key={job.job_id}
-                                                                value={String(job.job_id)}>{job.name}</SelectItem>
+                                                {job && job?.map((job, i) => (
+                                                    <SelectItem key={i} value={String(job.id)}>{job.name}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>

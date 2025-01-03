@@ -7,7 +7,7 @@ type Props = {
 }
 
 const DropIndicator = ({stage, beforeId, column }: Props) => {
-    console.log(column, stage)
+    // console.log(column, stage)
     return (
         <div
             data-stage={stage}

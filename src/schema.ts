@@ -2,6 +2,8 @@ import {z} from "zod";
 
 export const JOB_STAGES = ['New Candidate', 'Screening', 'Phone Interview', 'Offer'] as const;
 
+export const FILE_TYPES = ['RESUME', 'COVER_LETTER', 'OFFER_LETTER', "OTHER"] as const;
+
 
 export const formSchema = z.object({
     jobInfo: z.object({
@@ -45,11 +47,27 @@ export const candidateForm = z.object({
         email: z.string(),
         phone: z.string(),
         location: z.string(),
-    }).nullish(),
+    }).optional(),
     candidate_file: z.object({
-        resume: z.array(z.object({})),
-        cover_letter: z.array(z.object({}))
+        resume: z.object({
+            type: z.enum(FILE_TYPES),
+            url: z.string(),
+        }),
+        cover_letter: z.object({
+            type: z.enum(FILE_TYPES),
+            url: z.string(),
+        })
     }),
     candidate: z.string().nullish(),
     job: z.string().nullish(),
-})
+});
+
+
+export const filterJobType = z.object({
+    location: z.string().or(z.array(z.string())).optional(),
+    keywords: z.array(z.string()).optional(),
+    department: z.array(z.string()).optional(),
+    status: z.string().or(z.array(z.string())).optional(),
+    limit: z.number().optional(),
+    offset: z.number().optional(),
+});

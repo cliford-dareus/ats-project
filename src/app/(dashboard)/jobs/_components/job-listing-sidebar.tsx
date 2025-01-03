@@ -39,7 +39,7 @@ const JobListingSidebar = () => {
 
     return (
         <div className="p-4 flex flex-col h-full">
-            <div className="font-medium text-2xl">Filters</div>
+            <div className="font-medium text-xl">Filters</div>
 
             {/* LOCATION */}
             <div className="mt-[24px]">

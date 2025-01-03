@@ -15,13 +15,13 @@ export type JobResponseType = {
     candidatesCount: number;
 }
 
-export type filterJobType = {
-    location?: string | string[]
-    keywords?: string[]
-    department?: string[]
-    status?: string | string[]
-    limit: number
-    offset: number
+export type candidatesResponseType = {
+    id: number
+    name: string
+    email: string
+    phone: string
+    cv_path: string
+    status: "Active" | "Rejected" | "Hired" | null
 };
 
 export type JobListingWithCandidatesType = {

@@ -1,7 +1,4 @@
-export default function Layout({
-                                   children,
-                                   visitors,
-                               }: {
+export default function Layout({children, visitors}: {
     children: React.ReactNode
     visitors: React.ReactNode
 }) {

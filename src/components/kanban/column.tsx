@@ -34,8 +34,6 @@ const Column = ({title, headingColor, cards, column, setCards, stage}: Props) =>
         const before = Number(element?.dataset.before) || -1;
         const dropStage = Number(element?.dataset.stage);
 
-        console.log("dropStage", dropStage);
-
         if (before !== cardId) {
             let copy = [...cards];
             let cardToTransfer = copy.find((c) => c.application_id === cardId);
@@ -53,14 +51,13 @@ const Column = ({title, headingColor, cards, column, setCards, stage}: Props) =>
                 const insertAtIndex = copy.findIndex((el) => el.application_id === before);
                 if (insertAtIndex === undefined) return;
                 copy.splice(insertAtIndex, 0, cardToTransfer!);
-            }
-            if (!dropStage || dropStage !== cardToTransfer.stage_order_id) {
-                console.log("drop stage", dropStage, cardToTransfer.application_id);
-                await update_application_stage_action({
-                    candidateId: cardToTransfer.application_id!,
-                    current_stage_id: dropStage
-                })
-            }
+            };
+
+            await update_application_stage_action({
+                candidateId: cardToTransfer.application_id!,
+                current_stage_id: dropStage
+            });
+
             setCards(copy);
         }
     };
@@ -124,7 +121,7 @@ const Column = ({title, headingColor, cards, column, setCards, stage}: Props) =>
     const filteredCards = cards?.filter((c) => c.stageName === column);
 
     return (
-        <div className="w-56 shrink-0">
+        <div className="w-52 shrink-0">
             <div className="mb-3 flex items-center justify-between">
                 <h3 className={`font-medium ${headingColor}`}>{title}</h3>
                 <span className="rounded text-sm text-neutral-400">{filteredCards?.length}</span>

@@ -1,6 +1,7 @@
 import {applications, attachments, candidates, stages} from "@/drizzle/schema";
 import {db} from "@/drizzle/db";
 import {and, eq} from "drizzle-orm";
+import {CACHE_TAGS, revalidateDbCache} from "@/lib/cache";
 
 export const create_application = async (data: any) => {
     // check if user is passing a new candidate or an existing one
@@ -15,9 +16,7 @@ export const create_application = async (data: any) => {
         const [current_stage] = await db
             .select()
             .from(stages)
-            .where(and(eq(stages.job_id, Number(data.job!)), eq(stages.stage_order_id, 1)));
-
-        console.log("CURRENT_STAGE",current_stage);
+            .where(and(eq(stages.job_id, Number(data.job!)), eq(stages.stage_order_id, 0)));
 
         try {
             const info = data.candidate_info!
@@ -31,14 +30,11 @@ export const create_application = async (data: any) => {
                 cv_path: 'no path'
             }).$returningId();
 
-            // send attachment to a bucket(supabase)
-            console.log(candidate);
-
             await db.insert(attachments)
                 .values({
                     file_name: `${info.first_name} ${file.resume[0].name}`,
                     file_url: "udhsjhdjsh.com",
-                    candidates_id: candidate.id,
+                    candidate_id: candidate.id,
                     attachment_type: "RESUME"
                 })
 
@@ -59,14 +55,23 @@ export const create_application = async (data: any) => {
 };
 
 export const update_application_stage = async (data: { candidateId: number, current_stage_id: number }) => {
+    console.log("Updating application stage action", data)
+
     const [{fieldCount}] = await db.update(applications)
         .set({current_stage_id: data.current_stage_id})
-        .where(eq(candidates.id, data.candidateId as number))
-
+        .where(eq(applications.id, data.candidateId))
 
     console.log(fieldCount)
+
     // revalidateDbCache({
     //     tag: CACHE_TAGS.candidates,
     //     id: String(candidates.id),
     // })
+}
+
+export const get_candidates_wwith_stages = async () => {
+    const h = await db.select({
+
+    }).from(candidates)
+        .leftJoin()
 }

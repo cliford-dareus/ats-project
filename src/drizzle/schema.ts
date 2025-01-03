@@ -97,7 +97,7 @@ export const attachments = mysqlTable('attachments', {
     id: int('id').primaryKey().autoincrement(),
     file_name: varchar({length: 255}).notNull(),
     file_url: varchar({length: 255}).notNull(),
-    candidates_id: int().notNull().references(() => candidates.id, {onDelete: 'cascade'}),
+    candidate_id: int().notNull().references(() => candidates.id, {onDelete: 'cascade'}),
     attachment_type: mysqlEnum('attachment_type', ['RESUME', 'COVER_LETTER', 'OFFER_LETTER', "OTHER"])
 });
 

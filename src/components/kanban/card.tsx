@@ -3,6 +3,7 @@
 import {JobListingWithCandidatesType} from "@/types/job-listings-types";
 import React from "react";
 import DropIndicator from "@/components/kanban/drop-indicator";
+import {motion} from "motion/react";
 
 type Props = {
     data: JobListingWithCandidatesType;
@@ -13,16 +14,16 @@ type Props = {
 const Card = ({data, handleDragStart, stage}: Props) => {
     return (
         <div>
-            <DropIndicator beforeId={data.candidate_id} stage={stage} column={data.stageName}/>
-            <div
-                // layout
-                // layoutId={String(data?.candidate_id)}
+            <DropIndicator beforeId={data.application_id} stage={stage} column={data.stageName}/>
+            <motion.div
+                layout
+                layoutId={String(data?.application_id)}
                 draggable="true"
-                onDragStart={(e) => handleDragStart(e, data.candidate_id)}
+                onDragStart={(e: any) => handleDragStart(e, data.application_id!)}
                 className="cursor-grab rounded border border-neutral-700 bg-neutral-800 p-3 active:cursor-grabbing"
             >
-                <p className="text-sm text-neutral-100">{data?.candidate_id}</p>
-            </div>
+                <p className="text-sm text-neutral-100">{data?.application_id}</p>
+            </motion.div>
         </div>
     );
 };

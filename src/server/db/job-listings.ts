@@ -1,10 +1,9 @@
 import {applications, job_listings, job_technologies, stages, technologies} from "@/drizzle/schema";
 import {db} from "@/drizzle/db";
 import {and, eq, inArray, SQL} from "drizzle-orm";
-import {filterJobType} from "@/types/job-listings-types";
 import {CACHE_TAGS, dbCache, getGlobalTag, getIdTag, revalidateDbCache} from "@/lib/cache";
 import {z} from "zod";
-import {formSchema} from "@/schema";
+import {filterJobType, formSchema} from "@/schema";
 
 export const create_job_listing = async (data: z.infer<typeof formSchema> & { userId: string | null }) => {
     return await db.transaction(async (trx) => {
@@ -65,7 +64,7 @@ export const get_job_listings_stages = (jobId: number) => {
     return cacheFn(jobId)
 }
 
-export const get_all_job_listings = (filter: filterJobType) => {
+export const get_all_job_listings = (filter: z.infer<typeof filterJobType>) => {
     const cacheFn = dbCache(get_all_job_listings_db, {
         tags: [
             getGlobalTag(CACHE_TAGS.jobs)
@@ -73,6 +72,15 @@ export const get_all_job_listings = (filter: filterJobType) => {
     })
 
     return cacheFn(filter)
+}
+
+export const get_job_by_id = (jobId: number) => {
+    const cachFn = dbCache(get_job_by_id_db, {
+       tags: [
+           getIdTag(String(jobId), CACHE_TAGS.jobs)
+       ]
+    })
+    return cachFn(jobId)
 }
 
 export const get_job_listing_with_candidate = async (jobId: number) => {
@@ -84,19 +92,19 @@ export const get_job_listing_with_candidate = async (jobId: number) => {
             created_at: job_listings.created_at,
             updated_at: job_listings.updated_at,
             createdBy: job_listings.createdBy,
-            stageName: stages.stage_name,
             application_id: applications.id,
+            stageName: stages.stage_name,
             stage_order_id: stages.stage_order_id,
         })
         .from(job_listings)
         .leftJoin(applications, eq(applications.job_id, job_listings.id))
-        .leftJoin(stages, eq(applications.current_stage_id, stages.stage_order_id))
+        .leftJoin(stages, eq(applications.current_stage_id, stages.id))
         .where(eq(job_listings.id, jobId))
 
     return result
 }
 
-export const get_all_job_listings_db = async (filter: filterJobType) => {
+export const get_all_job_listings_db = async (filter: z.infer<typeof filterJobType>) => {
     const filters: SQL[] = []
 
     if (filter.location) filters.push(inArray(job_listings.location, filter.location as string[]))
@@ -115,8 +123,8 @@ export const get_all_job_listings_db = async (filter: filterJobType) => {
     })
         .from(job_listings)
         .where(and(...filters))
-        .limit(filter.limit)
-        .offset(filter.offset)
+        .limit(filter.limit!)
+        .offset(filter.offset!)
 
     const len = jobListings.length
 
@@ -129,6 +137,11 @@ export const get_job_listings_stages_db = async (jobId: number) => {
         .where(eq(stages.job_id, jobId))
 
     return result
+}
+
+export const get_job_by_id_db = async (jobId: number) => {
+    const [job] = await db.select().from(job_listings).where(eq(job_listings.id, jobId));
+    return job
 }
 
 // export const update_job_listing = async (data: Partial<filterJobType>) => {

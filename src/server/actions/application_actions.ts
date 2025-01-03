@@ -12,11 +12,9 @@ export const create_application_action = async (unsafeData: z.infer<typeof candi
     const {success, data} = await candidateForm.spa(unsafeData);
     const canCreate = await canCreateJob(userId);
 
-    // if (!success || !userId || !canCreate) {
-    //     return {error: true, message: "There was an error creating your product"}
-    // }
-
-    console.log(success, data);
+    if (!success || !userId || !canCreate) {
+        return {error: true, message: "There was an error creating your product"}
+    }
 
     return await create_application(data)
 }

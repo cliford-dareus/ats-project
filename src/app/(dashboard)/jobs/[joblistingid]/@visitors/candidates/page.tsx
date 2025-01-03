@@ -6,7 +6,7 @@ type Props = {
     params: {
         joblistingid: string;
     }
-}
+};
 
 const Page = async ({params}: Props) => {
     const {joblistingid} = await params;
