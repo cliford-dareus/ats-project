@@ -9,7 +9,8 @@ export type ValidTags =
 export const CACHE_TAGS = {
     candidates: "candidates",
     jobs: "jobs",
-    stages: "stages"
+    stages: "stages",
+    applications: "applications",
 } as const
 
 export function getGlobalTag(tag: keyof typeof CACHE_TAGS) {

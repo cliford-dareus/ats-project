@@ -1,9 +1,9 @@
 import {z} from "zod";
 
-export const JOB_STAGES = ['New Candidate', 'Screening', 'Phone Interview', 'Offer'] as const;
-
+export const JOB_STAGES = ['New Candidate', 'Screening', 'Phone Interview', 'Interview', 'Offer'] as const;
 export const FILE_TYPES = ['RESUME', 'COVER_LETTER', 'OFFER_LETTER', "OTHER"] as const;
 
+export type JOB_ENUM = 'New Candidate'| 'Screening'| 'Phone Interview'| 'Interview'| 'Offer' | null;
 
 export const formSchema = z.object({
     jobInfo: z.object({
@@ -39,7 +39,6 @@ export const stageSchema = z.object({
     stage_assign_to: z.string(),
 });
 
-
 export const candidateForm = z.object({
     candidate_info: z.object({
         first_name: z.string(),
@@ -62,7 +61,6 @@ export const candidateForm = z.object({
     job: z.string().nullish(),
 });
 
-
 export const filterJobType = z.object({
     location: z.string().or(z.array(z.string())).optional(),
     keywords: z.array(z.string()).optional(),
@@ -71,3 +69,10 @@ export const filterJobType = z.object({
     limit: z.number().optional(),
     offset: z.number().optional(),
 });
+
+export const filterApplicationsType = z.object({
+    keywords: z.array(z.string()).optional(),
+    stages: z.number().optional(),
+    limit: z.number().optional(),
+    offset: z.number().optional(),
+})

@@ -3,17 +3,18 @@
 import React, {useEffect, useState} from 'react';
 import Column from "@/components/kanban/column";
 import {JobListingWithCandidatesType} from "@/types/job-listings-types";
+import {JOB_ENUM} from "@/schema";
 
 type Props = {
     data: JobListingWithCandidatesType[];
     stages: {
         id: number
         job_id: number
-        stage_name: "New Candidate" | "Screening" | "Phone Interview" | "Offer" | null
+        stage_name: JOB_ENUM
         stage_order_id: number
         assign_to: string | null
     }[]
-}
+};
 
 const JobListingsBoard = ({data, stages}: Props) => {
     const [jobs, setJobs] = useState<JobListingWithCandidatesType[]>();

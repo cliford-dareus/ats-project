@@ -5,13 +5,14 @@ import Card from "@/components/kanban/card";
 import {JobListingWithCandidatesType} from "@/types/job-listings-types";
 import DropIndicator from "@/components/kanban/drop-indicator";
 import {update_application_stage_action} from "@/server/actions/application_actions";
+import {JOB_ENUM} from "@/schema";
 
 type Props = {
     title: string;
     headingColor: string;
     stage: number;
     cards: JobListingWithCandidatesType[];
-    column: "New Candidate" | "Screening" | "Phone Interview" | "Offer" | null;
+    column: JOB_ENUM
     setCards: Dispatch<SetStateAction<JobListingWithCandidatesType[] | undefined>>
 }
 

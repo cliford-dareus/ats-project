@@ -3,7 +3,7 @@
 import {ColumnDef} from "@tanstack/react-table";
 import {JobResponseType} from "@/types/job-listings-types";
 import React from "react";
-import IndeterminateCheckbox from "@/app/(dashboard)/jobs/_components/indeterminate-checkbox";
+import IndeterminateCheckbox from "@/components/indeterminate-checkbox";
 import {Ellipsis} from "lucide-react";
 
 

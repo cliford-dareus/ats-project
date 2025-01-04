@@ -1,7 +1,9 @@
-import {applications, attachments, candidates, stages} from "@/drizzle/schema";
+import {applications, attachments, candidates, job_listings, stages} from "@/drizzle/schema";
 import {db} from "@/drizzle/db";
-import {and, eq} from "drizzle-orm";
-import {CACHE_TAGS, revalidateDbCache} from "@/lib/cache";
+import {and, eq, SQL} from "drizzle-orm";
+import {CACHE_TAGS, dbCache, getGlobalTag} from "@/lib/cache";
+import {filterApplicationsType} from "@/schema";
+import {z} from "zod";
 
 export const create_application = async (data: any) => {
     // check if user is passing a new candidate or an existing one
@@ -69,9 +71,57 @@ export const update_application_stage = async (data: { candidateId: number, curr
     // })
 }
 
-export const get_candidates_wwith_stages = async () => {
-    const h = await db.select({
+export const get_all_applications = async (filter: z.infer<typeof filterApplicationsType>) => {
+    const cacheFn = dbCache(get_all_applications_db, {
+        tags: [
+            getGlobalTag(CACHE_TAGS.applications)
+        ]
+    });
 
-    }).from(candidates)
-        .leftJoin()
+    return cacheFn(filter);
+}
+
+export const get_candidate_with_stage = async () => {
+    const cacheFn = dbCache(get_applications_with_stages_db, {
+        tags: [
+            getGlobalTag(CACHE_TAGS.stages)
+        ]
+    });
+
+    return cacheFn();
+};
+
+export const get_applications_with_stages_db = async () => {
+    return db.select({
+        stageId: stages.id,
+        stages: stages.stage_name,
+        count: db.$count(applications, eq(applications.current_stage_id, stages.id))
+    })
+        .from(stages)
+        .leftJoin(applications, eq(applications.current_stage_id, stages.id));
+};
+
+export const get_all_applications_db = async (filter: z.infer<typeof filterApplicationsType>) => {
+    const filters: SQL[] = []
+
+    if (filter.stages) filters.push(eq(applications.current_stage_id, filter.stages))
+    // if(filter.department) filters.push(inArray(job_listings.department, filter.department as string[]))
+    // if(filter.keywords) filters.push(inArray(job_listings.keywords, filter.keywords as string[]))
+    // if(filter.status) filters.push(eq(job_listings.status, filter.status))
+
+    const application = await db.select({
+        job_apply: job_listings.name,
+        candidate_name: candidates.name,
+        candidatesCount: db.$count(applications, eq(applications.job_id, job_listings.id))
+    })
+        .from(applications)
+        .leftJoin(job_listings, eq(applications.job_id, job_listings.id))
+        .leftJoin(candidates, eq(applications.candidate, candidates.id))
+        .where(and(...filters))
+        .limit(filter.limit!)
+        .offset(filter.offset!)
+
+    const len = application.length
+
+    return [len, application];
 }

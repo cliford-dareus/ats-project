@@ -68,7 +68,6 @@ const JobListingSidebar = () => {
                 </div>
             </div>
 
-
             {/*    CLEAR FILTERS*/}
             <div className="mt-auto">
                 <Button onClick={() => {

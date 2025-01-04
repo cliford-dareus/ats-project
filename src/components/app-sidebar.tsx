@@ -15,6 +15,7 @@ import SidebarSettings from "@/app/(dashboard)/settings/_components/sidebar-sett
 import JobListingSidebar from "@/app/(dashboard)/jobs/_components/job-listing-sidebar";
 import SidebarCandidate from "@/app/(dashboard)/candidates/_components/sidebar-candidate";
 import {candidatesResponseType } from "@/types/job-listings-types";
+import {StageCountType} from "@/app/(dashboard)/layout";
 
 const data = {
     user: {
@@ -57,7 +58,8 @@ const data = {
 };
 
 export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar> & {
-    candidate: candidatesResponseType[]
+    candidate: candidatesResponseType[],
+    stagescount: StageCountType[],
 }) {
     const pathname = usePathname()
     const [activeItem, setActiveItem] = React.useState(data.navMain[0]);
@@ -147,7 +149,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar> & {
                             ) : activeItem.title === "Jobs" ? (
                                 <JobListingSidebar/>
                             ) : activeItem.title === "Candidates" ? (
-                                <SidebarCandidate candidate={props.candidate}/>
+                                <SidebarCandidate candidate={props.candidate} stagescount={props.stagescount as StageCountType[]} />
                             ) : activeItem.title === "Settings" ? (
                                 <SidebarSettings/>
                             ) : null}

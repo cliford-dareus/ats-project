@@ -1,12 +1,13 @@
 import React from 'react';
+import {JOB_ENUM} from "@/schema";
 
 type Props = {
     stage: number
     beforeId: number | null;
-    column: "New Candidate" | "Screening" | "Phone Interview" | "Offer" | null
+    column: JOB_ENUM
 }
 
-const DropIndicator = ({stage, beforeId, column }: Props) => {
+const DropIndicator = ({stage, beforeId, column}: Props) => {
     // console.log(column, stage)
     return (
         <div
