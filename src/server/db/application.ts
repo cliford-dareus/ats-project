@@ -1,7 +1,7 @@
 import {applications, attachments, candidates, job_listings, stages} from "@/drizzle/schema";
 import {db} from "@/drizzle/db";
 import {and, eq, SQL} from "drizzle-orm";
-import {CACHE_TAGS, dbCache, getGlobalTag} from "@/lib/cache";
+import {CACHE_TAGS, dbCache, getGlobalTag, revalidateDbCache} from "@/lib/cache";
 import {filterApplicationsType} from "@/schema";
 import {z} from "zod";
 
@@ -57,18 +57,13 @@ export const create_application = async (data: any) => {
 };
 
 export const update_application_stage = async (data: { candidateId: number, current_stage_id: number }) => {
-    console.log("Updating application stage action", data)
-
-    const [{fieldCount}] = await db.update(applications)
+    await db.update(applications)
         .set({current_stage_id: data.current_stage_id})
         .where(eq(applications.id, data.candidateId))
 
-    console.log(fieldCount)
-
-    // revalidateDbCache({
-    //     tag: CACHE_TAGS.candidates,
-    //     id: String(candidates.id),
-    // })
+    revalidateDbCache({
+        tag: CACHE_TAGS.candidates,
+    })
 }
 
 export const get_all_applications = async (filter: z.infer<typeof filterApplicationsType>) => {
@@ -110,13 +105,18 @@ export const get_all_applications_db = async (filter: z.infer<typeof filterAppli
     // if(filter.status) filters.push(eq(job_listings.status, filter.status))
 
     const application = await db.select({
+        id: candidates.id,
         job_apply: job_listings.name,
         candidate_name: candidates.name,
+        candidate_status: candidates.status,
+        location: job_listings.location,
+        current_stage: stages.stage_name,
         candidatesCount: db.$count(applications, eq(applications.job_id, job_listings.id))
     })
         .from(applications)
         .leftJoin(job_listings, eq(applications.job_id, job_listings.id))
         .leftJoin(candidates, eq(applications.candidate, candidates.id))
+        .leftJoin(stages, eq(applications.current_stage_id, stages.id))
         .where(and(...filters))
         .limit(filter.limit!)
         .offset(filter.offset!)

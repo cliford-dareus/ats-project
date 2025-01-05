@@ -2,8 +2,10 @@ import {z} from "zod";
 
 export const JOB_STAGES = ['New Candidate', 'Screening', 'Phone Interview', 'Interview', 'Offer'] as const;
 export const FILE_TYPES = ['RESUME', 'COVER_LETTER', 'OFFER_LETTER', "OTHER"] as const;
+export const CANDIDATE_TYPE = ['Active', 'Rejected', 'Hired'] as const;
 
-export type JOB_ENUM = 'New Candidate'| 'Screening'| 'Phone Interview'| 'Interview'| 'Offer' | null;
+export type JOB_ENUM = 'New Candidate' | 'Screening' | 'Phone Interview' | 'Interview' | 'Offer' | null;
+export type CANDIDATE_ENUM = 'Active' | 'Rejected' | 'Hired';
 
 export const formSchema = z.object({
     jobInfo: z.object({

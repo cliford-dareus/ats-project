@@ -1,6 +1,6 @@
 import PaginationElement from "@/components/pagination";
 import type {JobResponseType} from "@/types/job-listings-types";
-import DataTable from "@/app/(dashboard)/jobs/_components/data-table";
+import DataTable from "@/components/data-table";
 import {columns} from "@/app/(dashboard)/jobs/_components/column";
 
 type Props = {
@@ -9,10 +9,10 @@ type Props = {
 }
 
 const JobListingsList = ({jobs, pageCount}: Props) => {
-    return(
+    return (
         <>
-            <DataTable columns={columns} data={jobs} />
-            <PaginationElement pageCount={pageCount} />
+            <DataTable<JobResponseType> columns={columns} data={jobs} status="jobs" />
+            <PaginationElement pageCount={pageCount}/>
         </>
     )
 };

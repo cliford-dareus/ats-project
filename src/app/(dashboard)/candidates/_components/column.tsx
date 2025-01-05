@@ -33,14 +33,24 @@ export const columns: ColumnDef<ApplicationResponseType>[] = [
         ),
     },
     {
-        accessorKey: "job title",
-        header: 'Job Title',
+        accessorKey: "Name",
+        header: 'Name',
         cell: ({ row }) => row.original.candidate_name
+    },
+    {
+        accessorKey: "Job",
+        header: 'Job',
+        cell: ({ row }) => row.original.job_apply
     },
     {
         accessorKey: "location",
         header: 'Location',
-        cell: ({ row }) => row.original.job_location
+        cell: ({ row }) => row.original.location
+    },
+    {
+        accessorKey: "stage",
+        header: 'Stage',
+        cell: ({ row }) => row.original.current_stage
     },
     {
         id: "action",

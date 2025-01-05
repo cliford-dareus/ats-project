@@ -3,7 +3,7 @@ import {Dialog, DialogContent, DialogTrigger} from "@/components/ui/dialog";
 import {Button} from "@/components/ui/button";
 import CreateJobListingModal from "@/components/modal/create-job-listing-modal";
 import {get_all_applications} from "@/server/db/application";
-import CandidateList from "@/app/(dashboard)/candidates/_components/candidateList";
+import CandidateList from "@/app/(dashboard)/candidates/_components/candidate-list";
 import {ApplicationResponseType} from "@/types/job-listings-types";
 
 type Props = {
@@ -21,13 +21,13 @@ const Page = async ({searchParams}: Props) => {
 
     const [len, application] = await get_all_applications({limit, offset})
 
-    // const pageCount = Math.ceil((len as number) / limit);
+    const pageCount = Math.ceil((len as number) / limit);
 
     return (
         <div className="p-4">
             <div className="flex items-center justify-between p-4 bg-muted rounded mb-2">
                 <div className="items-center flex gap-2">
-                    <h1 className="text-2xl font-bold text-gray-900">JOBS</h1>
+                    <h1 className="text-2xl font-bold text-gray-900">Applications</h1>
                     <span className="px-2 bg-slate-300 flex items-center justify-center rounded">{len as number}</span>
                 </div>
 
@@ -41,7 +41,7 @@ const Page = async ({searchParams}: Props) => {
                 </Dialog>
             </div>
 
-            <CandidateList application={application as unknown as ApplicationResponseType[]} />
+            <CandidateList application={application as unknown as ApplicationResponseType[]} pageCount={pageCount}/>
         </div>
     )
 };

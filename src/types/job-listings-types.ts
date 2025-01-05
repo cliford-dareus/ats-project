@@ -1,5 +1,5 @@
 import {candidates, job_listings} from "@/drizzle/schema";
-import {JOB_ENUM} from "@/schema";
+import {CANDIDATE_ENUM, JOB_ENUM} from "@/schema";
 
 export type JobListingType = typeof job_listings.$inferInsert
 export type CandidateType = typeof candidates.$inferInsert
@@ -40,6 +40,8 @@ export type JobListingWithCandidatesType = {
 export type ApplicationResponseType = {
     candidate_id : number;
     candidate_name : string;
-    job_location : string;
-
+    candidate_status : CANDIDATE_ENUM;
+    job_apply : string;
+    location : string;
+    current_stage : JOB_ENUM;
 }
