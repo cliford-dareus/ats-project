@@ -20,6 +20,8 @@ export const job_listings = mysqlTable('job_listing', {
     salary_up_to: varchar({length: 255}).notNull(),
     // department: varchar({length: 255}).notNull(),
     status: mysqlEnum('status', ['Not Publish', 'Actively Hiring', 'Archive']).default('Not Publish'),
+    // status: mysqlEnum('status', ["OPEN", "CLOSED", "DRAFT", "ARCHIVED", "PENDING"]).default('PENDING'),
+    // hiring_managers: []
     createdBy: varchar('created_by', {length: 255}).notNull(),
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
@@ -63,6 +65,7 @@ export const stages = mysqlTable('stages', {
     job_id: int().notNull().references(() => job_listings.id, {onDelete: 'cascade'}),
     stage_name: mysqlEnum('stage_name', ['New Candidate', 'Screening', 'Phone Interview', 'Interview','Offer']),
     stage_order_id: int().notNull(),
+    // color: varchar({length: 255}),
     assign_to: varchar({length: 255}),
 });
 

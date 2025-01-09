@@ -27,7 +27,7 @@ const Page = async ({searchParams}: Props) => {
         <div className="p-4">
             <div className="flex items-center justify-between p-4 bg-muted rounded mb-2">
                 <div className="items-center flex gap-2">
-                    <h1 className="text-2xl font-bold text-gray-900">Applications</h1>
+                    <h1 className="text-2xl font-bold text-gray-900">APPLICATIONS</h1>
                     <span className="px-2 bg-slate-300 flex items-center justify-center rounded">{len as number}</span>
                 </div>
 

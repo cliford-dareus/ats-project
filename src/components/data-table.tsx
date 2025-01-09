@@ -12,8 +12,9 @@ import {
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 // import type {candidatesResponseType, JobResponseType} from "@/types/job-listings-types";
 import CandidatePreview from "@/app/(dashboard)/candidates/_components/candidate-preview";
-import {Sheet, SheetContent, SheetTrigger} from "@/components/ui/sheet";
-import {ApplicationResponseType} from "@/types/job-listings-types";
+import {Sheet, SheetContent} from "@/components/ui/sheet";
+import {ApplicationResponseType, JobResponseType} from "@/types/job-listings-types";
+import JobPreview from "@/app/(dashboard)/jobs/_components/job-preview";
 
 interface Props<T extends object> {
     columns: ColumnDef<T>[];
@@ -24,6 +25,8 @@ interface Props<T extends object> {
 // type SCHEMA = JobResponseType | candidatesResponseType
 
 const DataTable = <T extends object>({columns, data, status}: Props<T>) => {
+    const [isOpen, setIsOpen] = React.useState(false);
+    const [applicationSelected, setApplicationSelected] = React.useState<ApplicationResponseType | JobResponseType | null>(null);
     const [rowSelection, setRowSelection] = React.useState({});
     const table = useReactTable<T>({
         data,
@@ -69,8 +72,8 @@ const DataTable = <T extends object>({columns, data, status}: Props<T>) => {
             <TableBody>
                 {table.getRowModel().rows.map((row) => {
                     return (
-                        <Sheet key={row.id}>
-                            <SheetTrigger asChild>
+                        <Sheet  open={isOpen} onOpenChange={setIsOpen} key={row.id}>
+                            {/*<SheetTrigger asChild>*/}
                                 <TableRow>
                                     {row.getVisibleCells().map(cell => {
                                         return (
@@ -80,6 +83,8 @@ const DataTable = <T extends object>({columns, data, status}: Props<T>) => {
                                                 onClick={() => {
                                                     if (cell.column.columnDef.id === 'select' || cell.column.columnDef.id == 'action') return
                                                     // router.push(`/${status}/:${(cell.row.original as SCHEMA).id}`);
+                                                    setApplicationSelected(row.original as ApplicationResponseType | JobResponseType)
+                                                    setIsOpen(!isOpen)
                                                 }}
                                             >
 
@@ -91,9 +96,9 @@ const DataTable = <T extends object>({columns, data, status}: Props<T>) => {
                                         )
                                     })}
                                 </TableRow>
-                            </SheetTrigger>
-                            <SheetContent side="right">
-                                {status === 'application'? <CandidatePreview data={row.original as ApplicationResponseType}/> : null}
+                            {/*</SheetTrigger>*/}
+                            <SheetContent side="right" className="sm:max-w-xl">
+                                {status === 'application'? <CandidatePreview data={applicationSelected as ApplicationResponseType}/> : <JobPreview data={applicationSelected as JobResponseType}/>}
                             </SheetContent>
                         </Sheet>
                     )

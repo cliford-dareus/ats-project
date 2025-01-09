@@ -12,7 +12,6 @@ type Props = {
 }
 
 const CandidateList = ({application, pageCount}: Props) => {
-    console.log(application);
     return (
         <div>
             <DataTable<ApplicationResponseType> columns={columns} data={application} status='application'/>

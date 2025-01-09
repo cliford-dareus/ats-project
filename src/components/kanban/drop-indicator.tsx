@@ -1,20 +1,21 @@
 import React from 'react';
 import {JOB_ENUM} from "@/schema";
+import {cn} from "@/lib/utils";
 
 type Props = {
     stage: number
     beforeId: number | null;
     column: JOB_ENUM
+    active: boolean;
 }
 
-const DropIndicator = ({stage, beforeId, column}: Props) => {
-    // console.log(column, stage)
+const DropIndicator = ({stage, beforeId, column, active}: Props) => {
     return (
         <div
             data-stage={stage}
             data-before={beforeId || -1}
             data-column={column}
-            className="my-0.5 h-0.5 w-full bg-violet-400 opacity-0"
+            className={cn(active? 'h-[102px]':'h-.5',"my-0.5 w-full bg-blue-200 opacity-0 border rounded")}
         />
     );
 };

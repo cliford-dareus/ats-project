@@ -4,7 +4,7 @@ import {UseFormReturn} from "react-hook-form";
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs))
-}
+};
 
 export const checkFormStatus = <U, T extends UseFormReturn<any>>(args: U, form: T, trigger: U) => {
     const object = form.getValues();
@@ -20,8 +20,6 @@ export const checkFormStatus = <U, T extends UseFormReturn<any>>(args: U, form: 
             }
             return Object.keys(jobTech_).every(s => jobTech_[s] !== '')
         }
-        ;
-
     }
 };
 
@@ -44,4 +42,4 @@ export const aggregateByKey = <T extends Record<string, any>>(
 
         return acc;
     }, [] as { [key: string]: any }[]);
-}
+};

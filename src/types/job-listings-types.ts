@@ -27,21 +27,25 @@ export type candidatesResponseType = {
 
 export type JobListingWithCandidatesType = {
     job_id: number
-    name: string
-    location: string
-    created_at: Date
-    updated_at: Date
-    createdBy: string
+    job_name: string
+    job_location: string
+    job_created_at: Date
+    job_updated_at: Date
+    job_createdBy: string
     application_id: number | null
     stageName: JOB_ENUM
     stage_order_id: number | null
+    candidate_name: string | null
+    candidate_id: number | null
 }
 
 export type ApplicationResponseType = {
+    id: number;
     candidate_id : number;
     candidate_name : string;
     candidate_status : CANDIDATE_ENUM;
     job_apply : string;
     location : string;
     current_stage : JOB_ENUM;
+    assign_to: string;
 }

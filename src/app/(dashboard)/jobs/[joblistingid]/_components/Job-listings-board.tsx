@@ -24,19 +24,17 @@ const JobListingsBoard = ({data, stages}: Props) => {
     }, [data])
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4  h-full w-full gap-3">
+        <div className="flex h-full gap-4 overflow-y-hidden overflow-x-scroll">
             {stages?.map((stage) => (
                 <Column
                     key={stage.stage_order_id}
                     title={stage.stage_name as string}
                     column={stage.stage_name}
                     stage={stage.stage_order_id + 1}
-                    headingColor="text-emerald-200"
                     cards={jobs!}
                     setCards={setJobs}
                 />
             ))}
-
         </div>
     );
 };

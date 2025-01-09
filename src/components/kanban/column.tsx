@@ -6,17 +6,18 @@ import {JobListingWithCandidatesType} from "@/types/job-listings-types";
 import DropIndicator from "@/components/kanban/drop-indicator";
 import {update_application_stage_action} from "@/server/actions/application_actions";
 import {JOB_ENUM} from "@/schema";
+import {Badge} from "@/components/ui/badge";
+import {EllipsisVertical} from "lucide-react";
 
 type Props = {
     title: string;
-    headingColor: string;
     stage: number;
     cards: JobListingWithCandidatesType[];
     column: JOB_ENUM
     setCards: Dispatch<SetStateAction<JobListingWithCandidatesType[] | undefined>>
 }
 
-const Column = ({title, headingColor, cards, column, setCards, stage}: Props) => {
+const Column = ({title, cards, column, setCards, stage}: Props) => {
     const [active, setActive] = useState(false);
 
     const handleDragStart = (e: DragEvent<HTMLDivElement>, i: number) => {
@@ -52,7 +53,8 @@ const Column = ({title, headingColor, cards, column, setCards, stage}: Props) =>
                 const insertAtIndex = copy.findIndex((el) => el.application_id === before);
                 if (insertAtIndex === undefined) return;
                 copy.splice(insertAtIndex, 0, cardToTransfer!);
-            };
+            }
+            ;
 
             await update_application_stage_action({
                 candidateId: cardToTransfer.application_id!,
@@ -122,18 +124,25 @@ const Column = ({title, headingColor, cards, column, setCards, stage}: Props) =>
     const filteredCards = cards?.filter((c) => c.stageName === column);
 
     return (
-        <div className="w-52 shrink-0">
-            <div className="mb-3 flex items-center justify-between">
-                <h3 className={`font-medium ${headingColor}`}>{title}</h3>
-                <span className="rounded text-sm text-neutral-400">{filteredCards?.length}</span>
+        <div className="min-w-56 w-56">
+            <div className="mb-2 flex items-center justify-between mt-4">
+                <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded bg-red-300"></div>
+                    <p className={`font-medium text-slate-500 text-sm`}>{title}</p>
+                    <Badge
+                        className="rounded text-xs px-1  py-.5 flex items-center justify-center bg-muted text-slate-500"
+                    >{filteredCards?.length}
+                    </Badge>
+                </div>
+
+                <EllipsisVertical size={20} className="-mr-1.5 text-slate-400"/>
+
             </div>
             <div
                 onDrop={handleDragEnd}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
-                className={`h-full w-full transition-colors relative ${
-                    active ? "bg-neutral-800/50" : "bg-neutral-800/0"
-                }`}
+                className="h-full w-full transition-colors relative z-50 overflow-y-scroll"
             >
                 {filteredCards?.map((c: JobListingWithCandidatesType) => {
                     return <Card
@@ -143,7 +152,7 @@ const Column = ({title, headingColor, cards, column, setCards, stage}: Props) =>
                         handleDragStart={(e) => handleDragStart(e, c.application_id!)}
                     />;
                 })}
-                <DropIndicator beforeId={null} stage={stage} column={column}/>
+                <DropIndicator beforeId={null} stage={stage} column={column} active={active}/>
             </div>
         </div>
     );

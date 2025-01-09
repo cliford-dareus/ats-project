@@ -1,4 +1,4 @@
-import {applications, job_listings, job_technologies, stages, technologies} from "@/drizzle/schema";
+import {applications, candidates, job_listings, job_technologies, stages, technologies} from "@/drizzle/schema";
 import {db} from "@/drizzle/db";
 import {and, eq, inArray, SQL} from "drizzle-orm";
 import {CACHE_TAGS, dbCache, getGlobalTag, getIdTag, revalidateDbCache} from "@/lib/cache";
@@ -87,18 +87,21 @@ export const get_job_listing_with_candidate = async (jobId: number) => {
     const result = await db
         .select({
             job_id: job_listings.id,
-            name: job_listings.name,
-            location: job_listings.location,
-            created_at: job_listings.created_at,
-            updated_at: job_listings.updated_at,
-            createdBy: job_listings.createdBy,
+            job_name: job_listings.name,
+            job_location: job_listings.location,
+            job_created_at: job_listings.created_at,
+            job_updated_at: job_listings.updated_at,
+            job_createdBy: job_listings.createdBy,
             application_id: applications.id,
             stageName: stages.stage_name,
             stage_order_id: stages.stage_order_id,
+            candidate_name: candidates.name,
+            candidate_id: candidates.id,
         })
         .from(job_listings)
         .leftJoin(applications, eq(applications.job_id, job_listings.id))
         .leftJoin(stages, eq(applications.current_stage_id, stages.id))
+        .leftJoin(candidates,eq(candidates.id, applications.candidate))
         .where(eq(job_listings.id, jobId))
 
     return result

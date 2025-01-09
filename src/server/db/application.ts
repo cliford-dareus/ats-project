@@ -111,6 +111,8 @@ export const get_all_applications_db = async (filter: z.infer<typeof filterAppli
         candidate_status: candidates.status,
         location: job_listings.location,
         current_stage: stages.stage_name,
+        assign_to: stages.assign_to,
+        // apply_date: applications.created_at,
         candidatesCount: db.$count(applications, eq(applications.job_id, job_listings.id))
     })
         .from(applications)

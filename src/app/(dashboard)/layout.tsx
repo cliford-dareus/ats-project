@@ -4,6 +4,7 @@ import React from "react";
 import {get_all_candidates_action, get_candidates_stage_count_action} from "@/server/actions/candidates-actions";
 import {candidatesResponseType} from "@/types/job-listings-types";
 import {Separator} from "@/components/ui/separator";
+import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 
 type Props = {
     children: React.ReactNode
@@ -48,7 +49,12 @@ const Layout = async ({children}: Props) => {
                         TODO: Create the breadcrumb with params
                         TODO: Add current user avatar with roles
                      */}
-                    <div className="ml-auto">user avatar</div>
+                    <div className="ml-auto">
+                        <Avatar>
+                            <AvatarImage src="https://github.com/shadcn.png" />
+                            <AvatarFallback>CN</AvatarFallback>
+                        </Avatar>
+                    </div>
                 </header>
                 <>
                     {children}

@@ -1,7 +1,7 @@
 import PaginationElement from "@/components/pagination";
 import type {JobResponseType} from "@/types/job-listings-types";
 import DataTable from "@/components/data-table";
-import {columns} from "@/app/(dashboard)/jobs/_components/column";
+import {columns} from "@/app/(dashboard)/jobs/[joblistingid]/_components/column";
 
 type Props = {
     jobs: JobResponseType[];

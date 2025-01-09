@@ -4,6 +4,8 @@ import {JobListingWithCandidatesType} from "@/types/job-listings-types";
 import React from "react";
 import DropIndicator from "@/components/kanban/drop-indicator";
 import {motion} from "motion/react";
+import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
+import Link from "next/link";
 
 type Props = {
     data: JobListingWithCandidatesType;
@@ -14,15 +16,27 @@ type Props = {
 const Card = ({data, handleDragStart, stage}: Props) => {
     return (
         <div>
-            <DropIndicator beforeId={data.application_id} stage={stage} column={data.stageName}/>
+            <DropIndicator active={false} beforeId={data.application_id} stage={stage} column={data.stageName}/>
             <motion.div
                 layout
                 layoutId={String(data?.application_id)}
                 draggable="true"
                 onDragStart={(e: any) => handleDragStart(e, data.application_id!)}
-                className="cursor-grab rounded border border-neutral-700 bg-neutral-800 p-3 active:cursor-grabbing"
+                className="cursor-grab rounded bg-white border shadow p-4 active:cursor-grabbing z-50"
             >
-                <p className="text-sm text-neutral-100">{data?.application_id}</p>
+                <div className="flex gap-4 items-center">
+                    <Avatar className="w-8 h-8">
+                        <AvatarImage src="https://github.com/shadcn.png"/>
+                        <AvatarFallback>CN</AvatarFallback>
+                    </Avatar>
+                    <div className="">
+                        <p className="text-base font-bold leading-4">{data?.candidate_name}</p>
+                        <Link href={`/candidates/${data.candidate_id}`} className="text-xs text-blue-500 leading-4">View
+                            Profile</Link>
+                    </div>
+                </div>
+
+                <p className="text-sm text-slate-400 mt-2">{data.application_id} days ago</p>
             </motion.div>
         </div>
     );
