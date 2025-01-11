@@ -20,6 +20,8 @@ const Layout = async ({children}: Props) => {
     const candidate = await get_all_candidates_action();
     const stagescount = await get_candidates_stage_count_action();
 
+    console.log(stagescount);
+
     return (
         <SidebarProvider
             style={

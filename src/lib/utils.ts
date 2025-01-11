@@ -14,7 +14,6 @@ export const checkFormStatus = <U, T extends UseFormReturn<any>>(args: U, form: 
 
         if (!Array.isArray(jobTech)) {
             const jobTech_ = object[trigger] as { [key: string]: string };
-            console.log(object, trigger, jobTech_);
             if (Array.isArray(jobTech_)) {
                 return jobTech_.length >= 3;
             }

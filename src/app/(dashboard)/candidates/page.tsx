@@ -20,7 +20,6 @@ const Page = async ({searchParams}: Props) => {
     // const locations = location ? (location as string).split(',') : undefined;
 
     const [len, application] = await get_all_applications({limit, offset})
-
     const pageCount = Math.ceil((len as number) / limit);
 
     return (

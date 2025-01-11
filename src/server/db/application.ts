@@ -1,4 +1,4 @@
-import {applications, attachments, candidates, job_listings, stages} from "@/drizzle/schema";
+import {applications, attachments, candidates, interviews, job_listings, scoreCards, stages} from "@/drizzle/schema";
 import {db} from "@/drizzle/db";
 import {and, eq, SQL} from "drizzle-orm";
 import {CACHE_TAGS, dbCache, getGlobalTag, revalidateDbCache} from "@/lib/cache";
@@ -14,12 +14,13 @@ export const create_application = async (data: any) => {
     // 2 -create the application
     // 3 -
 
-    if (!data.candidate) {
-        const [current_stage] = await db
-            .select()
-            .from(stages)
-            .where(and(eq(stages.job_id, Number(data.job!)), eq(stages.stage_order_id, 0)));
+    const [current_stage] = await db
+        .select()
+        .from(stages)
+        .where(and(eq(stages.job_id, Number(data.job!)), eq(stages.stage_order_id, 0)));
 
+    if (data.candidate == "") {
+        console.log("CREATE NEW CANDIDATE");
         try {
             const info = data.candidate_info!
             const file = data.candidate_file as { resume: FileList, cover_letter: FileList }
@@ -53,7 +54,14 @@ export const create_application = async (data: any) => {
         }
     }
 
+    const [application] = await db.insert(applications)
+        .values({
+            job_id: Number(data.job),
+            candidate: Number(data.candidate),
+            current_stage_id: Number(current_stage.id),
+        })
 
+    return application;
 };
 
 export const update_application_stage = async (data: { candidateId: number, current_stage_id: number }) => {
@@ -126,4 +134,26 @@ export const get_all_applications_db = async (filter: z.infer<typeof filterAppli
     const len = application.length
 
     return [len, application];
+}
+
+export const get_user_applications = async (candidateId: number) => {
+    return db.select()
+        .from(applications)
+        .where(eq(applications.candidate, candidateId))
+        .leftJoin(scoreCards, eq(scoreCards.applications_id, applications.id))
+        .leftJoin(interviews, eq(interviews.applications_id, applications.id))
+}
+
+export const add_interview = async ({applicationId, location, start_at, end_at}: {
+    applicationId: number,
+    location: string,
+    start_at: Date,
+    end_at: Date
+}) => {
+    const result = await db.insert(interviews).values({
+        applications_id: applicationId,
+        locations: location,
+        start_at: start_at,
+        end_at: end_at,
+    })
 }

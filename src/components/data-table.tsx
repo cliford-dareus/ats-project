@@ -72,33 +72,38 @@ const DataTable = <T extends object>({columns, data, status}: Props<T>) => {
             <TableBody>
                 {table.getRowModel().rows.map((row) => {
                     return (
-                        <Sheet  open={isOpen} onOpenChange={setIsOpen} key={row.id}>
+                        <Sheet open={isOpen} onOpenChange={setIsOpen} key={row.id}>
                             {/*<SheetTrigger asChild>*/}
-                                <TableRow>
-                                    {row.getVisibleCells().map(cell => {
-                                        return (
-                                            <TableCell
-                                                className="cursor-pointer"
-                                                key={cell.id}
-                                                onClick={() => {
-                                                    if (cell.column.columnDef.id === 'select' || cell.column.columnDef.id == 'action') return
-                                                    // router.push(`/${status}/:${(cell.row.original as SCHEMA).id}`);
-                                                    setApplicationSelected(row.original as ApplicationResponseType | JobResponseType)
-                                                    setIsOpen(!isOpen)
-                                                }}
-                                            >
+                            <TableRow>
+                                {row.getVisibleCells().map(cell => {
+                                    return (
+                                        <TableCell
+                                            className="cursor-pointer"
+                                            key={cell.id}
+                                            onClick={() => {
+                                                if (cell.column.columnDef.id === 'select' || cell.column.columnDef.id == 'action') return
+                                                // router.push(`/${status}/:${(cell.row.original as SCHEMA).id}`);
+                                                setApplicationSelected(row.original as ApplicationResponseType | JobResponseType)
+                                                setIsOpen(!isOpen)
+                                            }}
+                                        >
 
-                                                {flexRender(
-                                                    cell.column.columnDef.cell,
-                                                    cell.getContext()
-                                                )}
-                                            </TableCell>
-                                        )
-                                    })}
-                                </TableRow>
+                                            {flexRender(
+                                                cell.column.columnDef.cell,
+                                                cell.getContext()
+                                            )}
+                                        </TableCell>
+                                    )
+                                })}
+                            </TableRow>
                             {/*</SheetTrigger>*/}
-                            <SheetContent side="right" className="sm:max-w-xl">
-                                {status === 'application'? <CandidatePreview data={applicationSelected as ApplicationResponseType}/> : <JobPreview data={applicationSelected as JobResponseType}/>}
+                            <SheetContent side="right" className="sm:max-w-xl p-0">
+                                {status === 'application' ?
+                                    <CandidatePreview
+                                        data={applicationSelected as ApplicationResponseType}
+                                        applications={data as ApplicationResponseType[]}
+                                    /> :
+                                    <JobPreview data={applicationSelected as JobResponseType}/>}
                             </SheetContent>
                         </Sheet>
                     )

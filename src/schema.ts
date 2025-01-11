@@ -43,22 +43,22 @@ export const stageSchema = z.object({
 
 export const candidateForm = z.object({
     candidate_info: z.object({
-        first_name: z.string(),
-        last_name: z.string(),
-        email: z.string(),
-        phone: z.string(),
-        location: z.string(),
-    }).optional(),
-    candidate_file: z.object({
-        resume: z.object({
-            type: z.enum(FILE_TYPES),
-            url: z.string(),
-        }),
-        cover_letter: z.object({
-            type: z.enum(FILE_TYPES),
-            url: z.string(),
-        })
+        first_name: z.string().optional(),
+        last_name: z.string().optional(),
+        email: z.string().optional(),
+        phone: z.string().optional(),
+        location: z.string().optional(),
     }),
+    // candidate_file: z.object({
+    //     resume: z.object({
+    //         // type: z.enum(FILE_TYPES),
+    //         url: z.string(),
+    //     }),
+    //     cover_letter: z.object({
+    //         // type: z.enum(FILE_TYPES),
+    //         url: z.string(),
+    //     })
+    // }),
     candidate: z.string().nullish(),
     job: z.string().nullish(),
 });

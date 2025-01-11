@@ -32,16 +32,16 @@ const CreateApplicationModal = ({job, candidates}: { job: JobResponseType[], can
     const [searchTerm, setSearchTerm] = useState<string>("");
     const [isInDataBase, setIsInDataBase] = useState(false);
     const form = useForm<z.infer<typeof candidateForm>>({
-        resolver: zodResolver(candidateForm),
-        defaultValues: {}
+        resolver: zodResolver(candidateForm)
     });
 
     const onsubmit = async (data: z.infer<typeof candidateForm>) => {
         if (isInDataBase) {
-            console.log({...data, candidate_info: null, candidate_file: null});
-        } else {
-            const response = await create_application_action({...data, candidate: null})
+            const response = await create_application_action({...data, candidate: data.candidate})
             console.log(response);
+        } else {
+            // const response = await create_application_action({...data, candidate: null})
+            console.log(data);
         }
     };
 
@@ -234,81 +234,81 @@ const CreateApplicationModal = ({job, candidates}: { job: JobResponseType[], can
                                     </Collapsible>
                                 </div>
                                 {/* CANDIDATE FILE */}
-                                <div className="flex gap-4 w-full">
-                                    <div
-                                        className="w-[60px] h-[50px] border rounded-full flex items-center justify-center ">
-                                        <BriefcaseBusiness size={24}/>
-                                    </div>
-                                    <Collapsible
-                                        className="w-full flex gap-4 flex-col"
-                                        open={isOpen[1].open}
-                                        onOpenChange={() => {
-                                            if (!isOpen[1].open) changeForm(2)
-                                        }}
+                                {/*<div className="flex gap-4 w-full">*/}
+                                {/*    <div*/}
+                                {/*        className="w-[60px] h-[50px] border rounded-full flex items-center justify-center ">*/}
+                                {/*        <BriefcaseBusiness size={24}/>*/}
+                                {/*    </div>*/}
+                                {/*    <Collapsible*/}
+                                {/*        className="w-full flex gap-4 flex-col"*/}
+                                {/*        open={isOpen[1].open}*/}
+                                {/*        onOpenChange={() => {*/}
+                                {/*            if (!isOpen[1].open) changeForm(2)*/}
+                                {/*        }}*/}
 
-                                    >
-                                        <CollapsibleTrigger>
-                                            <div className="flex items-center justify-between h-[50px]">
-                                                <div className="flex flex-col items-start">
-                                                    <h2 className="text-lg font-semibold leading-none tracking-tight">Candidate
-                                                        File</h2>
-                                                    <p className="text-sm text-muted-foreground">Provided required
-                                                        info</p>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <ChevronDownCircle size={24}/>
-                                                </div>
-                                            </div>
-                                        </CollapsibleTrigger>
-                                        <CollapsibleContent>
-                                            <div className="p-4 border flex flex-col gap-2 rounded-lg">
-                                                <FormField
-                                                    disabled={!isInDataBase}
-                                                    // control={form.control}
-                                                    name="candidate_file.resume"
-                                                    render={() => (
-                                                        <FormItem
-                                                            className="flex items-center gap-4 justify-between">
-                                                            <FormLabel>Resume</FormLabel>
-                                                            <FormControl>
-                                                                <Input
-                                                                    type="file"
-                                                                    className="w-[260px]"
-                                                                    placeholder="shadcn"
-                                                                />
-                                                            </FormControl>
-                                                            <FormMessage/>
-                                                        </FormItem>
-                                                    )}
-                                                />
+                                {/*    >*/}
+                                {/*        <CollapsibleTrigger>*/}
+                                {/*            <div className="flex items-center justify-between h-[50px]">*/}
+                                {/*                <div className="flex flex-col items-start">*/}
+                                {/*                    <h2 className="text-lg font-semibold leading-none tracking-tight">Candidate*/}
+                                {/*                        File</h2>*/}
+                                {/*                    <p className="text-sm text-muted-foreground">Provided required*/}
+                                {/*                        info</p>*/}
+                                {/*                </div>*/}
+                                {/*                <div className="flex items-center gap-2">*/}
+                                {/*                    <ChevronDownCircle size={24}/>*/}
+                                {/*                </div>*/}
+                                {/*            </div>*/}
+                                {/*        </CollapsibleTrigger>*/}
+                                {/*        <CollapsibleContent>*/}
+                                {/*            <div className="p-4 border flex flex-col gap-2 rounded-lg">*/}
+                                {/*                <FormField*/}
+                                {/*                    disabled={!isInDataBase}*/}
+                                {/*                    // control={form.control}*/}
+                                {/*                    name="candidate_file.resume"*/}
+                                {/*                    render={() => (*/}
+                                {/*                        <FormItem*/}
+                                {/*                            className="flex items-center gap-4 justify-between">*/}
+                                {/*                            <FormLabel>Resume</FormLabel>*/}
+                                {/*                            <FormControl>*/}
+                                {/*                                <Input*/}
+                                {/*                                    type="file"*/}
+                                {/*                                    className="w-[260px]"*/}
+                                {/*                                    placeholder="shadcn"*/}
+                                {/*                                />*/}
+                                {/*                            </FormControl>*/}
+                                {/*                            <FormMessage/>*/}
+                                {/*                        </FormItem>*/}
+                                {/*                    )}*/}
+                                {/*                />*/}
 
-                                                <FormField
-                                                    disabled={!isInDataBase}
-                                                    control={form.control}
-                                                    name="candidate_file.cover_letter"
-                                                    render={() => (
-                                                        <FormItem
-                                                            className="flex items-center gap-4 justify-between">
-                                                            <FormLabel>Cover Letter</FormLabel>
-                                                            <FormControl>
-                                                                <Input
-                                                                    type="file"
-                                                                    className="w-[260px]"
-                                                                    placeholder="Acme"
-                                                                />
-                                                            </FormControl>
-                                                            <FormMessage/>
-                                                        </FormItem>
-                                                    )}
-                                                />
+                                {/*                <FormField*/}
+                                {/*                    disabled={!isInDataBase}*/}
+                                {/*                    control={form.control}*/}
+                                {/*                    name="candidate_file.cover_letter"*/}
+                                {/*                    render={() => (*/}
+                                {/*                        <FormItem*/}
+                                {/*                            className="flex items-center gap-4 justify-between">*/}
+                                {/*                            <FormLabel>Cover Letter</FormLabel>*/}
+                                {/*                            <FormControl>*/}
+                                {/*                                <Input*/}
+                                {/*                                    type="file"*/}
+                                {/*                                    className="w-[260px]"*/}
+                                {/*                                    placeholder="Acme"*/}
+                                {/*                                />*/}
+                                {/*                            </FormControl>*/}
+                                {/*                            <FormMessage/>*/}
+                                {/*                        </FormItem>*/}
+                                {/*                    )}*/}
+                                {/*                />*/}
 
-                                                <Button onClick={() => changeForm(2)} className="self-end px-16">
-                                                    Next
-                                                </Button>
-                                            </div>
-                                        </CollapsibleContent>
-                                    </Collapsible>
-                                </div>
+                                {/*                <Button onClick={() => changeForm(2)} className="self-end px-16">*/}
+                                {/*                    Next*/}
+                                {/*                </Button>*/}
+                                {/*            </div>*/}
+                                {/*        </CollapsibleContent>*/}
+                                {/*    </Collapsible>*/}
+                                {/*</div>*/}
                             </>)
                         }
                         {isInDataBase &&
@@ -382,7 +382,10 @@ const CreateApplicationModal = ({job, candidates}: { job: JobResponseType[], can
                                                                         <div
                                                                             className="flex justify-between cursor-pointer items-center rounded border px-4 text-sm py-2 hover:bg-muted mt-1"
                                                                             key={candidate.id}
-                                                                            onClick={() => setCandidateSelected(candidate)}
+                                                                            onClick={() => {
+                                                                                setCandidateSelected(candidate)
+                                                                                form.setValue('candidate', String(selectedCandidate?.id))
+                                                                            }}
                                                                         >
                                                                             <h3>{candidate.name}</h3>
                                                                             <Badge
@@ -392,26 +395,6 @@ const CreateApplicationModal = ({job, candidates}: { job: JobResponseType[], can
                                                                 </>
                                                             </div>}
                                                     </div>
-
-                                                    {/*<FormField*/}
-                                                    {/*    control={form.control}*/}
-                                                    {/*    name="candidate"*/}
-                                                    {/*    render={({field}) => (*/}
-                                                    {/*        <FormItem*/}
-                                                    {/*            className="flex items-center gap-4 justify-between">*/}
-                                                    {/*            <FormLabel>Agency Name</FormLabel>*/}
-                                                    {/*            <Select onValueChange={field.onChange}*/}
-                                                    {/*                    defaultValue={field.value as string}>*/}
-                                                    {/*                <SelectTrigger></SelectTrigger>*/}
-                                                    {/*                <SelectContent>*/}
-                                                    {/*                    <SelectItem*/}
-                                                    {/*                        value="Jane Doa">Jane</SelectItem>*/}
-                                                    {/*                </SelectContent>*/}
-                                                    {/*            </Select>*/}
-                                                    {/*            <FormMessage/>*/}
-                                                    {/*        </FormItem>*/}
-                                                    {/*    )}*/}
-                                                    {/*/>*/}
                                                 </>
                                                 <Button className="self-end px-16">Next</Button>
                                             </motion.div>

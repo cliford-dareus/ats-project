@@ -1,13 +1,23 @@
 import React from 'react';
 import {get_candidate_with_details} from "@/server/db/candidates";
-import {Badge} from "@/components/ui/badge";
 import {Dialog, DialogContent, DialogTrigger} from "@/components/ui/dialog";
 import {Button} from "@/components/ui/button";
 import {CustomTabsTrigger, Tabs, TabsContent, TabsList} from "@/components/ui/tabs";
-import {BriefcaseBusiness, CircleUser, SettingsIcon} from "lucide-react";
+import {BriefcaseBusiness, CircleUser, FileChartColumnIncreasing, SettingsIcon} from "lucide-react";
 import Link from "next/link";
-import {Avatar, AvatarImage} from "@/components/ui/avatar";
+import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import CandidateSummary from "@/app/(dashboard)/candidates/[candidateId]/_components/candidate-summary";
+import CandidateResume from "@/app/(dashboard)/candidates/[candidateId]/_components/candidate-resume";
+import {get_user_applications} from "@/server/db/application";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import CandidateInterviews from "@/app/(dashboard)/candidates/[candidateId]/_components/candidate-interviews";
+import CandidateApplications from "@/app/(dashboard)/candidates/[candidateId]/_components/candidate-applications";
 
 type Props = {
     params: {
@@ -17,6 +27,10 @@ type Props = {
 
 const Page = async ({params}: Props) => {
     const [f] = await get_candidate_with_details(Number(params.candidateId));
+    const applications = await get_user_applications(Number(params.candidateId));
+    // const attachment = await get_candidate_attachment(f.candidateId);
+
+    console.log(applications);
 
     return (
         <div>
@@ -26,38 +40,35 @@ const Page = async ({params}: Props) => {
                         <div className="flex items-center gap-4">
                             <Avatar className="w-14 h-14">
                                 <AvatarImage src="https://github.com/shadcn.png"/>
+                                <AvatarFallback>CN</AvatarFallback>
                             </Avatar>
-
                             <div className="">
-                                <div className="flex items-center gap-4">
-                                    <h1 className="font-bold text-xl">{f.candidateName}</h1>
-                                    <Badge
-                                        className="bg-green-100 text-green-500 font-normal shadow-none py-0 h-5">{f.candidate_status}</Badge>
-                                    <Badge
-                                        className="bg-green-100 text-green-500 font-normal shadow-none py-0 h-5">Follow</Badge>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <p className="text-sm text-slate-400">Ratings score</p>
-                                    <p className="text-sm text-slate-400">Last contacted: 7 days ago</p>
-                                </div>
-
-                                <div className="flex items-center gap-4 text-slate-400">
-                                    <p className="text-sm">Added by: <span className="text-blue-400">John Doe</span></p>
-                                </div>
+                                <h1 className="text-xl font-bold">{f.candidateName}</h1>
+                                <p className="text-sm/5 flex items-center gap-2 text-slate-500">
+                                    <FileChartColumnIncreasing size={16}/>
+                                    <span>Stage: <span className="text-blue-500">{f.stageName}</span></span>
+                                </p>
+                                <p className="text-sm/5 flex items-center gap-2 text-slate-500">
+                                    <CircleUser size={16}/>
+                                    <span>Status: {f.candidate_status}</span>
+                                </p>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div className="flex gap-4">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline">Contact</Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-56">
+                            <DropdownMenuItem>Email</DropdownMenuItem>
+                            <DropdownMenuSeparator/>
+                            <DropdownMenuItem>Call</DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                     <Dialog>
-                        <DialogTrigger asChild>
-                            <Button>Send Email</Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                        </DialogContent>
-                    </Dialog>
-                    <Dialog >
                         <DialogTrigger asChild>
                             <Button>
                                 <SettingsIcon/>
@@ -80,6 +91,10 @@ const Page = async ({params}: Props) => {
                             <CircleUser size={20}/>
                             <Link href=''>Resume</Link>
                         </CustomTabsTrigger>
+                        <CustomTabsTrigger className="px-4 flex items-center gap-4" value="application">
+                            <CircleUser size={20}/>
+                            <Link href=''>Applications</Link>
+                        </CustomTabsTrigger>
                         <CustomTabsTrigger className="px-4 flex items-center gap-4" value="interviews">
                             <CircleUser size={20}/>
                             <Link href=''>Interviews</Link>
@@ -87,7 +102,17 @@ const Page = async ({params}: Props) => {
                     </TabsList>
 
                     <TabsContent value="summary">
-                        <CandidateSummary />
+                        <CandidateSummary data={f}/>
+                    </TabsContent>
+                    <TabsContent value="resume">
+                        <CandidateResume data={f}/>
+                    </TabsContent>
+                    <TabsContent value="application">
+                        <CandidateApplications data={f}/>
+                        {/*{JSON.stringify(applications, null, 2)}*/}
+                    </TabsContent>
+                    <TabsContent value="interviews">
+                        <CandidateInterviews data={f}/>
                     </TabsContent>
                 </Tabs>
             </div>

@@ -1,5 +1,5 @@
-import React, {useEffect, useRef} from 'react';
-import {DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle} from "@/components/ui/drawer";
+import React, {useEffect, useMemo, useRef} from 'react';
+import {DrawerHeader, DrawerTitle} from "@/components/ui/drawer";
 import {Button} from "@/components/ui/button";
 import {ApplicationResponseType} from "@/types/job-listings-types";
 import {Badge} from "@/components/ui/badge";
@@ -8,14 +8,34 @@ import {CustomTabsTrigger, Tabs, TabsContent, TabsList} from "@/components/ui/ta
 import {useRouter} from "next/navigation";
 import {JOB_STAGES} from "@/schema";
 import {cn} from "@/lib/utils";
+import {
+    ChevronDown,
+    CircleUser,
+    Expand,
+    File,
+    FileChartColumnIncreasing,
+    Paperclip,
+} from "lucide-react";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
+    DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 
 type Props = {
-    data: ApplicationResponseType
+    data: ApplicationResponseType;
+    applications: ApplicationResponseType[];
 };
 
-const CandidatePreview = ({data}: Props) => {
+const CandidatePreview = ({data, applications}: Props) => {
     const ref = useRef<HTMLDivElement>(null);
     const router = useRouter();
+
+    const filterApplications = useMemo(() => {
+        return applications.filter(application => application.candidate_name == data.candidate_name)
+    }, [data]);
 
     useEffect(() => {
         if (ref.current?.classList.contains('target')) {
@@ -31,27 +51,97 @@ const CandidatePreview = ({data}: Props) => {
 
     return (
         <>
-            <DrawerHeader>
-                <div className="flex items-center gap-4">
-                    <Avatar className="w-14 h-14">
-                        <AvatarImage src="https://github.com/shadcn.png"/>
-                        <AvatarFallback>CN</AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col">
-                        <div className="flex items-center gap-4">
-                            <DrawerTitle className="text-2xl">{data.candidate_name.toUpperCase()}</DrawerTitle>
-                            <Badge>{data.candidate_status}</Badge>
+            <div className="flex justify-between p-4">
+                <div onClick={() => {
+                    router.push(`/candidates/${data.id}`);
+                }}>
+                    <Expand size={20}/>
+                </div>
+                <span>Export data</span>
+            </div>
+            <DrawerHeader className="px-0 border-b border-t p-4">
+                <div className="flex justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        <Avatar className="w-14 h-14">
+                            <AvatarImage src="https://github.com/shadcn.png"/>
+                            <AvatarFallback>CN</AvatarFallback>
+                        </Avatar>
+                        <div className="">
+                            <DrawerTitle className="text-xl font-bold">{data.candidate_name}</DrawerTitle>
+                            <p className="text-sm/5 flex items-center gap-2 text-slate-500">
+                                <FileChartColumnIncreasing size={16}/>
+                                <span>Stage: <span className="text-blue-500">{data.current_stage}</span></span>
+                            </p>
+                            <p className="text-sm/5 flex items-center gap-2 text-slate-500">
+                                <CircleUser size={16}/>
+                                <span>Status: {data.candidate_status}</span>
+                            </p>
                         </div>
+                    </div>
 
-                        <DrawerDescription asChild>
-                            <div className="gap-4">
-                                <p>Jan 4, 2025</p>
-                                <p>Status: {data.current_stage}</p>
-                            </div>
-                        </DrawerDescription>
+                    <div className="flex gap-4">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline">Contact</Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-56">
+                                <DropdownMenuItem>Email</DropdownMenuItem>
+                                <DropdownMenuSeparator/>
+                                <DropdownMenuItem>Call</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button>Move to <ChevronDown size={16}/></Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-56">
+                                <DropdownMenuLabel>Stages</DropdownMenuLabel>
+                                <DropdownMenuSeparator/>
+                                <DropdownMenuGroup>
+
+                                </DropdownMenuGroup>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </div>
             </DrawerHeader>
+
+            <div className="p-4 flex flex-col gap-4">
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 w-[30%]">
+                        <File size={16}/>
+                        <p className="text-sm/3 flex items-center gap-2 text-slate-500">Applied on 1</p>
+                    </div>
+                    <div className="flex-1 flex items-center gap-2">
+                        {filterApplications && filterApplications.map((application: ApplicationResponseType, index) => (
+                            <span
+                                key={index}
+                                className="flex items-center py-0.5 px-2 rounded bg-muted w-fit text-sm/3"
+                            >
+                                {application.job_apply}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 w-[30%]">
+                        <File size={16}/>
+                        <p className="text-sm/3 flex items-center gap-2 text-slate-500">Years of Experience</p>
+                    </div>
+                    <span className="bg-muted text-sm/3 py-0.5">6</span>
+                </div>
+                <div className="flex gap-4">
+                    <div className="flex gap-4 w-[30%]">
+                        <Paperclip size={16}/>
+                        <p className="text-sm/3 text-slate-500">Attachment</p>
+                    </div>
+                    <div className="flex-1">
+                        <div className="flex items-center p-2 rounded bg-muted w-36 h-12 text-sm">candidate attachment
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <div className="px-4">
                 <Tabs defaultValue="summary" className="w-full py-2">
@@ -60,11 +150,14 @@ const CandidatePreview = ({data}: Props) => {
                             <CustomTabsTrigger className="px-8 flex items-center gap-4"
                                                value="summary">Summary</CustomTabsTrigger>
                             <CustomTabsTrigger className="px-4 flex items-center gap-4"
-                                               value="password">Interview</CustomTabsTrigger>
+                                               value="notes">Interview</CustomTabsTrigger>
                         </TabsList>
                     </div>
 
                     <TabsContent className="" value="summary">
+                        <p className="text-sm/3 flex items-center gap-2 mt-4">stages of:<span
+                            className="text-blue-500">{data.job_apply}</span></p>
+
                         <div className="flex items-center gap-4 w-full mt-4">
                             <div className="w-full max-w-4xl mx-auto">
                                 {/* Progress Bar Container */}
@@ -99,83 +192,69 @@ const CandidatePreview = ({data}: Props) => {
                             <div className="py-2 px-4 border-b ">
                                 <h3>Details</h3>
                             </div>
-                            <div className="flex items-center gap-4 py-2 px-4">
-                                <div className="w-[150px]">
-                                    <span>Current status</span>
-                                    <Badge
-                                        className="bg-green-100 text-green-500 font-normal shadow-none">{data.candidate_status}</Badge>
-                                </div>
+                            <div className="my-4">
+                                <div className="flex items-center gap-4 py-2 px-4 h-[40px]">
+                                    <div className="w-[200px] flex gap-2 items-center">
+                                        <span className="text-sm/3 text-slate-500">Current status</span>
+                                        <Badge
+                                            className="bg-green-100 text-green-500 font-normal shadow-none">{data.candidate_status}</Badge>
+                                    </div>
 
-                                <div className="">
-                                    <span>Assign To</span>
-                                    <div className="flex items-center gap-4">
-                                        <Avatar className="h-5 w-5">
-                                            <AvatarImage src="https://github.com/shadcn.png"/>
-                                        </Avatar>
-                                        <span className="text-sm">{data.assign_to}</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm/3 text-slate-500">Assign To</span>
+                                        <div className="flex items-center gap-4">
+                                            <Avatar className="h-5 w-5">
+                                                <AvatarImage src="https://github.com/shadcn.png"/>
+                                            </Avatar>
+                                            <span className="text-sm">{data.assign_to}</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div className="flex items-center gap-4 py-2 px-4">
-                                <div className="w-[150px]">
-                                    <span>Stages</span>
-                                    <p className="text-sm">{data.current_stage}</p>
-                                </div>
+                                <div className="flex items-center gap-4 py-2 px-4 h-[40px]">
+                                    <div className="w-[200px] flex gap-2 items-center">
+                                        <span className="text-sm/3 text-slate-500">Stages</span>
+                                        <p className="text-sm text-blue-500">{data.current_stage}</p>
+                                    </div>
 
-                                <div className="w-[150px]">
-                                    <span>Owner</span>
-                                    <p className="text-sm">{data.candidate_status}</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-between gap-4 py-2 px-4">
-                                <div className="w-[150px]">
-                                    <span>Applied Date</span>
-                                    <p className="text-sm">{data.candidate_id}</p>
+                                    <div className="w-[200px] flex items-center gap-2">
+                                        <span className="text-sm/3 text-slate-500">Owner</span>
+                                        <p className="text-sm">{data.candidate_status}</p>
+                                    </div>
                                 </div>
 
-                                <div className="">
-                                    <Button>Move to Next stage</Button>
-                                </div>
-                            </div>
-                        </div>
+                                <div className="flex items-center justify-between gap-4 py-2 px-4 h-[40px]">
+                                    <div className="w-[200px] flex gap-2">
+                                        <span className="text-sm/3 text-slate-500">Applied Date</span>
+                                        <p className="text-sm">{data.candidate_id}</p>
+                                    </div>
 
-                        <div className="h-[270px]">
-                            <div className="w-full flex flex-col border mt-4 rounded">
-                                <div className="py-2 px-4 border-b ">
-                                    <h3>Notes</h3>
+                                    {/*<div className="">*/}
+                                    {/*    <Button>Move to Next stage</Button>*/}
+                                    {/*</div>*/}
                                 </div>
-                                <div className="flex py-2 px-4">
-                                    <Button>Add Note</Button>
-                                </div>
-                                <div className="flex flex-col gap-4 py-2 px-4">
-                                    <div className="flex h-[75px] ">dddddd</div>
-                                    <div className="flex h-[75px] ">dddddd</div>
-                                </div>
-
                             </div>
                         </div>
+
                     </TabsContent>
-                    <TabsContent value="password">
-                        <div className="flex flex-col border mt-4 rounded">
+
+                    <TabsContent value="notes">
+                        <div className="w-full flex flex-col border mt-4 rounded">
                             <div className="py-2 px-4 border-b ">
-                                <h3>Interview Schedule</h3>
+                                <h3>Notes</h3>
+                            </div>
+                            <div className="flex py-2 px-4">
+                                <Button>Add Note</Button>
+                            </div>
+                            <div className="flex flex-col gap-4 py-2 px-4">
+                                <div className="flex h-[75px] ">dddddd</div>
+                                <div className="flex h-[75px] ">dddddd</div>
                             </div>
 
-                            <div className="flex items-center gap-4 py-2 px-4">
-
-                            </div>
                         </div>
                     </TabsContent>
                 </Tabs>
             </div>
-
-            <DrawerFooter className="mt-4 flex">
-                <Button onClick={() => {
-                    router.push(`/candidates/${data.id}`);
-                }}>View Full Page</Button>
-            </DrawerFooter>
         </>
     );
 };

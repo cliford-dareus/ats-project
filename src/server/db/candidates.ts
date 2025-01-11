@@ -5,7 +5,6 @@ import type {CandidateType} from "@/types/job-listings-types";
 import {CACHE_TAGS, dbCache, getGlobalTag, revalidateDbCache} from "@/lib/cache";
 
 
-
 export const get_candidate_with_details = async (candidateId: number) => {
     const result = await db
         .select({

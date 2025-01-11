@@ -1,9 +1,13 @@
 import React from 'react';
 
-const CandidateSummary = () => {
+type Props = {
+    data: any
+}
+
+const CandidateSummary = ({data}: Props) => {
     return (
         <div>
-            Summary
+            {JSON.stringify(data, null, 2)}
         </div>
     );
 };
