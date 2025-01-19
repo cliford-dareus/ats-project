@@ -1,14 +1,12 @@
-import React from 'react';
-import {get_candidates_stage_count_action} from "@/server/actions/candidates-actions";
-
-// type Props = {}
+import {auth} from "@clerk/nextjs/server";
 
 const Page = async () => {
-    // const {userId, redirectToSignIn} = await auth();
-    const stage = await get_candidates_stage_count_action();
+    const {userId} = await auth()
 
     return (
-        <div className="md:p-4">ff</div>
+        <div className="md:p-4">
+            <button>Fetch Available Slots</button>
+        </div>
     )
 };
 

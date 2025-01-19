@@ -42,3 +42,7 @@ export const aggregateByKey = <T extends Record<string, any>>(
         return acc;
     }, [] as { [key: string]: any }[]);
 };
+
+export const getCalendaAvailability = () => {}
+
+

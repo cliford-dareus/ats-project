@@ -8,6 +8,13 @@ import {update_application_stage_action} from "@/server/actions/application_acti
 import {JOB_ENUM} from "@/schema";
 import {Badge} from "@/components/ui/badge";
 import {EllipsisVertical} from "lucide-react";
+import {Dialog, DialogContent, DialogTitle, DialogTrigger} from "@/components/ui/dialog";
+import {useForm} from "react-hook-form";
+import {Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
+import {Input} from "@/components/ui/input";
+import {z} from "zod";
+import {zodResolver} from "@hookform/resolvers/zod";
+import {Button} from "@/components/ui/button";
 
 type Props = {
     title: string;
@@ -15,10 +22,23 @@ type Props = {
     cards: JobListingWithCandidatesType[];
     column: JOB_ENUM
     setCards: Dispatch<SetStateAction<JobListingWithCandidatesType[] | undefined>>
-}
+};
+
+const FormSchema = z.object({
+    stageName: z.string().min(5, {
+        message: "Stage name must be at least 5 characters.",
+    }),
+});
 
 const Column = ({title, cards, column, setCards, stage}: Props) => {
     const [active, setActive] = useState(false);
+
+    const form = useForm<z.infer<typeof FormSchema>>({
+        resolver: zodResolver(FormSchema),
+        defaultValues: {
+            stageName: "",
+        },
+    });
 
     const handleDragStart = (e: DragEvent<HTMLDivElement>, i: number) => {
         (e as DragEvent).dataTransfer.setData("cardId", String(i));
@@ -54,7 +74,6 @@ const Column = ({title, cards, column, setCards, stage}: Props) => {
                 if (insertAtIndex === undefined) return;
                 copy.splice(insertAtIndex, 0, cardToTransfer!);
             }
-            ;
 
             await update_application_stage_action({
                 candidateId: cardToTransfer.application_id!,
@@ -91,7 +110,7 @@ const Column = ({title, cards, column, setCards, stage}: Props) => {
     const getNearestIndicator = (e: DragEvent<HTMLDivElement>, indicators: HTMLDivElement[]) => {
         const DISTANCE_OFFSET = 50;
 
-        const el = indicators.reduce(
+        return indicators.reduce(
             (closest, child) => {
                 const box = child.getBoundingClientRect();
 
@@ -108,8 +127,6 @@ const Column = ({title, cards, column, setCards, stage}: Props) => {
                 element: indicators[indicators.length - 1],
             }
         );
-
-        return el;
     };
 
     const getIndicators = () => {
@@ -124,8 +141,8 @@ const Column = ({title, cards, column, setCards, stage}: Props) => {
     const filteredCards = cards?.filter((c) => c.stageName === column);
 
     return (
-        <div className="min-w-56 w-56">
-            <div className="mb-2 flex items-center justify-between mt-4">
+        <div className="min-w-52 w-52">
+            <div className="mb-2 flex items-center justify-between my-4">
                 <div className="flex items-center gap-2">
                     <div className="h-3 w-3 rounded bg-red-300"></div>
                     <p className={`font-medium text-slate-500 text-sm`}>{title}</p>
@@ -135,8 +152,38 @@ const Column = ({title, cards, column, setCards, stage}: Props) => {
                     </Badge>
                 </div>
 
-                <EllipsisVertical size={20} className="-mr-1.5 text-slate-400"/>
+                <Dialog>
+                    <DialogTrigger>
+                        <EllipsisVertical size={18} className="-mr-1.5 text-slate-400"/>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogTitle>Update Stage</DialogTitle>
+                        <div>
+                            <Form {...form}>
+                                <form>
+                                    <FormField
+                                        control={form.control}
+                                        name="stageName"
+                                        render={({field}) => (
+                                            <FormItem>
+                                                <FormLabel>Stage Name</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="shadcn" {...field} />
+                                                </FormControl>
+                                                <FormDescription>
+                                                    This is your public display name.{stage}
+                                                </FormDescription>
+                                                <FormMessage/>
+                                            </FormItem>
+                                        )}
+                                    />
 
+                                    <Button>Update Stage</Button>
+                                </form>
+                            </Form>
+                        </div>
+                    </DialogContent>
+                </Dialog>
             </div>
             <div
                 onDrop={handleDragEnd}

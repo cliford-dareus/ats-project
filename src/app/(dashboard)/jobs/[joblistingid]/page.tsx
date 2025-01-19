@@ -1,10 +1,9 @@
 import React from 'react';
-import {get_job_listing_with_candidate} from "@/server/db/job-listings";
+import {get_job_listing_with_candidate, get_job_listings_stages} from "@/server/db/job-listings";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {CustomTabsTrigger, Tabs, TabsContent, TabsList} from "@/components/ui/tabs";
-import Link from "next/link";
-import {BriefcaseBusiness, CircleUser} from "lucide-react";
+import {BriefcaseBusiness, CircleUser, Edit} from "lucide-react";
 import {Dialog, DialogContent, DialogTrigger} from "@/components/ui/dialog";
 import CreateApplicationModal from "@/components/modal/create-application-modal";
 import {get_all_job_listings_action} from "@/server/actions/job-listings-actions";
@@ -17,15 +16,20 @@ type Props = {
     params: {
         joblistingid: string;
     }
-}
+};
 
 const Page = async ({params}: Props) => {
     const {joblistingid} = await params;
 
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-expect-error
     const [, jobs] = await get_all_job_listings_action({});
+    // Change fn name to get_application_info or something
     const job = await get_job_listing_with_candidate(Number(joblistingid));
     const candidates = await get_all_candidates_action();
+    const stages = await get_job_listings_stages(job[0]?.job_id);
+
+    console.log(jobs)
 
     return (
         <div>
@@ -50,8 +54,10 @@ const Page = async ({params}: Props) => {
                         <Button>Add Applicant</Button>
                     </DialogTrigger>
                     <DialogContent>
-                        <CreateApplicationModal job={jobs as JobResponseType[]}
-                                                candidates={candidates as candidatesResponseType[]}/>
+                        <CreateApplicationModal
+                            job={jobs as JobResponseType[]}
+                            candidates={candidates as candidatesResponseType[]}
+                        />
                     </DialogContent>
                 </Dialog>
             </div>
@@ -71,16 +77,20 @@ const Page = async ({params}: Props) => {
                             <BriefcaseBusiness size={20}/>
                             <p>Details</p>
                         </CustomTabsTrigger>
-                        <div className="ml-auto">edit</div>
+                        <div className="ml-auto flex items-center gap-2 cursor-pointer">
+                            <Edit size={16}/>
+                            <p className="text-sm">edit job</p>
+                        </div>
                     </TabsList>
+
                     <TabsContent value="candidates">
                         Candidates
                     </TabsContent>
-                    <TabsContent value="details">
-                        <JobDetails/>
-                    </TabsContent>
                     <TabsContent value="pipelines">
-                        <JobPipeline data={job}/>
+                        <JobPipeline data={job} stages={stages}/>
+                    </TabsContent>
+                    <TabsContent value="details">
+                        <JobDetails data={job} stages={stages}/>
                     </TabsContent>
                 </Tabs>
             </div>

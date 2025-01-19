@@ -41,11 +41,19 @@ export type JobListingWithCandidatesType = {
 
 export type ApplicationResponseType = {
     id: number;
-    candidate_id : number;
-    candidate_name : string;
-    candidate_status : CANDIDATE_ENUM;
-    job_apply : string;
-    location : string;
-    current_stage : JOB_ENUM;
+    candidate_id: number;
+    candidate_name: string;
+    candidate_status: CANDIDATE_ENUM;
+    job_apply: string;
+    location: string;
+    current_stage: JOB_ENUM;
     assign_to: string;
+}
+
+export  type StageResponseType = {
+    id: number
+    job_id: number
+    stage_name: "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | null
+    stage_order_id: number
+    assign_to: string | null
 }

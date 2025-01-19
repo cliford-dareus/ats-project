@@ -9,6 +9,7 @@ import {useRouter} from "next/navigation";
 import {JOB_STAGES} from "@/schema";
 import {cn} from "@/lib/utils";
 import {
+    CalendarClock,
     ChevronDown,
     CircleUser,
     Expand,
@@ -126,7 +127,7 @@ const CandidatePreview = ({data, applications}: Props) => {
                 </div>
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-4 w-[30%]">
-                        <File size={16}/>
+                        <CalendarClock size={16}/>
                         <p className="text-sm/3 flex items-center gap-2 text-slate-500">Years of Experience</p>
                     </div>
                     <span className="bg-muted text-sm/3 py-0.5">6</span>
@@ -179,7 +180,7 @@ const CandidatePreview = ({data, applications}: Props) => {
                                                             fill={data.current_stage !== v ? "#cbd5e1" : "#dc2626"}
                                                         />
                                                     </svg>
-                                                    <p className="absolute top-1/2 -translate-y-1/2 right-1/2 translate-x-1/2 text-white text-sm">{v}</p>
+                                                    <p className="absolute top-1/2 -translate-y-1/2 right-1/2 translate-x-1/2 text-white text-xs">{v}</p>
                                                 </div>
                                             ))
                                         }

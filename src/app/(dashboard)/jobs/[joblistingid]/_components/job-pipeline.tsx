@@ -1,17 +1,35 @@
-import React from 'react';import JobListingsBoard from "@/app/(dashboard)/jobs/[joblistingid]/_components/Job-listings-board";
-import {JobListingWithCandidatesType} from "@/types/job-listings-types";
-import {get_job_listings_stages} from "@/server/db/job-listings";
+'use client'
+
+import React, {useEffect, useState} from 'react';
+import {JobListingWithCandidatesType, StageResponseType} from "@/types/job-listings-types";
+import Column from "@/components/kanban/column";
 
 type Props = {
     data: JobListingWithCandidatesType[];
+    stages: StageResponseType[]
 };
 
-const JobPipeline = async ({ data }: Props) => {
-    const stages = await get_job_listings_stages(data[0]?.job_id);
+const JobPipeline = ({data, stages}: Props) => {
+    const [jobs, setJobs] = useState<JobListingWithCandidatesType[]>();
+
+    useEffect(() => {
+        setJobs(data)
+    }, [data]);
 
     return (
         <div className="h-[calc(100vh-200px)]">
-            <JobListingsBoard data={data} stages={stages}/>
+            <div className="flex h-full gap-4 overflow-y-hidden overflow-x-scroll">
+                {stages?.map((stage) => (
+                    <Column
+                        key={stage.stage_order_id}
+                        title={stage.stage_name as string}
+                        column={stage.stage_name}
+                        stage={stage.stage_order_id + 1}
+                        cards={jobs!}
+                        setCards={setJobs}
+                    />
+                ))}
+            </div>
         </div>
     );
 };

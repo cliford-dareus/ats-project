@@ -1,5 +1,6 @@
 import {int, mysqlTable, varchar, mysqlEnum, timestamp} from 'drizzle-orm/mysql-core';
 import {relations} from "drizzle-orm";
+import {boolean} from "drizzle-orm/pg-core";
 
 export const usersTable = mysqlTable('users_table', {
     id: varchar({length: 255}).primaryKey(),
@@ -66,6 +67,7 @@ export const stages = mysqlTable('stages', {
     stage_name: mysqlEnum('stage_name', ['New Candidate', 'Screening', 'Phone Interview', 'Interview','Offer']),
     stage_order_id: int().notNull(),
     // color: varchar({length: 255}),
+    // need_schedule: boolean(),
     assign_to: varchar({length: 255}),
 });
 
@@ -113,6 +115,7 @@ export const applications = mysqlTable('applications', {
     job_id: int().references(() => job_listings.id),
     current_stage_id: int(),
     candidate: int().references(() => candidates.id, {onDelete: 'cascade'}),
+    // can_contact: boolean(),
 });
 
 export const applications_relations = relations(applications, ({one}) => ({

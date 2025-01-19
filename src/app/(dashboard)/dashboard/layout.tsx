@@ -8,9 +8,9 @@ type Props = {
 const DashboardLayout = async ({children}: Props) => {
     return (
         <AuthOrgProvider>
-            <div className="">
+            <>
                 {children}
-            </div>
+            </>
         </AuthOrgProvider>
     )
 }
