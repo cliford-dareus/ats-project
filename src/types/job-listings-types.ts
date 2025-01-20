@@ -57,3 +57,7 @@ export  type StageResponseType = {
     stage_order_id: number
     assign_to: string | null
 }
+
+export interface FormErrors {
+    [key: string]: string | undefined;
+}

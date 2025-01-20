@@ -9,23 +9,23 @@ import CreateApplicationModal from "@/components/modal/create-application-modal"
 import {get_all_job_listings_action} from "@/server/actions/job-listings-actions";
 import {candidatesResponseType, JobResponseType} from "@/types/job-listings-types";
 import {get_all_candidates_action} from "@/server/actions/candidates-actions";
-import JobDetails from "@/app/(dashboard)/jobs/[joblistingid]/_components/job-details";
-import JobPipeline from "@/app/(dashboard)/jobs/[joblistingid]/_components/job-pipeline";
+import JobDetails from "@/app/(dashboard)/jobs/[joblistingId]/_components/job-details";
+import JobPipeline from "@/app/(dashboard)/jobs/[joblistingId]/_components/job-pipeline";
 
 type Props = {
     params: {
-        joblistingid: string;
+        joblistingId: string;
     }
 };
 
 const Page = async ({params}: Props) => {
-    const {joblistingid} = await params;
+    const {joblistingId} = await params;
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-expect-error
     const [, jobs] = await get_all_job_listings_action({});
     // Change fn name to get_application_info or something
-    const job = await get_job_listing_with_candidate(Number(joblistingid));
+    const job = await get_job_listing_with_candidate(Number(joblistingId));
     const candidates = await get_all_candidates_action();
     const stages = await get_job_listings_stages(job[0]?.job_id);
 

@@ -6,14 +6,6 @@ import {filterApplicationsType} from "@/schema";
 import {z} from "zod";
 
 export const create_application = async (data: any) => {
-    // check if user is passing a new candidate or an existing one
-    // check if the candidate is in db
-    // if not
-    // 0 -get the stages for the job stage
-    // 1 -create the candidate
-    // 2 -create the application
-    // 3 -
-
     const [current_stage] = await db
         .select()
         .from(stages)
@@ -54,7 +46,8 @@ export const create_application = async (data: any) => {
         }
     }
 
-    const [application] = await db.insert(applications)
+    const [application] = await db
+        .insert(applications)
         .values({
             job_id: Number(data.job),
             candidate: Number(data.candidate),
@@ -150,7 +143,7 @@ export const add_interview = async ({applicationId, location, start_at, end_at}:
     start_at: Date,
     end_at: Date
 }) => {
-    const result = await db.insert(interviews).values({
+    return await db.insert(interviews).values({
         applications_id: applicationId,
         locations: location,
         start_at: start_at,

@@ -5,6 +5,17 @@ import {get_all_candidates_action, get_candidates_stage_count_action} from "@/se
 import {candidatesResponseType} from "@/types/job-listings-types";
 import {Separator} from "@/components/ui/separator";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
+import {Button} from "@/components/ui/button";
+import {Bell, ChevronDown, LogOut, Plus} from "lucide-react";
+import {currentUser} from "@clerk/nextjs/server";
+import Link from "next/link";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuShortcut,
+    DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 
 type Props = {
     children: React.ReactNode
@@ -17,10 +28,9 @@ export type StageCountType = {
 }
 
 const Layout = async ({children}: Props) => {
+    const user = await currentUser()
     const candidate = await get_all_candidates_action();
     const stagescount = await get_candidates_stage_count_action();
-
-    console.log(stagescount);
 
     return (
         <SidebarProvider
@@ -51,11 +61,39 @@ const Layout = async ({children}: Props) => {
                         TODO: Create the breadcrumb with params
                         TODO: Add current user avatar with roles
                      */}
-                    <div className="ml-auto">
-                        <Avatar>
-                            <AvatarImage src="https://github.com/shadcn.png" />
-                            <AvatarFallback>CN</AvatarFallback>
-                        </Avatar>
+                    <div className="ml-auto flex items-center gap-4">
+                        <Button className="p-0">
+                            <Link href="/jobs/new" className="flex items-center gap-2 w-full h-full px-4 py-1.5">
+                                <Plus size={20}/>
+                                <p>Create New Job</p>
+                            </Link>
+                        </Button>
+
+                        <Bell size={18}/>
+
+                        <div >
+                            <DropdownMenu>
+                                <DropdownMenuTrigger className="flex items-center gap-2.5">
+                                    <Avatar className="w-8 h-8">
+                                        <AvatarImage src="https://github.com/shadcn.png"/>
+                                        <AvatarFallback>CN</AvatarFallback>
+                                    </Avatar>
+
+                                    <div className="flex items-center text-slate-500">
+                                        <p className="text-sm ">{user?.firstName} {user?.lastName?.slice(0, 1)}.</p>
+                                        <ChevronDown size={20}/>
+                                    </div>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem>
+                                        <LogOut />
+                                        <span>Log out</span>
+                                        <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                        </div>
                     </div>
                 </header>
                 <>

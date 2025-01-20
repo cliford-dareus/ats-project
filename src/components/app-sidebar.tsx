@@ -16,6 +16,7 @@ import JobListingSidebar from "@/app/(dashboard)/jobs/_components/job-listing-si
 import SidebarCandidate from "@/app/(dashboard)/candidates/_components/sidebar-candidate";
 import {candidatesResponseType } from "@/types/job-listings-types";
 import {StageCountType} from "@/app/(dashboard)/layout";
+import StepNavigation from "@/app/(dashboard)/jobs/new/_component/side-navigation";
 
 const data = {
     user: {
@@ -61,14 +62,16 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar> & {
     candidate: candidatesResponseType[],
     stagescount: StageCountType[],
 }) {
-    const pathname = usePathname()
+    const pathname = usePathname();
     const [activeItem, setActiveItem] = React.useState(data.navMain[0]);
-    const {setOpen} = useSidebar()
-    const router = useRouter()
+    const {setOpen} = useSidebar();
+    const router = useRouter();
 
     useEffect(() => {
         setActiveItem(data.navMain.find(nav => pathname.startsWith(nav.url))!)
-    }, [pathname])
+    }, [pathname]);
+
+    console.log(pathname)
 
     return (
         <Sidebar
@@ -146,13 +149,16 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar> & {
                         <SidebarGroupContent>
                             {activeItem.title === "Dashboard" ? (
                                 <h1>Dashboard</h1>
-                            ) : activeItem.title === "Jobs" ? (
+                            ) : activeItem.title === "Jobs" && !pathname.startsWith('/jobs/new/step') ? (
                                 <JobListingSidebar/>
                             ) : activeItem.title === "Candidates" ? (
                                 <SidebarCandidate candidate={props.candidate} stagescount={props.stagescount as StageCountType[]} />
                             ) : activeItem.title === "Settings" ? (
                                 <SidebarSettings/>
-                            ) : null}
+                            ) : pathname.startsWith("/jobs/new/step")? (
+                                <StepNavigation />
+                            )
+                            : null}
                         </SidebarGroupContent>
                     </SidebarGroup>
                 </SidebarContent>
