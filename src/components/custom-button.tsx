@@ -1,20 +1,23 @@
 'use client';
 
 import { useFormStatus } from 'react-dom';
+import {Button} from "@/components/ui/button";
+import {cn} from "@/lib/utils";
 
 interface CustomButtonProps {
     text: string;
+    className?: string;
 };
 
-export default function CustomButton({ text }: CustomButtonProps) {
+export default function CustomButton({ text, className }: CustomButtonProps) {
     const { pending } = useFormStatus();
     return (
-        <button
-            className="mt-2 rounded-lg bg-teal-500 py-4 text-lg text-black disabled:bg-teal-600/30 lg:py-7 lg:text-2xl"
+        <Button
+            className={cn("mt-2 rounded-lg bg-blue-500 py-4 text-lg  disabled:bg-blue-400", className)}
             type="submit"
         >
             {pending ? <Loader /> : text}
-        </button>
+        </Button>
     );
 };
 

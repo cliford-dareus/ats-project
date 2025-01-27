@@ -3,6 +3,9 @@ CREATE TABLE `applications` (
 	`job_id` int,
 	`current_stage_id` int,
 	`candidate` int,
+	`can_contact` boolean DEFAULT false,
+	`created_at` timestamp NOT NULL DEFAULT (now()),
+	`updated_at` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
 	CONSTRAINT `applications_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
@@ -10,7 +13,7 @@ CREATE TABLE `attachments` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`file_name` varchar(255) NOT NULL,
 	`file_url` varchar(255) NOT NULL,
-	`candidates_id` int NOT NULL,
+	`candidate_id` int NOT NULL,
 	`attachment_type` enum('RESUME','COVER_LETTER','OFFER_LETTER','OTHER'),
 	CONSTRAINT `attachments_id` PRIMARY KEY(`id`)
 );
@@ -19,12 +22,21 @@ CREATE TABLE `candidate` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`name` varchar(255) NOT NULL,
 	`email` varchar(255) NOT NULL,
-	`cv_path` varchar(255) NOT NULL,
 	`phone` varchar(255) NOT NULL,
+	`cv_path` varchar(255) NOT NULL,
 	`status` enum('Active','Rejected','Hired') DEFAULT 'Active',
+	`created_at` timestamp NOT NULL DEFAULT (now()),
+	`updated_at` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
 	CONSTRAINT `candidate_id` PRIMARY KEY(`id`),
 	CONSTRAINT `candidate_email_unique` UNIQUE(`email`),
-	CONSTRAINT `candidate_phone_unique` UNIQUE(`phone`)
+	CONSTRAINT `candidate_phone_unique` UNIQUE(`phone`),
+	CONSTRAINT `candidate_cv_path_unique` UNIQUE(`cv_path`)
+);
+--> statement-breakpoint
+CREATE TABLE `departments` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`name` varchar(255) NOT NULL,
+	CONSTRAINT `departments_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
 CREATE TABLE `interviews` (
@@ -34,6 +46,8 @@ CREATE TABLE `interviews` (
 	`start_at` timestamp,
 	`end_at` timestamp,
 	`status` enum('SCHEDULE','AWAITING_FEEDBACK','COMPLETE'),
+	`created_at` timestamp NOT NULL DEFAULT (now()),
+	`updated_at` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
 	CONSTRAINT `interviews_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
@@ -43,7 +57,9 @@ CREATE TABLE `job_listing` (
 	`location` varchar(255) NOT NULL,
 	`description` varchar(255) NOT NULL,
 	`salary_up_to` varchar(255) NOT NULL,
-	`status` enum('Not Publish','Actively Hiring','Archive') DEFAULT 'Not Publish',
+	`department` int NOT NULL,
+	`organization` varchar(255) NOT NULL,
+	`status` enum('OPEN','CLOSED','DRAFT','ARCHIVED','PENDING') DEFAULT 'PENDING',
 	`created_by` varchar(255) NOT NULL,
 	`created_at` timestamp NOT NULL DEFAULT (now()),
 	`updated_at` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
@@ -55,6 +71,23 @@ CREATE TABLE `job_technologies` (
 	`job_id` int NOT NULL,
 	`technology_id` int NOT NULL,
 	CONSTRAINT `job_technologies_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+CREATE TABLE `org_to_department` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`department_id` int NOT NULL,
+	`organization_id` varchar(255) NOT NULL,
+	CONSTRAINT `org_to_department_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+CREATE TABLE `organization` (
+	`clerk_id` varchar(255) NOT NULL,
+	`name` varchar(255) NOT NULL,
+	`locations` varchar(255) NOT NULL,
+	`phone` varchar(255) NOT NULL,
+	`email` varchar(255) NOT NULL,
+	`color` varchar(255) NOT NULL,
+	CONSTRAINT `organization_clerk_id` PRIMARY KEY(`clerk_id`)
 );
 --> statement-breakpoint
 CREATE TABLE `scoresCards` (
@@ -69,8 +102,10 @@ CREATE TABLE `scoresCards` (
 CREATE TABLE `stages` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`job_id` int NOT NULL,
-	`stage_name` enum('New Candidate','Screening','Phone Interview','Offer'),
+	`stage_name` enum('New Candidate','Screening','Phone Interview','Interview','Offer'),
 	`stage_order_id` int NOT NULL,
+	`color` varchar(255),
+	`need_schedule` boolean DEFAULT true,
 	`assign_to` varchar(255),
 	CONSTRAINT `stages_id` PRIMARY KEY(`id`)
 );
@@ -93,10 +128,12 @@ CREATE TABLE `users_table` (
 --> statement-breakpoint
 ALTER TABLE `applications` ADD CONSTRAINT `applications_job_id_job_listing_id_fk` FOREIGN KEY (`job_id`) REFERENCES `job_listing`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `applications` ADD CONSTRAINT `applications_candidate_candidate_id_fk` FOREIGN KEY (`candidate`) REFERENCES `candidate`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE `attachments` ADD CONSTRAINT `attachments_candidates_id_candidate_id_fk` FOREIGN KEY (`candidates_id`) REFERENCES `candidate`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `attachments` ADD CONSTRAINT `attachments_candidate_id_candidate_id_fk` FOREIGN KEY (`candidate_id`) REFERENCES `candidate`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `interviews` ADD CONSTRAINT `interviews_applications_id_applications_id_fk` FOREIGN KEY (`applications_id`) REFERENCES `applications`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `job_technologies` ADD CONSTRAINT `job_technologies_job_id_job_listing_id_fk` FOREIGN KEY (`job_id`) REFERENCES `job_listing`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `job_technologies` ADD CONSTRAINT `job_technologies_technology_id_technologies_id_fk` FOREIGN KEY (`technology_id`) REFERENCES `technologies`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `org_to_department` ADD CONSTRAINT `org_to_department_department_id_departments_id_fk` FOREIGN KEY (`department_id`) REFERENCES `departments`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `org_to_department` ADD CONSTRAINT `org_to_department_organization_id_organization_clerk_id_fk` FOREIGN KEY (`organization_id`) REFERENCES `organization`(`clerk_id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `scoresCards` ADD CONSTRAINT `scoresCards_applications_id_applications_id_fk` FOREIGN KEY (`applications_id`) REFERENCES `applications`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `scoresCards` ADD CONSTRAINT `scoresCards_interviews_id_interviews_id_fk` FOREIGN KEY (`interviews_id`) REFERENCES `interviews`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `stages` ADD CONSTRAINT `stages_job_id_job_listing_id_fk` FOREIGN KEY (`job_id`) REFERENCES `job_listing`(`id`) ON DELETE cascade ON UPDATE no action;

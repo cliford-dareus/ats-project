@@ -5,7 +5,13 @@ import {CACHE_TAGS, dbCache, getGlobalTag, getIdTag, revalidateDbCache} from "@/
 import {z} from "zod";
 import {filterJobType, formSchema} from "@/schema";
 
-export const create_job_listing = async (data: z.infer<typeof formSchema> & { userId: string | null }) => {
+interface FilterInterface extends z.infer<typeof filterJobType> {
+    organization: string;
+};
+
+export const create_job_listing = async (data: z.infer<typeof formSchema> & {
+    userId: string | null,
+}) => {
     return await db.transaction(async (trx) => {
         const [inserted_job] = await trx.insert(job_listings).values({
             name: data.jobInfo.job_name,
@@ -13,8 +19,9 @@ export const create_job_listing = async (data: z.infer<typeof formSchema> & { us
             salary_up_to: data.jobInfo.salary_up_to,
             description: data.jobInfo.job_description,
             createdBy: data.userId!,
-            // department: data.department,
-        }).$returningId()
+            department: Number(data.jobInfo.department),
+            organization: data.jobInfo.organization,
+        }).$returningId();
 
         if (!inserted_job) {
             trx.rollback()
@@ -25,7 +32,7 @@ export const create_job_listing = async (data: z.infer<typeof formSchema> & { us
                 name: item.technology,
                 years_experience: Number(item.year_of_experience),
             }))
-        ).$returningId()
+        ).$returningId();
 
         for (const tech of techs) {
             await trx.insert(job_technologies).values({
@@ -41,6 +48,8 @@ export const create_job_listing = async (data: z.infer<typeof formSchema> & { us
                 stage_name: item.stage_name,
                 stage_order_id: i,
                 assign_to: 'sss',
+                need_schedule: item.need_schedule,
+                color: item.color,
             }))
         );
 
@@ -48,11 +57,11 @@ export const create_job_listing = async (data: z.infer<typeof formSchema> & { us
             tag: CACHE_TAGS.jobs,
             // userId: newProduct.userId,
             id: String(inserted_job.id),
-        })
+        });
 
         return inserted_job
     })
-}
+};
 
 export const get_job_listings_stages = (jobId: number) => {
     const cacheFn = dbCache(get_job_listings_stages_db, {
@@ -62,37 +71,38 @@ export const get_job_listings_stages = (jobId: number) => {
     })
 
     return cacheFn(jobId)
-}
+};
 
-export const get_all_job_listings = (filter: z.infer<typeof filterJobType>) => {
+export const get_all_job_listings = (filter: FilterInterface) => {
     const cacheFn = dbCache(get_all_job_listings_db, {
         tags: [
             getGlobalTag(CACHE_TAGS.jobs)
         ]
     })
-
-    return cacheFn(filter)
-}
+    return cacheFn(filter);
+};
 
 export const get_job_by_id = (jobId: number) => {
     const cachFn = dbCache(get_job_by_id_db, {
-       tags: [
-           getIdTag(String(jobId), CACHE_TAGS.jobs)
-       ]
+        tags: [
+            getIdTag(String(jobId), CACHE_TAGS.jobs)
+        ]
     })
     return cachFn(jobId)
-}
+};
 
 export const get_job_listing_with_candidate = async (jobId: number) => {
-    const result = await db
+    return await db
         .select({
             job_id: job_listings.id,
             job_name: job_listings.name,
             job_location: job_listings.location,
+            job_status: job_listings.status,
             job_created_at: job_listings.created_at,
             job_updated_at: job_listings.updated_at,
             job_createdBy: job_listings.createdBy,
             application_id: applications.id,
+            application_updated_at: applications.updated_at,
             stageName: stages.stage_name,
             stage_order_id: stages.stage_order_id,
             candidate_name: candidates.name,
@@ -101,13 +111,11 @@ export const get_job_listing_with_candidate = async (jobId: number) => {
         .from(job_listings)
         .leftJoin(applications, eq(applications.job_id, job_listings.id))
         .leftJoin(stages, eq(applications.current_stage_id, stages.id))
-        .leftJoin(candidates,eq(candidates.id, applications.candidate))
+        .leftJoin(candidates, eq(candidates.id, applications.candidate))
         .where(eq(job_listings.id, jobId))
+};
 
-    return result
-}
-
-export const get_all_job_listings_db = async (filter: z.infer<typeof filterJobType>) => {
+export const get_all_job_listings_db = async (filter: FilterInterface ) => {
     const filters: SQL[] = []
 
     if (filter.location) filters.push(inArray(job_listings.location, filter.location as string[]))
@@ -125,27 +133,25 @@ export const get_all_job_listings_db = async (filter: z.infer<typeof filterJobTy
         candidatesCount: db.$count(applications, eq(applications.job_id, job_listings.id))
     })
         .from(job_listings)
-        .where(and(...filters))
+        .where(and(...filters, eq(job_listings.organization, filter.organization)))
         .limit(filter.limit!)
         .offset(filter.offset!)
 
     const len = jobListings.length
 
     return [len, jobListings];
-}
+};
 
 export const get_job_listings_stages_db = async (jobId: number) => {
-    const result = await db.select()
+    return await db.select()
         .from(stages)
         .where(eq(stages.job_id, jobId))
-
-    return result
-}
+};
 
 export const get_job_by_id_db = async (jobId: number) => {
     const [job] = await db.select().from(job_listings).where(eq(job_listings.id, jobId));
     return job
-}
+};
 
 // export const update_job_listing = async (data: Partial<filterJobType>) => {
 // }

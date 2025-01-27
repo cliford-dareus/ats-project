@@ -27,7 +27,7 @@ const Page = () => {
 
     if (!isLoaded) {
         return <>Loading</>
-    }
+    };
 
     return (
         <div className="p-4">

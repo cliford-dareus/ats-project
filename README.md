@@ -1,6 +1,11 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## App Name
+
+App Name is an advanced Applicant Tracking System (ATS) designed to streamline recruitment processes for small to mid-sized 
+organizations, offering an intuitive platform for job posting, candidate management, automated communication, and interview coordination.
 
 ## Getting Started
+
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 First, run the development server:
 
@@ -34,3 +39,12 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## TODO
+
+- [] 
+- [] Automate email and mass email
+- [] Tutorial for new user
+- [] Job settings to change stage behavior
+- [] Add activity(Task) to track user responsibility
+- [] Job posting on other platform(indeed, linkedin ...)

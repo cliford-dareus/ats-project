@@ -4,6 +4,7 @@ import React, {useCallback, useEffect, useTransition} from 'react';
 import {MapPin, Plus} from "lucide-react";
 import {usePathname, useRouter, useSearchParams} from "next/navigation";
 import {Button} from "@/components/ui/button";
+import {createNewSearchParam} from "@/lib/utils";
 
 const JobListingSidebar = () => {
     const router = useRouter();
@@ -15,16 +16,7 @@ const JobListingSidebar = () => {
     // Create new search params
     const createQueryString = useCallback(
         (params: Record<string, string[] | number | null>) => {
-            const newSearchParams = new URLSearchParams(searchParams?.toString());
-
-            for (const [key, value] of Object.entries(params)) {
-                if (value === null || (Array.isArray(value) && value.length == 0)) {
-                    newSearchParams.delete(key);
-                } else {
-                    newSearchParams.set(key, String(value));
-                }
-            }
-            return newSearchParams.toString();
+            return createNewSearchParam(params, searchParams);
         },
         [searchParams]
     );

@@ -4,7 +4,7 @@ export const JOB_STAGES = ['New Candidate', 'Screening', 'Phone Interview', 'Int
 export const FILE_TYPES = ['RESUME', 'COVER_LETTER', 'OFFER_LETTER', "OTHER"] as const;
 export const CANDIDATE_TYPE = ['Active', 'Rejected', 'Hired'] as const;
 
-export type JOB_ENUM = 'New Candidate' | 'Screening' | 'Phone Interview' | 'Interview' | 'Offer' | null;
+export type JOB_ENUM = 'New Candidate' | 'Screening' | 'Phone Interview' | 'Interview' | 'Offer' | 'Applied';
 export type CANDIDATE_ENUM = 'Active' | 'Rejected' | 'Hired';
 
 export const formSchema = z.object({
@@ -12,6 +12,8 @@ export const formSchema = z.object({
         job_name: z.string(),
         job_description: z.string(),
         job_location: z.string(),
+        department: z.string(),
+        organization: z.string(),
         salary_up_to: z.string(),
     }).required(),
     jobTechnology: z.array(
@@ -24,6 +26,8 @@ export const formSchema = z.object({
         z.object({
             stage_name: z.enum(JOB_STAGES),
             stage_assign_to: z.string(),
+            color: z.string(),
+            need_schedule: z.boolean().optional(),
         })),
     jobOptional: z.object({
         job_effective_date: z.date().optional(),
@@ -37,8 +41,10 @@ export const techSchema = z.object({
 });
 
 export const stageSchema = z.object({
-    stage_name: z.string(),
+    stage_name: z.enum(JOB_STAGES),
     stage_assign_to: z.string(),
+    color: z.string(),
+    need_schedule: z.boolean().optional(),
 });
 
 export const candidateForm = z.object({
@@ -67,6 +73,7 @@ export const filterJobType = z.object({
     location: z.string().or(z.array(z.string())).optional(),
     keywords: z.array(z.string()).optional(),
     department: z.array(z.string()).optional(),
+    organization: z.string(),
     status: z.string().or(z.array(z.string())).optional(),
     limit: z.number().optional(),
     offset: z.number().optional(),
@@ -77,6 +84,7 @@ export const filterApplicationsType = z.object({
     stages: z.number().optional(),
     limit: z.number().optional(),
     offset: z.number().optional(),
+    organization: z.string(),
 });
 
 export const stepOneSchema = z.object({
@@ -97,5 +105,7 @@ export const stepThreeSchema = z.array(
     z.object({
         stage_name: z.enum(JOB_STAGES),
         stage_assign_to: z.string(),
+        color: z.string(),
+        need_schedule: z.boolean().optional(),
     })
 );

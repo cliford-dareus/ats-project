@@ -23,9 +23,10 @@ const JobPipeline = ({data, stages}: Props) => {
                     <Column
                         key={stage.stage_order_id}
                         title={stage.stage_name as string}
-                        column={stage.stage_name}
-                        stage={stage.stage_order_id + 1}
+                        column={stage.stage_name!}
+                        stage={stage}
                         cards={jobs!}
+                        color={stage.color}
                         setCards={setJobs}
                     />
                 ))}

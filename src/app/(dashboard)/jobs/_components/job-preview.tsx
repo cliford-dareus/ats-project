@@ -7,13 +7,13 @@ import {JobResponseType} from "@/types/job-listings-types";
 
 type Props = {
     data: JobResponseType;
-}
+};
 
 const JobPreview = ({data}: Props) => {
     const router = useRouter();
 
     return (
-        <div>
+        <div className="p-4">
             <Button onClick={() => {
                 router.push(`/jobs/${data.id}`);
             }}>View Job Page</Button>

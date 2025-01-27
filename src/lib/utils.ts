@@ -25,9 +25,10 @@ export const checkFormStatus = <U, T extends UseFormReturn<any>>(args: U, form: 
 export const aggregateByKey = <T extends Record<string, any>>(
     data: T[],
     key: keyof T,
-    countKey: keyof T
+    countKey: keyof T,
+    color?: keyof T,
 ): { [key: string]: number }[] => {
-    return data.reduce((acc, cur) => {
+    return data?.reduce((acc, cur) => {
         if (cur[key] === null) {
             return acc; // Skip if the key is null
         }
@@ -36,13 +37,40 @@ export const aggregateByKey = <T extends Record<string, any>>(
         if (existingItem) {
             existingItem[countKey as string] += cur[countKey];
         } else {
-            acc.push({[key]: cur[key], [countKey]: cur[countKey]});
+            acc.push({[key]: cur[key], [countKey]: cur[countKey], [color as string]: cur[color as string]});
         }
 
         return acc;
     }, [] as { [key: string]: any }[]);
 };
 
-export const getCalendaAvailability = () => {}
+export const getTimeElapsed = (date: Date) => {
+    const then = new Date(date);
+    const now = new Date();
+
+    const diff = now.getTime() - then.getTime();
+    return Math.floor(diff / (1000 * 3600 * 24));
+};
+
+export const createNewSearchParam = (params: Record<string, string[] | number | null> | {
+    page: number;
+    per_page: string
+}, searchParams: URLSearchParams) => {
+    const newSearchParams = new URLSearchParams(searchParams?.toString());
+
+    for (const [key, value] of Object.entries(params)) {
+        if (value === null || (Array.isArray(value) && value.length == 0)) {
+            newSearchParams.delete(key);
+        } else {
+            newSearchParams.set(key, String(value));
+        }
+    }
+    return newSearchParams.toString();
+};
+
+export const getCalendaAvailability = () => {
+};
+
+
 
 

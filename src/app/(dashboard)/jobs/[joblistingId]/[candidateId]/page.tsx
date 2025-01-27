@@ -3,6 +3,14 @@ import {ChevronDown} from "lucide-react";
 import {CustomTabsTrigger, Tabs, TabsContent, TabsList} from "@/components/ui/tabs";
 import {get_user_applications} from "@/server/db/application";
 import {get_candidate_with_details} from "@/server/db/candidates";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel, DropdownMenuSeparator,
+    DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import {Button} from "@/components/ui/button";
 
 type Props = {
     params: {
@@ -36,16 +44,46 @@ const Page = async ({params}: Props) => {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <div
-                        className="border px-4 py-1.5 flex items-center gap-4 rounded cursor-pointer">
-                        <p className="text-sm">Advance</p>
-                        <ChevronDown size={18}/>
-                    </div>
-                    <div
-                        className="px-4 py-1.5 bg-black text-white flex items-center gap-4 rounded cursor-pointer">
-                        <p className="text-sm">Reject</p>
-                        <ChevronDown size={18}/>
-                    </div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost"
+                                    className="border px-4 py-1.5 flex items-center gap-4 rounded cursor-pointer">
+                                <p className="text-sm">Advance</p>
+                                <ChevronDown size={18}/>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem
+                                // onClick={() => navigator.clipboard.writeText(payment.id)}
+                            >
+                                Copy payment ID
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator/>
+                            <DropdownMenuItem>View customer</DropdownMenuItem>
+                            <DropdownMenuItem>View payment details</DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button className="border px-4 py-1.5 flex items-center gap-4 rounded cursor-pointer">
+                                <p className="text-sm">Reject</p>
+                                <ChevronDown size={18}/>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem
+                                // onClick={() => navigator.clipboard.writeText(payment.id)}
+                            >
+                                Copy payment ID
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator/>
+                            <DropdownMenuItem>View customer</DropdownMenuItem>
+                            <DropdownMenuItem>View payment details</DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </div>
 
@@ -59,7 +97,8 @@ const Page = async ({params}: Props) => {
                                 <CustomTabsTrigger className="px-4 flex items-center gap-4"
                                                    value="resume">Resume</CustomTabsTrigger>
                                 <CustomTabsTrigger className="px-4 flex items-center gap-4"
-                                                   value="application">Application ({applications.length})</CustomTabsTrigger>
+                                                   value="application">Application
+                                    ({applications.length})</CustomTabsTrigger>
                             </TabsList>
                         </div>
                     </TabsList>

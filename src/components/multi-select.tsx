@@ -1,11 +1,8 @@
 import React, {useEffect, useState} from 'react';
-// import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {z} from "zod";
 import {useForm, UseFormSetValue, UseFormGetValues} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {Form} from "@/components/ui/form";
-// import {Button} from "@/components/ui/button";
-// import {Plus} from "lucide-react";
 import {cn} from "@/lib/utils";
 
 type SchemaType = z.ZodObject<any>;
@@ -17,12 +14,13 @@ interface MultiSelectProps<T extends SchemaType> {
     setValue: UseFormSetValue<any>;
     getValues: UseFormGetValues<any>;
     renderForm: (onSubmit: (data: z.infer<T>) => void, form: ReturnType<typeof useForm>) => React.ReactNode;
-    renderSelectedItems: (items: z.infer<T>[], onRemove: (index: number) => void) => React.ReactNode;
+    renderSelectedItems?: (items: z.infer<T>[], onRemove: (index: number) => void) => React.ReactNode;
 }
 
 // Modular Components
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const Forms = <T extends SchemaType>({onSubmit, schema, children}: {
-    onSubmit: (data: z.infer<T>) => void;
+    onSubmit: (data: z.infer<T>) => void,
     schema: T;
     children: (form: ReturnType<typeof useForm<z.infer<T>>>) => React.ReactNode;
 }) => {
@@ -32,17 +30,15 @@ const Forms = <T extends SchemaType>({onSubmit, schema, children}: {
 
     return (
         <Form {...forms}>
-            <form>
+            <div >
                 {children(forms)}
-            </form>
-            {/*<Button onClick={() => onSubmit(forms.watch())}>Add</Button>*/}
+            </div>
         </Form>
     );
 };
 
-const SelectedItems = <T extends object>({items, onRemove, renderItem}: {
+const SelectedItems = <T extends object>({items, renderItem}: {
     items: T[];
-    onRemove: (index: number) => void;
     renderItem: (item: T, index: number) => React.ReactNode;
 }) => {
     return (
@@ -87,11 +83,15 @@ function MultiSelect<T extends SchemaType>({
 
     return (
         <div className={cn(className)}>
-            <SelectedItems
+            {renderSelectedItems && <SelectedItems
                 items={selected}
-                onRemove={remove}
-                renderItem={(item, index) => renderSelectedItems([item], () => remove(index))}
-            />
+                renderItem={(item, index) => {
+                    if (renderSelectedItems) {
+                        return renderSelectedItems([item], () => remove(index))
+                    }
+                    return
+                }}
+            />}
             <Forms onSubmit={add} schema={schema}>
                 {(forms) => renderForm(add, forms)}
             </Forms>

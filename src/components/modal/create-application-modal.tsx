@@ -40,8 +40,8 @@ const CreateApplicationModal = ({job, candidates}: { job: JobResponseType[], can
             const response = await create_application_action({...data, candidate: data.candidate})
             console.log(response);
         } else {
-            // const response = await create_application_action({...data, candidate: null})
-            console.log(data);
+            const response = await create_application_action({...data, candidate: null});
+            console.log(response);
         }
     };
 

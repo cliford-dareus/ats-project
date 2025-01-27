@@ -16,6 +16,8 @@ import {
     DropdownMenuShortcut,
     DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
+import {NewJobContextProvider} from "@/providers/new-job-provider";
+import OrganizationSwitcher from "@/components/organization_switcher";
 
 type Props = {
     children: React.ReactNode
@@ -25,12 +27,13 @@ export type StageCountType = {
     stageId: number
     stages: "New Candidate" | "Screening" | "Phone Interview" | "Offer" | null
     count: number
+    color: string
 }
 
 const Layout = async ({children}: Props) => {
     const user = await currentUser()
     const candidate = await get_all_candidates_action();
-    const stagescount = await get_candidates_stage_count_action();
+    const stagesCount = await get_candidates_stage_count_action();
 
     return (
         <SidebarProvider
@@ -40,27 +43,13 @@ const Layout = async ({children}: Props) => {
                 } as React.CSSProperties
             }>
             <AppSidebar candidate={candidate as candidatesResponseType[]}
-                        stagescount={stagescount as StageCountType[]}/>
+                        stagescount={stagesCount as StageCountType[]}/>
             <SidebarInset>
                 <header className="sticky top-0 flex shrink-0 items-center gap-2 border-b bg-background p-4">
                     <SidebarTrigger className="-ml-1"/>
                     <Separator orientation="vertical" className="mr-2 h-4"/>
-                    {/*<Breadcrumb>*/}
-                    {/*    <BreadcrumbList>*/}
-                    {/*        <BreadcrumbItem className="hidden md:block">*/}
-                    {/*            <BreadcrumbLink href="#">All Inboxes</BreadcrumbLink>*/}
-                    {/*        </BreadcrumbItem>*/}
-                    {/*        <BreadcrumbSeparator className="hidden md:block" />*/}
-                    {/*        <BreadcrumbItem>*/}
-                    {/*            <BreadcrumbPage>Inbox</BreadcrumbPage>*/}
-                    {/*        </BreadcrumbItem>*/}
-                    {/*    </BreadcrumbList>*/}
-                    {/*</Breadcrumb>*/}
-
-                    {/*
-                        TODO: Create the breadcrumb with params
-                        TODO: Add current user avatar with roles
-                     */}
+                    <OrganizationSwitcher />
+                    <Separator orientation="vertical" className="mr-2 h-4"/>
                     <div className="ml-auto flex items-center gap-4">
                         <Button className="p-0">
                             <Link href="/jobs/new" className="flex items-center gap-2 w-full h-full px-4 py-1.5">
@@ -97,7 +86,9 @@ const Layout = async ({children}: Props) => {
                     </div>
                 </header>
                 <>
-                    {children}
+                    <NewJobContextProvider>
+                        {children}
+                    </NewJobContextProvider>
                 </>
             </SidebarInset>
         </SidebarProvider>

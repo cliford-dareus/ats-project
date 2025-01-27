@@ -1,4 +1,5 @@
 'use client';
+
 import {
     createContext,
     useCallback,
@@ -7,11 +8,11 @@ import {
     useMemo,
     useState,
 } from 'react';
-import {formSchema, newJobType} from "@/schema";
+import {formSchema, stageSchema, techSchema} from "@/schema";
 import {z} from "zod";
 
-const defaultJobListing: z.infer<typeof formSchema>  = {
-    jobInfo: {job_name: "", job_description: "", job_location: "", salary_up_to: ""},
+const defaultJobListing: z.infer<typeof formSchema> = {
+    jobInfo: {job_name: "", job_description: "", job_location: "", salary_up_to: "", department: "", organization: ""},
     jobTechnology: [],
     jobStages: [],
     jobOptional: {job_effective_date: new Date(), job_agency: ""}
@@ -21,14 +22,16 @@ const LOCAL_STORAGE_KEY = 'multi-page-form-demo-newDealData';
 
 type newJobContextType = {
     newJobData: z.infer<typeof formSchema>;
-    updateNewJobDetails: (dealDetails: Partial<newJobType>) => void;
+    updateNewJobDetails: (newInfo: any, stage: string) => void;
+    updateStageOptions: (newStages: z.infer<typeof stageSchema>[]) => void;
     dataLoaded: boolean;
+    removeJob: (remove: any, stage: string) => void;
     resetLocalStorage: () => void;
 };
 
-export const AddDealContext = createContext<newJobContextType | null>(null);
+export const NewJobContext = createContext<newJobContextType | null>(null);
 
-export const AddDealContextProvider = ({children}: { children: React.ReactNode; }) => {
+export const NewJobContextProvider = ({children}: { children: React.ReactNode; }) => {
     const [newJobData, setNewJobData] = useState<z.infer<typeof formSchema>>(defaultJobListing);
     const [dataLoaded, setDataLoaded] = useState(false);
 
@@ -44,11 +47,46 @@ export const AddDealContextProvider = ({children}: { children: React.ReactNode; 
     }, [newJobData, dataLoaded]);
 
     const updateNewJobDetails = useCallback(
-        (JobDetails: Partial<newJobType>) => {
-            setNewJobData({ ...newJobData, ...JobDetails });
+        (newInfo: { newInfo: any }, stage: string) => {
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
+            setNewJobData({...newJobData, [stage]: {...newJobData[stage], ...newInfo}});
+
+            if (stage === "jobTechnology") {
+                setNewJobData({
+                    ...newJobData,
+                    [stage]: [...newJobData[stage], newInfo as unknown as z.infer<typeof techSchema>]
+                });
+            }
+
+            if (stage === "jobStages") {
+                setNewJobData({
+                    ...newJobData,
+                    [stage]: [...newJobData[stage], newInfo as unknown as z.infer<typeof stageSchema>]
+                });
+            }
         },
         [newJobData]
     );
+
+    const updateStageOptions = (newStages: z.infer<typeof stageSchema>[]) => {
+        setNewJobData({...newJobData, jobStages: newStages});
+    };
+
+    const removeJob = useCallback(
+        (remove: any, stage: string) => {
+            if (stage === "jobTechnology") {
+                const filter = newJobData.jobTechnology.filter((item) => item.technology !== remove.technology);
+                setNewJobData({...newJobData, jobTechnology: filter});
+            }
+
+            if (stage === "jobStages") {
+                const filter = newJobData.jobStages.filter((item) => item.stage_name !== remove.stage_name);
+                setNewJobData({...newJobData, jobStages: filter});
+            }
+        },
+        [newJobData]
+    )
 
     const saveDataToLocalStorage = (
         currentDealData: z.infer<typeof formSchema>
@@ -80,20 +118,22 @@ export const AddDealContextProvider = ({children}: { children: React.ReactNode; 
             newJobData,
             dataLoaded,
             updateNewJobDetails,
+            updateStageOptions,
             resetLocalStorage,
+            removeJob
         }),
         [newJobData, dataLoaded, updateNewJobDetails]
     );
 
     return (
-        <AddDealContext.Provider value={contextValue}>
+        <NewJobContext.Provider value={contextValue}>
             {children}
-        </AddDealContext.Provider>
+        </NewJobContext.Provider>
     );
 };
 
-export function useAddDealContext() {
-    const context = useContext(AddDealContext);
+export function useNewJobContext() {
+    const context = useContext(NewJobContext);
     if (context === null) {
         throw new Error(
             'useAddDealContext must be used within a AddDealContextProvider'

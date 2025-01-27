@@ -2,7 +2,7 @@
 
 import React, {Dispatch, DragEvent, SetStateAction, useState} from "react";
 import Card from "@/components/kanban/card";
-import {JobListingWithCandidatesType} from "@/types/job-listings-types";
+import {JobListingWithCandidatesType, StageResponseType} from "@/types/job-listings-types";
 import DropIndicator from "@/components/kanban/drop-indicator";
 import {update_application_stage_action} from "@/server/actions/application_actions";
 import {JOB_ENUM} from "@/schema";
@@ -15,11 +15,13 @@ import {Input} from "@/components/ui/input";
 import {z} from "zod";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {Button} from "@/components/ui/button";
+import {cn} from "@/lib/utils";
 
 type Props = {
     title: string;
-    stage: number;
+    stage: StageResponseType;
     cards: JobListingWithCandidatesType[];
+    color: string;
     column: JOB_ENUM
     setCards: Dispatch<SetStateAction<JobListingWithCandidatesType[] | undefined>>
 };
@@ -30,7 +32,7 @@ const FormSchema = z.object({
     }),
 });
 
-const Column = ({title, cards, column, setCards, stage}: Props) => {
+const Column = ({title, cards, column, setCards, stage, color}: Props) => {
     const [active, setActive] = useState(false);
 
     const form = useForm<z.infer<typeof FormSchema>>({
@@ -55,6 +57,7 @@ const Column = ({title, cards, column, setCards, stage}: Props) => {
 
         const before = Number(element?.dataset.before) || -1;
         const dropStage = Number(element?.dataset.stage);
+        const drop_schedule = element?.dataset.scheduling === "true";
 
         if (before !== cardId) {
             let copy = [...cards];
@@ -75,12 +78,20 @@ const Column = ({title, cards, column, setCards, stage}: Props) => {
                 copy.splice(insertAtIndex, 0, cardToTransfer!);
             }
 
-            await update_application_stage_action({
+            if(title !== "Applied"){
+              await update_application_stage_action({
                 candidateId: cardToTransfer.application_id!,
                 current_stage_id: dropStage
-            });
+              });
+                
+                if(drop_schedule){
+                  {/* TODO: 1) Check if the drop stage need scheduling, if yes
+                            2) Then update activity table and notification table
+                  */}
+                };
 
-            setCards(copy);
+                setCards(copy);
+            }
         }
     };
 
@@ -141,10 +152,10 @@ const Column = ({title, cards, column, setCards, stage}: Props) => {
     const filteredCards = cards?.filter((c) => c.stageName === column);
 
     return (
-        <div className="min-w-52 w-52">
+        <div className="min-w-56 w-56">
             <div className="mb-2 flex items-center justify-between my-4">
                 <div className="flex items-center gap-2">
-                    <div className="h-3 w-3 rounded bg-red-300"></div>
+                    <div className={cn(color, "h-3 w-3 rounded")}></div>
                     <p className={`font-medium text-slate-500 text-sm`}>{title}</p>
                     <Badge
                         className="rounded text-xs px-1  py-.5 flex items-center justify-center bg-muted text-slate-500"
@@ -171,7 +182,7 @@ const Column = ({title, cards, column, setCards, stage}: Props) => {
                                                     <Input placeholder="shadcn" {...field} />
                                                 </FormControl>
                                                 <FormDescription>
-                                                    This is your public display name.{stage}
+                                                    This is your public display name.{stage.stage_name}
                                                 </FormDescription>
                                                 <FormMessage/>
                                             </FormItem>

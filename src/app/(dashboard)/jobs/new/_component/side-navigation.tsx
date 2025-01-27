@@ -27,7 +27,7 @@ const steps = [
         icon: <FileArchive size={20}/>,
         link: '/jobs/new/step-three',
     },
-    {title: 'Review', route: 'review', icon: <FileArchive size={20}/>, link: '/jobs/new/review'},
+    {title: 'Review', route: 'review', icon: <FileArchive size={20}/>, link: '/jobs/new/step-review'},
 ];
 
 export default function StepNavigation() {

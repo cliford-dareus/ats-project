@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "a78540ad-bf6f-4b35-82b3-10f54bcadc6b",
+  "id": "89ed4d2b-9bdb-4580-a6aa-cf1831e155d1",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "applications": {
@@ -34,6 +34,31 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "can_contact": {
+          "name": "can_contact",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "(now())"
         }
       },
       "indexes": {},
@@ -100,8 +125,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "candidates_id": {
-          "name": "candidates_id",
+        "candidate_id": {
+          "name": "candidate_id",
           "type": "int",
           "primaryKey": false,
           "notNull": true,
@@ -117,12 +142,12 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "attachments_candidates_id_candidate_id_fk": {
-          "name": "attachments_candidates_id_candidate_id_fk",
+        "attachments_candidate_id_candidate_id_fk": {
+          "name": "attachments_candidate_id_candidate_id_fk",
           "tableFrom": "attachments",
           "tableTo": "candidate",
           "columnsFrom": [
-            "candidates_id"
+            "candidate_id"
           ],
           "columnsTo": [
             "id"
@@ -166,15 +191,15 @@
           "notNull": true,
           "autoincrement": false
         },
-        "cv_path": {
-          "name": "cv_path",
+        "phone": {
+          "name": "phone",
           "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "phone": {
-          "name": "phone",
+        "cv_path": {
+          "name": "cv_path",
           "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true,
@@ -187,6 +212,23 @@
           "notNull": false,
           "autoincrement": false,
           "default": "'Active'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "(now())"
         }
       },
       "indexes": {},
@@ -211,8 +253,45 @@
           "columns": [
             "phone"
           ]
+        },
+        "candidate_cv_path_unique": {
+          "name": "candidate_cv_path_unique",
+          "columns": [
+            "cv_path"
+          ]
         }
       },
+      "checkConstraint": {}
+    },
+    "departments": {
+      "name": "departments",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "departments_id": {
+          "name": "departments_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
       "checkConstraint": {}
     },
     "interviews": {
@@ -259,6 +338,23 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "(now())"
         }
       },
       "indexes": {},
@@ -326,13 +422,27 @@
           "notNull": true,
           "autoincrement": false
         },
+        "department": {
+          "name": "department",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "organization": {
+          "name": "organization",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
         "status": {
           "name": "status",
-          "type": "enum('Not Publish','Actively Hiring','Archive')",
+          "type": "enum('OPEN','CLOSED','DRAFT','ARCHIVED','PENDING')",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false,
-          "default": "'Not Publish'"
+          "default": "'PENDING'"
         },
         "created_by": {
           "name": "created_by",
@@ -431,6 +541,130 @@
           "name": "job_technologies_id",
           "columns": [
             "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "org_to_department": {
+      "name": "org_to_department",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "department_id": {
+          "name": "department_id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "org_to_department_department_id_departments_id_fk": {
+          "name": "org_to_department_department_id_departments_id_fk",
+          "tableFrom": "org_to_department",
+          "tableTo": "departments",
+          "columnsFrom": [
+            "department_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "org_to_department_organization_id_organization_clerk_id_fk": {
+          "name": "org_to_department_organization_id_organization_clerk_id_fk",
+          "tableFrom": "org_to_department",
+          "tableTo": "organization",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "clerk_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "org_to_department_id": {
+          "name": "org_to_department_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "organization": {
+      "name": "organization",
+      "columns": {
+        "clerk_id": {
+          "name": "clerk_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "locations": {
+          "name": "locations",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "phone": {
+          "name": "phone",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "color": {
+          "name": "color",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "organization_clerk_id": {
+          "name": "organization_clerk_id",
+          "columns": [
+            "clerk_id"
           ]
         }
       },
@@ -536,7 +770,7 @@
         },
         "stage_name": {
           "name": "stage_name",
-          "type": "enum('New Candidate','Screening','Phone Interview','Offer')",
+          "type": "enum('New Candidate','Screening','Phone Interview','Interview','Offer')",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -547,6 +781,21 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "color": {
+          "name": "color",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "need_schedule": {
+          "name": "need_schedule",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": true
         },
         "assign_to": {
           "name": "assign_to",

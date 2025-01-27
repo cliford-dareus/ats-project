@@ -9,7 +9,7 @@ export const stepTwoFormAction = async (
     formData: FormData
 ) => {
     const data = Object.fromEntries(formData.entries());
-    const validated = stepTwoSchema.safeParse(data);
+    const validated = stepTwoSchema.safeParse(JSON.parse(data["jobTechnology"] as string));
     if (!validated.success) {
         const errors = validated.error.issues.reduce((acc: FormErrors, issue) => {
             const path = issue.path[0] as string;
@@ -19,5 +19,5 @@ export const stepTwoFormAction = async (
         return errors;
     }
 
-    redirect('');
+    redirect('/jobs/new/step-three');
 };

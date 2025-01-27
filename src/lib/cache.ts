@@ -11,6 +11,8 @@ export const CACHE_TAGS = {
     jobs: "jobs",
     stages: "stages",
     applications: "applications",
+    organizations: "organizations",
+    departments: "departments",
 } as const
 
 export function getGlobalTag(tag: keyof typeof CACHE_TAGS) {

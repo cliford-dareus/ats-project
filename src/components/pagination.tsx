@@ -10,6 +10,7 @@ import {
     PaginationLink, PaginationNext,
     PaginationPrevious
 } from "@/components/ui/pagination";
+import {createNewSearchParam} from "@/lib/utils";
 
 type Props = {
     pageCount: number;
@@ -56,16 +57,7 @@ const PaginationElement = ({pageCount}: Props) => {
 
     const createQueryString = useCallback(
         (params: { page: number; per_page: string }) => {
-            const newSearchParams = new URLSearchParams(searchParams?.toString());
-
-            for (const [key, value] of Object.entries(params)) {
-                if (value === null || (Array.isArray(value) && value.length == 0)) {
-                    newSearchParams.delete(key);
-                } else {
-                    newSearchParams.set(key, String(value));
-                }
-            }
-            return newSearchParams.toString();
+            return createNewSearchParam(params, searchParams)
         },
         [searchParams]
     );

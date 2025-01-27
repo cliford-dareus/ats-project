@@ -71,8 +71,6 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar> & {
         setActiveItem(data.navMain.find(nav => pathname.startsWith(nav.url))!)
     }, [pathname]);
 
-    console.log(pathname)
-
     return (
         <Sidebar
             variant="floating"
@@ -152,7 +150,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar> & {
                             ) : activeItem.title === "Jobs" && !pathname.startsWith('/jobs/new/step') ? (
                                 <JobListingSidebar/>
                             ) : activeItem.title === "Candidates" ? (
-                                <SidebarCandidate candidate={props.candidate} stagescount={props.stagescount as StageCountType[]} />
+                                <SidebarCandidate candidate={props.candidate} stagesCount={props.stagescount as StageCountType[]} />
                             ) : activeItem.title === "Settings" ? (
                                 <SidebarSettings/>
                             ) : pathname.startsWith("/jobs/new/step")? (

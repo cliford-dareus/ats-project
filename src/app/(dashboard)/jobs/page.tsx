@@ -1,10 +1,7 @@
-import React from 'react';
-import {get_all_job_listings} from "@/server/db/job-listings";
 import JobListingsList from "@/app/(dashboard)/jobs/_components/job-listings-list";
 import {JobResponseType} from "@/types/job-listings-types";
-import {Button} from "@/components/ui/button";
-import {Dialog, DialogContent, DialogTrigger} from "@/components/ui/dialog";
-import CreateJobListingModal from "@/components/modal/create-job-listing-modal";
+import {auth} from "@clerk/nextjs/server";
+import {get_all_job_listings_action} from "@/server/actions/job-listings-actions";
 
 type Props = {
     searchParams: {
@@ -13,17 +10,35 @@ type Props = {
 };
 
 const Page = async ({searchParams}: Props) => {
+    const {orgId} = await auth();
     const {location, page, per_page} = await searchParams ?? {};
 
     const limit = typeof per_page === "string" ? parseInt(per_page) : 8;
     const offset = typeof page === "string" ? (parseInt(page) - 1) * limit : 0;
     const locations = location ? (location as string).split(',') : undefined;
+    // const departments = location ? (location as string).split(',') : undefined;
 
-    const [len, jobs] = await get_all_job_listings({
-        offset, limit, location: locations
+    const result = await get_all_job_listings_action({
+        offset, limit, location: locations,
+        organization: orgId as string,
     });
 
-    const pageCount = Math.ceil((len as number) / limit);
+    let len: number | undefined;
+    let jobs: JobResponseType[] | undefined;
+    let error: boolean | undefined;
+
+    if (Array.isArray(result)) {
+        [len, jobs] = result as [number, JobResponseType[]];
+    } else if (result && typeof result === "object" && 'error' in result) {
+        error = result.error;
+    }
+
+    if (error) {
+        console.error("Error fetching job listings:", error);
+        return <div>Error loading jobs.</div>;
+    }
+
+    const pageCount = len && limit ? Math.ceil((len as number) / limit) : 0;
 
     return (
         <div className="md:p-4">
@@ -32,15 +47,6 @@ const Page = async ({searchParams}: Props) => {
                     <h1 className="text-2xl font-bold text-gray-900">JOBS</h1>
                     <span className="px-2 bg-slate-300 flex items-center justify-center rounded">{len as number}</span>
                 </div>
-
-                <Dialog>
-                    <DialogTrigger asChild>
-                        <Button>Add Job</Button>
-                    </DialogTrigger>
-                    <DialogContent className="rounded-none">
-                        <CreateJobListingModal/>
-                    </DialogContent>
-                </Dialog>
             </div>
             <JobListingsList jobs={jobs as JobResponseType[]} pageCount={pageCount}/>
         </div>

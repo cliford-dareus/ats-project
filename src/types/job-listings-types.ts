@@ -29,10 +29,12 @@ export type JobListingWithCandidatesType = {
     job_id: number
     job_name: string
     job_location: string
+    job_status: 'OPEN'|'CLOSED'|'DRAFT'|'ARCHIVED'|'PENDING'
     job_created_at: Date
     job_updated_at: Date
     job_createdBy: string
     application_id: number | null
+    application_updated_at: Date
     stageName: JOB_ENUM
     stage_order_id: number | null
     candidate_name: string | null
@@ -53,9 +55,11 @@ export type ApplicationResponseType = {
 export  type StageResponseType = {
     id: number
     job_id: number
-    stage_name: "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | null
+    stage_name: "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | 'Applied' | null
     stage_order_id: number
     assign_to: string | null
+    color: string
+    need_schedule: boolean
 }
 
 export interface FormErrors {

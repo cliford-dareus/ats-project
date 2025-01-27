@@ -30,8 +30,6 @@ const Page = async ({params}: Props) => {
     const applications = await get_user_applications(Number(params.candidateId));
     // const attachment = await get_candidate_attachment(f.candidateId);
 
-    console.log(applications);
-
     return (
         <div>
             <div className="flex flex-col md:flex-row justify-between w-full p-4">

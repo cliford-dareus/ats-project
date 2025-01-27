@@ -1,15 +1,15 @@
 import {candidatesResponseType} from "@/types/job-listings-types";
 import {Badge} from "@/components/ui/badge";
 import {StageCountType} from "@/app/(dashboard)/layout";
-import {aggregateByKey} from "@/lib/utils";
+import {aggregateByKey, cn} from "@/lib/utils";
 import {Separator} from "@/components/ui/separator";
 
-const SidebarCandidate = ({candidate, stagescount}: {
+const SidebarCandidate = ({candidate, stagesCount}: {
     candidate: candidatesResponseType[],
-    stagescount: StageCountType[]
+    stagesCount: StageCountType[]
 }) => {
-    const statusArray = aggregateByKey(candidate.map(c => ({...c, count: 1})), "status", "count")
-    const stagesArray = aggregateByKey(stagescount, "stages", "count")
+    const statusArray = aggregateByKey(candidate.map(c => ({...c, count: 1})), "status", "count");
+    const stagesArray = aggregateByKey(stagesCount, "stages", "count", "color");
 
     return (
         <div className="flex flex-col">
@@ -18,14 +18,14 @@ const SidebarCandidate = ({candidate, stagescount}: {
                     <span className="font-medium text-base ">Stages</span>
                 </div>
                 <div className="flex flex-col gap-2 mt-4">
-                    {stagesArray.length > 0 && stagesArray.map((item, i) => (
+                    {stagesArray?.length > 0 && stagesArray.map((item, i) => (
                         <div
                             className="flex items-center justify-between px-4 py-2 rounded hover:bg-muted cursor-pointer"
                             key={i}
                         >
                             <div className="flex items-center gap-2">
                                 <span
-                                    className="w-[10px] h-[10px] rounded-full bg-destructive"
+                                    className={cn(String(item.color),"w-[10px] h-[10px] rounded-full")}
                                 ></span>
                                 <span>{item.stages}</span>
                             </div>

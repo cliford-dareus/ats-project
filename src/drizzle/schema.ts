@@ -1,6 +1,37 @@
-import {int, mysqlTable, varchar, mysqlEnum, timestamp} from 'drizzle-orm/mysql-core';
+import {int, mysqlTable, varchar, mysqlEnum, timestamp, boolean} from 'drizzle-orm/mysql-core';
 import {relations} from "drizzle-orm";
-import {boolean} from "drizzle-orm/pg-core";
+
+export const organization = mysqlTable('organization', {
+    clerk_id: varchar({length: 255}).notNull().primaryKey(),
+    name: varchar({length: 255}).notNull(),
+    locations: varchar({length: 255}).notNull(),
+    phone: varchar({length: 255}).notNull(),
+    email: varchar({length: 255}).notNull(),
+    color: varchar({length: 255}).notNull(),
+});
+
+export const organizationRelation = relations(organization, ({many}) => ({
+    departments: many(departments),
+    users: many(usersTable),
+    job_listings: many(job_listings),
+}));
+
+export const departments = mysqlTable('departments', {
+    id: int('id').primaryKey().autoincrement(),
+    name: varchar({length: 255}).notNull(),
+});
+
+export const departmentRelation = relations(departments, ({many}) => ({
+    job_listings: many(job_listings),
+    organization: many(organization),
+    departments: many(departments),
+}));
+
+export const org_to_department = mysqlTable('org_to_department', {
+    id: int('id').primaryKey().autoincrement(),
+    department_id: int('department_id').notNull().references(() => departments.id),
+    organization_id: varchar({length: 255}).notNull().references(() => organization.clerk_id),
+});
 
 export const usersTable = mysqlTable('users_table', {
     id: varchar({length: 255}).primaryKey(),
@@ -11,7 +42,8 @@ export const usersTable = mysqlTable('users_table', {
 
 export const usersTableRelations = relations(usersTable, ({many}) => ({
     assignments: many(stages),
-}))
+    organization: many(organization),
+}));
 
 export const job_listings = mysqlTable('job_listing', {
     id: int('id').primaryKey().autoincrement(),
@@ -19,19 +51,26 @@ export const job_listings = mysqlTable('job_listing', {
     location: varchar({length: 255}).notNull(),
     description: varchar({length: 255}).notNull(),
     salary_up_to: varchar({length: 255}).notNull(),
-    // department: varchar({length: 255}).notNull(),
-    status: mysqlEnum('status', ['Not Publish', 'Actively Hiring', 'Archive']).default('Not Publish'),
-    // status: mysqlEnum('status', ["OPEN", "CLOSED", "DRAFT", "ARCHIVED", "PENDING"]).default('PENDING'),
-    // hiring_managers: []
+    department: int().notNull(),
+    organization: varchar({length:255}).notNull(),
+    status: mysqlEnum('status', ["OPEN", "CLOSED", "DRAFT", "ARCHIVED", "PENDING"]).default('PENDING'),
     createdBy: varchar('created_by', {length: 255}).notNull(),
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
 });
 
-export const job_listingsRelations = relations(job_listings, ({many}) => ({
+export const job_listingsRelations = relations(job_listings, ({many, one}) => ({
     stages: many(stages),
     candidates: many(candidates),
     job_to_technologies: many(job_technologies),
+    departments: one(departments, {
+        fields: [job_listings.department],
+        references: [departments.id]
+    }),
+    organization: one(organization, {
+        fields: [job_listings.organization],
+        references: [organization.clerk_id]
+    }),
 }));
 
 export const technologies = mysqlTable('technologies', {
@@ -64,10 +103,10 @@ export const jobTechnologyRelation = relations(job_technologies, ({one}) => ({
 export const stages = mysqlTable('stages', {
     id: int('id').primaryKey().autoincrement(),
     job_id: int().notNull().references(() => job_listings.id, {onDelete: 'cascade'}),
-    stage_name: mysqlEnum('stage_name', ['New Candidate', 'Screening', 'Phone Interview', 'Interview','Offer']),
+    stage_name: mysqlEnum('stage_name', ['Applied','New Candidate', 'Screening', 'Phone Interview', 'Interview', 'Offer']),
     stage_order_id: int().notNull(),
-    // color: varchar({length: 255}),
-    // need_schedule: boolean(),
+    color: varchar({length: 255}),
+    need_schedule: boolean().default(true),
     assign_to: varchar({length: 255}),
 });
 
@@ -91,6 +130,8 @@ export const candidates = mysqlTable('candidate', {
     cv_path: varchar({length: 255}).notNull().unique(),
     // location: varchar({length: 255}).notNull().unique(),
     status: mysqlEnum('status', ['Active', 'Rejected', 'Hired']).default('Active'),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+    updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
 });
 
 export const candidates_relations = relations(candidates, ({one, many}) => ({
@@ -115,7 +156,9 @@ export const applications = mysqlTable('applications', {
     job_id: int().references(() => job_listings.id),
     current_stage_id: int(),
     candidate: int().references(() => candidates.id, {onDelete: 'cascade'}),
-    // can_contact: boolean(),
+    can_contact: boolean().default(false),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+    updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
 });
 
 export const applications_relations = relations(applications, ({one}) => ({
@@ -123,7 +166,7 @@ export const applications_relations = relations(applications, ({one}) => ({
     score: one(scoreCards),
     candidates: one(candidates, {fields: [applications.candidate], references: [candidates.id]}),
     job: one(job_listings, {fields: [applications.job_id], references: [job_listings.id]}),
-}))
+}));
 
 export const interviews = mysqlTable('interviews', {
     id: int('id').primaryKey().autoincrement(),
@@ -132,6 +175,8 @@ export const interviews = mysqlTable('interviews', {
     start_at: timestamp('start_at'),
     end_at: timestamp('end_at'),
     status: mysqlEnum('status', ['SCHEDULE', 'AWAITING_FEEDBACK', 'COMPLETE']),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+    updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
 });
 
 export const interviews_relations = relations(interviews, ({one}) => ({
@@ -144,7 +189,7 @@ export const scoreCards = mysqlTable('scoresCards', {
     applications_id: int().references(() => applications.id),
     interviews_id: int().references(() => interviews.id, {onDelete: 'cascade'}),
     interviewer: varchar({length: 255}).notNull(),
-    overall_recommendations: mysqlEnum('overall_recommendations', ["DEFINITELY_NO", "NO", "YES", "STRONG_YES", "NO_DECISION"]).default("NO_DECISION")
+    overall_recommendations: mysqlEnum('overall_recommendations', ["DEFINITELY_NO", "NO", "YES", "STRONG_YES", "NO_DECISION"]).default("NO_DECISION"),
 });
 
 export const scoresCards_relation = relations(scoreCards, ({one}) => ({
@@ -152,6 +197,8 @@ export const scoresCards_relation = relations(scoreCards, ({one}) => ({
     applications: one(applications, {fields: [scoreCards.applications_id], references: [applications.id]}),
 }));
 
-export type JobListingType = typeof job_listings.$inferInsert
+
+
+
 
 

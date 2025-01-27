@@ -1,17 +1,15 @@
 'use server';
 
-import {stepOneSchema} from '@/schema';
+import {stepThreeSchema} from '@/schema';
 import {redirect} from 'next/navigation';
 import {FormErrors} from "@/types/job-listings-types";
-import {get_org_departments} from "@/server/db/organization";
 
-export const stepOneFormAction = async (
+export const stepThreeFormAction = async (
     prevState: FormErrors | undefined,
     formData: FormData
 ) => {
     const data = Object.fromEntries(formData.entries());
-    const validated = stepOneSchema.safeParse(data);
-    console.log(data)
+    const validated = stepThreeSchema.safeParse(JSON.parse(data["jobStages"] as string));
     if (!validated.success) {
         const errors = validated.error.issues.reduce((acc: FormErrors, issue) => {
             const path = issue.path[0] as string;
@@ -21,9 +19,5 @@ export const stepOneFormAction = async (
         return errors;
     }
 
-    redirect('/jobs/new/step-two');
-};
-
-export const get_dept = async (id: string) => {
-    return await get_org_departments(id);
+    redirect('/jobs/new/step-review');
 };
