@@ -33,9 +33,9 @@ const Page = async ({params}: Props) => {
     // @ts-expect-error
     const [, jobs] = await get_all_job_listings_action({ organization: orgId});
     // Change fn name to get_application_info or something
-    const job = await get_job_listing_with_candidate(Number(joblistingId));
+    const applications = await get_job_listing_with_candidate(Number(joblistingId));
     const candidates = await get_all_candidates_action();
-    const stages = await get_job_listings_stages(job[0]?.job_id);
+    const stages = await get_job_listings_stages(applications[0]?.job_id);
 
     return (
         <div>
@@ -43,15 +43,15 @@ const Page = async ({params}: Props) => {
                 <div>
                     <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-4">
-                            <h1 className="font-bold text-xl">{job[0]?.job_name}</h1>
+                            <h1 className="font-bold text-xl">{applications[0]?.job_name}</h1>
                             <Badge className="bg-green-100 text-xs text-green-500 font-normal shadow-none">
-                                {job[0].job_status}
+                                {applications[0].job_status}
                             </Badge>
                         </div>
 
                         <div className="flex items-center gap-2">
                             <p className="text-xs text-slate-500">
-                                Published on {job[0]?.job_created_at.toString().split(' ').slice(0, 3).join(' ')}
+                                Published on {applications[0]?.job_created_at.toString().split(' ').slice(0, 3).join(' ')}
                             </p>
                         </div>
                     </div>
@@ -85,10 +85,6 @@ const Page = async ({params}: Props) => {
                             <BriefcaseBusiness size={20}/>
                             <p>Options</p>
                         </CustomTabsTrigger>
-                        <div className="ml-auto flex items-center gap-2 cursor-pointer">
-                            <Edit size={16}/>
-                            <p className="text-sm">edit job</p>
-                        </div>
                     </TabsList>
 
                     <TabsContent value="candidates">
@@ -96,13 +92,14 @@ const Page = async ({params}: Props) => {
                     </TabsContent>
                     <TabsContent value="pipelines">
                         <JobPipeline
-                            data={job as JobListingWithCandidatesType[]}
+                            data={applications as JobListingWithCandidatesType[]}
                             stages={stages as StageResponseType[]}
                         />
                     </TabsContent>
                     <TabsContent value="options">
                         <JobOptions
-                            data={job as JobListingWithCandidatesType[]}
+                            job_id={Number(joblistingId)}
+                            data={jobs as JobResponseType[]}
                             stages={stages as StageResponseType[]}
                         />
                     </TabsContent>

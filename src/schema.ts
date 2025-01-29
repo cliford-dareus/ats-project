@@ -1,8 +1,9 @@
 import {z} from "zod";
 
-export const JOB_STAGES = ['New Candidate', 'Screening', 'Phone Interview', 'Interview', 'Offer'] as const;
+export const JOB_STAGES = ['New Candidate', 'Screening', 'Phone Interview', 'Interview', 'Offer', 'Applied'] as const;
 export const FILE_TYPES = ['RESUME', 'COVER_LETTER', 'OFFER_LETTER', "OTHER"] as const;
 export const CANDIDATE_TYPE = ['Active', 'Rejected', 'Hired'] as const;
+export const JOB_STATUS = ["OPEN", "CLOSED", "DRAFT", "ARCHIVED", "PENDING"] as const;
 
 export type JOB_ENUM = 'New Candidate' | 'Screening' | 'Phone Interview' | 'Interview' | 'Offer' | 'Applied';
 export type CANDIDATE_ENUM = 'Active' | 'Rejected' | 'Hired';
@@ -109,3 +110,10 @@ export const stepThreeSchema = z.array(
         need_schedule: z.boolean().optional(),
     })
 );
+
+export const updateJobSchema = z.object({
+    job_name: z.string().optional(),
+    job_description: z.string().optional(),
+    job_location: z.string().optional(),
+    salary_up_to: z.string().optional(),
+});

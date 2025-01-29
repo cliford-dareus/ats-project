@@ -7,7 +7,7 @@ import {filterJobType, formSchema} from "@/schema";
 
 interface FilterInterface extends z.infer<typeof filterJobType> {
     organization: string;
-};
+}
 
 export const create_job_listing = async (data: z.infer<typeof formSchema> & {
     userId: string | null,
@@ -127,6 +127,9 @@ export const get_all_job_listings_db = async (filter: FilterInterface ) => {
         id: job_listings.id,
         name: job_listings.name,
         location: job_listings.location,
+        status: job_listings.status,
+        department: job_listings.department,
+        organization: job_listings.organization,
         created_at: job_listings.created_at,
         updated_at: job_listings.updated_at,
         createdBy: job_listings.createdBy,
@@ -138,7 +141,6 @@ export const get_all_job_listings_db = async (filter: FilterInterface ) => {
         .offset(filter.offset!)
 
     const len = jobListings.length
-
     return [len, jobListings];
 };
 

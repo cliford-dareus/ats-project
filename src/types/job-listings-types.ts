@@ -13,6 +13,9 @@ export type JobResponseType = {
     createdBy: string;
     created_at: Date;
     updated_at: Date;
+    organization: string;
+    department: number;
+    status: 'OPEN'|'CLOSED'|'DRAFT'|'ARCHIVED'|'PENDING';
     candidatesCount: number;
 }
 
