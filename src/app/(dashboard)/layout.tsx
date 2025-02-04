@@ -32,7 +32,7 @@ export type StageCountType = {
 
 const Layout = async ({children}: Props) => {
     const user = await currentUser()
-    const candidate = await get_all_candidates_action();
+    const [,candidate] = await get_all_candidates_action({limit: 0,offset: 0}) as [number, candidatesResponseType[]];
     const stagesCount = await get_candidates_stage_count_action();
 
     return (

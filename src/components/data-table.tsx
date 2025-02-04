@@ -10,10 +10,9 @@ import {
     useReactTable
 } from "@tanstack/react-table";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-// import type {candidatesResponseType, JobResponseType} from "@/types/job-listings-types";
-import CandidatePreview from "@/app/(dashboard)/candidates/_components/candidate-preview";
+import CandidatePreview from "@/app/(dashboard)/applications/_components/candidate-preview";
 import {Sheet, SheetContent} from "@/components/ui/sheet";
-import {ApplicationResponseType, JobResponseType} from "@/types/job-listings-types";
+import {ApplicationResponseType, CandidatesResponseType, JobResponseType} from "@/types/job-listings-types";
 import JobPreview from "@/app/(dashboard)/jobs/_components/job-preview";
 
 interface Props<T extends object> {
@@ -22,11 +21,9 @@ interface Props<T extends object> {
     status: string;
 }
 
-// type SCHEMA = JobResponseType | candidatesResponseType
-
 const DataTable = <T extends object>({columns, data, status}: Props<T>) => {
     const [isOpen, setIsOpen] = React.useState(false);
-    const [applicationSelected, setApplicationSelected] = React.useState<ApplicationResponseType | JobResponseType | null>(null);
+    const [applicationSelected, setApplicationSelected] = React.useState<ApplicationResponseType | CandidatesResponseType | JobResponseType | null>(null);
     const [rowSelection, setRowSelection] = React.useState({});
     const table = useReactTable<T>({
         data,
@@ -40,7 +37,7 @@ const DataTable = <T extends object>({columns, data, status}: Props<T>) => {
         getFilteredRowModel: getFilteredRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
         debugTable: true,
-    })
+    });
 
     return (
         <Table>
@@ -83,7 +80,7 @@ const DataTable = <T extends object>({columns, data, status}: Props<T>) => {
                                             onClick={() => {
                                                 if (cell.column.columnDef.id === 'select' || cell.column.columnDef.id == 'action') return
                                                 // router.push(`/${status}/:${(cell.row.original as SCHEMA).id}`);
-                                                setApplicationSelected(row.original as ApplicationResponseType | JobResponseType)
+                                                setApplicationSelected(row.original as ApplicationResponseType | JobResponseType | CandidatesResponseType)
                                                 setIsOpen(!isOpen)
                                             }}
                                         >

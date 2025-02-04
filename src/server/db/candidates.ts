@@ -1,8 +1,9 @@
 import {db} from "@/drizzle/db";
 import {applications, candidates, interviews, job_listings, scoreCards, stages} from "@/drizzle/schema";
-import {and, eq} from "drizzle-orm";
-import type {CandidateType} from "@/types/job-listings-types";
+import {and, eq, SQL} from "drizzle-orm";
 import {CACHE_TAGS, dbCache, getGlobalTag, revalidateDbCache} from "@/lib/cache";
+import {z} from "zod";
+import {filterCandidateType} from "@/schema";
 
 
 export const get_candidate_with_details = async (candidateId: number) => {
@@ -31,20 +32,31 @@ export const get_candidate_with_details = async (candidateId: number) => {
     return result;
 }
 
-export const get_all_candidates = async () => {
+export const get_all_candidates = async (filter: z.infer<typeof filterCandidateType>) => {
     const cacheFn = dbCache(get_all_candidates_db, {
         tags: [
             getGlobalTag(CACHE_TAGS.candidates)
         ]
     });
 
-    return cacheFn();
+    return cacheFn(filter);
 };
 
 // export const get_candidate_with_details = async () => {
-//     return  db.select().from(candidates);
+//     return  db.select().from(applications);
 // };
 
-export const get_all_candidates_db = async () => {
-    return db.select().from(candidates);
+export const get_all_candidates_db = async (filter: z.infer<typeof filterCandidateType>) => {
+    const filters: SQL[] = []
+
+    if (filter?.name) filters.push(eq(candidates.name, filter.name))
+
+    const candidate = await db.select()
+        .from(candidates)
+        .where(and(...filters))
+        .limit(filter.limit)
+        .offset(filter.offset);
+
+    const len = candidate.length
+    return [len, candidate];
 };

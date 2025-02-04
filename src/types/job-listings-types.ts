@@ -19,7 +19,7 @@ export type JobResponseType = {
     candidatesCount: number;
 }
 
-export type candidatesResponseType = {
+export type CandidatesResponseType = {
     id: number
     name: string
     email: string
