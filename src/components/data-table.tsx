@@ -36,7 +36,7 @@ const DataTable = <T extends object>({columns, data, status}: Props<T>) => {
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
-        debugTable: true,
+        // debugTable: true,
     });
 
     return (

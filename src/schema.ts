@@ -92,7 +92,7 @@ export const filterCandidateType = z.object({
     name: z.string().optional(),
     limit: z.number(),
     offset: z.number(),
-})
+});
 
 export const stepOneSchema = z.object({
     job_name: z.string(),

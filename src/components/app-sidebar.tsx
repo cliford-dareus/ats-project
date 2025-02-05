@@ -8,13 +8,20 @@ import {
     SidebarMenu, SidebarMenuButton,
     SidebarMenuItem, useSidebar
 } from "@/components/ui/sidebar"
-import {ArchiveX, Command, Send, Trash2, File, LucideLayoutDashboard} from "lucide-react";
+import {
+    Command,
+    Trash2,
+    LucideLayoutDashboard,
+    FileUser,
+    BriefcaseBusiness,
+    Users, Settings
+} from "lucide-react";
 import React, {useEffect} from "react";
 import {usePathname, useRouter} from "next/navigation";
 import SidebarSettings from "@/app/(dashboard)/settings/_components/sidebar-settings";
 import JobListingSidebar from "@/app/(dashboard)/jobs/_components/job-listing-sidebar";
 import SidebarCandidate from "@/app/(dashboard)/applications/_components/sidebar-candidate";
-import {candidatesResponseType } from "@/types/job-listings-types";
+import {CandidatesResponseType} from "@/types/job-listings-types";
 import {StageCountType} from "@/app/(dashboard)/layout";
 import StepNavigation from "@/app/(dashboard)/jobs/new/_component/side-navigation";
 
@@ -34,25 +41,25 @@ const data = {
         {
             title: "Jobs",
             url: "/jobs",
-            icon: File,
+            icon: BriefcaseBusiness,
             isActive: false,
         },
         {
             title: "Applications",
             url: "/applications",
-            icon: Send,
+            icon: FileUser,
             isActive: false,
         },
         {
             title: "Candidates",
             url: "/candidates",
-            icon: Send,
+            icon: Users,
             isActive: false,
         },
         {
             title: "Settings",
             url: "/settings",
-            icon: ArchiveX,
+            icon: Settings,
             isActive: false,
         },
         {
@@ -65,7 +72,7 @@ const data = {
 };
 
 export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar> & {
-    candidate: candidatesResponseType[],
+    candidate: CandidatesResponseType[],
     stagescount: StageCountType[],
 }) {
     const pathname = usePathname();
@@ -156,13 +163,17 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar> & {
                             ) : activeItem.title === "Jobs" && !pathname.startsWith('/jobs/new/step') ? (
                                 <JobListingSidebar/>
                             ) : activeItem.title === "Applications" ? (
-                                <SidebarCandidate candidate={props.candidate} stagesCount={props.stagescount as StageCountType[]} />
+                                <SidebarCandidate
+                                    candidate={props.candidate}
+                                    stagesCount={props.stagescount as StageCountType[]}
+                                />
                             ) : activeItem.title === "Settings" ? (
                                 <SidebarSettings/>
-                            ) : pathname.startsWith("/jobs/new/step")? (
-                                <StepNavigation />
-                            )
-                            : <div className="px-4">Default</div>}
+                            ) : pathname.startsWith("/jobs/new/step") ?
+                                (
+                                    <StepNavigation/>
+                                )
+                                : <div className="px-4">Default</div>}
                         </SidebarGroupContent>
                     </SidebarGroup>
                 </SidebarContent>
