@@ -2,6 +2,8 @@ import React from 'react';
 import {get_all_candidates_action} from "@/server/actions/candidates-actions";
 import {CandidatesResponseType} from "@/types/job-listings-types";
 import CandidatesList from "@/app/(dashboard)/candidates/_components/candidates-list";
+import {LucideSortAsc, Plus} from "lucide-react";
+import ExtractFileButton from "@/components/extract-file-button";
 
 type Props = {
     searchParams: {
@@ -20,12 +22,21 @@ const Page = async ({searchParams}: Props) => {
 
     return (
         <div className="p-4">
-            <div className="flex items-center justify-between p-4 bg-muted rounded mb-2">
+            <div className="flex items-center justify-between p-4 rounded mb-2 border bg-muted">
                 <div className="items-center flex gap-2">
-                    <h1 className="text-2xl font-bold text-gray-900">CANDIDATES</h1>
+                    <h1 className="text-2xl font-bold text-gray-900">ALL CANDIDATES</h1>
                     <span className="px-2 bg-slate-300 flex items-center justify-center rounded">{len as number}</span>
                 </div>
+
+                <div className="flex items-center gap-4">
+                    <LucideSortAsc size={18}/>
+                    <ExtractFileButton status="candidates"/>
+                    <div className="p-1 bg-blue-300 rounded cursor-pointer hover:bg-blue-400">
+                        <Plus size={18}/>
+                    </div>
+                </div>
             </div>
+
             <CandidatesList application={candidates as CandidatesResponseType[]} pageCount={pageCount}/>
         </div>
     );

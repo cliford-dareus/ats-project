@@ -40,7 +40,7 @@ const DataTable = <T extends object>({columns, data, status}: Props<T>) => {
     });
 
     return (
-        <Table>
+        <Table id={`table-${status}`}>
             <TableHeader>
                 {table.getHeaderGroups().map(headerGroup => (
                     <TableRow key={headerGroup.id}>

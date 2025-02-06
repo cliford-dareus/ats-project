@@ -2,6 +2,9 @@ import JobListingsList from "@/app/(dashboard)/jobs/_components/job-listings-lis
 import {JobResponseType} from "@/types/job-listings-types";
 import {auth} from "@clerk/nextjs/server";
 import {get_all_job_listings_action} from "@/server/actions/job-listings-actions";
+import ExtractFileButton from "@/components/extract-file-button";
+import {Plus} from "lucide-react";
+import React from "react";
 
 type Props = {
     searchParams: {
@@ -46,6 +49,13 @@ const Page = async ({searchParams}: Props) => {
                 <div className="items-center flex gap-2">
                     <h1 className="text-2xl font-bold text-gray-900">JOBS</h1>
                     <span className="px-2 bg-slate-300 flex items-center justify-center rounded">{len as number}</span>
+                </div>
+
+                <div className="flex items-center gap-4">
+                    <ExtractFileButton status="jobs"/>
+                    <div className="p-1 bg-blue-300 rounded cursor-pointer hover:bg-blue-400">
+                        <Plus size={18}/>
+                    </div>
                 </div>
             </div>
             <JobListingsList jobs={jobs as JobResponseType[]} pageCount={pageCount}/>

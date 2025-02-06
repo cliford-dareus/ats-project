@@ -21,6 +21,7 @@ const JobPreview = ({data}: Props) => {
                     router.push(`/jobs/${data.id}`);
                 }}>View Job Page</Button>
 
+                {JSON.stringify(data, null, 2)}
             </div>
         </div>
 
