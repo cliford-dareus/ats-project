@@ -1,50 +1,33 @@
 "use client";
 
 import React, {useState} from 'react';
+// import {parseResume} from "@/lib/utils";
+import {useDropzone} from "react-dropzone";
 
 const Page = () => {
-    const [file, setFile] = useState<File | null>(null);
-    const [parsedData, setParsedData] = useState(null);
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if(e.target.files === null) return
-        setFile(e.target.files[0]);
-    };
+    const {getRootProps, getInputProps} = useDropzone({
+        accept: {'application/pdf': ['.pdf']},
+        onDrop: async files => {
+            const reader = new FileReader();
+            reader.onload = async () => {
+                const result = await fetch('/api/resume', {
+                    method: 'POST',
+                    body: JSON.stringify({file: (reader.result as string).split(',')[1]})
+                });
 
-    const handleUpload = async () => {
-        if (!file) return alert("Please select a file.");
-
-        const formData = new FormData();
-        formData.append("resume", file);
-
-        try {
-            const response = await fetch("/api/resume", {
-                method: "POST",
-                // headers,
-                body: formData,
-            });
-
-            if (!response.ok) throw new Error("Error uploading file");
-
-            const data = await response.json();
-            setParsedData(data.parsedData);
-        } catch (error) {
-            console.error("Error uploading file:", error);
+                console.log(await result.json())
+                // onParse(await result.json());
+            };
+            reader.readAsDataURL(files[0]);
         }
-    };
+    });
+
 
     return (
-        <div>
-            <h2>Upload Your Resume</h2>
-            <input type="file" onChange={() =>handleFileChange}/>
-            <button onClick={handleUpload}>Upload and Parse</button>
-
-            {parsedData && (
-                <div>
-                    <h3>Parsed Resume Data:</h3>
-                    <pre>{JSON.stringify(parsedData, null, 2)}</pre>
-                </div>
-            )}
+        <div className="p-4 border bg-muted rounded" {...getRootProps()}>
+            <input {...getInputProps()} />
+            <p>Drop PDF resume here</p>
         </div>
     );
 };

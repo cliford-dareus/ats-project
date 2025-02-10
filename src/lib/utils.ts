@@ -71,6 +71,67 @@ export const createNewSearchParam = (params: Record<string, string[] | number | 
 export const getCalendaAvailability = () => {
 };
 
+export function parseResume(text: string) {
+    const lines = text.split('\n');
+    const resume = {
+        name: '',
+        contact: {} as { [key: string]: string },
+        skills: [] as string[],
+        workExperience: [] as { [key: string]: string }[],
+        education: [] as { [key: string]: string }[]
+    };
+
+    let currentSection = '';
+
+    lines.forEach(line => {
+        line = line.trim();
+
+        // Detect section headers
+        if (line.startsWith('**Name:**')) {
+            resume.name = line.replace('**Name:**', '').trim();
+        } else if (line.startsWith('**Contact Information:**')) {
+            currentSection = 'contact';
+        } else if (line.startsWith('**Skills:**')) {
+            currentSection = 'skills';
+        } else if (line.startsWith('**Work Experience:**')) {
+            currentSection = 'work';
+        } else if (line.startsWith('**Education:**')) {
+            currentSection = 'education';
+        }
+
+        // Process content based on current section
+        else if (currentSection === 'contact' && line.startsWith('*')) {
+            const [key, ...valueParts] = line.replace('*', '').split(':');
+            resume.contact[key.trim().toLowerCase()] = valueParts.join(':').trim();
+        } else if (currentSection === 'skills' && line) {
+            resume.skills = line.split(';').map(skill => skill.trim());
+        } else if (currentSection === 'work' && line.startsWith('*')) {
+            const entry = line.replace('*', '').trim();
+            const [datesPart, ...rest] = entry.split(':');
+            const [titleCompany, ...descriptionParts] = rest.join(':').split('.');
+            const [title, ...companyParts] = titleCompany.split(',');
+
+            resume.workExperience.push({
+                dates: datesPart.trim(),
+                title: title.trim(),
+                company: companyParts.join(',').trim(),
+                description: descriptionParts.join('.').trim()
+            });
+        } else if (currentSection === 'education' && line.startsWith('*')) {
+            const entry = line.replace('*', '').trim();
+            const [datesPart, ...rest] = entry.split(':');
+            const [degree, institution] = rest.join(':').split(',').map(s => s.trim());
+
+            resume.education.push({
+                dates: datesPart.trim(),
+                degree: degree.trim(),
+                institution: institution.trim()
+            });
+        }
+    });
+
+    return resume;
+}
 
 
 
