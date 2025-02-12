@@ -70,6 +70,14 @@ export const candidateForm = z.object({
     job: z.string().nullish(),
 });
 
+export const newCandidateForm = z.object({
+    name: z.string(),
+    email: z.string().email({message: "Please enter a valid email address"}),
+    phone: z.string(),
+    location: z.string(),
+    resume: z.string(),
+});
+
 export const filterJobType = z.object({
     location: z.string().or(z.array(z.string())).optional(),
     keywords: z.array(z.string()).optional(),

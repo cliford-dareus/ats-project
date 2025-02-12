@@ -1,33 +1,63 @@
 "use client";
 
 import React, {useState} from 'react';
-// import {parseResume} from "@/lib/utils";
-import {useDropzone} from "react-dropzone";
+import UseDropZone from "@/components/use-drop-zone";
+import {Input} from "@/components/ui/input";
+
+type ExtractResponseType = {
+    name: string,
+    contact: {
+        email: string,
+        phone: string,
+        location: string
+    }
+    skills: string[],
+    experience: string[],
+    education: string[]
+}
 
 const Page = () => {
+    const [extractedText, setExtractedText] = useState<ExtractResponseType>();
+    const [loading, setLoading] = useState(false);
 
-    const {getRootProps, getInputProps} = useDropzone({
-        accept: {'application/pdf': ['.pdf']},
-        onDrop: async files => {
-            const reader = new FileReader();
-            reader.onload = async () => {
-                const result = await fetch('/api/resume', {
-                    method: 'POST',
-                    body: JSON.stringify({file: (reader.result as string).split(',')[1]})
-                });
+    const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setLoading(true)
+        const formData = new FormData(e.currentTarget);
+        const result = await fetch('/api/resume', {
+            method: 'POST',
+            body: formData
+        });
+        const parsedResume = await result.json();
+        setExtractedText(parsedResume.parsedResume)
+        setLoading(false)
+    };
 
-                console.log(await result.json())
-                // onParse(await result.json());
-            };
-            reader.readAsDataURL(files[0]);
-        }
-    });
-
+    if (loading) {
+        return <div>Loading...</div>;
+    }
 
     return (
-        <div className="p-4 border bg-muted rounded" {...getRootProps()}>
-            <input {...getInputProps()} />
-            <p>Drop PDF resume here</p>
+        <div className="p-4">
+            {/*<form onSubmit={onSubmit}>*/}
+            {/*    <UseDropZone name="my-file"/>*/}
+            {/*    <button type="submit">Submit</button>*/}
+            {/*</form>*/}
+
+            {/*{extractedText && (*/}
+            {/*    <div>*/}
+            {/*        <h2>Accepted Files:</h2>*/}
+            {/*        <Input value={extractedText?.name}/>*/}
+            {/*        <Input value={extractedText?.contact.email}/>*/}
+            {/*        <Input value={extractedText?.contact.phone}/>*/}
+            {/*        <Input value={extractedText?.contact.location}/>*/}
+            {/*    </div>*/}
+            {/*)}*/}
+
+
+            <div className="">
+
+            </div>
         </div>
     );
 };

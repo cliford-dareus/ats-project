@@ -3,8 +3,26 @@ import {applications, candidates, interviews, job_listings, scoreCards, stages} 
 import {and, eq, SQL} from "drizzle-orm";
 import {CACHE_TAGS, dbCache, getGlobalTag, revalidateDbCache} from "@/lib/cache";
 import {z} from "zod";
-import {filterCandidateType} from "@/schema";
+import {filterCandidateType, newCandidateForm} from "@/schema";
 
+export const create_candidate = async (data: z.infer<typeof newCandidateForm>) => {
+    const [candidate] = await db.insert(candidates).values({...data, cv_path: data.resume}).$returningId();
+
+    revalidateDbCache({
+        tag: CACHE_TAGS.candidates,
+    });
+
+    return candidate
+};
+
+export const get_all_candidates = async (filter: z.infer<typeof filterCandidateType>) => {
+    const cacheFn = dbCache(get_all_candidates_db, {
+        tags: [
+            getGlobalTag(CACHE_TAGS.candidates)
+        ]
+    });
+    return cacheFn(filter);
+};
 
 export const get_candidate_with_details = async (candidateId: number) => {
     const result = await db
@@ -32,21 +50,7 @@ export const get_candidate_with_details = async (candidateId: number) => {
     return result;
 }
 
-export const get_all_candidates = async (filter: z.infer<typeof filterCandidateType>) => {
-    const cacheFn = dbCache(get_all_candidates_db, {
-        tags: [
-            getGlobalTag(CACHE_TAGS.candidates)
-        ]
-    });
-
-    return cacheFn(filter);
-};
-
-// export const get_candidate_with_details = async () => {
-//     return  db.select().from(applications);
-// };
-
-export const get_all_candidates_db = async (filter: z.infer<typeof filterCandidateType>) => {
+const get_all_candidates_db = async (filter: z.infer<typeof filterCandidateType>) => {
     const filters: SQL[] = []
 
     if (filter?.name) filters.push(eq(candidates.name, filter.name))
@@ -60,3 +64,4 @@ export const get_all_candidates_db = async (filter: z.infer<typeof filterCandida
     const len = candidate.length
     return [len, candidate];
 };
+

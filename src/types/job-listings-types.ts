@@ -65,6 +65,20 @@ export  type StageResponseType = {
     need_schedule: boolean
 }
 
+export type ExtractResponseType = {
+    Name: string,
+    "Contact Information": {
+        Email: string,
+        Phone: string,
+        Location: string
+    }
+    Skills: string[],
+    "Work Experience": string[],
+    Education: string[]
+};
+
 export interface FormErrors {
     [key: string]: string | undefined;
 }
+
+

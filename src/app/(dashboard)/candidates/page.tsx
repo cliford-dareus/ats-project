@@ -5,6 +5,7 @@ import CandidatesList from "@/app/(dashboard)/candidates/_components/candidates-
 import {LucideSortAsc, Plus} from "lucide-react";
 import ExtractFileButton from "@/components/extract-file-button";
 import Link from "next/link";
+import UploadCandidateResume from "@/components/modal/upload-candidate-resume";
 
 type Props = {
     searchParams: {
@@ -32,9 +33,7 @@ const Page = async ({searchParams}: Props) => {
                 <div className="flex items-center gap-4">
                     <LucideSortAsc size={18}/>
                     <ExtractFileButton status="candidates"/>
-                    <Link href="/candidates/new" className="p-1 bg-blue-300 rounded cursor-pointer hover:bg-blue-400">
-                        <Plus size={18}/>
-                    </Link>
+                    <UploadCandidateResume />
                 </div>
             </div>
 
