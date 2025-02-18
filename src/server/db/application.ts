@@ -11,7 +11,6 @@ export const create_application = async (data: z.infer<typeof candidateForm>) =>
         .from(stages)
         .where(and(eq(stages.job_id, Number(data.job!)), eq(stages.stage_order_id, 0)));
 
-
     if (!data.candidate) {
         try {
             const info = data.candidate_info as {

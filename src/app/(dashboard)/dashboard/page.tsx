@@ -1,12 +1,8 @@
-import {auth} from "@clerk/nextjs/server";
+import DashboardLayout from "@/app/(dashboard)/dashboard/_components/dashboard-layout";
 
 const Page = async () => {
-    const {userId} = await auth()
-
     return (
-        <div className="md:p-4">
-            <button>Fetch Available Slots</button>
-        </div>
+        <DashboardLayout/>
     )
 };
 

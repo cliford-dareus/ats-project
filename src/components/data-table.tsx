@@ -84,7 +84,6 @@ const DataTable = <T extends object>({columns, data, status}: Props<T>) => {
                                                 setIsOpen(!isOpen)
                                             }}
                                         >
-
                                             {flexRender(
                                                 cell.column.columnDef.cell,
                                                 cell.getContext()
