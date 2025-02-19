@@ -1,25 +1,25 @@
 'use client'
 
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {Label, Pie, PieChart} from "recharts"
 import {ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent} from "@/components/ui/chart";
 import {Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle} from "@/components/ui/card";
 import {TrendingUp} from "lucide-react";
 import {get_all_candidates_action} from "@/server/actions/candidates-actions";
+import {get_all_applications_action} from "@/server/actions/application_actions";
 import {CandidatesResponseType} from "@/types/job-listings-types";
 
-
 const chartData = [
-    {fill: "var(--color-chrome)"},
-    {fill: "var(--color-safari)"},
-    {fill: "var(--color-firefox)"},
-    {fill: "var(--color-edge)"},
+    {fill: "var(--color-date)"},
+    {fill: "var(--color-date2)"},
+    {fill: "var(--color-date3)"},
+    {fill: "var(--color-date4)"},
     {fill: "var(--color-other)"},
 ]
 
 const chartConfig = {
-    visitors: {
-        label: "Visitors",
+    candidates: {
+        label: "Candidates",
     },
     date: {
         label: "date",
@@ -37,41 +37,87 @@ const chartConfig = {
         label: "date",
         color: "hsl(var(--chart-4))",
     },
-    other: {
-        label: "Other",
+    older: {
+        label: "Older",
         color: "hsl(var(--chart-5))",
     },
 } satisfies ChartConfig
 
-const CircleChart = () => {
+const CircleChart = ({id}: { id: string }) => {
+        const [selectedData, setSelectedData] = useState<string>("candidates");
         const [activeData, setActiveData] = useState<{ date: string, count: number, fill: string }[]>([]);
+
+        // TODO: Do the grouping by months instead
+        //
+
+        const groupedByDate = useMemo(() => {
+            return (data: any[]) => {
+                let index = 0;
+                return data.reduce((acc, curr) => {
+                    const now = new Date();
+                    const fourMonthsAgo = new Date();
+                    fourMonthsAgo.setMonth(now.getMonth() - 1);
+                    const date = new Date(curr.created_at).toISOString().split("T")[0]; // Extract the date (YYYY-MM-DD)
+                    const createdAt = new Date(curr.created_at);
+
+                    if (createdAt >= fourMonthsAgo) {
+                        if (!acc[date]) {
+                            acc[date] = {
+                                date,
+                                count: 1,
+                                fill: chartData[index].fill,
+                            };
+                            index++;
+                        } else {
+                            acc[date].count++;
+                        }
+                    } else {
+                        if (!acc["Older"]) {
+                            acc["Older"] = {
+                                date: "older",
+                                count: 1,
+                                fill: chartData[4].fill,
+                            };
+                        } else {
+                            acc["Older"].count++;
+                        }
+                    }
+                    return acc;
+                }, {} as Record<string, { date: string; count: number; fill: string }>);
+            };
+        }, []);
 
         useEffect(() => {
                 const fetchData = async () => {
-                    const [len, candidates] = await get_all_candidates_action({limit: 1000, offset: 0});
-
-                    const groupedByDate = candidates.reduce((acc, curr) => {
-                        const date = new Date(curr.created_at).toISOString().split('T')[0];
-                        if (!acc[date]) acc[date] = {
-                            date,
-                            count: 1,
-                            fill: chartData[Math.floor(Math.random() * chartData.length)].fill
-                        };
-                        else acc[date].count++;
-                        return acc;
-                    }, {});
-
-                    setActiveData(Object.values(groupedByDate))
+                    let data = []
+                    if (selectedData === "candidates") {
+                        const result = await get_all_candidates_action({limit: 1000, offset: 0});
+                        data = (Array.isArray(result) ? result[1] : []) as CandidatesResponseType[]
+                    } else if (selectedData === "applications") {
+                        const application = await get_all_applications_action({organization: id});
+                        if (Array.isArray(application)) {
+                            data = application;
+                        } else {
+                            console.error(application.message);
+                            data = [];
+                        }
+                    }
+                    const formattedData = groupedByDate(data)
+                    setActiveData(Object.values(formattedData));
                 }
-                fetchData()
-            }, []
-        )
+                fetchData();
+            }, [selectedData]
+        );
 
         const totalVisitors = React.useMemo(() => {
             return activeData.reduce((acc, curr) => acc + curr.count, 0)
-        }, [activeData])
+        }, [activeData]);
 
-        console.log("totalVisitors", activeData)
+        const handleChange = (event) => {
+            setSelectedData(event.target.value); // Update selected dataset
+        };
+
+        if (!activeData.length) return null;
 
         return (
             <Card className="flex flex-col">
@@ -118,7 +164,7 @@ const CircleChart = () => {
                                                         y={(viewBox.cy || 0) + 24}
                                                         className="fill-muted-foreground"
                                                     >
-                                                        Visitors
+                                                        {selectedData === "candidates" ? "candidates" : "Applications"}
                                                     </tspan>
                                                 </text>
                                             )
@@ -135,6 +181,12 @@ const CircleChart = () => {
                     </div>
                     <div className="leading-none text-muted-foreground">
                         Showing total visitors for the last 6 months
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <select value={selectedData} onChange={handleChange}>
+                            <option value="candidates">Candidate</option>
+                            <option value="applications">Application</option>
+                        </select>
                     </div>
                 </CardFooter>
             </Card>

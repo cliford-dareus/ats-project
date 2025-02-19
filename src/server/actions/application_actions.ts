@@ -1,10 +1,15 @@
 'use server';
 
-import {create_application, update_application_stage} from "@/server/db/application";
+import {
+    create_application,
+    get_all_applications,
+    get_applications_with_filter,
+    update_application_stage
+} from "@/server/db/application";
 import {auth} from "@clerk/nextjs/server";
 import {canCreateJob} from "@/server/permissions";
 import {z} from "zod";
-import {candidateForm} from "@/schema";
+import {candidateForm, filterApplicationsType} from "@/schema";
 
 export const create_application_action = async (unsafeData: z.infer<typeof candidateForm>) => {
     const {userId} = await auth();
@@ -28,6 +33,30 @@ export const update_application_stage_action = async (data: { candidateId: numbe
     return await update_application_stage(data)
 };
 
-export const get_application_action = async (data: { candidateId: number }) => {};
+export const get_applications_with_filter_action = async (unsafeData: z.infer<typeof filterApplicationsType>) => {
+    const {userId} = await auth();
+    const {success, data} = await filterApplicationsType.spa(unsafeData);
 
-export const delete_application_action = async (data: { candidateId: number }) => {};
+    if (!userId || !success) {
+        return {error: true, message: "There was an error retrieving applications"}
+    }
+
+    return get_applications_with_filter(data);
+};
+
+export const get_all_applications_action = async (unsafeData: z.infer<typeof filterApplicationsType>) => {
+    const {userId} = await auth();
+    const {success, data} = await filterApplicationsType.spa(unsafeData);
+
+    if (!userId ||!success) {
+        return {error: true, message: "There was an error retrieving applications"}
+    }
+
+    return get_all_applications(data);
+}
+
+export const get_application_action = async (data: { candidateId: number }) => {
+};
+
+export const delete_application_action = async (data: { candidateId: number }) => {
+};

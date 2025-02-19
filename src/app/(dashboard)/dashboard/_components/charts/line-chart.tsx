@@ -28,7 +28,6 @@ const LineChart = () => {
         {date: "2025-02-16", count: 30},
         {date: "2025-02-17", count: 35},
         {date: "2025-02-18", count: 40},
-        // Add more data as needed
     ];
 
     useEffect(() => {

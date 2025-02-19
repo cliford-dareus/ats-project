@@ -1,10 +1,10 @@
 import React from 'react';
-import {get_all_applications} from "@/server/db/application";
 import CandidateList from "@/app/(dashboard)/applications/_components/candidate-list";
 import {ApplicationResponseType} from "@/types/job-listings-types";
 import {auth} from "@clerk/nextjs/server";
 import ExtractFileButton from "@/components/extract-file-button";
 import {Plus} from "lucide-react";
+import {get_applications_with_filter_action} from "@/server/actions/application_actions";
 
 type Props = {
     searchParams: {
@@ -20,8 +20,10 @@ const Page = async ({searchParams}: Props) => {
     const offset = typeof page === "string" ? (parseInt(page) - 1) * limit : 0;
     // const locations = location ? (location as string).split(',') : undefined;
 
-    const [len, application] = await get_all_applications({limit, offset, organization: orgId!})
-    const pageCount = Math.ceil((len as number) / limit);
+    const result = await get_applications_with_filter_action({limit, offset, organization: orgId!})
+    const len = Array.isArray(result) ? result[0] : 0;
+    const application = Array.isArray(result) ? result[1] : [];
+    const pageCount = Math.ceil(len as number / limit);
 
     return (
         <div className="p-4">

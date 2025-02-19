@@ -2,20 +2,23 @@
 
 import React, {useState} from 'react';
 import CircleChart from "@/app/(dashboard)/dashboard/_components/charts/circle-chart";
-import PieChart from "@/app/(dashboard)/dashboard/_components/charts/pie-chart";
+import RadarChart from "@/app/(dashboard)/dashboard/_components/charts/radar-chart";
 import ComponentPicker from "@/app/(dashboard)/dashboard/_components/component-picker";
 import LineChart from "@/app/(dashboard)/dashboard/_components/charts/line-chart";
+import AreaChart from "@/app/(dashboard)/dashboard/_components/charts/area-chart";
 
 
-const DashboardLayout = () => {
+const DashboardLayout = ({organization}: { organization: string }) => {
+
     const [sections, setSections] = useState({section1: "circleChart", section2: "lineChart"} as {
         [key: string]: string
     });
 
     const components = {
-        circleChart: () => <CircleChart/>,
-        pieChart: () => <PieChart/>,
-        lineChart: () => <LineChart/>, // Add more charts as needed
+        circleChart: () => <CircleChart id={organization}/>,
+        radarChart: () => <RadarChart/>,
+        lineChart: () => <LineChart/>,
+        areaChart: () => <AreaChart/>
     } as { [key: string]: () => React.JSX.Element };
 
     const handleComponentChange = (section: string, component: string) => {
