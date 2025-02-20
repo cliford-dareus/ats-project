@@ -26,6 +26,8 @@ export type CandidatesResponseType = {
     phone: string
     cv_path: string
     status: "Active" | "Rejected" | "Hired" | null
+    created_at: Date
+    updated_at: Date
 };
 
 export type JobListingWithCandidatesType = {
@@ -53,6 +55,8 @@ export type ApplicationResponseType = {
     location: string;
     current_stage: JOB_ENUM;
     assign_to: string;
+    created_at: Date;
+    updated_at: Date;
 }
 
 export  type StageResponseType = {

@@ -43,8 +43,9 @@ function Component() {
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <ChartContainer config={chartConfig}>
+                <ChartContainer config={chartConfig} className="h-[200px] w-full">
                     <AreaChart
+                        // height={250}
                         accessibilityLayer
                         data={chartData}
                         margin={{

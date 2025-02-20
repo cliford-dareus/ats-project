@@ -7,7 +7,7 @@ import {Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle} f
 import {TrendingUp} from "lucide-react";
 import {get_all_candidates_action} from "@/server/actions/candidates-actions";
 import {get_all_applications_action} from "@/server/actions/application_actions";
-import {CandidatesResponseType} from "@/types/job-listings-types";
+import {ApplicationResponseType, CandidatesResponseType} from "@/types/job-listings-types";
 
 const chartData = [
     {fill: "var(--color-date)"},
@@ -37,6 +37,10 @@ const chartConfig = {
         label: "date",
         color: "hsl(var(--chart-4))",
     },
+    data5: {
+        label: "date",
+        color: "hsl(var(--chart-5))",
+    },
     older: {
         label: "Older",
         color: "hsl(var(--chart-5))",
@@ -47,18 +51,18 @@ const CircleChart = ({id}: { id: string }) => {
         const [selectedData, setSelectedData] = useState<string>("candidates");
         const [activeData, setActiveData] = useState<{ date: string, count: number, fill: string }[]>([]);
 
-        // TODO: Do the grouping by months instead
-        //
-
         const groupedByDate = useMemo(() => {
-            return (data: any[]) => {
+            return (data: CandidatesResponseType [] | ApplicationResponseType[]) => {
                 let index = 0;
+
+                const monthYearFormatter = new Intl.DateTimeFormat("en-US", {month: "long", year: "numeric"});
+                const now = new Date();
+                const fourMonthsAgo = new Date();
+                fourMonthsAgo.setMonth(now.getMonth() - 4);
+
                 return data.reduce((acc, curr) => {
-                    const now = new Date();
-                    const fourMonthsAgo = new Date();
-                    fourMonthsAgo.setMonth(now.getMonth() - 1);
-                    const date = new Date(curr.created_at).toISOString().split("T")[0]; // Extract the date (YYYY-MM-DD)
                     const createdAt = new Date(curr.created_at);
+                    const date = monthYearFormatter.format(createdAt);
 
                     if (createdAt >= fourMonthsAgo) {
                         if (!acc[date]) {
@@ -89,14 +93,15 @@ const CircleChart = ({id}: { id: string }) => {
 
         useEffect(() => {
                 const fetchData = async () => {
-                    let data = []
+                    let data: CandidatesResponseType[] | ApplicationResponseType[] = [];
                     if (selectedData === "candidates") {
                         const result = await get_all_candidates_action({limit: 1000, offset: 0});
                         data = (Array.isArray(result) ? result[1] : []) as CandidatesResponseType[]
                     } else if (selectedData === "applications") {
                         const application = await get_all_applications_action({organization: id});
                         if (Array.isArray(application)) {
-                            data = application;
+                            console.log(application)
+                            data = application as Partial<[]>;
                         } else {
                             console.error(application.message);
                             data = [];
@@ -104,7 +109,7 @@ const CircleChart = ({id}: { id: string }) => {
                     }
                     const formattedData = groupedByDate(data)
                     setActiveData(Object.values(formattedData));
-                }
+                };
                 fetchData();
             }, [selectedData]
         );
@@ -113,7 +118,7 @@ const CircleChart = ({id}: { id: string }) => {
             return activeData.reduce((acc, curr) => acc + curr.count, 0)
         }, [activeData]);
 
-        const handleChange = (event) => {
+        const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
             setSelectedData(event.target.value); // Update selected dataset
         };
 
