@@ -8,8 +8,9 @@ import {TrendingUp} from "lucide-react";
 import {get_all_candidates_action} from "@/server/actions/candidates-actions";
 import {get_all_applications_action} from "@/server/actions/application_actions";
 import {ApplicationResponseType, CandidatesResponseType} from "@/types/job-listings-types";
+import {groupedByMonths} from "@/lib/utils";
 
-const chartData = [
+export const chartData = [
     {fill: "var(--color-date)"},
     {fill: "var(--color-date2)"},
     {fill: "var(--color-date3)"},
@@ -51,46 +52,6 @@ const CircleChart = ({id}: { id: string }) => {
         const [selectedData, setSelectedData] = useState<string>("candidates");
         const [activeData, setActiveData] = useState<{ date: string, count: number, fill: string }[]>([]);
 
-        const groupedByDate = useMemo(() => {
-            return (data: CandidatesResponseType [] | ApplicationResponseType[]) => {
-                let index = 0;
-
-                const monthYearFormatter = new Intl.DateTimeFormat("en-US", {month: "long", year: "numeric"});
-                const now = new Date();
-                const fourMonthsAgo = new Date();
-                fourMonthsAgo.setMonth(now.getMonth() - 4);
-
-                return data.reduce((acc, curr) => {
-                    const createdAt = new Date(curr.created_at);
-                    const date = monthYearFormatter.format(createdAt);
-
-                    if (createdAt >= fourMonthsAgo) {
-                        if (!acc[date]) {
-                            acc[date] = {
-                                date,
-                                count: 1,
-                                fill: chartData[index].fill,
-                            };
-                            index++;
-                        } else {
-                            acc[date].count++;
-                        }
-                    } else {
-                        if (!acc["Older"]) {
-                            acc["Older"] = {
-                                date: "older",
-                                count: 1,
-                                fill: chartData[4].fill,
-                            };
-                        } else {
-                            acc["Older"].count++;
-                        }
-                    }
-                    return acc;
-                }, {} as Record<string, { date: string; count: number; fill: string }>);
-            };
-        }, []);
-
         useEffect(() => {
                 const fetchData = async () => {
                     let data: CandidatesResponseType[] | ApplicationResponseType[] = [];
@@ -107,7 +68,7 @@ const CircleChart = ({id}: { id: string }) => {
                             data = [];
                         }
                     }
-                    const formattedData = groupedByDate(data)
+                    const formattedData = groupedByMonths(data, 6);
                     setActiveData(Object.values(formattedData));
                 };
                 fetchData();
@@ -125,7 +86,7 @@ const CircleChart = ({id}: { id: string }) => {
         if (!activeData.length) return null;
 
         return (
-            <Card className="flex flex-col">
+            <Card className="flex flex-col h-full">
                 <CardHeader className="items-center pb-0">
                     <CardTitle>Pie Chart - Donut with Text</CardTitle>
                     <CardDescription>January - June 2024</CardDescription>

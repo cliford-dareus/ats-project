@@ -1,6 +1,9 @@
 import {clsx, type ClassValue} from "clsx"
 import {twMerge} from "tailwind-merge"
 import {UseFormReturn} from "react-hook-form";
+import {ApplicationResponseType, CandidatesResponseType} from "@/types/job-listings-types";
+import {chartData} from "@/app/(dashboard)/dashboard/_components/charts/circle-chart";
+import {startOfDay, subDays} from "date-fns";
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs))
@@ -67,6 +70,90 @@ export const createNewSearchParam = (params: Record<string, string[] | number | 
     }
     return newSearchParams.toString();
 };
+
+export const groupedByMonths = (data: CandidatesResponseType [] | ApplicationResponseType[], interval: number) => {
+    let index = 0;
+
+    const monthYearFormatter = new Intl.DateTimeFormat("en-US", {month: "long", year: "numeric"});
+    const now = new Date();
+    const intervalAgo = new Date();
+    intervalAgo.setMonth(now.getMonth() - interval);
+
+    return data.reduce((acc, curr) => {
+        const createdAt = new Date(curr.created_at);
+        const date = monthYearFormatter.format(createdAt);
+
+        if (createdAt >= intervalAgo) {
+            if (!acc[date]) {
+                acc[date] = {
+                    date,
+                    count: 1,
+                    fill: chartData[index].fill,
+                };
+                index++;
+            } else {
+                acc[date].count++;
+            }
+        } else {
+            if (!acc["Older"]) {
+                acc["Older"] = {
+                    date: "older",
+                    count: 1,
+                    fill: chartData[4].fill,
+                };
+            } else {
+                acc["Older"].count++;
+            }
+        }
+        return acc;
+    }, {} as Record<string, { date: string; count: number; fill: string }>);
+};
+
+export const groupByDay = (data: CandidatesResponseType [] | ApplicationResponseType[]) => {
+    return data.reduce((acc, curr) => {
+        const createdAt = new Date(curr.created_at);
+        const date = createdAt.toISOString().split("T")[0];
+
+        if (!acc[date]) {
+            acc[date] = {
+                date,
+                count: 1,
+                fill: "red",
+            };
+        } else {
+            acc[date].count++;
+        }
+        return acc;
+    }, {} as Record<string, { date: string; count: number, fill: string }>);
+};
+
+export const RANGE_OPTIONS = {
+    last_7_days: {
+        label: "Last 7 Days",
+        startDate: startOfDay(subDays(new Date(), 6)),
+        endDate: null,
+    },
+    last_30_days: {
+        label: "Last 30 Days",
+        startDate: startOfDay(subDays(new Date(), 29)),
+        endDate: null,
+    },
+    last_90_days: {
+        label: "Last 90 Days",
+        startDate: startOfDay(subDays(new Date(), 89)),
+        endDate: null,
+    },
+    last_365_days: {
+        label: "Last 365 Days",
+        startDate: startOfDay(subDays(new Date(), 364)),
+        endDate: null,
+    },
+    all_time: {
+        label: "All Time",
+        startDate: null,
+        endDate: null,
+    },
+}
 
 export const getCalendaAvailability = () => {
 };

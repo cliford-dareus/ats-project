@@ -1,5 +1,7 @@
 "use client"
 
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+
 type Props = {
     section: string;
     selectedComponent: string;
@@ -8,17 +10,22 @@ type Props = {
 };
 
 const ComponentPicker = ({ section, selectedComponent, onChange, components }: Props) => (
-    <select
+    <Select
         value={selectedComponent}
-        onChange={(e) => onChange(section, e.target.value)}
-        className="mt-2 border rounded p-2"
+        onValueChange={(e) => onChange(section, e)}
+
     >
-        {components.map((component) => (
-            <option key={component} value={component}>
-                {component}
-            </option>
-        ))}
-    </select>
+        <SelectTrigger>
+            <SelectValue placeholder={`Select a ${section} component...`}/>
+        </SelectTrigger>
+        <SelectContent className="mt-2 border rounded p-2">
+            {components.map((component) => (
+                <SelectItem  key={component} value={component}>
+                    {component}
+                </SelectItem>
+            ))}
+        </SelectContent>
+    </Select>
 );
 
 export default ComponentPicker;

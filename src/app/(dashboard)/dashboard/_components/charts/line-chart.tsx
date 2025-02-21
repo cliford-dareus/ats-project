@@ -4,6 +4,8 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/compo
 import {ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent} from "@/components/ui/chart";
 import {Bar, BarChart, CartesianGrid, XAxis} from "recharts";
 import React, {useCallback, useEffect, useState} from "react";
+import {get_all_applications_action} from "@/server/actions/application_actions";
+import {groupByDay} from "@/lib/utils";
 
 const chartConfig = {
     views: {
@@ -15,32 +17,28 @@ const chartConfig = {
     }
 } satisfies ChartConfig
 
-const LineChart = () => {
-    const [applicationData, setApplicationData] = useState([]);
-    const [filteredData, setFilteredData] = useState([]);
-    const [timeRange, setTimeRange] = useState("week"); // Default to past week
-
-    const exampleData = [
-        {date: "2025-02-01", count: 10},
-        {date: "2025-02-05", count: 15},
-        {date: "2025-02-10", count: 20},
-        {date: "2025-02-15", count: 25},
-        {date: "2025-02-16", count: 30},
-        {date: "2025-02-17", count: 35},
-        {date: "2025-02-18", count: 40},
-    ];
+const LineChart = ({id}: { id: string }) => {
+    const [applicationData, setApplicationData] = useState<{ date: string, count: number, fill: string }[]>([]);
+    const [filteredData, setFilteredData] = useState<{ date: string, count: number, fill: string }[]>([]);
+    const [timeRange, setTimeRange] = useState("month"); // Default to past week
 
     useEffect(() => {
-        // Simulate fetching data (replace with an API call)
-        setApplicationData(exampleData);
-        filterData(applicationData, timeRange);
-    }, []);
+            const fetchData = async () => {
+                const result = await get_all_applications_action({organization: id});
+                const formattedData = groupByDay(result as Partial<[]>);
+                setApplicationData(Object.values(formattedData));
+                filterData(Object.values(formattedData), timeRange);
+            };
+
+            fetchData();
+        }, []
+    )
 
     useEffect(() => {
         filterData(applicationData, timeRange);
     }, [timeRange, applicationData]);
 
-    const filterData = useCallback((data, range: string) => {
+    const filterData = useCallback((data: { date: string, count: number, fill: string }[], range: string) => {
         const now = new Date();
         let filtered;
 
@@ -54,23 +52,17 @@ const LineChart = () => {
             filtered = data.filter((item) => new Date(item.date) >= oneMonthAgo);
         }
 
+        if (filtered === undefined) {
+            return
+        }
         setFilteredData(filtered);
     }, []);
 
-    if (filteredData.length === 0) {
-        return (
-            <div className="flex flex-col items-center justify-center gap-4">
-                <p>No data available for the selected time range.</p>
-            </div>
-        );
-    }
-
     return (
-        <div className="flex  flex-col ">
-            <div className="mb-4">
-                {/* Time Range Buttons */}
+        <div className="flex  flex-col h-full border shadow">
+            <div className="m-4">
                 <button
-                    className={`px-4 py-2 mr-2 ${
+                    className={`px-4 py-1 mr-2 text-sm ${
                         timeRange === "week" ? "bg-blue-500 text-white" : "bg-gray-200"
                     }`}
                     onClick={() => setTimeRange("week")}
@@ -78,7 +70,7 @@ const LineChart = () => {
                     Past Week
                 </button>
                 <button
-                    className={`px-4 py-2 ${
+                    className={`px-4 py-1 text-sm ${
                         timeRange === "month" ? "bg-blue-500 text-white" : "bg-gray-200"
                     }`}
                     onClick={() => setTimeRange("month")}
@@ -88,7 +80,7 @@ const LineChart = () => {
             </div>
 
             {/* Chart */}
-            <Card>
+            <Card className="h-full border-none shadow-none">
                 <CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
                     <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-6">
                         <CardTitle>Bar Chart - Interactive</CardTitle>
