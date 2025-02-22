@@ -44,14 +44,15 @@ export const get_applications_with_filter_action = async (unsafeData: z.infer<ty
     return get_applications_with_filter(data);
 };
 
-export const get_all_applications_action = async () => {
+export const get_all_applications_action = async (unsafeData: z.infer<typeof filterApplicationsType>) => {
     const {userId} = await auth();
+    const {success, data} = await filterApplicationsType.spa(unsafeData);
 
-    if (!userId) {
+    if (!userId || !success) {
         return {error: true, message: "There was an error retrieving applications"}
     }
 
-    return get_all_applications();
+    return get_all_applications(data);
 }
 
 export const get_application_action = async (data: { candidateId: number }) => {

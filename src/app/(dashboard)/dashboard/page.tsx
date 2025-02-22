@@ -9,6 +9,7 @@ import {RANGE_OPTIONS} from "@/lib/utils";
 
 const Page = async () => {
     const {orgId} = await auth();
+    const user = await auth()
     if (!orgId) return null;
 
     // TODO: Add searchParams range logic for dynamic range selection
@@ -18,10 +19,13 @@ const Page = async () => {
         get_open_job_chart_data_db(RANGE_OPTIONS.last_7_days.startDate, RANGE_OPTIONS.last_7_days.endDate)
     ])
 
-    console.log(job, hired, open_job);
+    console.log(job, hired, open_job, user);
 
     return (
         <DashboardLayout
+            job_open={open_job}
+            hired_candidates={hired}
+            job_listings={job}
             organization={orgId as string}
         />
     )

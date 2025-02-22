@@ -72,14 +72,14 @@ export const update_application_stage = async (data: { candidateId: number, curr
     })
 }
 
-export const get_all_applications = async () => {
+export const get_all_applications = async (filter: {organization: string}) => {
     const cacheFn = dbCache(get_all_applications_db, {
         tags: [
             getGlobalTag(CACHE_TAGS.applications)
         ]
     });
 
-    return cacheFn();
+    return cacheFn(filter);
 }
 
 export const get_applications_with_filter = async (filter: z.infer<typeof filterApplicationsType>) => {
@@ -146,7 +146,7 @@ export const get_applications_with_filter_db = async (filter: z.infer<typeof fil
     return [len, application];
 }
 
-export const get_all_applications_db = async () => {
+export const get_all_applications_db = async (filter: {organization : string}) => {
     return db.select({
         can_contact: applications.can_contact,
         candidate: applications.candidate,

@@ -59,7 +59,7 @@ const LineChart = ({id}: { id: string }) => {
     }, []);
 
     return (
-        <div className="flex  flex-col h-full border shadow">
+        <div className="flex flex-col h-full border shadow rounded">
             <div className="m-4">
                 <button
                     className={`px-4 py-1 mr-2 text-sm ${

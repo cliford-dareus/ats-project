@@ -29,13 +29,13 @@ const chartData = [
 const chartConfig = {
     desktop: {
         label: "Desktop",
-        color: "hsl(var(--chart-1))",
+        color: "hsl(var(--chart-2))",
     },
 } satisfies ChartConfig
 
 function Component() {
     return (
-        <Card className="h-full">
+        <Card className="h-full rounded">
             <CardHeader>
                 <CardTitle>Area Chart</CardTitle>
                 <CardDescription>

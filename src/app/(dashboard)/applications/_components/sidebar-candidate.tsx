@@ -1,11 +1,11 @@
-import {candidatesResponseType} from "@/types/job-listings-types";
+import {CandidatesResponseType} from "@/types/job-listings-types";
 import {Badge} from "@/components/ui/badge";
 import {StageCountType} from "@/app/(dashboard)/layout";
 import {aggregateByKey, cn} from "@/lib/utils";
 import {Separator} from "@/components/ui/separator";
 
 const SidebarCandidate = ({candidate, stagesCount}: {
-    candidate: candidatesResponseType[],
+    candidate: CandidatesResponseType[],
     stagesCount: StageCountType[]
 }) => {
     const statusArray = aggregateByKey(candidate.map(c => ({...c, count: 1})), "status", "count");

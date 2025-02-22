@@ -86,7 +86,7 @@ const CircleChart = ({id}: { id: string }) => {
         if (!activeData.length) return null;
 
         return (
-            <Card className="flex flex-col h-full">
+            <Card className="flex flex-col h-full rounded">
                 <CardHeader className="items-center pb-0">
                     <CardTitle>Pie Chart - Donut with Text</CardTitle>
                     <CardDescription>January - June 2024</CardDescription>

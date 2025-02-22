@@ -35,7 +35,7 @@ const chartConfig = {
 
 function Component() {
     return (
-        <Card className="h-full">
+        <Card className="h-full rounded">
             <CardHeader className="items-center pb-4">
                 <CardTitle>Radar Chart</CardTitle>
                 <CardDescription>
