@@ -8,7 +8,7 @@ import {Dialog, DialogContent, DialogTrigger} from "@/components/ui/dialog";
 import CreateApplicationModal from "@/components/modal/create-application-modal";
 import {get_all_job_listings_action} from "@/server/actions/job-listings-actions";
 import {
-    candidatesResponseType,
+    CandidatesResponseType,
     JobListingWithCandidatesType,
     JobResponseType,
     StageResponseType
@@ -29,12 +29,15 @@ const Page = async ({params}: Props) => {
     const {joblistingId} = await params;
     const {orgId}= await auth();
     if (!orgId) return;
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error
-    const [, jobs] = await get_all_job_listings_action({ organization: orgId});
-    // Change fn name to get_application_info or something
-    const applications = await get_job_listing_with_candidate(Number(joblistingId));
-    const candidates = await get_all_candidates_action();
+
+    const [jobsResult, applications, candidatesResult] = await Promise.all([
+        get_all_job_listings_action({ organization: orgId}),
+        get_job_listing_with_candidate(Number(joblistingId)),
+        get_all_candidates_action({limit: 1000, offset: 0}),
+    ]);
+
+    const jobs = Array.isArray(jobsResult) ? jobsResult[1] : [];
+    const candidates = Array.isArray(candidatesResult) ? candidatesResult[1] : [];
     const stages = await get_job_listings_stages(applications[0]?.job_id);
 
     return (
@@ -64,7 +67,7 @@ const Page = async ({params}: Props) => {
                     <DialogContent>
                         <CreateApplicationModal
                             job={jobs as JobResponseType[]}
-                            candidates={candidates as candidatesResponseType[]}
+                            candidates={candidates as CandidatesResponseType[]}
                         />
                     </DialogContent>
                 </Dialog>

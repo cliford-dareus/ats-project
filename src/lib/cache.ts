@@ -1,3 +1,4 @@
+import { chartData } from "@/app/(dashboard)/dashboard/_components/charts/circle-chart"
 import { revalidateTag, unstable_cache } from "next/cache"
 import { cache } from "react"
 
@@ -13,6 +14,7 @@ export const CACHE_TAGS = {
     applications: "applications",
     organizations: "organizations",
     departments: "departments",
+    chartData: "chartData",
 } as const
 
 export function getGlobalTag(tag: keyof typeof CACHE_TAGS) {
@@ -51,4 +53,3 @@ export function revalidateDbCache({tag, userId, id,}: {
         revalidateTag(getIdTag(id, tag))
     }
 }
-

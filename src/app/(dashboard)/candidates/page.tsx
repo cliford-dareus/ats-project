@@ -19,7 +19,9 @@ const Page = async ({searchParams}: Props) => {
     const limit = typeof per_page === "string" ? parseInt(per_page) : 8;
     const offset = typeof page === "string" ? (parseInt(page) - 1) * limit : 0;
 
-    const [len, candidates] = await get_all_candidates_action({limit, offset}) as [number, CandidatesResponseType[]];
+    const result= await get_all_candidates_action({limit, offset});
+    const len = Array.isArray(result) ? result[0] : 0;
+    const candidates = Array.isArray(result) ? result[1] : [];
     const pageCount = Math.ceil((len as number) / limit);
 
     return (

@@ -26,15 +26,9 @@ const Page = async ({searchParams}: Props) => {
         organization: orgId as string,
     });
 
-    let len: number | undefined;
-    let jobs: JobResponseType[] | undefined;
-    let error: boolean | undefined;
-
-    if (Array.isArray(result)) {
-        [len, jobs] = result as [number, JobResponseType[]];
-    } else if (result && typeof result === "object" && 'error' in result) {
-        error = result.error;
-    }
+    const  len  = Array.isArray(result) ? result[0] : 0;
+    const  jobs = Array.isArray(result) ? result[1] : [];
+    const  error = result && typeof result === "object" && 'error' in result ? result.error : null;
 
     if (error) {
         console.error("Error fetching job listings:", error);
