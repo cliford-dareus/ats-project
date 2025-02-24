@@ -1,51 +1,31 @@
 'use client'
 
-import React, {useState} from 'react';
-import CircleChart from "@/app/(dashboard)/dashboard/_components/charts/circle-chart";
-import RadarChart from "@/app/(dashboard)/dashboard/_components/charts/radar-chart";
-import ComponentPicker from "@/app/(dashboard)/dashboard/_components/component-picker";
-import LineChart from "@/app/(dashboard)/dashboard/_components/charts/line-chart";
-import AreaChart from "@/app/(dashboard)/dashboard/_components/charts/area-chart";
-import {cn} from "@/lib/utils";
+import React from 'react';
+import {ChartInterface} from "@/app/(dashboard)/dashboard/_components/charts/radar-chart";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
 import Link from "next/link";
 import {ArrowRight, ArrowUp} from "lucide-react";
+import ChartCard from "@/app/(dashboard)/dashboard/_components/chart-card";
 
 
 type Props = {
     organization: string;
-    job_open: any;
-    hired_candidates: any;
-    job_listings: any;
+    job_open: ChartInterface[];
+    hired_candidates: ChartInterface[];
+    job_listings: ChartInterface[];
 };
 
 const DashboardLayout = ({organization, job_open, job_listings, hired_candidates}: Props) => {
-    const [sections, setSections] = useState({section1: "circleChart"} as {
-        [key: string]: string
-    });
-
-    const components = {
-        circleChart: () => <CircleChart id={organization}/>,
-        radarChart: () => <RadarChart/>,
-        lineChart: () => <LineChart id={organization}/>,
-        areaChart: () => <AreaChart/>
-    } as { [key: string]: () => React.JSX.Element };
-
-    const handleComponentChange = (section: string, component: string) => {
-        setSections((prev) => ({...prev, [section]: component}));
-    };
-
     return (
         <div className="p-4 lg:max-w-8xl 2xl:mx-auto ">
-            <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
             <div className="h-[150px] mt-2 rounded grid grid-cols-6 gap-8">
                 <div className="col-span-4 flex flex-col justify-between gap-4 h-full flex-1">
                     <div className="mt-2">
                         <h2 className="text-xl font-semibold text-gray-900">Welcome, Cliford</h2>
-                        <p className="text-sm text-gray-500">View and manage your organization's dashboard</p>
+                        <p className="text-sm text-gray-500">{"View and manage your organization\'s dashboard"}</p>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4 md:grid-cols-3">
+                    <div className="grid grid-cols-3 gap-4">
                         <div className="col-span-2 rounded p-4 bg-blue-200">
                             <Link href="" className="flex items-center gap-4">
                                 <span className="text-2xl">120</span>
@@ -55,7 +35,7 @@ const DashboardLayout = ({organization, job_open, job_listings, hired_candidates
                                 </p>
                             </Link>
                         </div>
-                        <div className="border p-4 rounded"></div>
+                        <div className="border p-4 rounded col-span-1"></div>
                     </div>
                 </div>
 
@@ -71,23 +51,13 @@ const DashboardLayout = ({organization, job_open, job_listings, hired_candidates
                 </Card>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8">
-                {Object.keys(sections).map((section) => (
-                    <div key={section}
-                         className={cn("h-[400px] md:col-span-2 row-span-1 rounded-xl group/bento transition duration-200 shadow-input dark:shadow-none dark:bg-black dark:border-white/[0.2] bg-white border-none border-transparent")}>
-                        <div className="relative h-full">
-                            <div className="w-[130px] absolute right-4 top-4">
-                                <ComponentPicker
-                                    section={section}
-                                    selectedComponent={sections[section]}
-                                    onChange={handleComponentChange}
-                                    components={Object.keys(components)}
-                                />
-                            </div>
-                            {React.createElement(components[sections[section]])}
-                        </div>
-                    </div>
-                ))}
-
+                <ChartCard
+                    queryKey="range"
+                    organization={organization}
+                    job_open={job_open}
+                    hired_candidates={hired_candidates}
+                    job_listings={job_listings}
+                />
                 <Card className="md:col-span-1 row-span-2 bg-white border border-transparent rounded">
                     <CardHeader>
                         <CardTitle>Activities</CardTitle>

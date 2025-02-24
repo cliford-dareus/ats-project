@@ -4,7 +4,7 @@ import {applications, candidates, interviews, job_listings} from "@/drizzle/sche
 import { CACHE_TAGS, dbCache, getIdTag } from "@/lib/cache";
 
 export const getChartData = async (createdAfter: Date | null, createdBefore: Date | null) => {
-    const cacheFn = dbCache(get_application_chart_data_db, {
+    const cacheFn = dbCache(get_job_chart_data_db, {
         tags: [
             getIdTag(`chartData-${createdAfter}-${createdBefore}`, CACHE_TAGS.chartData)
         ]
@@ -74,7 +74,7 @@ export const get_job_chart_data_db = async (createdAfter: Date | null, createdBe
             .from(job_listings)
             .where(and(...createdAtQuery))
             .groupBy(sql`DATE_FORMAT(${job_listings.created_at},'%Y-%m-%d')`)
-            .orderBy(sql`DATE_FORMAT(${job_listings.created_at},'%Y-%m-%d')DESC`);
+            .orderBy(sql`DATE_FORMAT(${job_listings.created_at},'%Y-%m-%d')ASC`);
 };
 
 export const get_open_job_chart_data_db = async (createdAfter: Date | null, createdBefore: Date | null) => {
@@ -88,7 +88,7 @@ export const get_open_job_chart_data_db = async (createdAfter: Date | null, crea
             .from(job_listings)
             .where(and(...createdAtQuery, eq(job_listings.status, 'OPEN')))
             .groupBy(sql`DATE_FORMAT(${job_listings.created_at},'%Y-%m-%d')`)
-            .orderBy(sql`DATE_FORMAT(${job_listings.created_at},'%Y-%m-%d')DESC`);
+            .orderBy(sql`DATE_FORMAT(${job_listings.created_at},'%Y-%m-%d')ASC`);
 };
 
 export const get_application_chart_data_db = async (createdAfter: Date | null, createdBefore: Date | null) => {
@@ -102,7 +102,7 @@ export const get_application_chart_data_db = async (createdAfter: Date | null, c
             .from(applications)
             .where(and(...createdAtQuery))
             .groupBy(sql`DATE_FORMAT(${applications.created_at},'%Y-%m-%d')`)
-            .orderBy(sql`DATE_FORMAT(${applications.created_at},'%Y-%m-%d')DESC`);
+            .orderBy(sql`DATE_FORMAT(${applications.created_at},'%Y-%m-%d')ASC`);
 };
 
 export const get_interview_chart_data_db = async (createdAfter: Date | null, createdBefore: Date | null) => {
@@ -116,7 +116,7 @@ export const get_interview_chart_data_db = async (createdAfter: Date | null, cre
             .from(interviews)
             .where(and(...createdAtQuery, eq(interviews.status, 'SCHEDULE')))
             .groupBy(sql`DATE_FORMAT(${interviews.created_at},'%Y-%m-%d')`)
-            .orderBy(sql`DATE_FORMAT(${interviews.created_at},'%Y-%m-%d')DESC`);
+            .orderBy(sql`DATE_FORMAT(${interviews.created_at},'%Y-%m-%d')ASC`);
 };
 
 export const get_candidate_chart_data_db = async (createdAfter: Date | null, createdBefore: Date | null) => {
@@ -130,7 +130,7 @@ export const get_candidate_chart_data_db = async (createdAfter: Date | null, cre
             .from(candidates)
             .where(and(...createdAtQuery))
             .groupBy(sql`DATE_FORMAT(${candidates.created_at},'%Y-%m-%d')`)
-            .orderBy(sql`DATE_FORMAT(${candidates.created_at},'%Y-%m-%d')DESC`);
+            .orderBy(sql`DATE_FORMAT(${candidates.created_at},'%Y-%m-%d')ASC`);
 };
 
 export const get_hired_candidate_chart_data_db = async (createdAfter: Date | null, createdBefore: Date | null) => {
@@ -144,5 +144,5 @@ export const get_hired_candidate_chart_data_db = async (createdAfter: Date | nul
             .from(candidates)
             .where(and(...createdAtQuery, eq(candidates.status, 'Hired')))
             .groupBy(sql`DATE_FORMAT(${candidates.created_at},'%Y-%m-%d')`)
-            .orderBy(sql`DATE_FORMAT(${candidates.created_at},'%Y-%m-%d')DESC`);
+            .orderBy(sql`DATE_FORMAT(${candidates.created_at},'%Y-%m-%d')ASC`);
 };

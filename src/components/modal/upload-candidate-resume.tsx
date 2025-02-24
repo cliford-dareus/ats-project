@@ -32,12 +32,12 @@ const UploadCandidateResume = () => {
 
     const onDrop = useCallback((state: boolean) => {
         setState(state);
-    }, [])
+    }, []);
 
     const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setLoading(true);
-
+    
         const formData = new FormData(e.currentTarget);
         try {
             const result = await fetch('/api/resume', {
@@ -46,16 +46,13 @@ const UploadCandidateResume = () => {
             });
             const rawResponse = await result.json();
             const jsonString = rawResponse.result
-                .replace("```json", ' ')
-                .replace("```", " ")
+                .replace(/```(json)?/g, '')
                 .trim();
             const parsedData = JSON.parse(jsonString);
-            setResumePath(rawResponse.resumeUrlPath)
+            setResumePath(rawResponse.resumeUrlPath);
             setExtractedText(parsedData);
-            setLoading(false);
         } catch (e) {
-            console.log(e);
-            setLoading(false);
+            console.error('Error processing resume:', e);
             setState(false);
         } finally {
             setLoading(false);
@@ -71,11 +68,11 @@ const UploadCandidateResume = () => {
         }
     };
 
-    const onCancel = () => {
-        setExtractedText(undefined);
-        setResumePath('')
-        setState(false);
-    };
+    // const onCancel = () => {
+    //     setExtractedText(undefined);
+    //     setResumePath('')
+    //     setState(false);
+    // };
 
     useEffect(() => {
         form.reset({

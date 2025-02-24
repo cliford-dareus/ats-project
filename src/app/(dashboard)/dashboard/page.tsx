@@ -1,25 +1,25 @@
 import DashboardLayout from "@/app/(dashboard)/dashboard/_components/dashboard-layout";
 import {auth} from "@clerk/nextjs/server";
-import {
-    get_hired_candidate_chart_data_db,
-    get_job_chart_data_db,
-    get_open_job_chart_data_db
-} from "@/server/db/chart-data";
 import {RANGE_OPTIONS} from "@/lib/utils";
+import {
+    get_application_chart_data_action, get_chart_data_action,
+    get_hired_candidate_chart_data_action,
+    get_open_job_chart_data_action
+} from "@/server/actions/chart-data";
 
 const Page = async () => {
     const {orgId} = await auth();
-    const user = await auth()
     if (!orgId) return null;
 
     // TODO: Add searchParams range logic for dynamic range selection
-    const [job, hired, open_job] = await Promise.all([
-        get_job_chart_data_db(RANGE_OPTIONS.last_7_days.startDate, RANGE_OPTIONS.last_7_days.endDate),
-        get_hired_candidate_chart_data_db(RANGE_OPTIONS.last_7_days.startDate, RANGE_OPTIONS.last_7_days.endDate),
-        get_open_job_chart_data_db(RANGE_OPTIONS.last_7_days.startDate, RANGE_OPTIONS.last_7_days.endDate)
-    ])
+    const [job, hired, open_job, applications] = await Promise.all([
+        get_chart_data_action(RANGE_OPTIONS.last_7_days.startDate, RANGE_OPTIONS.last_7_days.endDate),
+        get_hired_candidate_chart_data_action(RANGE_OPTIONS.all_time.startDate, RANGE_OPTIONS.all_time.endDate),
+        get_open_job_chart_data_action(RANGE_OPTIONS.last_7_days.startDate, RANGE_OPTIONS.last_7_days.endDate),
+        get_application_chart_data_action(RANGE_OPTIONS.last_7_days.startDate, RANGE_OPTIONS.last_7_days.endDate),
+    ]);
 
-    console.log(job, hired, open_job, user);
+    // console.log("JOBS", job, "HIRED",hired, "OPEN",open_job,"APPLICATION", applications);
 
     return (
         <DashboardLayout

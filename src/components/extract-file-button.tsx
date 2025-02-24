@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import {FileDown, Plus} from "lucide-react";
+import {FileDown} from "lucide-react";
 
 type Props = {
     status: string

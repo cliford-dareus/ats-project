@@ -1,8 +1,7 @@
 "use client"
 
-import { TrendingUp } from "lucide-react"
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
-
+import { TrendingUp } from "lucide-react";
+import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 import {
     Card,
     CardContent,
@@ -10,30 +9,27 @@ import {
     CardFooter,
     CardHeader,
     CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 import {
     ChartConfig,
     ChartContainer,
     ChartTooltip,
     ChartTooltipContent,
-} from "@/components/ui/chart"
-const chartData = [
-    { month: "January", desktop: 186 },
-    { month: "February", desktop: 305 },
-    { month: "March", desktop: 237 },
-    { month: "April", desktop: 73 },
-    { month: "May", desktop: 209 },
-    { month: "June", desktop: 214 },
-]
+} from "@/components/ui/chart";
+import {ChartInterface} from "@/app/(dashboard)/dashboard/_components/charts/radar-chart";
 
 const chartConfig = {
     desktop: {
         label: "Desktop",
         color: "hsl(var(--chart-2))",
     },
-} satisfies ChartConfig
+} satisfies ChartConfig;
 
-function Component() {
+type Props = {
+    hired: ChartInterface[];
+};
+
+function Component({hired}: Props) {
     return (
         <Card className="h-full rounded">
             <CardHeader>
@@ -47,7 +43,7 @@ function Component() {
                     <AreaChart
                         // height={250}
                         accessibilityLayer
-                        data={chartData}
+                        data={hired}
                         margin={{
                             left: 12,
                             right: 12,
@@ -55,7 +51,7 @@ function Component() {
                     >
                         <CartesianGrid vertical={false} />
                         <XAxis
-                            dataKey="month"
+                            dataKey="date"
                             tickLine={false}
                             axisLine={false}
                             tickMargin={8}
@@ -66,7 +62,7 @@ function Component() {
                             content={<ChartTooltipContent indicator="line" />}
                         />
                         <Area
-                            dataKey="desktop"
+                            dataKey="count"
                             type="natural"
                             fill="var(--color-desktop)"
                             fillOpacity={0.4}
@@ -91,4 +87,4 @@ function Component() {
     )
 }
 
-export default Component
+export default Component;

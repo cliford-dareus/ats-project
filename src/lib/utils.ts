@@ -3,7 +3,14 @@ import {twMerge} from "tailwind-merge"
 import {UseFormReturn} from "react-hook-form";
 import {ApplicationResponseType, CandidatesResponseType} from "@/types/job-listings-types";
 import {chartData} from "@/app/(dashboard)/dashboard/_components/charts/circle-chart";
-import {startOfDay, subDays} from "date-fns";
+import {
+    differenceInDays, differenceInMonths,
+    differenceInWeeks,
+    eachDayOfInterval, eachMonthOfInterval, eachWeekOfInterval, eachYearOfInterval, endOfWeek,
+    interval, max, min,
+    startOfDay, startOfWeek,
+    subDays
+} from "date-fns";
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs))
@@ -153,7 +160,52 @@ export const RANGE_OPTIONS = {
         startDate: null,
         endDate: null,
     },
-}
+};
+
+export const getChartDateArray = (startDate: Date, endDate: Date = new Date())=> {
+    const days = differenceInDays(endDate, startDate)
+    if (days < 30) {
+        return {
+            array: eachDayOfInterval(interval(startDate, endDate)),
+            format: formatDate,
+        }
+    }
+
+    const weeks = differenceInWeeks(endDate, startDate)
+    if (weeks < 30) {
+        return {
+            array: eachWeekOfInterval(interval(startDate, endDate)),
+            format: (date: Date) => {
+                const start = max([startOfWeek(date), startDate])
+                const end = min([endOfWeek(date), endDate])
+
+                return `${formatDate(start)} - ${formatDate(end)}`
+            },
+        }
+    }
+
+    const months = differenceInMonths(endDate, startDate)
+    if (months < 30) {
+        return {
+            array: eachMonthOfInterval(interval(startDate, endDate)),
+            format: new Intl.DateTimeFormat("en", { month: "long", year: "numeric" })
+                .format,
+        }
+    }
+
+    return {
+        array: eachYearOfInterval(interval(startDate, endDate)),
+        format: new Intl.DateTimeFormat("en", { year: "numeric" }).format,
+    }
+};
+
+export const DATE_FORMATTER = new Intl.DateTimeFormat("en", {
+    dateStyle: "medium",
+});
+
+export const  formatDate = (date: Date) => {
+    return DATE_FORMATTER.format(date)
+};
 
 export const getCalendaAvailability = () => {
 };
