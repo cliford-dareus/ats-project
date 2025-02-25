@@ -28,12 +28,12 @@ const chartConfig = {
 export interface ChartInterface {
     date: string;
     count: number;
-    fill: string;
+    // fill: string;
 };
 
 type Props = {
-    hired: ChartInterface[] ;
-    open: ChartInterface[] ;
+    hired: ChartInterface[];
+    open: ChartInterface[];
 };
 
 function Component({hired, open}: Props) {

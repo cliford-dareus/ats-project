@@ -26,10 +26,10 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 type Props = {
-    hired: ChartInterface[];
+    data: ChartInterface[];
 };
 
-function Component({hired}: Props) {
+function Component({data}: Props) {
     return (
         <Card className="h-full rounded">
             <CardHeader>
@@ -43,7 +43,7 @@ function Component({hired}: Props) {
                     <AreaChart
                         // height={250}
                         accessibilityLayer
-                        data={hired}
+                        data={data}
                         margin={{
                             left: 12,
                             right: 12,

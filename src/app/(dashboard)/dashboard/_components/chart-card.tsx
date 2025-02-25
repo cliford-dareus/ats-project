@@ -1,6 +1,6 @@
 "use client"
 
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import CircleChart from "@/app/(dashboard)/dashboard/_components/charts/circle-chart";
 import RadarChart, {ChartInterface} from "@/app/(dashboard)/dashboard/_components/charts/radar-chart";
 import LineChart from "@/app/(dashboard)/dashboard/_components/charts/line-chart";
@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {Button} from "@/components/ui/button";
 import {Calendar} from "@/components/ui/calendar";
-import {CalendarIcon} from "lucide-react";
+import {CalendarIcon, DatabaseZap} from "lucide-react";
 
 type Props = {
     organization: string;
@@ -30,13 +30,14 @@ type Props = {
 };
 
 const ChartCard = ({organization, job_open, job_listings, hired_candidates, queryKey}: Props) => {
-    const [sections, setSections] = useState({section1: "circleChart"} as {
-        [key: string]: string
+    const [sections, setSections] = useState<{ [key: string]: string }>(() => {
+        const storedValue = localStorage.getItem(`activeSection_${queryKey}`);
+        return storedValue ? JSON.parse(storedValue as string) : {section1: "lineChart"};
     });
-    const [component, setComponent] = useState();
-    const searchParams = useSearchParams()
-    const router = useRouter()
-    const pathname = usePathname()
+    const [activeData, setActiveData] = useState<ChartInterface[]>([]);
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const pathname = usePathname();
     const [dateRange, setDateRange] = useState<DateRange | undefined>({
         from: subDays(new Date(), 29),
         to: new Date(),
@@ -45,16 +46,16 @@ const ChartCard = ({organization, job_open, job_listings, hired_candidates, quer
     const components = {
         circleChart: () => <CircleChart id={organization}/>,
         radarChart: () => <RadarChart hired={hired_candidates} open={job_open}/>,
-        lineChart: () => <LineChart hired={hired_candidates}/>,
-        areaChart: () => <AreaChart hired={hired_candidates}/>
+        lineChart: () => <LineChart data={activeData}/>,
+        areaChart: () => <AreaChart data={activeData}/>
     } as { [key: string]: () => React.JSX.Element };
 
     const handleComponentChange = (section: string, component: string) => {
         setSections((prev) => ({...prev, [section]: component}));
     };
 
-    function setRange(range: keyof typeof RANGE_OPTIONS | DateRange) {
-        const params = new URLSearchParams(searchParams)
+    const setRange = (range: keyof typeof RANGE_OPTIONS | DateRange) => {
+        const params = new URLSearchParams(searchParams);
         if (typeof range === "string") {
             params.set(queryKey, range)
             params.delete(`${queryKey}From`)
@@ -67,6 +68,30 @@ const ChartCard = ({organization, job_open, job_listings, hired_candidates, quer
         }
         router.push(`${pathname}?${params.toString()}`, {scroll: false})
     };
+
+    const handleDataChange = (value: string) => {
+        switch (value) {
+            case "Open Job":
+                setActiveData(job_open);
+                break;
+            case "Job Listings":
+                setActiveData(job_listings);
+                break;
+            case "Hired Candidates":
+                setActiveData(hired_candidates);
+                break;
+            default:
+                setActiveData([]);
+        }
+    };
+
+    useEffect(() => {
+        localStorage.setItem(`activeSection_${queryKey}`, JSON.stringify(sections));
+    }, [sections]);
+
+    useEffect(() => {
+        setActiveData(hired_candidates);
+    }, [searchParams]);
 
     return (
         <>
@@ -81,6 +106,24 @@ const ChartCard = ({organization, job_open, job_listings, hired_candidates, quer
                                 onChange={handleComponentChange}
                                 components={Object.keys(components)}
                             />
+
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline">
+                                        <DatabaseZap size={16}/>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    {["Open Job", "Job Listings", "Hired Candidates"].map((value, key) => (
+                                        <DropdownMenuItem
+                                            onClick={() => handleDataChange(value)}
+                                            key={key}
+                                        >
+                                            {value}
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
 
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -128,7 +171,6 @@ const ChartCard = ({organization, job_open, job_listings, hired_candidates, quer
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </div>
-
                         {React.createElement(components[sections[section]])}
                     </div>
                 </div>

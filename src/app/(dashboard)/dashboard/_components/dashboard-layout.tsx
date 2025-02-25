@@ -7,12 +7,12 @@ import Link from "next/link";
 import {ArrowRight, ArrowUp} from "lucide-react";
 import ChartCard from "@/app/(dashboard)/dashboard/_components/chart-card";
 
-
 type Props = {
     organization: string;
-    job_open: ChartInterface[];
-    hired_candidates: ChartInterface[];
-    job_listings: ChartInterface[];
+    job_open: ChartInterface[] | null;
+    hired_candidates: ChartInterface[] | null;
+    job_listings: ChartInterface[] | null;
+    applications: ChartInterface[] | null;
 };
 
 const DashboardLayout = ({organization, job_open, job_listings, hired_candidates}: Props) => {
@@ -54,10 +54,11 @@ const DashboardLayout = ({organization, job_open, job_listings, hired_candidates
                 <ChartCard
                     queryKey="range"
                     organization={organization}
-                    job_open={job_open}
-                    hired_candidates={hired_candidates}
-                    job_listings={job_listings}
+                    job_open={job_open as ChartInterface[]}
+                    hired_candidates={hired_candidates as ChartInterface[]}
+                    job_listings={job_listings as ChartInterface[]}
                 />
+
                 <Card className="md:col-span-1 row-span-2 bg-white border border-transparent rounded">
                     <CardHeader>
                         <CardTitle>Activities</CardTitle>

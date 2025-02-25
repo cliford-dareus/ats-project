@@ -17,10 +17,10 @@ const chartConfig = {
 } satisfies ChartConfig
 
 type Props = {
-    hired: ChartInterface[] ;
+    data: ChartInterface[];
 };
 
-const LineChart = ({hired}: Props) => {
+const LineChart = ({data}: Props) => {
     return (
         <div className="flex flex-col h-full border shadow rounded">
             <div className="m-4">
@@ -42,7 +42,7 @@ const LineChart = ({hired}: Props) => {
                     >
                         <BarChart
                             accessibilityLayer
-                            data={hired}
+                            data={data}
                             margin={{
                                 left: 12,
                                 right: 12,

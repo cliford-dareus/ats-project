@@ -1,6 +1,6 @@
 "use client"
 
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import {Select, SelectContent, SelectItem, SelectTrigger} from "@/components/ui/select";
 
 type Props = {
     section: string;
@@ -13,10 +13,9 @@ const ComponentPicker = ({ section, selectedComponent, onChange, components }: P
     <Select
         value={selectedComponent}
         onValueChange={(e) => onChange(section, e)}
-
     >
         <SelectTrigger>
-            <SelectValue placeholder={`Select a ${section} component...`}/>
+            {/*<SelectValue placeholder={`Select a ${section} component...`}/>*/}
         </SelectTrigger>
         <SelectContent className="mt-2 border rounded p-2">
             {components.map((component) => (

@@ -7,7 +7,7 @@ import {
     differenceInDays, differenceInMonths,
     differenceInWeeks,
     eachDayOfInterval, eachMonthOfInterval, eachWeekOfInterval, eachYearOfInterval, endOfWeek,
-    interval, max, min,
+    interval, isValid, max, min,
     startOfDay, startOfWeek,
     subDays
 } from "date-fns";
@@ -162,8 +162,8 @@ export const RANGE_OPTIONS = {
     },
 };
 
-export const getChartDateArray = (startDate: Date, endDate: Date = new Date())=> {
-    const days = differenceInDays(endDate, startDate)
+export const getChartDateArray = (startDate: Date, endDate: Date = new Date()) => {
+    const days = differenceInDays(endDate, startDate);
     if (days < 30) {
         return {
             array: eachDayOfInterval(interval(startDate, endDate)),
@@ -171,7 +171,7 @@ export const getChartDateArray = (startDate: Date, endDate: Date = new Date())=>
         }
     }
 
-    const weeks = differenceInWeeks(endDate, startDate)
+    const weeks = differenceInWeeks(endDate, startDate);
     if (weeks < 30) {
         return {
             array: eachWeekOfInterval(interval(startDate, endDate)),
@@ -184,18 +184,18 @@ export const getChartDateArray = (startDate: Date, endDate: Date = new Date())=>
         }
     }
 
-    const months = differenceInMonths(endDate, startDate)
+    const months = differenceInMonths(endDate, startDate);
     if (months < 30) {
         return {
             array: eachMonthOfInterval(interval(startDate, endDate)),
-            format: new Intl.DateTimeFormat("en", { month: "long", year: "numeric" })
+            format: new Intl.DateTimeFormat("en", {month: "long", year: "numeric"})
                 .format,
         }
     }
 
     return {
         array: eachYearOfInterval(interval(startDate, endDate)),
-        format: new Intl.DateTimeFormat("en", { year: "numeric" }).format,
+        format: new Intl.DateTimeFormat("en", {year: "numeric"}).format,
     }
 };
 
@@ -203,9 +203,24 @@ export const DATE_FORMATTER = new Intl.DateTimeFormat("en", {
     dateStyle: "medium",
 });
 
-export const  formatDate = (date: Date) => {
+export const formatDate = (date: Date) => {
     return DATE_FORMATTER.format(date)
 };
+
+export function getRangeOption(range?: string, from?: string, to?: string) {
+    if (range == null) {
+        const startDate = new Date(from || "")
+        const endDate = new Date(to || "")
+        if (!isValid(startDate) || !isValid(endDate)) return
+
+        return {
+            label: `${formatDate(startDate)} - ${formatDate(endDate)}`,
+            startDate,
+            endDate,
+        }
+    }
+    return RANGE_OPTIONS[range as keyof typeof RANGE_OPTIONS]
+}
 
 export const getCalendaAvailability = () => {
 };
