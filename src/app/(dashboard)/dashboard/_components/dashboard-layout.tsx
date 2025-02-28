@@ -8,14 +8,13 @@ import {ArrowRight, ArrowUp} from "lucide-react";
 import ChartCard from "@/app/(dashboard)/dashboard/_components/chart-card";
 
 type Props = {
-    organization: string;
     job_open: ChartInterface[] | null;
     hired_candidates: ChartInterface[] | null;
     job_listings: ChartInterface[] | null;
     applications: ChartInterface[] | null;
 };
 
-const DashboardLayout = ({organization, job_open, job_listings, hired_candidates}: Props) => {
+const DashboardLayout = ({job_open, job_listings, hired_candidates}: Props) => {
     return (
         <div className="p-4 lg:max-w-8xl 2xl:mx-auto ">
             <div className="h-[150px] mt-2 rounded grid grid-cols-6 gap-8">
@@ -53,7 +52,6 @@ const DashboardLayout = ({organization, job_open, job_listings, hired_candidates
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8">
                 <ChartCard
                     queryKey="range"
-                    organization={organization}
                     job_open={job_open as ChartInterface[]}
                     hired_candidates={hired_candidates as ChartInterface[]}
                     job_listings={job_listings as ChartInterface[]}

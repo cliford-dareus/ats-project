@@ -24,6 +24,7 @@ import SidebarCandidate from "@/app/(dashboard)/applications/_components/sidebar
 import {CandidatesResponseType} from "@/types/job-listings-types";
 import {StageCountType} from "@/app/(dashboard)/layout";
 import StepNavigation from "@/app/(dashboard)/jobs/new/_component/side-navigation";
+import SidebarDashboard from "@/app/(dashboard)/dashboard/_components/sidebar-dashboard";
 
 const data = {
     user: {
@@ -159,21 +160,18 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar> & {
                     <SidebarGroup className="px-0">
                         <SidebarGroupContent>
                             {activeItem.title === "Dashboard" ? (
-                                <h1>Dashboard</h1>
+                                <SidebarDashboard />
                             ) : activeItem.title === "Jobs" && !pathname.startsWith('/jobs/new/step') ? (
                                 <JobListingSidebar/>
                             ) : activeItem.title === "Applications" ? (
-                                <SidebarCandidate
-                                    candidate={props.candidate}
-                                    stagesCount={props.stagescount as StageCountType[]}
-                                />
+                                <SidebarCandidate candidate={props.candidate} stagesCount={props.stagescount as StageCountType[]}/>
                             ) : activeItem.title === "Settings" ? (
                                 <SidebarSettings/>
-                            ) : pathname.startsWith("/jobs/new/step") ?
-                                (
+                            ) : pathname.startsWith("/jobs/new/step") ? (
                                     <StepNavigation/>
-                                )
-                                : <div className="px-4">Default</div>}
+                            ) : (
+                                <div className="px-4">Default</div>
+                            )}
                         </SidebarGroupContent>
                     </SidebarGroup>
                 </SidebarContent>

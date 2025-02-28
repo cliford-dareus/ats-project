@@ -35,7 +35,6 @@ const Page = async ({searchParams}: Props) => {
             job_open={open_job}
             hired_candidates={hired}
             job_listings={job}
-            organization={orgId as string}
             applications={applications}
         />
     )

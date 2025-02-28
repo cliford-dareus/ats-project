@@ -32,13 +32,10 @@ export interface ChartInterface {
 };
 
 type Props = {
-    hired: ChartInterface[];
-    open: ChartInterface[];
+    data: ChartInterface[];
 };
 
-function Component({hired, open}: Props) {
-    const [] = useState();
-
+function Component({data}: Props) {
     return (
         <Card className="h-full rounded">
             <CardHeader className="items-center pb-4">
@@ -52,7 +49,7 @@ function Component({hired, open}: Props) {
                     config={chartConfig}
                     className="mx-auto aspect-square max-h-[250px]"
                 >
-                    <RadarChart data={open}>
+                    <RadarChart data={data}>
                         <ChartTooltip cursor={false} content={<ChartTooltipContent/>}/>
                         <PolarAngleAxis
                             dataKey="date"

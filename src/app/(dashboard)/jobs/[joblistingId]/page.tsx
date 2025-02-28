@@ -3,7 +3,7 @@ import {get_job_listing_with_candidate, get_job_listings_stages} from "@/server/
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {CustomTabsTrigger, Tabs, TabsContent, TabsList} from "@/components/ui/tabs";
-import {BriefcaseBusiness, CircleUser, Edit} from "lucide-react";
+import {BriefcaseBusiness, CircleUser} from "lucide-react";
 import {Dialog, DialogContent, DialogTrigger} from "@/components/ui/dialog";
 import CreateApplicationModal from "@/components/modal/create-application-modal";
 import {get_all_job_listings_action} from "@/server/actions/job-listings-actions";

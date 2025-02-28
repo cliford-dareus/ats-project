@@ -22,14 +22,13 @@ import {Calendar} from "@/components/ui/calendar";
 import {CalendarIcon, DatabaseZap} from "lucide-react";
 
 type Props = {
-    organization: string;
     job_open: ChartInterface[];
     hired_candidates: ChartInterface[];
     job_listings: ChartInterface[];
     queryKey: string;
 };
 
-const ChartCard = ({organization, job_open, job_listings, hired_candidates, queryKey}: Props) => {
+const ChartCard = ({ job_open, job_listings, hired_candidates, queryKey}: Props) => {
     const [sections, setSections] = useState<{ [key: string]: string }>(() => {
         const storedValue = localStorage.getItem(`activeSection_${queryKey}`);
         return storedValue ? JSON.parse(storedValue as string) : {section1: "lineChart"};
@@ -44,8 +43,8 @@ const ChartCard = ({organization, job_open, job_listings, hired_candidates, quer
     });
 
     const components = {
-        circleChart: () => <CircleChart id={organization}/>,
-        radarChart: () => <RadarChart hired={hired_candidates} open={job_open}/>,
+        circleChart: () => <CircleChart data={activeData }/>,
+        radarChart: () => <RadarChart data={activeData}/>,
         lineChart: () => <LineChart data={activeData}/>,
         areaChart: () => <AreaChart data={activeData}/>
     } as { [key: string]: () => React.JSX.Element };

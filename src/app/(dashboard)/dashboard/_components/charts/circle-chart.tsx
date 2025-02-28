@@ -1,14 +1,11 @@
 'use client'
 
-import React, {useEffect, useState} from 'react';
+import React from 'react';
 import {Label, Pie, PieChart} from "recharts"
 import {ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent} from "@/components/ui/chart";
 import {Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle} from "@/components/ui/card";
 import {TrendingUp} from "lucide-react";
-import {get_all_candidates_action} from "@/server/actions/candidates-actions";
-import {get_all_applications_action} from "@/server/actions/application_actions";
-import {ApplicationResponseType, CandidatesResponseType} from "@/types/job-listings-types";
-import {groupedByMonths} from "@/lib/utils";
+import {ChartInterface} from "@/app/(dashboard)/dashboard/_components/charts/radar-chart";
 
 export const chartData = [
     {fill: "var(--color-date)"},
@@ -16,7 +13,7 @@ export const chartData = [
     {fill: "var(--color-date3)"},
     {fill: "var(--color-date4)"},
     {fill: "var(--color-other)"},
-]
+];
 
 const chartConfig = {
     candidates: {
@@ -46,44 +43,25 @@ const chartConfig = {
         label: "Older",
         color: "hsl(var(--chart-5))",
     },
-} satisfies ChartConfig
+} satisfies ChartConfig;
 
-const CircleChart = ({id}: { id: string }) => {
-        const [selectedData, setSelectedData] = useState<string>("candidates");
-        const [activeData, setActiveData] = useState<{ date: string, count: number, fill: string }[]>([]);
+const CircleChart = ({data}: { data: ChartInterface[] }) => {
+        let i = 0;
 
-        useEffect(() => {
-                const fetchData = async () => {
-                    let data: CandidatesResponseType[] | ApplicationResponseType[] = [];
-                    if (selectedData === "candidates") {
-                        const result = await get_all_candidates_action({limit: 1000, offset: 0});
-                        data = (Array.isArray(result) ? result[1] : []) as CandidatesResponseType[]
-                    } else if (selectedData === "applications") {
-                        const application = await get_all_applications_action({organization: id});
-                        if (Array.isArray(application)) {
-                            console.log(application)
-                            data = application as Partial<[]>;
-                        } else {
-                            console.error(application.message);
-                            data = [];
-                        }
-                    }
-                    const formattedData = groupedByMonths(data, 6);
-                    setActiveData(Object.values(formattedData));
-                };
-                fetchData();
-            }, [selectedData]
-        );
+        const formattedData = data.map(item => {
+            const h = {} as { fill: string, date: string, count: number };
+            if (item.count !== 0) {
+                h.fill = chartData[i].fill
+                h.date = item.date
+                h.count = item.count
+                i++
+            }
+            return {...h, item};
+        })
 
         const totalVisitors = React.useMemo(() => {
-            return activeData.reduce((acc, curr) => acc + curr.count, 0)
-        }, [activeData]);
-
-        const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-            setSelectedData(event.target.value); // Update selected dataset
-        };
-
-        if (!activeData.length) return null;
+            return data.reduce((acc, curr) => acc + curr.count, 0)
+        }, []);
 
         return (
             <Card className="flex flex-col h-full rounded">
@@ -102,7 +80,7 @@ const CircleChart = ({id}: { id: string }) => {
                                 content={<ChartTooltipContent hideLabel/>}
                             />
                             <Pie
-                                data={activeData}
+                                data={formattedData}
                                 dataKey="count"
                                 nameKey="date"
                                 innerRadius={60}
@@ -130,7 +108,7 @@ const CircleChart = ({id}: { id: string }) => {
                                                         y={(viewBox.cy || 0) + 24}
                                                         className="fill-muted-foreground"
                                                     >
-                                                        {selectedData === "candidates" ? "candidates" : "Applications"}
+                                                        Total visitors
                                                     </tspan>
                                                 </text>
                                             )
@@ -147,12 +125,6 @@ const CircleChart = ({id}: { id: string }) => {
                     </div>
                     <div className="leading-none text-muted-foreground">
                         Showing total visitors for the last 6 months
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <select value={selectedData} onChange={handleChange}>
-                            <option value="candidates">Candidate</option>
-                            <option value="applications">Application</option>
-                        </select>
                     </div>
                 </CardFooter>
             </Card>

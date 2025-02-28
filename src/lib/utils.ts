@@ -32,12 +32,12 @@ export const checkFormStatus = <U, T extends UseFormReturn<any>>(args: U, form: 
     }
 };
 
-export const aggregateByKey = <T extends Record<string, any>>(
+export const aggregateByKey = <T extends Record<string, unknown>>(
     data: T[],
     key: keyof T,
     countKey: keyof T,
     color?: keyof T,
-): { [key: string]: number }[] => {
+): { [key: string]: number | string }[] => {
     return data?.reduce((acc, cur) => {
         if (cur[key] === null) {
             return acc; // Skip if the key is null
@@ -45,13 +45,17 @@ export const aggregateByKey = <T extends Record<string, any>>(
 
         const existingItem = acc.find(item => item[key as string] === cur[key]);
         if (existingItem) {
-            existingItem[countKey as string] += cur[countKey];
+            existingItem[countKey as string] = (existingItem[countKey as string] as number) + (cur[countKey] as number);
         } else {
-            acc.push({[key]: cur[key], [countKey]: cur[countKey], [color as string]: cur[color as string]});
+            acc.push({
+                [key]: cur[key] as string | number,
+                [countKey]: cur[countKey] as number,
+                ...(color ? { [color]: cur[color] as string | number } : {})
+            });
         }
 
         return acc;
-    }, [] as { [key: string]: any }[]);
+    }, [] as { [key: string]: number | string }[]);
 };
 
 export const getTimeElapsed = (date: Date) => {
@@ -220,7 +224,7 @@ export function getRangeOption(range?: string, from?: string, to?: string) {
         }
     }
     return RANGE_OPTIONS[range as keyof typeof RANGE_OPTIONS]
-}
+};
 
 export const getCalendaAvailability = () => {
 };
