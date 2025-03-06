@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {NewJobContextProvider} from "@/providers/new-job-provider";
 import OrganizationSwitcher from "@/components/organization_switcher";
+import { redirect } from "next/navigation";
 
 type Props = {
     children: React.ReactNode
@@ -32,6 +33,11 @@ export type StageCountType = {
 
 const Layout = async ({children}: Props) => {
     const user = await currentUser()
+    
+    if (!user) {
+        return redirect("/sign-in");
+    };
+    
     const result = await get_all_candidates_action({limit: 0,offset: 0});
     const candidate = Array.isArray(result) ? result[1] : [];
     const stagesCount = await get_candidates_stage_count_action();
