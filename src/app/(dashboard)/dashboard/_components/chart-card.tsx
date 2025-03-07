@@ -40,17 +40,22 @@ const ChartCard = ({
   hired_candidates,
   queryKey,
 }: Props) => {
-  const [storedValue, setValue] = useSafeLocalStorage(`activeSection_${queryKey}`,`{section1: "lineChart"}`,);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const [storedValue, setValue] = useSafeLocalStorage(
+    `activeSection_${queryKey}`,
+    { section1: "lineChart" },
+  );
   const [sections, setSections] = useState<{ [key: string]: string }>(() => {
-    // const storedValue = localStorage.getItem(`activeSection_${queryKey}`);
-    console.log("storedValue", storedValue);
     return storedValue ? storedValue : { section1: "lineChart" };
   });
   const [activeData, setActiveData] = useState<ChartInterface[]>([]);
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({from: subDays(new Date(), 29),to: new Date(),});
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: subDays(new Date(), 29),
+    to: new Date(),
+  });
 
   const components = {
     circleChart: () => <CircleChart data={activeData} />,
@@ -95,9 +100,8 @@ const ChartCard = ({
   };
 
   useEffect(() => {
-    setValue(`activeSection_${queryKey}`, JSON.stringify(sections));
-    // localStorage.setItem(`activeSection_${queryKey}`, JSON.stringify(sections));
-  }, [sections, queryKey, setValue]);
+    setValue(sections);
+  }, [sections]);
 
   useEffect(() => {
     setActiveData(hired_candidates);
@@ -121,6 +125,7 @@ const ChartCard = ({
                 components={Object.keys(components)}
               />
 
+              {/* Data filter */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline">
@@ -141,6 +146,7 @@ const ChartCard = ({
                 </DropdownMenuContent>
               </DropdownMenu>
 
+              {/* Date filter withCustom Range */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline">

@@ -17,6 +17,7 @@ import {get_all_candidates_action} from "@/server/actions/candidates-actions";
 import JobOptions from "@/app/(dashboard)/jobs/[joblistingId]/_components/job-options";
 import JobPipeline from "@/app/(dashboard)/jobs/[joblistingId]/_components/job-pipeline";
 import {auth} from "@clerk/nextjs/server";
+import Link from 'next/link';
 
 type Props = {
     params: {
@@ -26,7 +27,7 @@ type Props = {
 };
 
 const Page = async ({params}: Props) => {
-    const {joblistingId} = await params;
+    const {joblistingId} = params;
     const {orgId}= await auth();
     if (!orgId) return;
 
@@ -92,6 +93,10 @@ const Page = async ({params}: Props) => {
 
                     <TabsContent value="candidates">
                         Candidates
+                        <Link href={`/jobs/${joblistingId}/review/${3}`}>
+                            <CircleUser size={20}/>
+                            <p>Candidates</p>
+                        </Link>
                     </TabsContent>
                     <TabsContent value="pipelines">
                         <JobPipeline
