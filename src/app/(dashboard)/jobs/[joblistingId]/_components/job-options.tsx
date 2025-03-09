@@ -1,7 +1,7 @@
 'use client'
 
 import React, {useActionState, useState} from 'react';
-import {FormErrors, JobResponseType, StageResponseType} from "@/types/job-listings-types";
+import {FormErrors, JobResponseType, StageResponseType} from "@/types/index";
 import {JOB_ENUM, JOB_STAGES, JOB_STATUS} from "@/schema";
 import {cn} from "@/lib/utils";
 import {Plus} from "lucide-react";
@@ -24,7 +24,7 @@ const initialState: FormErrors = {};
 const JobOptions = ({data, stages, job_id}: Props) => {
     const [serverErrors, formAction] = useActionState(update_job_listing, initialState);
     const [openStage, setOpenStage] = useState<JOB_ENUM>();
-    console.log(data.filter((job) => job.id === job_id));
+    // console.log(data.filter((job) => job.id === job_id));
     const currentJob = data.filter((job) => job.id === job_id);
 
     // TODO : Check if smart trigger is activated for the organization
@@ -82,15 +82,15 @@ const JobOptions = ({data, stages, job_id}: Props) => {
                         <p className="text-slate-500 text-sm">Customize this job listing workflow</p>
                     </div>
                     {stages?.map((stage) => (
-                        <div key={stage.id}>
+                        <div key={stage.id} onClick={() => setOpenStage(stage.stage_name as JOB_ENUM)}>
                             <div className="flex items-center gap-4">
                                 <span className={cn(stage.color, "w-4 h-4 rounded")}></span>
                                 <p className="w-[150px]">{stage.stage_name}</p>
                             </div>
 
                             {openStage === stage.stage_name &&
-                                <div className="w-full border p-4 flex flex-col gap-4 h-10">
-                                    <div>
+                                <div className="w-full border p-4 flex flex-col gap-4">
+                                    <div className='flex'>
                                         {JSON.parse(stage.trigger).map(trigger => (
                                             <div key={trigger.id}>{trigger.action_type}</div>
                                         ))}

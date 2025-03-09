@@ -6,7 +6,7 @@ import {CandidatesResponseType} from "@/types/job-listings-types";
 import {Separator} from "@/components/ui/separator";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {Button} from "@/components/ui/button";
-import {Bell, ChevronDown, LogOut, Plus} from "lucide-react";
+import {Bell, ChevronDown, LogOut, Plus, Tv} from "lucide-react";
 import {auth, currentUser} from "@clerk/nextjs/server";
 import Link from "next/link";
 import {
@@ -20,6 +20,7 @@ import {NewJobContextProvider} from "@/providers/new-job-provider";
 import OrganizationSwitcher from "@/components/organization_switcher";
 import {redirect} from "next/navigation";
 import {PluginProvider} from "@/providers/plugins-provider";
+import { TriggerProvider } from "@/providers/trigger-provider";
 
 type Props = {
     children: React.ReactNode
@@ -45,7 +46,8 @@ const Layout = async ({children}: Props) => {
     const stagesCount = await get_candidates_stage_count_action();
 
     return (
-        <PluginProvider orgId={orgId}>
+        <PluginProvider orgId={orgId as string}>
+          <TriggerProvider>
             <SidebarProvider
                 style={
                     {
@@ -102,6 +104,7 @@ const Layout = async ({children}: Props) => {
                     </>
                 </SidebarInset>
             </SidebarProvider>
+          </TriggerProvider>
         </PluginProvider>
     )
 }

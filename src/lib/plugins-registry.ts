@@ -1,9 +1,9 @@
 'use client'
 
-import {cleanupPlugins, initializePlugins} from "@/lib/plugin-lifecycle";
-import SmartTriggersFeature from "@/components/smart-trigger-plugin";
+// import {cleanupPlugins, initializePlugins} from "@/lib/plugin-lifecycle";
+// import SmartTriggersFeature from "@/components/smart-trigger-plugin";
 
-type Plugin = {
+export type PluginConfig = {
     id : string,
     name : string,
     description : string,
@@ -13,16 +13,13 @@ type Plugin = {
     deactivate?: (orgId: string) => void,
 };
 
-const pluginRegistry = new Map<string, Plugin>([
-    ["smart-trigger", {
-        id: "smart-trigger",
-        name: "Smart Trigger",
-        description: "This plugin allows you to create and manage smart triggers.",
-        component: SmartTriggersFeature,
-        // settingsComponent: () => `<div></div>`,
-        activate: initializePlugins,
-        deactivate: cleanupPlugins,
-    }]
-]);
+const pluginRegistry = new Map<string, PluginConfig>();
+
+export const registerPlugin = (plugin: PluginConfig) => {
+  if (pluginRegistry.has(module.id)) {
+       throw new Error(`Module with id "${module.id}" is already registered.`);
+     }
+    pluginRegistry.set(plugin.id, plugin);
+};
 
 export const getPlugins = () => Array.from(pluginRegistry.values());

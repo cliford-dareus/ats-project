@@ -84,6 +84,6 @@ export type ExtractResponseType = {
 
 export interface FormErrors {
     [key: string]: string | undefined;
-}
+};
 
 

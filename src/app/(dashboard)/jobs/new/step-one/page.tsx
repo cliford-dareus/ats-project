@@ -2,7 +2,7 @@
 
 import {get_dept, stepOneFormAction} from './_actions';
 import {Input} from "@/components/ui/input";
-import {FormErrors} from "@/types/job-listings-types";
+import {FormErrors} from "@/types/index";
 import CustomButton from "@/components/custom-button";
 import React, {useActionState, useEffect, useState} from "react";
 import {Label} from "@/components/ui/label";

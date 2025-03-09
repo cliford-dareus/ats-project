@@ -87,7 +87,18 @@ CREATE TABLE `organization` (
 	`phone` varchar(255) NOT NULL,
 	`email` varchar(255) NOT NULL,
 	`color` varchar(255) NOT NULL,
+	`plugins` json NOT NULL DEFAULT ('{"enabled":[],"settings":{}}'),
 	CONSTRAINT `organization_clerk_id` PRIMARY KEY(`clerk_id`)
+);
+--> statement-breakpoint
+CREATE TABLE `plugins` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`name` varchar(255) NOT NULL,
+	`description` varchar(255) NOT NULL,
+	`version` varchar(255) NOT NULL,
+	`enabled` boolean NOT NULL DEFAULT true,
+	`config` json NOT NULL DEFAULT ('{}'),
+	CONSTRAINT `plugins_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
 CREATE TABLE `scoresCards` (
@@ -102,7 +113,7 @@ CREATE TABLE `scoresCards` (
 CREATE TABLE `stages` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`job_id` int NOT NULL,
-	`stage_name` enum('New Candidate','Screening','Phone Interview','Interview','Offer'),
+	`stage_name` enum('Applied','New Candidate','Screening','Phone Interview','Interview','Offer'),
 	`stage_order_id` int NOT NULL,
 	`color` varchar(255),
 	`need_schedule` boolean DEFAULT true,
@@ -115,6 +126,16 @@ CREATE TABLE `technologies` (
 	`name` varchar(255) NOT NULL,
 	`years_experience` int,
 	CONSTRAINT `technologies_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+CREATE TABLE `triggers` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`action_type` varchar(255) NOT NULL,
+	`config` json NOT NULL DEFAULT ('{"template":"","options":[]}'),
+	`stage_id` int,
+	`created_at` timestamp NOT NULL DEFAULT (now()),
+	`updated_at` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `triggers_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
 CREATE TABLE `users_table` (

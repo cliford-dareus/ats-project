@@ -6,9 +6,9 @@ import {Dialog, DialogContent, DialogTrigger} from "@/components/ui/dialog";
 import CreateApplicationModal from "@/components/modal/create-application-modal";
 import {get_all_job_listings_action} from "@/server/actions/job-listings-actions";
 import {
-    CandidatesResponseType, JobListingWithCandidatesType,
-    JobResponseType, StageResponseType,
-} from "@/types/job-listings-types";
+  CandidatesResponseType, JobListingWithCandidatesType,
+  JobResponseType, StageResponseType,
+} from "@/types/index";
 import {get_all_candidates_action} from "@/server/actions/candidates-actions";
 import {auth} from "@clerk/nextjs/server";
 import JobTabs from "@/app/(dashboard)/jobs/[joblistingId]/_components/Job-tabs";

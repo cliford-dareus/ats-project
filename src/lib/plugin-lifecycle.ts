@@ -6,12 +6,10 @@ import {eq} from "drizzle-orm";
 
 export const initializePlugins = async (orgId: string) => {
     // const org = await db.select().from(organization).where(eq(organization.clerk_id, orgId));
-    const plugins = {enabled: ["smart-trigger"]};
+    const plugins = {enabled: ["smart-triggers"]};
 
     const enabledPlugins = plugins.enabled as string[];
     const registeredPlugins = getPlugins();
-
-    console.log(registeredPlugins)
 
     enabledPlugins.forEach(pluginId => {
         const plugin = registeredPlugins.find(p => p.id === pluginId);
