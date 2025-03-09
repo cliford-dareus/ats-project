@@ -8,7 +8,7 @@ import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import Link from "next/link";
 import {Badge} from "@/components/ui/badge";
 import {getTimeElapsed} from "@/lib/utils";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import {Dialog, DialogContent, DialogTrigger} from "@/components/ui/dialog";
 import CreateApplicationSchedule from "@/components/modal/create-application-schedule";
 
 type Props = {
@@ -17,7 +17,10 @@ type Props = {
     stage: StageResponseType;
 };
 
-const Card = ({data, handleDragStart, stage}: Props) => {  
+// TODO: Add an indicator to the card to show trigger events activation timer
+// TODO: Add
+
+const Card = ({data, handleDragStart, stage}: Props) => {
     return (
         <div>
             <DropIndicator active={false} beforeId={data.application_id} stage={stage} column={data.stageName}/>
@@ -51,17 +54,18 @@ const Card = ({data, handleDragStart, stage}: Props) => {
                     </div>
                 </div>
                 <div className="mt-2 flex justify-between">
-                    {stage.need_schedule && 
-                      <Dialog>
-                        <DialogTrigger>
-                          <Badge className="mt-2">Need scheduling</Badge>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <CreateApplicationSchedule />
-                        </DialogContent>
-                      </Dialog>
+                    {stage.need_schedule &&
+                        <Dialog>
+                            <DialogTrigger>
+                                <Badge className="mt-2">Need scheduling</Badge>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <CreateApplicationSchedule/>
+                            </DialogContent>
+                        </Dialog>
                     }
-                    <p className="text-xs text-slate-400 mt-2">{getTimeElapsed(data.application_updated_at)} days ago</p>
+                    <p className="text-xs text-slate-400 mt-2">{getTimeElapsed(data.application_updated_at)} days
+                        ago</p>
                 </div>
             </motion.div>
         </div>

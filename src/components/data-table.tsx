@@ -25,6 +25,8 @@ const DataTable = <T extends object>({columns, data, status}: Props<T>) => {
     const [isOpen, setIsOpen] = React.useState(false);
     const [applicationSelected, setApplicationSelected] = React.useState<ApplicationResponseType | CandidatesResponseType | JobResponseType | null>(null);
     const [rowSelection, setRowSelection] = React.useState({});
+    const [validRows, setValidRows] = React.useState({});
+
     const table = useReactTable<T>({
         data,
         columns,
@@ -36,6 +38,10 @@ const DataTable = <T extends object>({columns, data, status}: Props<T>) => {
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
+        meta: {
+            validRows,
+            setValidRows,
+        },
         // debugTable: true,
     });
 

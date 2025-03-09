@@ -1,9 +1,18 @@
-import {applications, candidates, job_listings, job_technologies, stages, technologies} from "@/drizzle/schema";
+import {
+    applications,
+    candidates,
+    job_listings,
+    job_technologies,
+    stages,
+    technologies,
+    triggers
+} from "@/drizzle/schema";
 import {db} from "@/drizzle/db";
-import {and, eq, inArray, SQL} from "drizzle-orm";
+import {and, eq, inArray, sql, SQL} from "drizzle-orm";
 import {CACHE_TAGS, dbCache, getGlobalTag, getIdTag, revalidateDbCache} from "@/lib/cache";
 import {z} from "zod";
 import {filterJobType, formSchema} from "@/schema";
+import {raw} from "mysql2";
 
 interface FilterInterface extends z.infer<typeof filterJobType> {
     organization: string;
@@ -115,7 +124,7 @@ export const get_job_listing_with_candidate = async (jobId: number) => {
         .where(eq(job_listings.id, jobId))
 };
 
-export const get_all_job_listings_db = async (filter: FilterInterface ) => {
+export const get_all_job_listings_db = async (filter: FilterInterface) => {
     const filters: SQL[] = []
 
     if (filter.location) filters.push(inArray(job_listings.location, filter.location as string[]))
@@ -145,9 +154,23 @@ export const get_all_job_listings_db = async (filter: FilterInterface ) => {
 };
 
 export const get_job_listings_stages_db = async (jobId: number) => {
-    return await db.select()
+    return await db.select({
+        id: stages.id,
+        assign_to: stages.assign_to,
+        color: stages.color,
+        job_id: stages.job_id,
+        need_schedule: stages.need_schedule,
+        stage_name: stages.stage_name,
+        stage_order_id: stages.stage_order_id,
+        trigger: sql<string>`COALESCE(JSON_ARRAYAGG(
+                JSON_OBJECT(
+                    'id', ${triggers.id},'action_type', ${triggers.action_type},'config', ${triggers.config})
+                ), '[]')`.as('trigger')
+    })
         .from(stages)
+        .leftJoin(triggers, eq(triggers.stage_id, stages.id))
         .where(eq(stages.job_id, jobId))
+        .groupBy(stages.id)
 };
 
 export const get_job_by_id_db = async (jobId: number) => {

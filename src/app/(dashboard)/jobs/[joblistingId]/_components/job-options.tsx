@@ -25,7 +25,10 @@ const JobOptions = ({data, stages, job_id}: Props) => {
     const [serverErrors, formAction] = useActionState(update_job_listing, initialState);
     const [openStage, setOpenStage] = useState<JOB_ENUM>();
     console.log(data.filter((job) => job.id === job_id));
-    const currentJob = data.filter((job) => job.id === job_id)
+    const currentJob = data.filter((job) => job.id === job_id);
+
+    // TODO : Check if smart trigger is activated for the organization
+    // TODO : add a guard to prevent trigger use when trigger is not activated
 
     return (
         <div className="p-4 overflow-hidden h-[calc(100vh-200px)] flex gap-4">
@@ -80,21 +83,18 @@ const JobOptions = ({data, stages, job_id}: Props) => {
                     </div>
                     {stages?.map((stage) => (
                         <div key={stage.id}>
-                            <div
-                                className="relative flex bg-muted justify-between items-center w-full p-2 min-h-8 rounded border"
-                                onClick={() => {
-                                    setOpenStage(stage.stage_name as JOB_ENUM)
-                                }}
-                            >
-                                <div className="flex items-center gap-4">
-                                    <span className={cn(stage.color, "w-4 h-4 rounded")}></span>
-                                    <p className="w-[150px]">{stage.stage_name}</p>
-                                </div>
+                            <div className="flex items-center gap-4">
+                                <span className={cn(stage.color, "w-4 h-4 rounded")}></span>
+                                <p className="w-[150px]">{stage.stage_name}</p>
                             </div>
 
                             {openStage === stage.stage_name &&
                                 <div className="w-full border p-4 flex flex-col gap-4 h-10">
-
+                                    <div>
+                                        {JSON.parse(stage.trigger).map(trigger => (
+                                            <div key={trigger.id}>{trigger.action_type}</div>
+                                        ))}
+                                    </div>
                                 </div>
                             }
                         </div>
@@ -115,7 +115,6 @@ const JobOptions = ({data, stages, job_id}: Props) => {
                             </DialogContent>
                         </Dialog>
                     </div>
-
                 </div>
             </div>
             <div className="w-[40%] h-full border rounded"></div>

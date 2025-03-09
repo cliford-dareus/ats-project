@@ -67,6 +67,7 @@ export  type StageResponseType = {
     assign_to: string | null
     color: string
     need_schedule: boolean
+    trigger: any
 }
 
 export type ExtractResponseType = {

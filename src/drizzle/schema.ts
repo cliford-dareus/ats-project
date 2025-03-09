@@ -1,4 +1,4 @@
-import {int, mysqlTable, varchar, mysqlEnum, timestamp, boolean} from 'drizzle-orm/mysql-core';
+import {int, mysqlTable, varchar, mysqlEnum, timestamp, boolean, json} from 'drizzle-orm/mysql-core';
 import {relations} from "drizzle-orm";
 
 export const organization = mysqlTable('organization', {
@@ -8,6 +8,16 @@ export const organization = mysqlTable('organization', {
     phone: varchar({length: 255}).notNull(),
     email: varchar({length: 255}).notNull(),
     color: varchar({length: 255}).notNull(),
+    plugins: json('plugins').notNull().default({enabled: [], settings: {}})
+});
+
+export const plugins = mysqlTable('plugins', {
+    id: int('id').primaryKey().autoincrement(),
+    name: varchar({length: 255}).notNull(),
+    description: varchar({length: 255}).notNull(),
+    version: varchar({length: 255}).notNull(),
+    enabled: boolean('enabled').notNull().default(true),
+    config: json('config').notNull().default({}),
 });
 
 export const organizationRelation = relations(organization, ({many}) => ({
@@ -52,7 +62,7 @@ export const job_listings = mysqlTable('job_listing', {
     description: varchar({length: 255}).notNull(),
     salary_up_to: varchar({length: 255}).notNull(),
     department: int().notNull(),
-    organization: varchar({length:255}).notNull(),
+    organization: varchar({length: 255}).notNull(),
     status: mysqlEnum('status', ["OPEN", "CLOSED", "DRAFT", "ARCHIVED", "PENDING"]).default('PENDING'),
     createdBy: varchar('created_by', {length: 255}).notNull(),
     created_at: timestamp('created_at').defaultNow().notNull(),
@@ -103,23 +113,36 @@ export const jobTechnologyRelation = relations(job_technologies, ({one}) => ({
 export const stages = mysqlTable('stages', {
     id: int('id').primaryKey().autoincrement(),
     job_id: int().notNull().references(() => job_listings.id, {onDelete: 'cascade'}),
-    stage_name: mysqlEnum('stage_name', ['Applied','New Candidate', 'Screening', 'Phone Interview', 'Interview', 'Offer']),
+    stage_name: mysqlEnum('stage_name', ['Applied', 'New Candidate', 'Screening', 'Phone Interview', 'Interview', 'Offer']),
     stage_order_id: int().notNull(),
     color: varchar({length: 255}),
     need_schedule: boolean().default(true),
     assign_to: varchar({length: 255}),
 });
 
-export const stagesRelations = relations(stages, ({one}) => ({
+export const stagesRelations = relations(stages, ({one, many}) => ({
     jobId: one(job_listings, {
         fields: [stages.job_id],
         references: [job_listings.id],
     }),
-    // candidates_order_id: many(applications)
     assign_to: one(usersTable, {
         fields: [stages.assign_to],
         references: [usersTable.id]
-    })
+    }),
+    triggers: many(triggers)
+}));
+
+export const triggers = mysqlTable('triggers', {
+    id: int('id').primaryKey().autoincrement(),
+    action_type: varchar({length: 255}).notNull(),
+    config: json('config').notNull().default({template: '', options: []}),
+    stage_id: int('stage_id'),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+    updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+})
+
+export const triggers_relations = relations(triggers, ({one}) => ({
+    stage_id: one(stages, {fields: [triggers.stage_id], references: [stages.id]}),
 }));
 
 export const candidates = mysqlTable('candidate', {

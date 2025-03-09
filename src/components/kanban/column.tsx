@@ -65,9 +65,7 @@ const Column = ({title, cards, column, setCards, stage, color}: Props) => {
 
             if (!cardToTransfer) return;
             cardToTransfer = {...cardToTransfer, stageName: column};
-
             copy = copy.filter((c) => c.application_id !== cardId);
-
             const moveToBack = before === -1;
 
             if (moveToBack) {
@@ -78,17 +76,18 @@ const Column = ({title, cards, column, setCards, stage, color}: Props) => {
                 copy.splice(insertAtIndex, 0, cardToTransfer!);
             }
 
-            if(title !== "Applied"){
-              await update_application_stage_action({
-                candidateId: cardToTransfer.application_id!,
-                current_stage_id: dropStage
-              });
-                
-                if(drop_schedule){
-                  {/* TODO: 1) Check if the drop stage need scheduling, if yes
+            if (title !== "Applied") {
+                await update_application_stage_action({
+                    candidateId: cardToTransfer.application_id!,
+                    current_stage_id: dropStage
+                });
+
+                if (drop_schedule) {
+                    {/* TODO: 1) Check if the drop stage need scheduling, if yes
                             2) Then update activity table and notification table
-                  */}
-                };
+                  */
+                    }
+                }
 
                 setCards(copy);
             }

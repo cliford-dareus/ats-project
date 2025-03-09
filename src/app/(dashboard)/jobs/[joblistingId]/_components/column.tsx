@@ -1,11 +1,12 @@
 'use client'
 
-import {ColumnDef} from "@tanstack/react-table";
+import {ColumnDef, createColumnHelper} from "@tanstack/react-table";
 import {JobResponseType} from "@/types/job-listings-types";
 import React from "react";
 import IndeterminateCheckbox from "@/components/indeterminate-checkbox";
-import {Ellipsis} from "lucide-react";
+import RowAction from "@/app/(dashboard)/jobs/[joblistingId]/_components/row-action";
 
+const columnHelper  = createColumnHelper<JobResponseType>()
 
 export const columns: ColumnDef<JobResponseType>[] = [
         {
@@ -52,13 +53,12 @@ export const columns: ColumnDef<JobResponseType>[] = [
         header: 'Published At',
         cell: ({ row }) => new Date(row.original.created_at).toLocaleDateString()
     }, {
+        accessorKey: "status",
+        header: 'Status',
+        cell: ({ row }) => row.original.status
+    }, columnHelper.display({
         id: "action",
-        header: '',
-        cell: () => (
-            <div className="flex items-center">
-                <Ellipsis size={20}/>
-            </div>
-        )
-    },
+        cell: RowAction
+    }),
 
 ]

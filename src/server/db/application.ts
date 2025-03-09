@@ -169,7 +169,6 @@ export const get_user_applications = async (candidateId: number) => {
         .leftJoin(interviews, eq(interviews.applications_id, applications.id))
 }
 
-
 export const add_interview = async ({applicationId, location, start_at, end_at}: {
     applicationId: number,
     location: string,
