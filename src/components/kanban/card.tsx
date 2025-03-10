@@ -1,7 +1,7 @@
 'use client'
 
-import {JobListingWithCandidatesType, StageResponseType} from "@/types/job-listings-types";
-import React from "react";
+import {JobListingWithCandidatesType, StageResponseType} from "@/types";
+import React, {useEffect, useState} from "react";
 import DropIndicator from "@/components/kanban/drop-indicator";
 import {motion} from "motion/react";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
@@ -10,17 +10,45 @@ import {Badge} from "@/components/ui/badge";
 import {getTimeElapsed} from "@/lib/utils";
 import {Dialog, DialogContent, DialogTrigger} from "@/components/ui/dialog";
 import CreateApplicationSchedule from "@/components/modal/create-application-schedule";
+import {Clock} from "lucide-react";
 
 type Props = {
     data: JobListingWithCandidatesType;
     handleDragStart: (e: React.DragEvent<HTMLDivElement>, i: number) => void;
     stage: StageResponseType;
+    tasks: any
 };
 
-// TODO: Add an indicator to the card to show trigger events activation timer
-// TODO: Add
+const Card = ({data, handleDragStart, stage, tasks}: Props) => {
 
-const Card = ({data, handleDragStart, stage}: Props) => {
+    //
+    // const [timeLeft, setTimeLeft] = useState(
+    //     tasks.map(() => ({
+    //         hours: 0,
+    //         minutes: 0,
+    //         expires: false,
+    //     }))
+    // );
+    //
+    // useEffect(() => {
+    //     const updateTimeLeft = () => {
+    //         const updatedTimeLeft = tasks.map(task => {
+    //             const expiredTime = new Date(task.triggerTime!).getTime();
+    //             const timeLeftMs = expiredTime - Date.now();
+    //             const timeLeftSeconds = Math.max(timeLeftMs / 1000, 0); // Prevent negative values
+    //             const hours = Math.floor(timeLeftSeconds / 3600);
+    //             const minutes = Math.floor((timeLeftSeconds % 3600) / 60);
+    //             return { hours, minutes, expires: Date.now() > expiredTime };
+    //         });
+    //         setTimeLeft(updatedTimeLeft);
+    //     };
+    //
+    //     updateTimeLeft();
+    //     const interval = setInterval(updateTimeLeft, 2000);
+    //
+    //     return () => clearInterval(interval);
+    // }, []);
+
     return (
         <div>
             <DropIndicator active={false} beforeId={data.application_id} stage={stage} column={data.stageName}/>
@@ -32,10 +60,19 @@ const Card = ({data, handleDragStart, stage}: Props) => {
                 className="cursor-grab rounded bg-white border  p-4 active:cursor-grabbing z-[999999] relative"
             >
                 <div className="flex gap-4 items-center">
-                    <Avatar className="w-8 h-8">
-                        <AvatarImage src="https://github.com/shadcn.png"/>
-                        <AvatarFallback>CN</AvatarFallback>
-                    </Avatar>
+                    <div className="relative">
+                        <Avatar className="w-8 h-8">
+                            <AvatarImage src="https://github.com/shadcn.png"/>
+                            <AvatarFallback>CN</AvatarFallback>
+                        </Avatar>
+                        {/* TODO: ADD THE INDICATOR SOMEWHERE ELSE*/}
+                        <div className="absolute -top-4 -left-2">
+                            {tasks.length && <div className="mt-2">
+                                <Clock size={18}/>
+                            </div>}
+                        </div>
+                    </div>
+
                     <div className="">
                         <p className="text-base font-semibold leading-3">{data?.candidate_name}</p>
                         {

@@ -1,4 +1,13 @@
-import {applications, attachments, candidates, interviews, job_listings, scoreCards, stages} from "@/drizzle/schema";
+import {
+    applications,
+    attachments,
+    candidates,
+    interviews,
+    job_listings,
+    scoreCards,
+    stages,
+    triggers
+} from "@/drizzle/schema";
 import {db} from "@/drizzle/db";
 import {and, eq, SQL} from "drizzle-orm";
 import {CACHE_TAGS, dbCache, getGlobalTag, revalidateDbCache} from "@/lib/cache";
@@ -63,6 +72,13 @@ export const create_application = async (data: z.infer<typeof candidateForm>) =>
 };
 
 export const update_application_stage = async (data: { candidateId: number, current_stage_id: number }) => {
+    const alltriggers = await db.select()
+        .from(triggers)
+        .where(eq(triggers.stage_id, data.current_stage_id));
+
+    // create a cron job for the current stage and application id for 1m
+    // save the job in a database
+
     await db.update(applications)
         .set({current_stage_id: data.current_stage_id})
         .where(eq(applications.id, data.candidateId))
@@ -142,7 +158,6 @@ export const get_applications_with_filter_db = async (filter: z.infer<typeof fil
         .offset(filter.offset!)
 
     const len = application.length
-
     return [len, application];
 }
 

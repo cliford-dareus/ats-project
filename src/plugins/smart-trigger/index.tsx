@@ -1,7 +1,7 @@
 // import { cleanupPlugins, initializePlugins } from "@/lib/plugin-lifecycle";
 import { PluginConfig } from "@/lib/plugins-registry";
-import React, { useState } from "react";
-import { StageTrigger } from "./types";
+import React from "react";
+// import { StageTrigger } from "./types";
 
 const SmartTriggers = () => {
   // const [triggers, setTriggers] = useState<StageTrigger[]>([]);

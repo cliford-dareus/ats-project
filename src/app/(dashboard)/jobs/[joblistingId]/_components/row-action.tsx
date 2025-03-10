@@ -9,6 +9,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {Button} from "@/components/ui/button";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-expect-error
 const RowAction = ({ row, table }) => {
     const meta = table.options.meta;
     const validRow = meta?.validRows[row.id];

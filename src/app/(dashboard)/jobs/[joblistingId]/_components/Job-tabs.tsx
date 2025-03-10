@@ -8,7 +8,7 @@ import {
   JobListingWithCandidatesType,
   JobResponseType,
   StageResponseType,
-} from "@/types/index";
+} from "@/types";
 import JobOptions from "@/app/(dashboard)/jobs/[joblistingId]/_components/job-options";
 import {
   CustomTabsTrigger,
@@ -30,6 +30,7 @@ const JobTabs = ({ applications, stages, jobs, joblistingId }: Props) => {
   const { setTriggers } = useTriggers();
 
   // TODO: Move this in a more appropriate place
+  // TODO: Remove this when we have proper triggers
   useEffect(() => {
     const parsedTriggers = stages.reduce((acc: StageTrigger[], cur) => {
       const trigger = JSON.parse(cur.trigger);

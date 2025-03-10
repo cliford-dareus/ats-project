@@ -23,7 +23,7 @@ const OrgMembersParams = {
 
 const Page = () => {
     const {user} = useUser()
-    const {isLoaded, memberships} = useOrganization(OrgMembersParams)
+    const {isLoaded, memberships} = useOrganization(OrgMembersParams);
 
     if (!isLoaded) {
         return <>Loading</>

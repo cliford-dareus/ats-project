@@ -12,7 +12,6 @@ import {and, eq, inArray, sql, SQL} from "drizzle-orm";
 import {CACHE_TAGS, dbCache, getGlobalTag, getIdTag, revalidateDbCache} from "@/lib/cache";
 import {z} from "zod";
 import {filterJobType, formSchema} from "@/schema";
-import {raw} from "mysql2";
 
 interface FilterInterface extends z.infer<typeof filterJobType> {
     organization: string;

@@ -1,57 +1,68 @@
 "use client"
 
-import React, { createContext, useContext, useState } from 'react';
-import { StageTrigger } from "@/plugins/smart-trigger/types";
+import React, {createContext, useContext, useEffect, useState} from 'react';
+import {StageTrigger, TriggerAction} from "@/plugins/smart-trigger/types";
+import {addTaskToQueue, getTasks} from "@/server/db/smart-task";
 
 type TriggerContextType = {
-  triggers: StageTrigger[];
-  setTriggers: (triggers: StageTrigger[]) => void;
-  addTrigger: (trigger: StageTrigger) => void;
-  executeTrigger: (stage: number) => void;
+    tasks: any[];
+    triggers: StageTrigger[];
+    setTriggers: (triggers: StageTrigger[]) => void;
+    // addTrigger: (application: number, action: TriggerAction) => void;
+    executeTrigger: (application: number, stage: number, stage_name: string) => void;
 };
 
 const TriggerContext = createContext<TriggerContextType>({
-  triggers: [],
-  setTriggers: () => {},
-  addTrigger: () => {},
-  executeTrigger: () => {}
+    tasks: [],
+    triggers: [],
+    setTriggers: () => {},
+    // addTrigger: () => {},
+    executeTrigger: () => {}
 });
 
-export const TriggerProvider = ({ children }: { children: React.ReactNode }) => {
-  const [triggers, setTriggers] = useState<StageTrigger[]>([]);
-  // console.log(triggers)
+export const TriggerProvider = ({children}: { children: React.ReactNode }) => {
+    const [triggers, setTriggers] = useState<StageTrigger[]>([]);
+    const [tasks, setTasks] = useState([]);
 
-  const addTrigger = (newTrigger: StageTrigger) => {
-    // setTriggers(prev => [...prev, newTrigger]);
-  };
+    // const addTrigger = (newTrigger: StageTrigger) => {
+    //     setTriggers(prev => [...prev, newTrigger]);
+    // };
 
-  const executeTrigger = (stage: number) => {
-    const stageTriggers = triggers.filter(t => Number(t.id) === stage);
-    
-    stageTriggers.forEach(trigger => {    
-      console.log(trigger)
-      trigger.actions.forEach(action => {
-        console.log(action)
-        switch (action.action_type) {
-          case 'MESSAGE':
-            console.log(`Message sent: ${action.config.template}`);
-            break;
-          case 'NOTE':
-            console.log(`Moving to stage: ${action.config.targetStage}`);
-            break;
-          case 'INTERVIEW':
-            console.log(`Tag added: ${action.config.tag}`);
-            break;
-        }
-      });
-    });
-  };
+    const addTrigger = async (application: number, action: TriggerAction, stage_name: string) => {
+        await addTaskToQueue(application, action, stage_name);
+    };
 
-  return (
-    <TriggerContext.Provider value={{ triggers, setTriggers, addTrigger, executeTrigger }}>
-      {children}
-    </TriggerContext.Provider>
-  );
+    // const cancelTrigger = async (id: number) => {};
+
+    const executeTrigger = (application: number, stage: number, stage_name: string) => {
+        const stageTriggers = triggers.filter(t => Number(t.id) === stage);
+
+        stageTriggers.forEach(trigger => {
+            trigger.actions.forEach(async (action) => {
+                if (action.action_type === null) return;
+                await addTrigger(application, action, stage_name);
+            });
+        });
+    };
+
+    useEffect(() => {
+        const fetchTasks = async () => {
+            try {
+                const response = await getTasks();
+                const parseResult = JSON.parse(response);
+                setTasks(parseResult.tasks);
+            } catch (error) {
+                console.error("Failed to fetch tasks:", error);
+            }
+        };
+        fetchTasks();
+    }, []);
+
+    return (
+        <TriggerContext.Provider value={{tasks, triggers, setTriggers, executeTrigger}}>
+            {children}
+        </TriggerContext.Provider>
+    );
 };
 
 export const useTriggers = () => useContext(TriggerContext);

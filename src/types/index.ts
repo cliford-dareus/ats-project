@@ -70,6 +70,15 @@ export  type StageResponseType = {
     trigger: any
 }
 
+export type TriggerResponseType = {
+    id: number;
+    action_type: string;
+    stage_id: number;
+    config: Record<string, never>;
+    created_at: Date;
+    updated_at: Date;
+}
+
 export type ExtractResponseType = {
     Name: string,
     "Contact Information": {

@@ -8,7 +8,7 @@ import {get_all_job_listings_action} from "@/server/actions/job-listings-actions
 import {
   CandidatesResponseType, JobListingWithCandidatesType,
   JobResponseType, StageResponseType,
-} from "@/types/index";
+} from "@/types";
 import {get_all_candidates_action} from "@/server/actions/candidates-actions";
 import {auth} from "@clerk/nextjs/server";
 import JobTabs from "@/app/(dashboard)/jobs/[joblistingId]/_components/Job-tabs";
@@ -21,7 +21,7 @@ type Props = {
 };
 
 const Page = async ({params}: Props) => {
-    const {joblistingId} = params;
+    const {joblistingId} = await params;
     const {orgId} = await auth();
     if (!orgId) return;
 

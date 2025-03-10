@@ -180,6 +180,7 @@ export const applications = mysqlTable('applications', {
     current_stage_id: int(),
     candidate: int().references(() => candidates.id, {onDelete: 'cascade'}),
     can_contact: boolean().default(false),
+    // activities: json("activities").notNull().default({}),
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
 });

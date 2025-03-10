@@ -1,8 +1,9 @@
 'use client'
 
 import React, {useEffect, useState} from 'react';
-import {JobListingWithCandidatesType, StageResponseType} from "@/types/job-listings-types";
+import {JobListingWithCandidatesType, StageResponseType} from "@/types";
 import Column from "@/components/kanban/column";
+import {getTasks} from "@/server/db/smart-task";
 
 type Props = {
     data: JobListingWithCandidatesType[];
@@ -11,9 +12,18 @@ type Props = {
 
 const JobPipeline = ({data, stages}: Props) => {
     const [jobs, setJobs] = useState<JobListingWithCandidatesType[]>();
+    const [tasks, setTasks] = useState([])
 
     useEffect(() => {
         setJobs(data)
+
+        const gn = async () => {
+            const response = await getTasks();
+            const parseResult = JSON.parse(response)
+            setTasks(parseResult.tasks)
+        };
+
+        gn();
     }, [data]);
 
     return (
@@ -28,6 +38,7 @@ const JobPipeline = ({data, stages}: Props) => {
                         cards={jobs!}
                         color={stage.color}
                         setCards={setJobs}
+                        tasks={tasks}
                     />
                 ))}
             </div>
