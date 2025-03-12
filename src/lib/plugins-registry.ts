@@ -3,14 +3,17 @@
 // import {cleanupPlugins, initializePlugins} from "@/lib/plugin-lifecycle";
 // import SmartTriggersFeature from "@/components/smart-trigger-plugin";
 
+import React from "react";
+import {StageTrigger} from "@/plugins/smart-trigger/types";
+
 export type PluginConfig = {
     id : string,
     name : string,
     description : string,
     component: React.ComponentType,
     // settingsComponent: React.ComponentType,
-    activate?: (orgId: string) => void,
-    deactivate?: (orgId: string) => void,
+    activate?: (context: { setTriggers: (triggers: StageTrigger[]) => void }) => void,
+    deactivate?: (context: { setTriggers: (triggers: StageTrigger[]) => void }) => void,
 };
 
 const pluginRegistry = new Map<string, PluginConfig>();

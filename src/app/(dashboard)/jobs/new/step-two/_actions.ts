@@ -1,6 +1,6 @@
 'use server';
 
-import {stepTwoSchema} from '@/schema';
+import {stepTwoSchema} from '@/zod';
 import {FormErrors} from "@/types/job-listings-types";
 import {redirect} from 'next/navigation';
 

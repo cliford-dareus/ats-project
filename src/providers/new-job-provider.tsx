@@ -8,7 +8,7 @@ import {
     useMemo,
     useState,
 } from 'react';
-import {formSchema, stageSchema, techSchema} from "@/schema";
+import {formSchema, stageSchema, techSchema} from "@/zod";
 import {z} from "zod";
 
 const defaultJobListing: z.infer<typeof formSchema> = {

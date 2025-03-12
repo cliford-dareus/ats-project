@@ -6,7 +6,7 @@ import CustomButton from "@/components/custom-button";
 import React, {useActionState, useEffect, useState} from "react";
 import {stepTwoFormAction} from "@/app/(dashboard)/jobs/new/step-two/_actions";
 import MultiSelect from "@/components/multi-select";
-import {techSchema} from "@/schema";
+import {techSchema} from "@/zod";
 import {FormControl, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
 import {useForm} from "react-hook-form";
 import {DropdownMenu, DropdownMenuContent, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";

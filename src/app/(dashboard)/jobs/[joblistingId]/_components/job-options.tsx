@@ -2,7 +2,7 @@
 
 import React, {useActionState, useState} from 'react';
 import {FormErrors, JobResponseType, StageResponseType, TriggerResponseType} from "@/types";
-import {JOB_ENUM, JOB_STAGES, JOB_STATUS} from "@/schema";
+import {JOB_ENUM, JOB_STAGES, JOB_STATUS} from "@/zod";
 import {cn} from "@/lib/utils";
 import {Plus} from "lucide-react";
 import {Label} from "@/components/ui/label";

@@ -12,7 +12,7 @@ import {z} from "zod";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {create_candidate_action} from "@/server/actions/candidates-actions";
 import {ExtractResponseType} from "@/types/job-listings-types";
-import {newCandidateForm} from "@/schema";
+import {newCandidateForm} from "@/zod";
 
 const UploadCandidateResume = () => {
     const [resumePath, setResumePath] = useState<string>();

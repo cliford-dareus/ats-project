@@ -2,7 +2,7 @@
 
 import React from 'react';
 import {z} from "zod";
-import {formSchema} from "@/schema";
+import {formSchema} from "@/zod";
 import {create_job_action} from "@/server/actions/job-listings-actions";
 import {useNewJobContext} from "@/providers/new-job-provider";
 import {Button} from "@/components/ui/button";

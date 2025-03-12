@@ -1,7 +1,7 @@
 'use client'
 
 import {ColumnDef} from "@tanstack/react-table";
-import {ApplicationResponseType} from "@/types/job-listings-types";
+import {ApplicationResponseType} from "@/types";
 import React from "react";
 import IndeterminateCheckbox from "@/components/indeterminate-checkbox";
 import {Ellipsis} from "lucide-react";

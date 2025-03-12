@@ -1,6 +1,6 @@
 import React from 'react';
-import CandidateList from "@/app/(dashboard)/applications/_components/candidate-list";
-import {ApplicationResponseType} from "@/types/job-listings-types";
+import ApplicationList from "@/app/(dashboard)/applications/_components/application-list";
+import {ApplicationResponseType} from "@/types";
 import {auth} from "@clerk/nextjs/server";
 import ExtractFileButton from "@/components/extract-file-button";
 import {Plus} from "lucide-react";
@@ -41,7 +41,7 @@ const Page = async ({searchParams}: Props) => {
                 </div>
             </div>
 
-            <CandidateList application={application as unknown as ApplicationResponseType[]} pageCount={pageCount}/>
+            <ApplicationList application={application as unknown as ApplicationResponseType[]} pageCount={pageCount}/>
         </div>
     )
 };

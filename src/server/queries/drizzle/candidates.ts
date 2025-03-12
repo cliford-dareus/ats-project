@@ -3,7 +3,7 @@ import {applications, candidates, interviews, job_listings, scoreCards, stages} 
 import {and, eq, SQL} from "drizzle-orm";
 import {CACHE_TAGS, dbCache, getGlobalTag, revalidateDbCache} from "@/lib/cache";
 import {z} from "zod";
-import {filterCandidateType, newCandidateForm} from "@/schema";
+import {filterCandidateType, newCandidateForm} from "@/zod";
 
 export const create_candidate = async (data: z.infer<typeof newCandidateForm>) => {
     const [candidate] = await db.insert(candidates).values({...data, cv_path: data.resume}).$returningId();

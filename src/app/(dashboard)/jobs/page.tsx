@@ -1,5 +1,5 @@
 import JobListingsList from "@/app/(dashboard)/jobs/_components/job-listings-list";
-import {JobResponseType} from "@/types/job-listings-types";
+import {JobResponseType} from "@/types";
 import {auth} from "@clerk/nextjs/server";
 import {get_all_job_listings_action} from "@/server/actions/job-listings-actions";
 import ExtractFileButton from "@/components/extract-file-button";

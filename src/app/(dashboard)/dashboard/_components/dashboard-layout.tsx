@@ -6,6 +6,7 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/compo
 import Link from "next/link";
 import ChartCard from "@/app/(dashboard)/dashboard/_components/chart-card";
 import StatCard from '@/components/stat-card';
+import pluginConfig from "@/plugins/smart-trigger";
 
 type Props = {
     job_open: ChartInterface[] | null;
@@ -33,6 +34,7 @@ const DashboardLayout = ({job_open, job_listings, hired_candidates}: Props) => {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
+                        <pluginConfig.component />
                     </CardContent>
                 </Card>
 

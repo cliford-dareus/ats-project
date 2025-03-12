@@ -1,12 +1,12 @@
 import React, {useEffect, useMemo, useRef} from 'react';
 import {DrawerHeader, DrawerTitle} from "@/components/ui/drawer";
 import {Button} from "@/components/ui/button";
-import {ApplicationResponseType} from "@/types/job-listings-types";
+import {ApplicationResponseType} from "@/types";
 import {Badge} from "@/components/ui/badge";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {CustomTabsTrigger, Tabs, TabsContent, TabsList} from "@/components/ui/tabs";
 import {useRouter} from "next/navigation";
-import {JOB_STAGES} from "@/schema";
+import {JOB_STAGES} from "@/zod";
 import {cn} from "@/lib/utils";
 import {
     CalendarClock,
@@ -30,7 +30,7 @@ type Props = {
     applications: ApplicationResponseType[];
 };
 
-const CandidatePreview = ({data, applications}: Props) => {
+const ApplicationPreview = ({data, applications}: Props) => {
     const ref = useRef<HTMLDivElement>(null);
     const router = useRouter();
 
@@ -50,11 +50,13 @@ const CandidatePreview = ({data, applications}: Props) => {
         }
     }, [data]);
 
+    console.log(data)
+
     return (
         <>
             <div className="flex justify-between p-4">
                 <div onClick={() => {
-                    router.push(`/candidates/${data.id}`);
+                    router.push(`/applications/${data.id}`);
                 }}>
                     <Expand size={20}/>
                 </div>
@@ -260,4 +262,4 @@ const CandidatePreview = ({data, applications}: Props) => {
     );
 };
 
-export default CandidatePreview;
+export default ApplicationPreview;

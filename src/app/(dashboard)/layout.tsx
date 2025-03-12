@@ -47,7 +47,7 @@ const Layout = async ({children}: Props) => {
 
     return (
         <PluginProvider orgId={orgId as string}>
-          <TriggerProvider>
+          <TriggerProvider orgId={orgId as string}>
             <SidebarProvider
                 style={
                     {

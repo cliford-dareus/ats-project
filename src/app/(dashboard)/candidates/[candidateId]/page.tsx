@@ -1,5 +1,5 @@
 import React from 'react';
-import {get_candidate_with_details} from "@/server/db/candidates";
+import {get_candidate_with_details} from "@/server/queries/drizzle/candidates";
 import {Dialog, DialogContent, DialogTrigger} from "@/components/ui/dialog";
 import {Button} from "@/components/ui/button";
 import {CustomTabsTrigger, Tabs, TabsContent, TabsList} from "@/components/ui/tabs";
@@ -8,7 +8,7 @@ import Link from "next/link";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import CandidateSummary from "@/app/(dashboard)/candidates/[candidateId]/_components/candidate-summary";
 import CandidateResume from "@/app/(dashboard)/candidates/[candidateId]/_components/candidate-resume";
-import {get_user_applications} from "@/server/db/application";
+import {get_user_applications} from "@/server/queries/drizzle/application";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -26,8 +26,9 @@ type Props = {
 };
 
 const Page = async ({params}: Props) => {
-    const [f] = await get_candidate_with_details(Number(params.candidateId));
-    const applications = await get_user_applications(Number(params.candidateId));
+    const candidate_id = await params.candidateId;
+    const [f] = await get_candidate_with_details(Number(candidate_id));
+    const applications = await get_user_applications(Number(candidate_id));
     // const attachment = await get_candidate_attachment(f.candidateId);
 
     return (

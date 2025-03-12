@@ -1,10 +1,10 @@
 'use server'
 
 import {z} from "zod";
-import {create_job_listing, get_all_job_listings} from "@/server/db/job-listings";
+import {create_job_listing, get_all_job_listings, get_job_listings_stages} from "@/server/queries";
 import {auth} from "@clerk/nextjs/server";
 import {redirect} from "next/navigation";
-import {formSchema, filterJobType} from "@/schema";
+import {formSchema, filterJobType} from "@/zod";
 import {canCreateJob} from "@/server/permissions";
 
 export const create_job_action = async (unsafeData: z.infer<typeof formSchema>): Promise<{
@@ -33,4 +33,15 @@ export const get_all_job_listings_action = async (unsafeData: z.infer<typeof fil
     }
 
     return await get_all_job_listings(data);
+};
+
+export const get_job_listings_stages_action = async (unsafeData: string)=> {
+    const {userId} = await auth();
+    const canCreate = await canCreateJob(userId);
+
+    if (!userId || !canCreate) {
+        return {error: true, message: "There was an error creating your product"}
+    }
+
+    return await get_job_listings_stages(Number(unsafeData));
 };

@@ -2,10 +2,10 @@
 
 import {auth} from "@clerk/nextjs/server";
 import {canCreateJob} from "@/server/permissions";
-import {create_candidate, get_all_candidates} from "@/server/db/candidates";
-import {get_candidate_with_stage} from "@/server/db/application";
+import {create_candidate, get_all_candidates} from "@/server/queries";
+import {get_candidate_with_stage} from "@/server/queries";
 import {z} from "zod";
-import {filterCandidateType, newCandidateForm} from "@/schema";
+import {filterCandidateType, newCandidateForm} from "@/zod";
 
 export const create_candidate_action = async (unsafeData: z.infer<typeof newCandidateForm>) => {
     const {userId} = await auth();

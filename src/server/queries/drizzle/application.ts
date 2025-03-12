@@ -6,13 +6,20 @@ import {
     job_listings,
     scoreCards,
     stages,
-    triggers
 } from "@/drizzle/schema";
 import {db} from "@/drizzle/db";
 import {and, eq, SQL} from "drizzle-orm";
 import {CACHE_TAGS, dbCache, getGlobalTag, revalidateDbCache} from "@/lib/cache";
-import {candidateForm, filterApplicationsType} from "@/schema";
+import {candidateForm, filterApplicationsType} from "@/zod";
 import {z} from "zod";
+
+interface CandidateInfo {
+    first_name: string,
+    last_name: string,
+    email: string,
+    phone: string,
+    location: string,
+}
 
 export const create_application = async (data: z.infer<typeof candidateForm>) => {
     const [current_stage] = await db
@@ -20,15 +27,14 @@ export const create_application = async (data: z.infer<typeof candidateForm>) =>
         .from(stages)
         .where(and(eq(stages.job_id, Number(data.job!)), eq(stages.stage_order_id, 0)));
 
+    // Check if user is passing a candidate id
+    // Check if candidate is in the database
+    // If not, create a new candidate record
+    // If user is passing a candidate id, update the candidate record
+    // Both cases, update the application record to associate the candidate with the job and current stage
     if (!data.candidate) {
         try {
-            const info = data.candidate_info as {
-                first_name: string,
-                last_name: string,
-                email: string,
-                phone: string,
-                location: string
-            }
+            const info = data.candidate_info as CandidateInfo;
             // const file = data.candidate_file as { resume: FileList, cover_letter: FileList }
 
             const [candidate] = await db.insert(candidates).values({
@@ -72,13 +78,6 @@ export const create_application = async (data: z.infer<typeof candidateForm>) =>
 };
 
 export const update_application_stage = async (data: { candidateId: number, current_stage_id: number }) => {
-    const alltriggers = await db.select()
-        .from(triggers)
-        .where(eq(triggers.stage_id, data.current_stage_id));
-
-    // create a cron job for the current stage and application id for 1m
-    // save the job in a database
-
     await db.update(applications)
         .set({current_stage_id: data.current_stage_id})
         .where(eq(applications.id, data.candidateId))

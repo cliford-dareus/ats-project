@@ -1,6 +1,15 @@
 import mongoose from 'mongoose';
 
-const TriggerSchema = new mongoose.Schema({
+interface TriggerInterface extends mongoose.Document {
+    name: string;
+    stages: string;
+    type: string;
+    application_id: number;
+    triggerTime: Date;
+    status: string;
+}
+
+const TriggerSchema = new mongoose.Schema<TriggerInterface>({
     name: { type: String, required: true },
     stages: { type: String, required: true},
     type: { type: String, required: true},

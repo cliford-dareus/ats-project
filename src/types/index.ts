@@ -1,5 +1,5 @@
 import {candidates, job_listings} from "@/drizzle/schema";
-import {CANDIDATE_ENUM, JOB_ENUM} from "@/schema";
+import {CANDIDATE_ENUM, JOB_ENUM} from "@/zod";
 
 export type JobListingType = typeof job_listings.$inferInsert
 export type CandidateType = typeof candidates.$inferInsert

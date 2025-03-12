@@ -6,7 +6,7 @@ import {
     getHiredCandidateChartData,
     getInterviewChartData,
     getOpenJobChartData
-} from "../db/chart-data"
+} from "@/server/queries/drizzle/chart-data"
 import {getChartDateArray} from "@/lib/utils";
 import {startOfDay} from "date-fns";
 

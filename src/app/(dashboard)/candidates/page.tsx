@@ -1,6 +1,6 @@
 import React from 'react';
 import {get_all_candidates_action} from "@/server/actions/candidates-actions";
-import {CandidatesResponseType} from "@/types/job-listings-types";
+import {CandidatesResponseType} from "@/types";
 import CandidatesList from "@/app/(dashboard)/candidates/_components/candidates-list";
 import {LucideSortAsc} from "lucide-react";
 import ExtractFileButton from "@/components/extract-file-button";

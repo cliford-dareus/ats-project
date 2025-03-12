@@ -1,27 +1,69 @@
-// import { cleanupPlugins, initializePlugins } from "@/lib/plugin-lifecycle";
-import { PluginConfig } from "@/lib/plugins-registry";
+// /pluging/smart-trigger/index.tsx
+
+import {PluginConfig} from "@/lib/plugins-registry";
 import React from "react";
-// import { StageTrigger } from "./types";
+import {useTriggers} from "@/providers/trigger-provider";
+import {StageTrigger} from "./types";
+
+const DEFAULT_TRIGGERS: StageTrigger[] = [
+    {
+        id: "1",
+        stage: "Applied",
+        actions: [
+            {
+                action_type: "MESSAGE",
+                config: { template: "welcome-email" }
+            }
+        ]
+    }
+];
 
 const SmartTriggers = () => {
-  // const [triggers, setTriggers] = useState<StageTrigger[]>([]);
- 
-  return (
-    <div>
-      <h2>Smart Triggers</h2>
-      <p>Automate your recruitment workflows with Smart Triggers.</p>
-    </div>
-  );
+    const {triggers} = useTriggers();
+
+    return (
+        <div className="p-4">
+            <h2 className="text-xl font-bold mb-4">Smart Triggers</h2>
+            <p className="text-gray-600 mb-6">
+                Automate your recruitment workflows with Smart Triggers.
+            </p>
+
+            <div className="space-y-4">
+                <h3 className="font-semibold">Active Triggers ({triggers.length})</h3>
+                <ul className="space-y-2">
+                    {triggers.map((trigger) => (
+                        <li key={trigger.id} className="p-3 border rounded">
+                            <span className="font-medium">{trigger.stage}</span>
+                            <span className="text-sm text-gray-500 ml-2">
+                ({trigger.actions.length} actions)
+              </span>
+                        </li>
+                    ))}
+                </ul>
+            </div>
+        </div>
+    );
+};
+
+// Plugin activation/deactivation logic
+const activate = (context: { setTriggers: (triggers: StageTrigger[]) => void }) => {
+    console.log("Activating Smart Triggers plugin");
+    context.setTriggers([]);
+};
+
+const deactivate = (context: { setTriggers: (triggers: StageTrigger[]) => void }) => {
+    console.log("Deactivating Smart Triggers plugin");
+    context.setTriggers([]);
 };
 
 const pluginConfig = {
-  id: "smart-triggers",
-  name: "Smart Triggers", 
-  description: "Automate recruitment workflows with triggers.",
-  version: "1.0.0",
-  component: SmartTriggers,
-  // activate: initializePlugins,
-  // deactivate: cleanupPlugins
+    id: "smart-triggers",
+    name: "Smart Triggers",
+    description: "Automate recruitment workflows with triggers.",
+    version: "1.0.0",
+    component: SmartTriggers,
+    activate: activate,
+    deactivate: deactivate,
 } as PluginConfig;
 
 export default pluginConfig;

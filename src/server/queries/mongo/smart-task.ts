@@ -11,7 +11,13 @@ export const addTaskToQueue = async (id: number, action: TriggerAction, stage_na
 
     const name = `Task-${action.action_type}-${Date.now()}`;
     const triggerTime = new Date(Date.now() + 2 * 60 * 1000);
-    const trigger = await Trigger.create({ stages: stage_name,type: action.action_type, name, triggerTime, application_id: id});
+    const trigger = await Trigger.create({
+        stages: stage_name,
+        type: action.action_type,
+        name,
+        triggerTime,
+        application_id: id
+    });
 
     await taskQueue.add('executeTask', {
         trigger_id: trigger._id,
@@ -27,5 +33,5 @@ export const getTasks = async () => {
 };
 
 
-
-export const cancelTask = async (id: number) => {}
+export const cancelTask = async (id: number) => {
+}

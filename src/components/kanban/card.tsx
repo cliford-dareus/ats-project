@@ -1,7 +1,7 @@
 'use client'
 
 import {JobListingWithCandidatesType, StageResponseType} from "@/types";
-import React, {useEffect, useState} from "react";
+import React from "react";
 import DropIndicator from "@/components/kanban/drop-indicator";
 import {motion} from "motion/react";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
@@ -11,12 +11,13 @@ import {getTimeElapsed} from "@/lib/utils";
 import {Dialog, DialogContent, DialogTrigger} from "@/components/ui/dialog";
 import CreateApplicationSchedule from "@/components/modal/create-application-schedule";
 import {Clock} from "lucide-react";
+import {TriggerTask} from "@/plugins/smart-trigger/types";
 
 type Props = {
     data: JobListingWithCandidatesType;
     handleDragStart: (e: React.DragEvent<HTMLDivElement>, i: number) => void;
     stage: StageResponseType;
-    tasks: any
+    tasks: TriggerTask[]
 };
 
 const Card = ({data, handleDragStart, stage, tasks}: Props) => {

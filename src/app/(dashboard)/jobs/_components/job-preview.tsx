@@ -3,14 +3,15 @@
 import React from 'react';
 import {Button} from "@/components/ui/button";
 import {useRouter} from "next/navigation";
-import {JobResponseType} from "@/types/job-listings-types";
+import {JobResponseType} from "@/types";
 import {DialogTitle} from "@/components/ui/dialog";
 
 type Props = {
     data: JobResponseType;
+    jobs: JobResponseType[];
 };
 
-const JobPreview = ({data}: Props) => {
+const JobPreview = ({data, jobs}: Props) => {
     const router = useRouter();
 
     return (
@@ -22,6 +23,7 @@ const JobPreview = ({data}: Props) => {
                 }}>View Job Page</Button>
 
                 {JSON.stringify(data, null, 2)}
+                {JSON.stringify(jobs, null, 2)}
             </div>
         </div>
 

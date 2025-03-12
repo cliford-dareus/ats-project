@@ -5,11 +5,11 @@ import {
     get_all_applications,
     get_applications_with_filter,
     update_application_stage
-} from "@/server/db/application";
+} from "@/server/queries";
 import {auth} from "@clerk/nextjs/server";
 import {canCreateJob} from "@/server/permissions";
 import {z} from "zod";
-import {candidateForm, filterApplicationsType} from "@/schema";
+import {candidateForm, filterApplicationsType} from "@/zod";
 
 export const create_application_action = async (unsafeData: z.infer<typeof candidateForm>) => {
     const {userId} = await auth();

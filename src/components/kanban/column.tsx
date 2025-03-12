@@ -5,7 +5,7 @@ import Card from "@/components/kanban/card";
 import {JobListingWithCandidatesType, StageResponseType} from "@/types";
 import DropIndicator from "@/components/kanban/drop-indicator";
 import {update_application_stage_action} from "@/server/actions/application_actions";
-import {JOB_ENUM} from "@/schema";
+import {JOB_ENUM} from "@/zod";
 import {Badge} from "@/components/ui/badge";
 import {EllipsisVertical} from "lucide-react";
 import {Dialog, DialogContent, DialogTitle, DialogTrigger} from "@/components/ui/dialog";
@@ -18,15 +18,15 @@ import {Button} from "@/components/ui/button";
 import {cn} from "@/lib/utils";
 import {usePlugin} from "@/providers/plugins-provider";
 import {useTriggers} from "@/providers/trigger-provider";
+import {TriggerTask} from "@/plugins/smart-trigger/types";
 
 type Props = {
     title: string;
     stage: StageResponseType;
     cards: JobListingWithCandidatesType[];
     color: string;
-    column: JOB_ENUM
-    setCards: Dispatch<SetStateAction<JobListingWithCandidatesType[] | undefined>>
-    tasks: any
+    column: JOB_ENUM;
+    setCards: Dispatch<SetStateAction<JobListingWithCandidatesType[] | undefined>>;
 };
 
 const FormSchema = z.object({
@@ -35,9 +35,9 @@ const FormSchema = z.object({
     }),
 });
 
-const Column = ({title, cards, column, setCards, stage, color, tasks}: Props) => {
+const Column = ({title, cards, column, setCards, stage, color}: Props) => {
     const {isPluginActive} = usePlugin();
-    const {executeTrigger} = useTriggers();
+    const {executeTrigger, tasks} = useTriggers();
     const smart_trigger = isPluginActive("smart-triggers");
     const [active, setActive] = useState(false);
 
@@ -209,7 +209,7 @@ const Column = ({title, cards, column, setCards, stage, color, tasks}: Props) =>
                         key={c.application_id}
                         stage={stage}
                         data={c}
-                        tasks={tasks.filter((t) => t.stages === stage.stage_name && t.application_id === c.application_id )}
+                        tasks={tasks.filter((t: TriggerTask) => t.stages === stage.stage_name && t.application_id === c.application_id )}
                         handleDragStart={(e) => handleDragStart(e, c.application_id!)}
                     />;
                 })}

@@ -11,7 +11,7 @@ import {db} from "@/drizzle/db";
 import {and, eq, inArray, sql, SQL} from "drizzle-orm";
 import {CACHE_TAGS, dbCache, getGlobalTag, getIdTag, revalidateDbCache} from "@/lib/cache";
 import {z} from "zod";
-import {filterJobType, formSchema} from "@/schema";
+import {filterJobType, formSchema} from "@/zod";
 
 interface FilterInterface extends z.infer<typeof filterJobType> {
     organization: string;
@@ -91,12 +91,12 @@ export const get_all_job_listings = (filter: FilterInterface) => {
 };
 
 export const get_job_by_id = (jobId: number) => {
-    const cachFn = dbCache(get_job_by_id_db, {
+    const cacheFn = dbCache(get_job_by_id_db, {
         tags: [
             getIdTag(String(jobId), CACHE_TAGS.jobs)
         ]
     })
-    return cachFn(jobId)
+    return cacheFn(jobId)
 };
 
 export const get_job_listing_with_candidate = async (jobId: number) => {

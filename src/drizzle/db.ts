@@ -23,7 +23,7 @@ function createDatabaseConnection() {
     return drizzle(pool);
 }
 
-// export const db = drizzle(process.env.DATABASE_URL!);
+// export const queries = drizzle(process.env.DATABASE_URL!);
 
 export const db = global._db || createDatabaseConnection();
 if (process.env.NODE_ENV !== 'production') {

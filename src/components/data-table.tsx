@@ -10,16 +10,17 @@ import {
     useReactTable
 } from "@tanstack/react-table";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import CandidatePreview from "@/app/(dashboard)/applications/_components/candidate-preview";
+import ApplicationPreview from "@/app/(dashboard)/applications/_components/application-preview";
 import {Sheet, SheetContent} from "@/components/ui/sheet";
-import {ApplicationResponseType, CandidatesResponseType, JobResponseType} from "@/types/job-listings-types";
+import {ApplicationResponseType, CandidatesResponseType, JobResponseType} from "@/types";
 import JobPreview from "@/app/(dashboard)/jobs/_components/job-preview";
+import CandidatePreview from "@/app/(dashboard)/candidates/_components/candidate-preview";
 
 interface Props<T extends object> {
     columns: ColumnDef<T>[];
     data: T[];
     status: string;
-}
+};
 
 const DataTable = <T extends object>({columns, data, status}: Props<T>) => {
     const [isOpen, setIsOpen] = React.useState(false);
@@ -101,11 +102,19 @@ const DataTable = <T extends object>({columns, data, status}: Props<T>) => {
                             {/*</SheetTrigger>*/}
                             <SheetContent side="right" className="sm:max-w-xl p-0">
                                 {status === 'application' ?
-                                    <CandidatePreview
+                                    <ApplicationPreview
                                         data={applicationSelected as ApplicationResponseType}
                                         applications={data as ApplicationResponseType[]}
-                                    /> :
-                                    <JobPreview data={applicationSelected as JobResponseType}/>}
+                                    /> : status === 'jobs' ?
+                                        <JobPreview
+                                            data={applicationSelected as JobResponseType}
+                                            jobs={data as JobResponseType[]}
+                                        /> :
+                                        <CandidatePreview
+                                            data={applicationSelected as CandidatesResponseType}
+                                            candidates={data as CandidatesResponseType[]}
+                                        />
+                                }
                             </SheetContent>
                         </Sheet>
                     )

@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import {createContext, useContext, useEffect, useState} from "react";
+import SmartTriggers from "@/plugins/smart-trigger/index";
+import { registerPlugin } from "@/lib/plugins-registry";
+
+type Props = {
+  orgId: string;
+  children: React.ReactNode;
+};
 
 type PluginContextType = {
   activePlugins: string[];
@@ -14,30 +21,20 @@ const PluginContext = createContext<PluginContextType>({
   isPluginActive: () => false,
 });
 
-type Props = {
-  orgId: string;
-  children: React.ReactNode;
-};
-
-import SmartTriggers from "@/plugins/smart-trigger/index";
-// import Analytics from '@/plugins/analytics/index';
-import { registerPlugin } from "@/lib/plugins-registry";
-
 // Register all modules here
 registerPlugin(SmartTriggers);
-// moduleRegistry.register(Analytics);
 
 export const PluginProvider = ({ children, orgId }: Props) => {
   const [activePlugins, setActivePlugins] = useState<string[]>([]);
 
   useEffect(() => {
-    const f = async () => {
+    const fetchPlugins = async () => {
       const data = await fetch(`/api/plugins/?orgId=${orgId}`);
       const json = await data.json();
       setActivePlugins(json.enabled);
     };
 
-    f();
+    fetchPlugins();
   }, [orgId]);
 
   return (

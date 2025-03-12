@@ -1,9 +1,9 @@
 'use server';
 
-import {stepOneSchema} from '@/schema';
+import {stepOneSchema} from '@/zod';
 import {redirect} from 'next/navigation';
 import {FormErrors} from "@/types/job-listings-types";
-import {get_org_departments} from "@/server/db/organization";
+import {get_org_departments} from "@/server/queries/drizzle/organization";
 
 export const stepOneFormAction = async (
     prevState: FormErrors | undefined,

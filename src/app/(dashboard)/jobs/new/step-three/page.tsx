@@ -3,7 +3,7 @@
 import React, {useActionState, useEffect, useState} from 'react';
 import StepOneCollapse from "@/app/(dashboard)/jobs/new/_component/step-one-collapse";
 import MultiSelect from "@/components/multi-select";
-import {JOB_ENUM, stageSchema} from "@/schema";
+import {JOB_ENUM, stageSchema} from "@/zod";
 import {DropdownMenu, DropdownMenuContent, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
 import {Lock, Plus, X} from "lucide-react";
 import {Input} from "@/components/ui/input";

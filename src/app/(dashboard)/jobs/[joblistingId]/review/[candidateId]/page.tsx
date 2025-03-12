@@ -1,8 +1,8 @@
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {ChevronDown} from "lucide-react";
 import {CustomTabsTrigger, Tabs, TabsContent, TabsList} from "@/components/ui/tabs";
-import {get_user_applications} from "@/server/db/application";
-import {get_candidate_with_details} from "@/server/db/candidates";
+import {get_user_applications} from "@/server/queries/drizzle/application";
+import {get_candidate_with_details} from "@/server/queries/drizzle/candidates";
 import {
     DropdownMenu,
     DropdownMenuContent,

@@ -1,5 +1,5 @@
 import React from 'react';
-import {get_job_listing_with_candidate, get_job_listings_stages} from "@/server/db/job-listings";
+import {get_job_listing_with_candidate, get_job_listings_stages} from "@/server/queries/drizzle/job-listings";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {Dialog, DialogContent, DialogTrigger} from "@/components/ui/dialog";

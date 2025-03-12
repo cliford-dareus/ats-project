@@ -1,5 +1,5 @@
 import React from 'react';
-import {ApplicationResponseType} from "@/types/job-listings-types";
+import {ApplicationResponseType} from "@/types";
 import DataTable from "@/components/data-table";
 import {columns} from "@/app/(dashboard)/applications/_components/column";
 import PaginationElement from "@/components/pagination";
@@ -9,7 +9,7 @@ type Props = {
     pageCount: number;
 }
 
-const CandidateList = ({application, pageCount}: Props) => {
+const ApplicationList = ({application, pageCount}: Props) => {
     return (
         <div>
             <DataTable<ApplicationResponseType> columns={columns} data={application} status='application'/>
@@ -18,4 +18,4 @@ const CandidateList = ({application, pageCount}: Props) => {
     );
 };
 
-export default CandidateList;
+export default ApplicationList;

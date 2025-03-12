@@ -2,7 +2,7 @@ import React from 'react';
 import DataTable from "@/components/data-table";
 import {columns} from "@/app/(dashboard)/candidates/_components/column";
 import PaginationElement from "@/components/pagination";
-import {CandidatesResponseType} from "@/types/job-listings-types";
+import {CandidatesResponseType} from "@/types";
 
 type Props = {
     application: CandidatesResponseType[],
