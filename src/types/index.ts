@@ -52,6 +52,7 @@ export type ApplicationResponseType = {
     candidate_name: string;
     candidate_status: CANDIDATE_ENUM;
     job_apply: string;
+    job_id: number;
     location: string;
     current_stage: JOB_ENUM;
     assign_to: string;
@@ -60,14 +61,14 @@ export type ApplicationResponseType = {
 }
 
 export  type StageResponseType = {
-    id: number
-    job_id: number
+    id: number;
+    job_id: number;
     stage_name: "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | 'Applied' | null
     stage_order_id: number
     assign_to: string | null
-    color: string
-    need_schedule: boolean
-    trigger: any
+    color: string | null;
+    need_schedule: boolean | null;
+    trigger: any;
 }
 
 export type TriggerResponseType = {

@@ -35,7 +35,7 @@ export const get_all_job_listings_action = async (unsafeData: z.infer<typeof fil
     return await get_all_job_listings(data);
 };
 
-export const get_job_listings_stages_action = async (unsafeData: string)=> {
+export const getJobListingsStagesAction = async (unsafeData: number)=> {
     const {userId} = await auth();
     const canCreate = await canCreateJob(userId);
 
@@ -43,5 +43,5 @@ export const get_job_listings_stages_action = async (unsafeData: string)=> {
         return {error: true, message: "There was an error creating your product"}
     }
 
-    return await get_job_listings_stages(Number(unsafeData));
+    return await get_job_listings_stages(unsafeData);
 };

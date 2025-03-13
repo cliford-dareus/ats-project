@@ -25,6 +25,7 @@ export const create_application_action = async (unsafeData: z.infer<typeof candi
 
 export const update_application_stage_action = async (data: { candidateId: number, current_stage_id: number }) => {
     const {userId} = await auth();
+    console.log("UPDATE: " + JSON.stringify(data))
 
     if (!userId) {
         return {error: true, message: "There was an error updating application stage"}

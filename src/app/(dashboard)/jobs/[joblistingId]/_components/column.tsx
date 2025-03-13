@@ -1,7 +1,7 @@
 'use client'
 
 import {ColumnDef, createColumnHelper} from "@tanstack/react-table";
-import {JobResponseType} from "@/types/job-listings-types";
+import {JobResponseType} from "@/types";
 import React from "react";
 import IndeterminateCheckbox from "@/components/indeterminate-checkbox";
 import RowAction from "@/app/(dashboard)/jobs/[joblistingId]/_components/row-action";

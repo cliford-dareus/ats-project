@@ -1,6 +1,6 @@
 "use server";
 
-import {FormErrors} from "@/types/job-listings-types";
+import {FormErrors} from "@/types";
 import {updateJobSchema} from "@/zod";
 
 export const update_job_listing = async (prevState: FormErrors | undefined, formData: FormData) => {

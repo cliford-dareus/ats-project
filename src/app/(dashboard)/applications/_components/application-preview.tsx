@@ -1,3 +1,5 @@
+"use client"
+
 import React, {useEffect, useMemo, useRef} from 'react';
 import {DrawerHeader, DrawerTitle} from "@/components/ui/drawer";
 import {Button} from "@/components/ui/button";
@@ -6,7 +8,6 @@ import {Badge} from "@/components/ui/badge";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {CustomTabsTrigger, Tabs, TabsContent, TabsList} from "@/components/ui/tabs";
 import {useRouter} from "next/navigation";
-import {JOB_STAGES} from "@/zod";
 import {cn} from "@/lib/utils";
 import {
     CalendarClock,
@@ -24,6 +25,8 @@ import {
     DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
     DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
+import {useTriggers} from "@/providers/trigger-provider";
+import {update_application_stage_action} from "@/server/actions/application_actions";
 
 type Props = {
     data: ApplicationResponseType;
@@ -31,12 +34,22 @@ type Props = {
 };
 
 const ApplicationPreview = ({data, applications}: Props) => {
+    const {initializeTrigger, stages, executeTrigger} = useTriggers();
     const ref = useRef<HTMLDivElement>(null);
     const router = useRouter();
 
     const filterApplications = useMemo(() => {
         return applications.filter(application => application.candidate_name == data.candidate_name)
-    }, [data]);
+    }, [applications, data.candidate_name]);
+
+    const filterStage = useMemo(() =>{
+        const currentStageIndex = stages.findIndex(stage => stage.stage_name === data.current_stage);
+        return stages.slice(currentStageIndex + 1);
+    }, [data, stages]);
+
+    useEffect(() => {
+        initializeTrigger(data.job_id);
+    }, [data.job_id, initializeTrigger]);
 
     useEffect(() => {
         if (ref.current?.classList.contains('target')) {
@@ -49,8 +62,6 @@ const ApplicationPreview = ({data, applications}: Props) => {
             }
         }
     }, [data]);
-
-    console.log(data)
 
     return (
         <>
@@ -102,7 +113,15 @@ const ApplicationPreview = ({data, applications}: Props) => {
                                 <DropdownMenuLabel>Stages</DropdownMenuLabel>
                                 <DropdownMenuSeparator/>
                                 <DropdownMenuGroup>
-
+                                    {filterStage.map((stage) => (
+                                        <DropdownMenuItem
+                                            onClick={async () => {
+                                                await update_application_stage_action({candidateId: data.id, current_stage_id: stage.id})
+                                                executeTrigger(data.id, stage.id, stage.stage_name as string)
+                                            }}
+                                            key={stage.id}
+                                        >{stage.stage_name}</DropdownMenuItem>
+                                    ))}
                                 </DropdownMenuGroup>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -169,9 +188,9 @@ const ApplicationPreview = ({data, applications}: Props) => {
                                     <div
                                         className="flex w-full items-center overflow-scroll [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                                         {
-                                            JOB_STAGES.map((v) => (
-                                                <div ref={ref} key={v}
-                                                     className={cn(data.current_stage == v ? "target" : "", "relative -ml-8 first:ml-0")}>
+                                            stages.map((stage) => (
+                                                <div ref={ref} key={stage.id}
+                                                     className={cn(data.current_stage == stage.stage_name ? "target" : "", "relative -ml-8 first:ml-0")}>
                                                     <svg
                                                         className="w-[200px] h-[50px]"
                                                         width="350" height="69" viewBox="0 0 305 69" fill="none"
@@ -179,10 +198,10 @@ const ApplicationPreview = ({data, applications}: Props) => {
                                                         <path
                                                             d="M2.08643 0.5H248.992L303.992 34.5L248.992 68.5H2.08643L57.0937 34.5L2.08643 0.5Z"
                                                             stroke="white"
-                                                            fill={data.current_stage !== v ? "#cbd5e1" : "#dc2626"}
+                                                            fill={data.current_stage !== stage.stage_name ? "#cbd5e1" : "#dc2626"}
                                                         />
                                                     </svg>
-                                                    <p className="absolute top-1/2 -translate-y-1/2 right-1/2 translate-x-1/2 text-white text-xs">{v}</p>
+                                                    <p className="absolute top-1/2 -translate-y-1/2 right-1/2 translate-x-1/2 text-white text-xs">{stage.stage_name}</p>
                                                 </div>
                                             ))
                                         }
@@ -238,7 +257,6 @@ const ApplicationPreview = ({data, applications}: Props) => {
                                 </div>
                             </div>
                         </div>
-
                     </TabsContent>
 
                     <TabsContent value="notes">

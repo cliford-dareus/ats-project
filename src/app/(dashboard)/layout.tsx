@@ -6,7 +6,7 @@ import {CandidatesResponseType} from "@/types";
 import {Separator} from "@/components/ui/separator";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {Button} from "@/components/ui/button";
-import {Bell, ChevronDown, LogOut, Plus, Tv} from "lucide-react";
+import {Bell, ChevronDown, LogOut, Plus} from "lucide-react";
 import {auth, currentUser} from "@clerk/nextjs/server";
 import Link from "next/link";
 import {
@@ -35,7 +35,7 @@ export type StageCountType = {
 
 const Layout = async ({children}: Props) => {
     const user = await currentUser();
-    const {orgId} = await auth()
+    const {orgId} = await auth();
 
     if (!user) {
         return redirect("/sign-in");
@@ -47,7 +47,7 @@ const Layout = async ({children}: Props) => {
 
     return (
         <PluginProvider orgId={orgId as string}>
-          <TriggerProvider orgId={orgId as string}>
+          <TriggerProvider>
             <SidebarProvider
                 style={
                     {

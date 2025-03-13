@@ -1,24 +1,23 @@
 "use client";
 
-import React, {useEffect} from "react";
-import {BriefcaseBusiness, CircleUser} from "lucide-react";
+import React, { useEffect, useCallback } from "react";
+import { BriefcaseBusiness, CircleUser } from "lucide-react";
 import Link from "next/link";
-import JobPipeline from "@/app/(dashboard)/jobs/[joblistingId]/_components/job-pipeline";
-import {
-    JobListingWithCandidatesType,
-    JobResponseType,
-    StageResponseType,
-} from "@/types";
-import JobOptions from "@/app/(dashboard)/jobs/[joblistingId]/_components/job-options";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import JobPipeline from "./job-pipeline";
+import JobOptions from "./job-options";
 import {
     CustomTabsTrigger,
     Tabs,
     TabsContent,
     TabsList,
 } from "@/components/ui/tabs";
-import {useTriggers} from "@/providers/trigger-provider";
-import {StageTrigger} from "@/plugins/smart-trigger/types";
-import { usePathname, useRouter, useSearchParams} from "next/navigation";
+import { useTriggers } from "@/providers/trigger-provider";
+import {
+    JobListingWithCandidatesType,
+    JobResponseType,
+    StageResponseType,
+} from "@/types";
 
 type Props = {
     applications: JobListingWithCandidatesType[];
@@ -27,93 +26,63 @@ type Props = {
     joblistingId: string;
 };
 
-// Define tab types for better type safety
 type TabValue = "candidates" | "pipelines" | "options";
 const DEFAULT_TAB: TabValue = "candidates";
 
-const JobTabs = ({applications, stages, jobs, joblistingId}: Props) => {
-    const {setTriggers} = useTriggers();
-
-    // useEffect(() => {
-    //     const parsedTriggers = stages.reduce((acc: StageTrigger[], cur) => {
-    //         const trigger = JSON.parse(cur.trigger);
-    //         return [...acc, {id: cur.id.toString(), stage: cur.stage_name, actions: trigger}];
-    //     }, [] as StageTrigger[]);
-    //
-    //     setTriggers(parsedTriggers);
-    // }, [stages, setTriggers]);
-
+const JobTabs = ({ applications, stages, jobs, joblistingId }: Props) => {
+    const { initializeTrigger } = useTriggers();
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
 
-    // Get active tab from URL or use default
     const [activeTab, setActiveTab] = React.useState<TabValue>(DEFAULT_TAB);
-    
-    // Handle tab changes with a more concise function
-    const handleTabChange = (value: string) => {
-        const newPath = value === DEFAULT_TAB
-            ? pathname 
-            : `${pathname}?tab=${value}`;
-            
-        router.push(newPath);
-    };
 
-    React.useEffect(() => {
-        if (searchParams.get('tab')) {
-            setActiveTab(searchParams.get("tab") as TabValue);
-            return;
+    useEffect(() => {
+        if (applications.length > 0) {
+            initializeTrigger(applications[0].job_id);
         }
-        setActiveTab(DEFAULT_TAB);
+    }, [initializeTrigger, applications]);
+
+    const handleTabChange = useCallback((value: string) => {
+        const newPath = value === DEFAULT_TAB
+            ? pathname
+            : `${pathname}?tab=${value}`;
+        router.push(newPath);
+    }, [pathname, router]);
+
+    useEffect(() => {
+        const tabParam = searchParams.get('tab') as TabValue;
+        setActiveTab(tabParam || DEFAULT_TAB);
     }, [searchParams]);
 
     return (
         <div>
             <div className="flex px-4">
-                <Tabs className="px-0 h-full w-full" value={activeTab} defaultValue="candidates" onValueChange={handleTabChange}>
+                <Tabs className="px-0 h-full w-full" value={activeTab} onValueChange={handleTabChange}>
                     <TabsList className="bg-transparent rounded-none p-0 border-b w-full justify-start">
-                        <CustomTabsTrigger
-                            className="px-4 flex items-center gap-4"
-                            value="candidates"
-                        >
-                            <CircleUser size={20}/>
-                            <p>Candidates</p>
-                        </CustomTabsTrigger>
-                        <CustomTabsTrigger
-                            className="px-4 flex items-center gap-4"
-                            value="pipelines"
-                        >
-                            <CircleUser size={20}/>
-                            <p>Pipelines</p>
-                        </CustomTabsTrigger>
-                        <CustomTabsTrigger
-                            className="px-4 flex items-center gap-4"
-                            value="options"
-                        >
-                            <BriefcaseBusiness size={20}/>
-                            <p>Options</p>
-                        </CustomTabsTrigger>
+                        {['candidates', 'pipelines', 'options'].map((tab) => (
+                            <CustomTabsTrigger
+                                key={tab}
+                                className="px-4 flex items-center gap-4"
+                                value={tab}
+                            >
+                                {tab === 'options' ? <BriefcaseBusiness size={20} /> : <CircleUser size={20} />}
+                                <p>{tab.charAt(0).toUpperCase() + tab.slice(1)}</p>
+                            </CustomTabsTrigger>
+                        ))}
                     </TabsList>
 
                     <TabsContent value="candidates">
-                        Candidates
                         <Link href={`/jobs/${joblistingId}/review/${3}`}>
-                            <CircleUser size={20}/>
+                            <CircleUser size={20} />
                             <p>Candidates</p>
                         </Link>
                     </TabsContent>
                     <TabsContent value="pipelines">
-                        <JobPipeline
-                            data={applications as JobListingWithCandidatesType[]}
-                            stages={stages as StageResponseType[]}
-                        />
+                        <JobPipeline data={applications} stages={stages} />
                     </TabsContent>
                     <TabsContent value="options">
-                        <JobOptions
-                            job_id={Number(joblistingId)}
-                            data={jobs as JobResponseType[]}
-                            stages={stages as StageResponseType[]}
-                        />
+                        <JobOptions job_id={Number(joblistingId)} data={jobs} stages={stages} />
                     </TabsContent>
                 </Tabs>
             </div>

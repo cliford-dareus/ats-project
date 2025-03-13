@@ -1,56 +1,77 @@
 'use client';
 
-import React, {createContext, useContext, useEffect, useState} from 'react';
-import {StageTrigger, TriggerAction, TriggerTask} from '@/plugins/smart-trigger/types';
-import {addTaskToQueue, getTasks} from '@/server/queries/mongo/smart-task';
-import {get_job_listings_stages} from "@/server/queries/drizzle/job-listings";
-import {get_job_listings_stages_action} from "@/server/actions/job-listings-actions";
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { StageTrigger, TriggerAction, TriggerTask } from '@/plugins/smart-trigger/types';
+import { addTaskToQueue, getTasks } from '@/server/queries/mongo/smart-task';
+import { getJobListingsStagesAction } from "@/server/actions/job-listings-actions";
+import {StageResponseType} from "@/types";
 
 type TriggerContextType = {
     tasks: TriggerTask[];
     triggers: StageTrigger[];
-    setTriggers: (triggers: StageTrigger[]) => void;
+    stages: StageResponseType[];
+    initializeTrigger: (jobId: number) => void;
     executeTrigger: (application: number, stage: number, stage_name: string) => void;
-    refetchTasks: () => Promise<void>; // Allow manual refetching of tasks
+    refetchTasks: () => Promise<void>;
 };
 
 const TriggerContext = createContext<TriggerContextType>({
     tasks: [],
     triggers: [],
-    setTriggers: () => {},
+    stages: [],
+    initializeTrigger: () => {},
     executeTrigger: () => {},
     refetchTasks: async () => {},
 });
 
-export const TriggerProvider = ({children, orgId}: { children: React.ReactNode, orgId: string }) => {
+export const TriggerProvider = ({children}: { children: React.ReactNode }) => {
+    const [stages, setStages] = useState<StageResponseType[]>([])
     const [triggers, setTriggers] = useState<StageTrigger[]>([]);
     const [tasks, setTasks] = useState<TriggerTask[]>([]);
 
     // Function to fetch tasks from the server
-    const fetchTasks = async () => {
+    const fetchTasks = useCallback(async () => {
         try {
             const response = await getTasks();
-            const parseResult = JSON.parse(response);
-            setTasks(parseResult.tasks);
+            const parsedResult = JSON.parse(response) as { tasks: TriggerTask[] };
+            setTasks(parsedResult.tasks);
         } catch (error) {
             console.error('Failed to fetch tasks:', error);
         }
-    };
+    }, []);
 
-    // Function to manually trigger a task fetch
-    const refetchTasks = async () => {
+    const refetchTasks = useCallback(async () => {
         await fetchTasks();
-    };
+    }, [fetchTasks]);
 
-    // Add a trigger and refetch tasks
     const addTrigger = async (application: number, action: TriggerAction, stage_name: string) => {
-        await addTaskToQueue(application, action, stage_name);
+        try {
+            await addTaskToQueue(application, action, stage_name);
+        } catch (error) {
+            console.error('Failed to add trigger:', error);
+        }
     };
 
-    // Execute triggers and refetch tasks
+    const initializeTrigger = useCallback(async (jobId: number) => {
+        try {
+            const result = await getJobListingsStagesAction(jobId);
+            const response = Array.isArray(result) ? result : [];
+
+            const parsedTriggers = response.map(cur => ({
+                id: cur.id.toString(),
+                stage: cur.stage_name,
+                actions: JSON.parse(cur.trigger) as TriggerAction[]
+            }));
+
+            setStages(response);
+            setTriggers(parsedTriggers);
+        } catch (error) {
+            console.error('Failed to initialize triggers:', error);
+        }
+    }, []);
+
     const executeTrigger = (application: number, stage: number, stage_name: string) => {
         const stageTriggers = triggers.filter((t) => Number(t.id) === stage);
-
         stageTriggers.forEach((trigger) => {
             trigger.actions.forEach(async (action) => {
                 if (action.action_type === null) return;
@@ -58,31 +79,15 @@ export const TriggerProvider = ({children, orgId}: { children: React.ReactNode, 
             });
         });
 
-        refetchTasks(); // Refetch tasks after executing triggers
+        refetchTasks();
     };
 
-    // Automatically fetch tasks when `triggers` change
     useEffect(() => {
         fetchTasks();
-    }, [triggers]);
-
-    useEffect(() => {
-        const fetchTriggers = async () => {
-            const result = await get_job_listings_stages_action(orgId);
-            // const parsedTriggers = result.reduce((acc: StageTrigger[], cur) => {
-            //     const trigger = JSON.parse(cur.trigger);
-            //     return [...acc, {id: cur.id.toString(), stage: cur.stage_name, actions: trigger}];
-            // }, [] as StageTrigger[]);
-            //
-            // setTriggers(parsedTriggers);
-            console.log(result)
-        };
-
-        fetchTriggers()
-    }, []);
+    }, [])
 
     return (
-        <TriggerContext.Provider value={{tasks, triggers, setTriggers, executeTrigger, refetchTasks}}>
+        <TriggerContext.Provider value={{tasks, triggers, stages, initializeTrigger, executeTrigger, refetchTasks}}>
             {children}
         </TriggerContext.Provider>
     );

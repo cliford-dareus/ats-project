@@ -10,21 +10,15 @@ import {
     useReactTable
 } from "@tanstack/react-table";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import ApplicationPreview from "@/app/(dashboard)/applications/_components/application-preview";
-import {Sheet, SheetContent} from "@/components/ui/sheet";
-import {ApplicationResponseType, CandidatesResponseType, JobResponseType} from "@/types";
-import JobPreview from "@/app/(dashboard)/jobs/_components/job-preview";
-import CandidatePreview from "@/app/(dashboard)/candidates/_components/candidate-preview";
 
 interface Props<T extends object> {
     columns: ColumnDef<T>[];
     data: T[];
     status: string;
+    onRowClick?: (data: T) => void;
 };
 
-const DataTable = <T extends object>({columns, data, status}: Props<T>) => {
-    const [isOpen, setIsOpen] = React.useState(false);
-    const [applicationSelected, setApplicationSelected] = React.useState<ApplicationResponseType | CandidatesResponseType | JobResponseType | null>(null);
+const DataTable = <T extends object>({columns, data, onRowClick, status}: Props<T>) => {
     const [rowSelection, setRowSelection] = React.useState({});
     const [validRows, setValidRows] = React.useState({});
 
@@ -76,47 +70,22 @@ const DataTable = <T extends object>({columns, data, status}: Props<T>) => {
             <TableBody>
                 {table.getRowModel().rows.map((row) => {
                     return (
-                        <Sheet open={isOpen} onOpenChange={setIsOpen} key={row.id}>
-                            {/*<SheetTrigger asChild>*/}
-                            <TableRow>
-                                {row.getVisibleCells().map(cell => {
-                                    return (
-                                        <TableCell
-                                            className="cursor-pointer"
-                                            key={cell.id}
-                                            onClick={() => {
-                                                if (cell.column.columnDef.id === 'select' || cell.column.columnDef.id == 'action') return
-                                                // router.push(`/${status}/:${(cell.row.original as SCHEMA).id}`);
-                                                setApplicationSelected(row.original as ApplicationResponseType | JobResponseType | CandidatesResponseType)
-                                                setIsOpen(!isOpen)
-                                            }}
-                                        >
-                                            {flexRender(
-                                                cell.column.columnDef.cell,
-                                                cell.getContext()
-                                            )}
-                                        </TableCell>
-                                    )
-                                })}
-                            </TableRow>
-                            {/*</SheetTrigger>*/}
-                            <SheetContent side="right" className="sm:max-w-xl p-0">
-                                {status === 'application' ?
-                                    <ApplicationPreview
-                                        data={applicationSelected as ApplicationResponseType}
-                                        applications={data as ApplicationResponseType[]}
-                                    /> : status === 'jobs' ?
-                                        <JobPreview
-                                            data={applicationSelected as JobResponseType}
-                                            jobs={data as JobResponseType[]}
-                                        /> :
-                                        <CandidatePreview
-                                            data={applicationSelected as CandidatesResponseType}
-                                            candidates={data as CandidatesResponseType[]}
-                                        />
-                                }
-                            </SheetContent>
-                        </Sheet>
+                        <TableRow
+                            key={row.id}
+                            onClick={() => onRowClick?.(row.original)}
+                            className="cursor-pointer hover:bg-muted/50"
+                        >
+                            {row.getVisibleCells().map(cell => {
+                                return (
+                                    <TableCell key={cell.id}>
+                                        {flexRender(
+                                            cell.column.columnDef.cell,
+                                            cell.getContext()
+                                        )}
+                                    </TableCell>
+                                )
+                            })}
+                        </TableRow>
                     )
                 })}
             </TableBody>
