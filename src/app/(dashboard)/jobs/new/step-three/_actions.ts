@@ -2,7 +2,7 @@
 
 import {stepThreeSchema} from '@/zod';
 import {redirect} from 'next/navigation';
-import {FormErrors} from "@/types/job-listings-types";
+import {FormErrors} from "@/types";
 
 export const stepThreeFormAction = async (
     prevState: FormErrors | undefined,

@@ -21,7 +21,7 @@ import {usePathname, useRouter} from "next/navigation";
 import SidebarSettings from "@/app/(dashboard)/settings/_components/sidebar-settings";
 import JobListingSidebar from "@/app/(dashboard)/jobs/_components/job-listing-sidebar";
 import SidebarCandidate from "@/app/(dashboard)/applications/_components/sidebar-candidate";
-import {CandidatesResponseType} from "@/types/job-listings-types";
+import {CandidatesResponseType} from "@/types";
 import {StageCountType} from "@/app/(dashboard)/layout";
 import StepNavigation from "@/app/(dashboard)/jobs/new/_component/side-navigation";
 import SidebarDashboard from "@/app/(dashboard)/dashboard/_components/sidebar-dashboard";

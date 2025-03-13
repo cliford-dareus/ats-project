@@ -1,7 +1,7 @@
 import {clsx, type ClassValue} from "clsx"
 import {twMerge} from "tailwind-merge"
 import {UseFormReturn} from "react-hook-form";
-import {ApplicationResponseType, CandidatesResponseType} from "@/types/job-listings-types";
+import {ApplicationResponseType, CandidatesResponseType} from "@/types";
 import {chartData} from "@/app/(dashboard)/dashboard/_components/charts/circle-chart";
 import {
     differenceInDays, differenceInMonths,

@@ -20,7 +20,7 @@ const Page = async ({searchParams}: Props) => {
     const offset = typeof page === "string" ? (parseInt(page) - 1) * limit : 0;
     // const locations = location ? (location as string).split(',') : undefined;
 
-    const result = await get_applications_with_filter_action({limit, offset, organization: orgId!})
+    const result = await get_applications_with_filter_action({limit, offset, organization: orgId!});
     const len = Array.isArray(result) ? result[0] : 0;
     const application = Array.isArray(result) ? result[1] : [];
     const pageCount = Math.ceil(len as number / limit);

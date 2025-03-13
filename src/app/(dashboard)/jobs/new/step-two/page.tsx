@@ -1,7 +1,7 @@
 'use client';
 
 import {Input} from "@/components/ui/input";
-import {FormErrors} from "@/types/job-listings-types";
+import {FormErrors} from "@/types";
 import CustomButton from "@/components/custom-button";
 import React, {useActionState, useEffect, useState} from "react";
 import {stepTwoFormAction} from "@/app/(dashboard)/jobs/new/step-two/_actions";

@@ -11,7 +11,7 @@ import {Button} from "@/components/ui/button";
 import {z} from "zod";
 import CustomButton from "@/components/custom-button";
 import {useForm} from "react-hook-form";
-import {FormErrors} from "@/types/job-listings-types";
+import {FormErrors} from "@/types";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import {useNewJobContext} from "@/providers/new-job-provider";
 import {stepThreeFormAction} from "@/app/(dashboard)/jobs/new/step-three/_actions";

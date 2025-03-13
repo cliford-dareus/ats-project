@@ -30,7 +30,7 @@ export const TriggerProvider = ({children}: { children: React.ReactNode }) => {
     const [tasks, setTasks] = useState<TriggerTask[]>([]);
 
     // Function to fetch tasks from the server
-    const fetchTasks = useCallback(async () => {
+    const fetchTasks = async () => {
         try {
             const response = await getTasks();
             const parsedResult = JSON.parse(response) as { tasks: TriggerTask[] };
@@ -38,11 +38,11 @@ export const TriggerProvider = ({children}: { children: React.ReactNode }) => {
         } catch (error) {
             console.error('Failed to fetch tasks:', error);
         }
-    }, []);
+    };
 
-    const refetchTasks = useCallback(async () => {
+    const refetchTasks = async () => {
         await fetchTasks();
-    }, [fetchTasks]);
+    };
 
     const addTrigger = async (application: number, action: TriggerAction, stage_name: string) => {
         try {

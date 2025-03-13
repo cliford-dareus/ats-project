@@ -1,4 +1,4 @@
-import {CandidatesResponseType} from "@/types/job-listings-types";
+import {CandidatesResponseType} from "@/types";
 import {Badge} from "@/components/ui/badge";
 import {StageCountType} from "@/app/(dashboard)/layout";
 import {aggregateByKey, cn} from "@/lib/utils";

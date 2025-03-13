@@ -16,7 +16,7 @@ import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
 import {Switch} from "@/components/ui/switch";
 import {Select, SelectContent, SelectItem, SelectTrigger} from "@/components/ui/select";
-import {CandidatesResponseType, JobResponseType} from "@/types/job-listings-types";
+import {CandidatesResponseType, JobResponseType} from "@/types";
 import {create_application_action} from "@/server/actions/application_actions";
 import {candidateForm} from "@/zod";
 

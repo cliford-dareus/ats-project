@@ -26,9 +26,9 @@ type Props = {
 };
 
 const Page = async ({params}: Props) => {
-    const candidate_id = await params.candidateId;
-    const [f] = await get_candidate_with_details(Number(candidate_id));
-    const applications = await get_user_applications(Number(candidate_id));
+    const {candidateId} = await params;
+    const [f] = await get_candidate_with_details(Number(candidateId));
+    const applications = await get_user_applications(Number(candidateId));
     // const attachment = await get_candidate_attachment(f.candidateId);
 
     return (

@@ -7,8 +7,9 @@ type Props = {
 };
 
 const Page = async ({params}: Props) => {
-    const application_id = await params.applicationId;
-    console.log(application_id)
+    const {applicationId} = await params;
+    console.log(applicationId);
+
     return (
         <div className="p-4">
             

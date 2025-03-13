@@ -24,7 +24,7 @@ type Props = {
     title: string;
     stage: StageResponseType;
     cards: JobListingWithCandidatesType[];
-    color: string;
+    color: string | null;
     column: JOB_ENUM;
     setCards: Dispatch<SetStateAction<JobListingWithCandidatesType[] | undefined>>;
 };

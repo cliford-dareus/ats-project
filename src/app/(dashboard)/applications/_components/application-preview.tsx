@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {useTriggers} from "@/providers/trigger-provider";
 import {update_application_stage_action} from "@/server/actions/application_actions";
+import {TriggerAction} from "@/plugins/smart-trigger/types";
 
 type Props = {
     data: ApplicationResponseType;
@@ -34,7 +35,7 @@ type Props = {
 };
 
 const ApplicationPreview = ({data, applications}: Props) => {
-    const {initializeTrigger, stages, executeTrigger} = useTriggers();
+    const {initializeTrigger, stages, executeTrigger, tasks} = useTriggers();
     const ref = useRef<HTMLDivElement>(null);
     const router = useRouter();
 
@@ -42,12 +43,14 @@ const ApplicationPreview = ({data, applications}: Props) => {
         return applications.filter(application => application.candidate_name == data.candidate_name)
     }, [applications, data.candidate_name]);
 
-    const filterStage = useMemo(() =>{
+    const filterStage = useMemo(() => {
         const currentStageIndex = stages.findIndex(stage => stage.stage_name === data.current_stage);
         return stages.slice(currentStageIndex + 1);
     }, [data, stages]);
 
     useEffect(() => {
+        const isPreviewingApplication = filterApplications.every(app => app.candidate_name == data.candidate_name);
+        if (!isPreviewingApplication) return;
         initializeTrigger(data.job_id);
     }, [data.job_id, initializeTrigger]);
 
@@ -116,11 +119,25 @@ const ApplicationPreview = ({data, applications}: Props) => {
                                     {filterStage.map((stage) => (
                                         <DropdownMenuItem
                                             onClick={async () => {
-                                                await update_application_stage_action({candidateId: data.id, current_stage_id: stage.id})
+                                                await update_application_stage_action({
+                                                    candidateId: data.id,
+                                                    current_stage_id: stage.id
+                                                })
                                                 executeTrigger(data.id, stage.id, stage.stage_name as string)
                                             }}
                                             key={stage.id}
-                                        >{stage.stage_name}</DropdownMenuItem>
+                                        >
+                                            <p>{stage.stage_name}</p>
+                                            <div className="flex items-center gap-2">
+                                                {(JSON.parse(stage.trigger) as TriggerAction[]).map((trigger) => (
+                                                <span
+                                                    key={trigger.action_type}
+                                                    className="text-xs/3 flex items-center gap-2 text-slate-500"
+                                                >
+                                                    {trigger.action_type}
+                                                </span>
+                                            ))}</div>
+                                        </DropdownMenuItem>
                                     ))}
                                 </DropdownMenuGroup>
                             </DropdownMenuContent>
@@ -268,10 +285,19 @@ const ApplicationPreview = ({data, applications}: Props) => {
                                 <Button>Add Note</Button>
                             </div>
                             <div className="flex flex-col gap-4 py-2 px-4">
-                                <div className="flex h-[75px] ">dddddd</div>
-                                <div className="flex h-[75px] ">dddddd</div>
+                                {tasks.map((task) => (
+                                    <div key={task?.name} className="flex items-center gap-4">
+                                        <div className="w-[200px] flex gap-2 items-center">
+                                            <span className="text-sm/3 text-slate-500">Task Title</span>
+                                            <p className="text-sm">{task?.type}</p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm/3 text-slate-500">Due Date</span>
+                                            {/*<p className="text-sm">{task?.triggerTime.toLocaleDateString()}</p>*/}
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
-
                         </div>
                     </TabsContent>
                 </Tabs>
