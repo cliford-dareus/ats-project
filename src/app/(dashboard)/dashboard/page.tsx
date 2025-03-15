@@ -24,11 +24,11 @@ type Props = {
 };
 
 const Page = async ({ searchParams }: Props) => {
-  const { range, rangeFrom, rangeTo } = (await searchParams) ?? {};
+  const { range, rangeFrom, rangeTo } = await searchParams ?? {};
   
   const user = await currentUser();
-
   const { orgId } = await auth();
+  
   if (!orgId) return null;
 
   const chartRange =

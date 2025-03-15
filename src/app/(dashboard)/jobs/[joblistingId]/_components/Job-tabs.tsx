@@ -2,7 +2,6 @@
 
 import React, { useEffect, useCallback } from "react";
 import { BriefcaseBusiness, CircleUser } from "lucide-react";
-import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import JobPipeline from "./job-pipeline";
 import JobOptions from "./job-options";
@@ -14,13 +13,14 @@ import {
 } from "@/components/ui/tabs";
 import { useTriggers } from "@/providers/trigger-provider";
 import {
-    JobListingWithCandidatesType,
+    ApplicationType,
     JobResponseType,
     StageResponseType,
 } from "@/types";
+import JobCandidate from "./job-candidate";
 
 type Props = {
-    applications: JobListingWithCandidatesType[];
+    applications: ApplicationType[];
     stages: StageResponseType[];
     jobs: JobResponseType[];
     joblistingId: string;
@@ -39,6 +39,7 @@ const JobTabs = ({ applications, stages, jobs, joblistingId }: Props) => {
 
     useEffect(() => {
         if (applications.length > 0) {
+            console.log("applications", applications)
             initializeTrigger(applications[0].job_id);
         }
     }, [initializeTrigger, applications]);
@@ -73,10 +74,7 @@ const JobTabs = ({ applications, stages, jobs, joblistingId }: Props) => {
                     </TabsList>
 
                     <TabsContent value="candidates">
-                        <Link href={`/jobs/${joblistingId}/review/${3}`}>
-                            <CircleUser size={20} />
-                            <p>Candidates</p>
-                        </Link>
+                      <JobCandidate data={applications}/>
                     </TabsContent>
                     <TabsContent value="pipelines">
                         <JobPipeline data={applications} stages={stages} />

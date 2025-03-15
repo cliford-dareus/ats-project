@@ -1,6 +1,6 @@
 'use client'
 
-import {JobListingWithCandidatesType, StageResponseType} from "@/types";
+import {ApplicationType, StageResponseType} from "@/types";
 import React from "react";
 import DropIndicator from "@/components/kanban/drop-indicator";
 import {motion} from "motion/react";
@@ -14,7 +14,7 @@ import {Clock} from "lucide-react";
 import {TriggerTask} from "@/plugins/smart-trigger/types";
 
 type Props = {
-    data: JobListingWithCandidatesType;
+    data: ApplicationType;
     handleDragStart: (e: React.DragEvent<HTMLDivElement>, i: number) => void;
     stage: StageResponseType;
     tasks: TriggerTask[]
@@ -75,16 +75,16 @@ const Card = ({data, handleDragStart, stage, tasks}: Props) => {
                     </div>
 
                     <div className="">
-                        <p className="text-base font-semibold leading-3">{data?.candidate_name}</p>
+                        <p className="text-base font-semibold leading-3">{data?.candidate.name}</p>
                         {
                             stage.stage_name === "Applied" ?
                                 (<Link
                                     className="text-xs text-blue-500 leading-4"
-                                    href={`/jobs/${data.job_id}/${data.candidate_id}`}>Review Application</Link>)
+                                    href={`/jobs/${data.job_id}/${data.candidate.id}`}>Review Application</Link>)
                                 :
                                 (<Link
                                     className="text-xs text-blue-500 leading-4"
-                                    href={`/applications/${data.candidate_id}`}
+                                    href={`/applications/${data.candidate.id}`}
                                 >
                                     View Profile
                                 </Link>)

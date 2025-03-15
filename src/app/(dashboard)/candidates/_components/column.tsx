@@ -20,7 +20,7 @@ export const columns: ColumnDef<CandidatesResponseType>[] = [
             />
         ),
         cell: ({ row }) => (
-            <div className="px-1">
+            <div onClick={(e) => e.stopPropagation()} className="px-1">
                 <IndeterminateCheckbox
                     {...{
                         checked: row.getIsSelected(),
@@ -56,7 +56,10 @@ export const columns: ColumnDef<CandidatesResponseType>[] = [
         id: "action",
         header: '',
         cell: () => (
-            <div className="flex items-center">
+            <div 
+              onClick={(e) => e.stopPropagation()} 
+              className="flex items-center"
+            >
                 <Ellipsis size={20}/>
             </div>
         )

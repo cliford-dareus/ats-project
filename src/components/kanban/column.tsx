@@ -2,7 +2,7 @@
 
 import React, {Dispatch, DragEvent, SetStateAction, useState} from "react";
 import Card from "@/components/kanban/card";
-import {JobListingWithCandidatesType, StageResponseType} from "@/types";
+import {ApplicationType, StageResponseType} from "@/types";
 import DropIndicator from "@/components/kanban/drop-indicator";
 import {update_application_stage_action} from "@/server/actions/application_actions";
 import {JOB_ENUM} from "@/zod";
@@ -23,10 +23,10 @@ import {TriggerTask} from "@/plugins/smart-trigger/types";
 type Props = {
     title: string;
     stage: StageResponseType;
-    cards: JobListingWithCandidatesType[];
+    cards: ApplicationType[];
     color: string | null;
     column: JOB_ENUM;
-    setCards: Dispatch<SetStateAction<JobListingWithCandidatesType[] | undefined>>;
+    setCards: Dispatch<SetStateAction<ApplicationType[] | undefined>>;
 };
 
 const FormSchema = z.object({
@@ -83,16 +83,17 @@ const Column = ({title, cards, column, setCards, stage, color}: Props) => {
             }
 
             if (title !== "Applied" && cardToTransfer.application_id) {
+                console.log("CARD", cardToTransfer.application_id)
                 await update_application_stage_action({
-                    candidateId: cardToTransfer.application_id,
-                    current_stage_id: dropStage,
+                    applicationId: cardToTransfer.application_id,
+                    new_stage_id: dropStage,
                 });
                 setCards(copy);
 
                 // add smarter logic
                 if (!smart_trigger) return;
                 executeTrigger(cardToTransfer.application_id, dropStage, stage.stage_name!)
-                console.log(dropStage)
+                console.log(dropStage);
             }
         }
     };
@@ -204,7 +205,7 @@ const Column = ({title, cards, column, setCards, stage, color}: Props) => {
                 onDragLeave={handleDragLeave}
                 className="h-full w-full transition-colors relative z-50 overflow-y-scroll"
             >
-                {filteredCards?.map((c: JobListingWithCandidatesType) => {
+                {filteredCards?.map((c: ApplicationType) => {
                     return <Card
                         key={c.application_id}
                         stage={stage}

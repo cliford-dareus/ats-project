@@ -1,16 +1,16 @@
 'use client'
 
 import React, {useEffect, useState} from 'react';
-import {JobListingWithCandidatesType, StageResponseType} from "@/types";
+import {ApplicationType, StageResponseType} from "@/types";
 import Column from "@/components/kanban/column";
 
 type Props = {
-    data: JobListingWithCandidatesType[];
+    data: ApplicationType[];
     stages: StageResponseType[]
 };
 
 const JobPipeline = ({data, stages}: Props) => {
-    const [jobs, setJobs] = useState<JobListingWithCandidatesType[]>();
+    const [jobs, setJobs] = useState<ApplicationType[]>();
 
     useEffect(() => {
         setJobs(data)

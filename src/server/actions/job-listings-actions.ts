@@ -1,11 +1,13 @@
 'use server'
 
 import {z} from "zod";
-import {create_job_listing, get_all_job_listings, get_job_listings_stages} from "@/server/queries";
+import {create_job_listing, get_all_job_listings, get_job_by_id, get_job_listings_stages} from "@/server/queries";
 import {auth} from "@clerk/nextjs/server";
 import {redirect} from "next/navigation";
 import {formSchema, filterJobType} from "@/zod";
 import {canCreateJob} from "@/server/permissions";
+
+const jobIdSchema = z.number();
 
 export const create_job_action = async (unsafeData: z.infer<typeof formSchema>): Promise<{
     error: boolean;
@@ -35,13 +37,26 @@ export const get_all_job_listings_action = async (unsafeData: z.infer<typeof fil
     return await get_all_job_listings(data);
 };
 
-export const getJobListingsStagesAction = async (unsafeData: number)=> {
+export const get_job_by_id_action = async (unsafeData: z.infer<typeof jobIdSchema>) => {
     const {userId} = await auth();
+    const jobId = jobIdSchema.parse(unsafeData);
     const canCreate = await canCreateJob(userId);
 
-    if (!userId || !canCreate) {
+    if (!jobId || !userId || !canCreate) {
         return {error: true, message: "There was an error creating your product"}
     }
 
-    return await get_job_listings_stages(unsafeData);
+    return await get_job_by_id(jobId);
+};
+
+export const getJobListingsStagesAction = async (unsafeData: z.infer<typeof jobIdSchema>)=> {
+    const {userId} = await auth();
+    const jobId = jobIdSchema.parse(unsafeData);
+    const canCreate = await canCreateJob(userId);
+
+    if (!userId || !canCreate|| !jobId) {
+        return {error: true, message: "There was an error creating your product"}
+    }
+
+    return await get_job_listings_stages(jobId);
 };

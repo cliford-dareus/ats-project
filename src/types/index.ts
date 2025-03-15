@@ -30,6 +30,28 @@ export type CandidatesResponseType = {
     updated_at: Date
 };
 
+export type InterviewType = {
+    id: number,
+    application_id: number,
+    candidate_id: number,
+    interview_date: Date,
+    interview_location: string,
+};
+
+export interface CandidatesWithInterview extends CandidatesResponseType{
+    interviews: InterviewType;
+};
+
+export interface ApplicationType {
+    id: number,
+    application_id: number,
+    application_updated_at: Date,
+    job_id: number
+    stageName: "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | 'Applied',
+    stage_order_id: number,
+    candidate: CandidatesWithInterview;
+}
+
 export type JobListingWithCandidatesType = {
     job_id: number
     job_name: string

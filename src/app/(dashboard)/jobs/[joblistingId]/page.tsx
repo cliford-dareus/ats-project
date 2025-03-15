@@ -1,13 +1,14 @@
 import React from 'react';
-import {get_job_listing_with_candidate, get_job_listings_stages} from "@/server/queries/drizzle/job-listings";
+import { get_job_listings_stages} from "@/server/queries/drizzle/job-listings";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {Dialog, DialogContent, DialogTrigger} from "@/components/ui/dialog";
 import CreateApplicationModal from "@/components/modal/create-application-modal";
-import {get_all_job_listings_action} from "@/server/actions/job-listings-actions";
+import {get_all_job_listings_action, get_job_by_id_action} from "@/server/actions/job-listings-actions";
 import {
-  CandidatesResponseType, JobListingWithCandidatesType,
-  JobResponseType, StageResponseType,
+    ApplicationType,
+    CandidatesResponseType,
+    JobResponseType, StageResponseType,
 } from "@/types";
 import {get_all_candidates_action} from "@/server/actions/candidates-actions";
 import {auth} from "@clerk/nextjs/server";
@@ -25,15 +26,17 @@ const Page = async ({params}: Props) => {
     const {orgId} = await auth();
     if (!orgId) return;
 
-    const [jobsResult, applications, candidatesResult] = await Promise.all([
+    const [jobsResponse, applicationsResponse, candidatesResponse, stagesResponse] = await Promise.all([
         get_all_job_listings_action({organization: orgId}),
-        get_job_listing_with_candidate(Number(joblistingId)),
+        get_job_by_id_action(Number(joblistingId)),
         get_all_candidates_action({limit: 1000, offset: 0}),
+       get_job_listings_stages(Number(joblistingId))
     ]);
-
-    const jobs = Array.isArray(jobsResult) ? jobsResult[1] : [];
-    const candidates = Array.isArray(candidatesResult) ? candidatesResult[1] : [];
-    const stages = await get_job_listings_stages(applications[0]?.job_id);
+    
+    const jobs = Array.isArray(jobsResponse) ? jobsResponse[1] : [];
+    const candidates = Array.isArray(candidatesResponse) ? candidatesResponse[0] : [];
+    const applications = Array.isArray(applicationsResponse) ? applicationsResponse : [];
+    const stages = Array.isArray(stagesResponse) ? stagesResponse : [];
 
     return (
         <div>
@@ -41,7 +44,7 @@ const Page = async ({params}: Props) => {
                 <div>
                     <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-4">
-                            <h1 className="font-bold text-xl">{applications[0]?.job_name}</h1>
+                            <h1 className="font-bold text-xl">{applications[0].job_name}</h1>
                             <Badge className="bg-green-100 text-xs text-green-500 font-normal shadow-none">
                                 {applications[0].job_status}
                             </Badge>
@@ -50,7 +53,7 @@ const Page = async ({params}: Props) => {
                         <div className="flex items-center gap-2">
                             <p className="text-xs text-slate-500">
                                 Published
-                                on {applications[0]?.job_created_at.toString().split(' ').slice(0, 3).join(' ')}
+                                on {applications[0].job_created_at.toString().split(' ').slice(0, 3).join(' ')}
                             </p>
                         </div>
                     </div>
@@ -73,7 +76,7 @@ const Page = async ({params}: Props) => {
                 jobs={jobs as JobResponseType[]}
                 stages={stages as StageResponseType[]}
                 joblistingId={joblistingId}
-                applications={applications as JobListingWithCandidatesType[]}
+                applications={applications[0].applications as ApplicationType[]}
             />
         </div>
     );

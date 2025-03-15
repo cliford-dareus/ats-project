@@ -11,7 +11,7 @@ const JobListingSidebar = () => {
     const pathname = usePathname();
     const searchParams = useSearchParams();
 
-    const [isLoading, startTransition] = useTransition()
+    const [, startTransition] = useTransition()
 
     // Create new search params
     const createQueryString = useCallback(
@@ -28,6 +28,14 @@ const JobListingSidebar = () => {
             router.push(`${pathname}?${createQueryString({location: locations})}`)
         });
     }, [locations]);
+    
+    // DEPARTMENT
+    const [departments, setDepartments] = React.useState<string[]>([])
+    useEffect(() => {
+        startTransition(() => {
+            router.push(`${pathname}?${createQueryString({department: departments})}`)
+        });
+    }, [departments]);
 
     return (
         <div className="p-4 flex flex-col h-full">
