@@ -29,7 +29,7 @@ export const get_all_job_listings_action = async (unsafeData: z.infer<typeof fil
     const {userId} = await auth();
     const {success, data} = await filterJobType.spa(unsafeData);
     const canCreate = await canCreateJob(userId);
-
+  
     if (!success || !userId || !canCreate) {
         return {error: true, message: "There was an error creating your product"}
     }

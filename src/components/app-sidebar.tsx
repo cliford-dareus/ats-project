@@ -82,7 +82,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar> & {
     const router = useRouter();
 
     useEffect(() => {
-        setActiveItem(data.navMain.find(nav => pathname.startsWith(nav.url))!)
+      setActiveItem(data.navMain.find(nav => pathname.startsWith(nav.url))!);
     }, [pathname]);
 
     return (
@@ -178,4 +178,4 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar> & {
             </Sidebar>
         </Sidebar>
     )
-}
+};

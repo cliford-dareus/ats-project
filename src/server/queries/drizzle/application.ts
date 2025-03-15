@@ -26,9 +26,7 @@ interface CandidateInfo {
   location: string;
 };
 
-export const create_application = async (
-  data: z.infer<typeof candidateForm>,
-) => {
+export const create_application = async (data: z.infer<typeof candidateForm>) => {
   const [current_stage] = await db
     .select()
     .from(stages)
@@ -93,11 +91,7 @@ export const create_application = async (
   return "application created";
 };
 
-export const update_application_stage = async (data: {
-  applicationId: number;
-  new_stage_id: number;
-}) => {
-  console.log(`Updating application stage: ${JSON.stringify(data)}`);
+export const update_application_stage = async (data: {applicationId: number ,new_stage_id: number}) => {
   await db
     .update(applications)
     .set({ current_stage_id: data.new_stage_id })
@@ -112,9 +106,7 @@ export const update_application_stage = async (data: {
   });
 };
 
-export const get_all_applications = async (filter: {
-  organization: string;
-}) => {
+export const get_all_applications = async (filter: {organization: string}) => {
   const cacheFn = dbCache(get_all_applications_db, {
     tags: [getGlobalTag(CACHE_TAGS.applications)],
   });
@@ -122,9 +114,7 @@ export const get_all_applications = async (filter: {
   return cacheFn(filter);
 };
 
-export const get_applications_with_filter = async (
-  filter: z.infer<typeof filterApplicationsType>,
-) => {
+export const get_applications_with_filter = async (filter: z.infer<typeof filterApplicationsType>) => {
   const cacheFn = dbCache(get_applications_with_filter_db, {
     tags: [getGlobalTag(CACHE_TAGS.applications)],
   });
@@ -155,9 +145,7 @@ export const get_applications_with_stages_db = async () => {
     .leftJoin(applications, eq(applications.current_stage_id, stages.id));
 };
 
-export const get_applications_with_filter_db = async (
-  filter: z.infer<typeof filterApplicationsType>,
-) => {
+export const get_applications_with_filter_db = async (filter: z.infer<typeof filterApplicationsType>) => {
   const filters: SQL[] = [];
 
   if (filter.stages)
@@ -196,9 +184,7 @@ export const get_applications_with_filter_db = async (
   return [len, application];
 };
 
-export const get_all_applications_db = async (filter: {
-  organization: string;
-}) => {
+export const get_all_applications_db = async (filter: {organization: string}) => {
   return db
     .select({
       can_contact: applications.can_contact,

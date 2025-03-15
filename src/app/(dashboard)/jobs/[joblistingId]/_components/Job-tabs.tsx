@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useCallback } from "react";
-import { BriefcaseBusiness, CircleUser } from "lucide-react";
+import { BriefcaseBusiness, CircleUser, LucideEdit, LucideTrash } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import JobPipeline from "./job-pipeline";
 import JobOptions from "./job-options";
@@ -24,12 +24,13 @@ type Props = {
     stages: StageResponseType[];
     jobs: JobResponseType[];
     joblistingId: string;
+    job_name: string;
 };
 
 type TabValue = "candidates" | "pipelines" | "options";
 const DEFAULT_TAB: TabValue = "candidates";
 
-const JobTabs = ({ applications, stages, jobs, joblistingId }: Props) => {
+const JobTabs = ({ applications, stages, jobs, joblistingId, job_name }: Props) => {
     const { initializeTrigger } = useTriggers();
     const pathname = usePathname();
     const router = useRouter();
@@ -39,7 +40,6 @@ const JobTabs = ({ applications, stages, jobs, joblistingId }: Props) => {
 
     useEffect(() => {
         if (applications.length > 0) {
-            console.log("applications", applications)
             initializeTrigger(applications[0].job_id);
         }
     }, [initializeTrigger, applications]);
@@ -60,6 +60,7 @@ const JobTabs = ({ applications, stages, jobs, joblistingId }: Props) => {
         <div>
             <div className="flex px-4">
                 <Tabs className="px-0 h-full w-full" value={activeTab} onValueChange={handleTabChange}>
+                  <div className="flex items-center justify-between">
                     <TabsList className="bg-transparent rounded-none p-0 border-b w-full justify-start">
                         {['candidates', 'pipelines', 'options'].map((tab) => (
                             <CustomTabsTrigger
@@ -72,9 +73,14 @@ const JobTabs = ({ applications, stages, jobs, joblistingId }: Props) => {
                             </CustomTabsTrigger>
                         ))}
                     </TabsList>
-
+                    
+                    <div className="flex items-center gap-4">
+                      <LucideEdit size={18} />
+                      <LucideTrash size={18} />
+                    </div>
+                  </div>
                     <TabsContent value="candidates">
-                      <JobCandidate data={applications}/>
+                      <JobCandidate data={applications} job_name={job_name} />
                     </TabsContent>
                     <TabsContent value="pipelines">
                         <JobPipeline data={applications} stages={stages} />

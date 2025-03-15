@@ -146,7 +146,6 @@ export const get_job_by_id_db = async (jobId: number) => {
       if (!application) {
         // Create a new application object if it doesn't exist in the map
         application = {
-          id: row.application.id,
           application_id: row.application.id,
           job_id: row.jobListing.id,
           application_updated_at: row.application.updated_at,

@@ -43,12 +43,12 @@ export interface CandidatesWithInterview extends CandidatesResponseType{
 };
 
 export interface ApplicationType {
-    id: number,
-    application_id: number,
-    application_updated_at: Date,
-    job_id: number
-    stageName: "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | 'Applied',
-    stage_order_id: number,
+  id: number;
+  application_id: number;
+  application_updated_at: Date;
+  job_id: number;
+  stageName: "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | 'Applied';
+  stage_order_id: number;
     candidate: CandidatesWithInterview;
 }
 
