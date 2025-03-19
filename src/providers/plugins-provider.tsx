@@ -21,7 +21,6 @@ const PluginContext = createContext<PluginContextType>({
   isPluginActive: () => false,
 });
 
-// Register all modules here
 registerPlugin(SmartTriggers);
 
 export const PluginProvider = ({ children, orgId }: Props) => {
@@ -30,6 +29,10 @@ export const PluginProvider = ({ children, orgId }: Props) => {
   useEffect(() => {
     const fetchPlugins = async () => {
       const data = await fetch(`/api/plugins/?orgId=${orgId}`);
+      if (!data.ok) {
+        setActivePlugins([]);
+        return;
+      }
       const json = await data.json();
       setActivePlugins(json.enabled);
     };

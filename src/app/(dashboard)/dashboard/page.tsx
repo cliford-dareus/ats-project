@@ -36,10 +36,7 @@ const Page = async ({ searchParams }: Props) => {
 
   const [job, hired, open_job, applications] = await Promise.all([
     get_chart_data_action(chartRange.startDate, chartRange.endDate),
-    get_hired_candidate_chart_data_action(
-      chartRange.startDate,
-      chartRange.endDate,
-    ),
+    get_hired_candidate_chart_data_action(chartRange.startDate,chartRange.endDate),
     get_open_job_chart_data_action(chartRange.startDate, chartRange.endDate),
     get_application_chart_data_action(chartRange.startDate, chartRange.endDate),
   ]);
