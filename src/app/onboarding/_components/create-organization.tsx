@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Form, FormField } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useDebounce } from "@/hooks/use-debounce";
+import { create_organization_action } from "@/server/actions/organization_actions";
 import { useOrganizationList } from "@clerk/nextjs";
 import { ArrowLeft, LucideCornerDownLeft } from "lucide-react";
 import { motion } from "motion/react";
@@ -17,7 +18,7 @@ type Props = {
   userId: string;
 };
 
-const orgSchema = z.object({
+export const orgSchema = z.object({
   name: z.string().min(2).max(100),
 });
 
@@ -40,12 +41,15 @@ const CreateOrganization = ({ userId }: Props) => {
         if (createOrganization) {
           const new_org = await createOrganization({ name: data.name });
           await setActive({ organization: new_org.id });
-          
-          // Add organization to database
-          // Add organization to user's list of organizations
-          // await user.update({organizations: [...user.organizations, new_org.id]})
-        
-          const newSearchParams = new URLSearchParams(searchParams)
+          await create_organization_action({
+            clerk_id: new_org.id,
+            name: new_org.name,
+          });
+
+          // Check if Organization is created successfully
+          // Before navigation, ensure that the organization is active
+
+          const newSearchParams = new URLSearchParams(searchParams);
           newSearchParams.set("step", "success");
           newSearchParams.set("orgId", new_org.id);
           router.push(`/onboarding?${newSearchParams.toString()}`);
@@ -107,23 +111,32 @@ const CreateOrganization = ({ userId }: Props) => {
                 },
               }}
             >
-              <div className="flex items-center gap-2">
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(submit)}>
+              <div >
+                <Form {...form} >
+                  <form onSubmit={form.handleSubmit(submit)} className="flex flex-col gap-4">
                     <FormField
                       control={form.control}
                       name="name"
                       render={({ field }) => (
-                        <Input
-                          className="md:text-6xl border-none outline-none shadow-none h-20 p-0 focus-visible:ring-0"
-                          placeholder=""
-                          {...field}
-                          autoFocus
-                        />
+                        <div className="flex items-center gap-2">
+                          <span className="text-5xl text-muted-foreground">
+                            Org::
+                          </span>
+                          <Input
+                            className="md:text-6xl border-none outline-none shadow-none h-14 p-0 focus-visible:ring-0 caret-sky-500"
+                            placeholder=""
+                            {...field}
+                            autoFocus
+                          />
+                        </div>
                       )}
                     />
                     <div className="flex items-center gap-4">
-                      <Button disabled={isCreatePending} className="rounded-full bg-blue-400 px-10">
+                      <Button
+                        type="submit"
+                        disabled={isCreatePending}
+                        className="rounded-full bg-blue-400 px-10"
+                      >
                         Next
                       </Button>
                       <div className="flex items-center gap-2 text-muted-foreground">

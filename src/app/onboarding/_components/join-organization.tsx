@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,11 +83,11 @@ const JoinOrganization = ({ userId }) => {
           </motion.div>
         </motion.div>
 
-        <div className="">
+        <motion.div className="">
           <div className="h-[300px]">
             <div className="">{ }</div>
           </div>
-        </div>
+        </motion.div>
       </motion.div>}
     </motion.div>
   );

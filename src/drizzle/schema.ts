@@ -4,10 +4,10 @@ import {relations} from "drizzle-orm";
 export const organization = mysqlTable('organization', {
     clerk_id: varchar({length: 255}).notNull().primaryKey(),
     name: varchar({length: 255}).notNull(),
-    locations: varchar({length: 255}).notNull(),
-    phone: varchar({length: 255}).notNull(),
-    email: varchar({length: 255}).notNull(),
-    color: varchar({length: 255}).notNull(),
+    locations: varchar({length: 255}).notNull().default("New-York"),
+    phone: varchar({length: 255}).notNull().default("305-555-0100"),
+    email: varchar({length: 255}).notNull().default("company@example.com"),
+    color: varchar({length: 255}).notNull().default("purple"),
     plugins: json('plugins').notNull().default({enabled: [], settings: {}})
 });
 

@@ -2,12 +2,15 @@ import {db} from "@/drizzle/db";
 import {departments, org_to_department, organization} from "@/drizzle/schema";
 import {eq} from "drizzle-orm";
 import {CACHE_TAGS, dbCache, getGlobalTag} from "@/lib/cache";
+import { organizationSchema } from "@/zod";
+import { z } from "zod";
 
-// export const create_organization = async () => {
-//     Create organization
-//     Create all departments
-//     Link all dept to ogr
-// };
+export const create_organization = async (data: z.infer<typeof organizationSchema>) => {
+    return db.insert(organization).values({
+        clerk_id: data.clerk_id,
+        name: data.name,
+    }).$returningId();
+};
 
 export const get_organization_by_id = async (org_id: string) => {
     const cacheFn = dbCache(get_organization_by_id_db, {

@@ -131,3 +131,16 @@ export const updateJobSchema = z.object({
     job_location: z.string().optional(),
     salary_up_to: z.string().optional(),
 });
+
+export const organizationSchema = z.object({
+    clerk_id: z.string(),
+    name: z.string().min(2).max(100),
+});
+
+export const inviteMemberSchema = z.object({
+  organizationId: z.string(),
+  inviterUserId: z.string(),
+  emailAddress: z.string(),
+  role: z.string(),
+  redirectUrl: z.string()
+})
