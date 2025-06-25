@@ -24,29 +24,29 @@ export const get_all_candidates = async (filter: z.infer<typeof filterCandidateT
     return cacheFn(filter);
 };
 
-export const get_candidate_with_details = async (candidateId: number) => {
+export const get_candidate_with_details = async (unsafedata: number) => {
     const result = await db
         .select({
             candidateId: candidates.id,
             candidateName: candidates.name,
             candidate_status: candidates.status,
-            stageName: stages.stage_name,
-            jobName: job_listings.name,
+            // stageName: stages.stage_name,
+            // jobName: job_listings.name,
 
-            interview_status: interviews.status,
-            interview_location: interviews.locations,
-            interview_start: interviews.start_at,
-            interview_end: interviews.end_at,
-            interview_interviewer: scoreCards.interviewer,
-            overall_recommendation: scoreCards.overall_recommendations,
+            // interview_status: interviews.status,
+            // interview_location: interviews.locations,
+            // interview_start: interviews.start_at,
+            // interview_end: interviews.end_at,
+            // interview_interviewer: scoreCards.interviewer,
+            // overall_recommendation: scoreCards.overall_recommendations,
         })
         .from(candidates)
-        .leftJoin(applications, eq(applications.candidate, candidates.id))
-        .innerJoin(stages, eq(applications.current_stage_id, stages.id))
-        .innerJoin(job_listings, eq(applications.job_id, job_listings.id))
-        .leftJoin(interviews, eq(interviews.applications_id, applications.id))
-        .leftJoin(scoreCards, eq(scoreCards.interviews_id, interviews.id))
-        .where(eq(candidates.id, candidateId));
+        // .leftJoin(applications, eq(applications.candidate, candidates.id))
+        // .leftJoin(stages, eq(applications.current_stage_id, stages.id))
+        // .leftJoin(job_listings, eq(applications.job_id, job_listings.id))
+        // .leftJoin(interviews, eq(interviews.applications_id, applications.id))
+        // .leftJoin(scoreCards, eq(scoreCards.interviews_id, interviews.id))
+        .where(eq(candidates.id, unsafedata));
     return result;
 }
 
