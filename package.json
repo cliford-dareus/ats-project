@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "email": "email dev --dir src/emails"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.9.6",
@@ -25,6 +26,7 @@
     "@radix-ui/react-switch": "^1.1.2",
     "@radix-ui/react-tabs": "^1.1.2",
     "@radix-ui/react-tooltip": "^1.1.6",
+    "@react-email/components": "0.1.1",
     "@supabase/supabase-js": "^2.48.1",
     "@tanstack/react-table": "^8.20.6",
     "bullmq": "^5.41.8",
@@ -46,14 +48,15 @@
     "mysql2": "^3.11.5",
     "next": "15.1.2",
     "pdf-parse": "^1.1.1",
-    "react": "^19.0.0",
+    "react": "19.1.0",
     "react-chartjs-2": "^5.3.0",
     "react-day-picker": "^9.6.1",
-    "react-dom": "^19.0.0",
+    "react-dom": "19.1.0",
     "react-dropzone": "^14.3.5",
     "react-hook-form": "^7.54.2",
     "react-xarrows": "^2.0.2",
     "recharts": "^2.15.1",
+    "resend": "^4.6.0",
     "svix": "^1.44.0",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
@@ -71,6 +74,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.1.2",
     "postcss": "^8",
+    "react-email": "4.0.17",
     "tailwindcss": "^3.4.1",
     "tsx": "^4.19.2",
     "typescript": "^5"

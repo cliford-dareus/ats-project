@@ -20,7 +20,7 @@ export const create_application_action = async (unsafeData: z.infer<typeof candi
         return {error: true, message: "There was an error creating your product"}
     }
 
-  return await create_application(data);
+    return await create_application(data);
 };
 
 export const update_application_stage_action = async (data: { applicationId: number, new_stage_id: number }) => {
@@ -30,7 +30,7 @@ export const update_application_stage_action = async (data: { applicationId: num
         return {error: true, message: "There was an error updating application stage"}
     }
 
-  return await update_application_stage(data);
+    return await update_application_stage(data);
 };
 
 export const get_applications_with_filter_action = async (unsafeData: z.infer<typeof filterApplicationsType>) => {
@@ -45,14 +45,14 @@ export const get_applications_with_filter_action = async (unsafeData: z.infer<ty
 };
 
 export const get_all_applications_action = async (unsafeData: z.infer<typeof filterApplicationsType>) => {
-  const { userId } = await auth();
-  const { success, data } = await filterApplicationsType.spa(unsafeData);
+    const {userId} = await auth();
+    const {success, data} = await filterApplicationsType.spa(unsafeData);
 
-  if (!userId || !success) {
-    return { error: true, message: "There was an error retrieving applications" }
-  }
+    if (!userId || !success) {
+        return {error: true, message: "There was an error retrieving applications"}
+    }
 
-  return get_all_applications(data);
+    return get_all_applications(data);
 };
 
 // export const get_application_action = async (data: { candidateId: number }) => {

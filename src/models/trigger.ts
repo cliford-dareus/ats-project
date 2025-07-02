@@ -7,7 +7,7 @@ interface TriggerInterface extends mongoose.Document {
     application_id: number;
     triggerTime: Date;
     status: string;
-}
+};
 
 const TriggerSchema = new mongoose.Schema<TriggerInterface>({
     name: { type: String, required: true },

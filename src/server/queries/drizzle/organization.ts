@@ -27,6 +27,30 @@ export const get_org_departments = async (org_id: string) => {
     return cacheFn(org_id);
 };
 
+export const add_department_in_organization = async (data: any) => {
+    return await db.transaction(async (trx) => {
+        const org = await trx.select()
+            .from(organization)
+            .where(eq(organization.clerk_id, data.orgId));
+
+        if (!org) {
+            trx.rollback();
+        };
+
+        for (const item of data.department) {
+            const dep = await trx.insert(departments).values({
+                id: item.id,
+                name: item.name
+            }).$returningId()
+
+            await trx.insert(org_to_department).values({
+                department_id: dep[0].id,
+                organization_id: org[0].clerk_id,
+            });
+        };
+    });
+};
+
 export const get_organization_by_id_db = async (org_id: string) => {
     return db.select().from(organization).where(eq(organization.clerk_id, org_id));
 };

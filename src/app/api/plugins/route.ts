@@ -3,6 +3,18 @@ import {db} from "@/drizzle/db";
 import {eq} from "drizzle-orm";
 import {organization} from "@/drizzle/schema";
 
+// export async function POST(req: NextRequest){
+//     const searchParams = req.nextUrl.searchParams;
+//     const orgId = searchParams.get('orgId');
+//
+//      if (!orgId) {
+//         console.error("orgId is missing from the query parameters.");
+//         return NextResponse.json({error: "orgId is required"}, {status: 400});
+//     }
+//
+//     // await db.insert()
+// }
+
 export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams;
     const orgId = searchParams.get('orgId');

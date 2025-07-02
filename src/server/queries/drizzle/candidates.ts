@@ -47,6 +47,7 @@ export const get_candidate_with_details = async (unsafedata: number) => {
         // .leftJoin(interviews, eq(interviews.applications_id, applications.id))
         // .leftJoin(scoreCards, eq(scoreCards.interviews_id, interviews.id))
         .where(eq(candidates.id, unsafedata));
+    console.log(result)
     return result;
 }
 
@@ -64,4 +65,3 @@ const get_all_candidates_db = async (filter: z.infer<typeof filterCandidateType>
     const len = candidate.length
     return [len, candidate];
 };
-

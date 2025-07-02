@@ -27,7 +27,8 @@ type Props = {
 
 const Page = async ({params}: Props) => {
     const {candidateId} = await params;
-
+    // Get the canditate info first then get the details
+    // maybe add a empty page when no details is available
     const [f] = await get_candidate_with_details(Number(candidateId));
     const applications = await get_user_applications(Number(candidateId));
     // const attachment = await get_candidate_attachment(f.candidateId);
@@ -43,14 +44,14 @@ const Page = async ({params}: Props) => {
                                 <AvatarFallback>CN</AvatarFallback>
                             </Avatar>
                             <div className="">
-                                <h1 className="text-xl font-bold">{f.candidateName}</h1>
+                                <h1 className="text-xl font-bold">{f?.candidateName}</h1>
                                 <p className="text-sm/5 flex items-center gap-2 text-slate-500">
                                     <FileChartColumnIncreasing size={16}/>
-                                    <span>Stage: <span className="text-blue-500">{f.stageName}</span></span>
+                                    <span>Stage: <span className="text-blue-500">{f?.stageName}</span></span>
                                 </p>
                                 <p className="text-sm/5 flex items-center gap-2 text-slate-500">
                                     <CircleUser size={16}/>
-                                    <span>Status: {f.candidate_status}</span>
+                                    <span>Status: {f?.candidate_status}</span>
                                 </p>
                             </div>
                         </div>

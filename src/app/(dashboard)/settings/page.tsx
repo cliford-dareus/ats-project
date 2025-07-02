@@ -5,6 +5,7 @@ import {Separator} from "@/components/ui/separator";
 
 const Page = async () => {
     const {orgId} = await auth()
+    console.log(orgId)
 
     return (
         <div className="p-4">

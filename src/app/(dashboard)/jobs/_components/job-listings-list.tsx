@@ -11,7 +11,7 @@ import JobPreview from "@/app/(dashboard)/jobs/_components/job-preview";
 type Props = {
     jobs: JobResponseType[];
     pageCount: number;
-}
+};
 
 const JobListingsList = ({jobs, pageCount}: Props) => {
     const [selectedRow, setSelectedRow] = useState<JobResponseType | null>(null);
@@ -24,13 +24,11 @@ const JobListingsList = ({jobs, pageCount}: Props) => {
                 onRowClick={(rowData) => setSelectedRow(rowData)}
             />
             <PaginationElement pageCount={pageCount}/>
-
             <Sheet open={!!selectedRow} onOpenChange={() => setSelectedRow(null)}>
                 <SheetContent side="right" className="sm:max-w-xl p-0">
                     {selectedRow && <JobPreview
                         data={selectedRow as JobResponseType}
                         jobs={jobs as JobResponseType[]}/>
-
                     }
                 </SheetContent>
             </Sheet>

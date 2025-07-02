@@ -1,23 +1,23 @@
 import {PluginConfig} from "@/lib/plugins-registry";
 import React from "react";
 import {useTriggers} from "@/providers/trigger-provider";
-import {StageTrigger} from "./types";
-import {activate, deactivate} from "@/plugins/smart-trigger/lifecycle";
+import {activate, deactivate} from "@/plugins/analytics/lifecycle";
+// import {StageTrigger} from "./types";
 
-const DEFAULT_TRIGGERS: StageTrigger[] = [
-    {
-        id: "1",
-        stage: "Applied",
-        actions: [
-            {
-                action_type: "MESSAGE",
-                config: { template: "welcome-email" }
-            }
-        ]
-    }
-];
+// const DEFAULT_TRIGGERS: StageTrigger[] = [
+//     {
+//         id: "1",
+//         stage: "Applied",
+//         actions: [
+//             {
+//                 action_type: "MESSAGE",
+//                 config: { template: "welcome-email" }
+//             }
+//         ]
+//     }
+// ];
 
-const SmartTriggers = () => {
+const TinyBird = () => {
     const {triggers} = useTriggers();
 
     return (
@@ -45,11 +45,11 @@ const SmartTriggers = () => {
 };
 
 const pluginConfig = {
-    id: "smart-triggers",
-    name: "Smart Triggers",
+    id: "TinyBird",
+    name: "TinyBird",
     description: "Automate recruitment workflows with triggers.",
     version: "1.0.0",
-    component: SmartTriggers,
+    component: TinyBird,
     activate: activate,
     deactivate: deactivate,
 } as PluginConfig;

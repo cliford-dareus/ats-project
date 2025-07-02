@@ -62,8 +62,9 @@ const OrganizationSwitcher = () => {
                                     key={framework.id}
                                     value={framework.organization.name}
                                     onSelect={(currentValue) => {
+                                        console.log(framework.organization.id);
                                         setValue(currentValue)
-                                        setActive({ organization: framework.organization.id})
+                                        void setActive({ organization: framework.organization.id})
                                         setOpen(false)
                                     }}
                                 >
@@ -85,3 +86,13 @@ const OrganizationSwitcher = () => {
 };
 
 export default OrganizationSwitcher;
+
+// import { OrganizationSwitcher } from "@clerk/nextjs";
+//
+// export default function Header() {
+//     return (
+//         <header>
+//             <OrganizationSwitcher />
+//         </header>
+//     );
+// }

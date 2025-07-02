@@ -81,6 +81,8 @@ const UploadCandidateResume = () => {
     };
 
     const onSave = async (data: z.infer<typeof newCandidateForm>) => {
+        
+        console.log(data);
         try {
             await create_candidate_action({ ...data, resume: resumePath! });
             router.push("/candidates"); // or wherever you want to go
@@ -89,9 +91,8 @@ const UploadCandidateResume = () => {
         }
     };
 
-    console.log(form.watch())
-
     useEffect(() => {
+        // if (!extractedText) return;
         form.reset({
             name: extractedText?.Name || "",
             email: extractedText?.["Contact Information"]?.Email || "",
@@ -99,7 +100,7 @@ const UploadCandidateResume = () => {
             location: extractedText?.["Contact Information"]?.Location || "",
         });
         setReady(true);
-    }, [extractedText]);
+    }, [extractedText, form]);
 
     // Optional: Cancel handler
     // const onCancel = () => {
