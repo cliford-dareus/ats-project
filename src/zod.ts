@@ -75,7 +75,7 @@ export const newCandidateForm = z.object({
     email: z.string().email({message: "Please enter a valid email address"}),
     phone: z.string(),
     location: z.string(),
-    resume: z.string(),
+    resume: z.string().optional(),
 });
 
 export const filterJobType = z.object({

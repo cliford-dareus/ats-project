@@ -36,17 +36,11 @@ const UploadCandidateResume = () => {
     const [loading, setLoading] = useState(false);
     const [ready, setReady] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
     const router = useRouter();
 
     const form = useForm<z.infer<typeof newCandidateForm>>({
         resolver: zodResolver(newCandidateForm),
-        defaultValues: {
-            name: "",
-            email: "",
-            phone: "",
-            location: "",
-        },
+        defaultValues: { name: "", email: "", phone: "", location: "" },
     });
 
     const onDrop = useCallback((state: boolean) => {
@@ -72,39 +66,39 @@ const UploadCandidateResume = () => {
             const parsedData = JSON.parse(jsonString);
             setResumePath(rawResponse.resumeUrlPath);
             setExtractedText(parsedData);
+            setReady(true);
         } catch (error) {
-            setError("Error processing resume. Please try again.");
+            setError(`Error processing resume. Please try again. ${error}`);
             setIsFileSelected(false);
         } finally {
             setLoading(false);
         }
     };
 
-    const onSave = async () => {
-        const data = form.getValues() as z.infer<typeof newCandidateForm>
+    const onSave = async (data: z.infer<typeof newCandidateForm>) => {
         if (data.email === "" || data.name === "" || data.phone === "" || data.location === "" || resumePath === "") {
             setError("Please fill in all required fields.");
             return;
-        }
+        };
 
         try {
             await create_candidate_action({ ...data, resume: resumePath! });
+            form.reset();
+            setReady(false)
             router.push("/candidates"); // or wherever you want to go
         } catch (error) {
-            setError("Failed to save candidate. Please try again.");
+            setError(`Failed to save candidate. Please try again. ${error}`);
         }
     };
 
     useEffect(() => {
-        // if (!extractedText) return;
         form.reset({
             name: extractedText?.Name || "",
             email: extractedText?.["Contact Information"]?.Email || "",
             phone: extractedText?.["Contact Information"]?.Phone || "",
             location: extractedText?.["Contact Information"]?.Location || "",
         });
-        setReady(true);
-    }, [extractedText]);
+    }, [ready]);
 
     // Optional: Cancel handler
     // const onCancel = () => {
@@ -173,81 +167,91 @@ const UploadCandidateResume = () => {
                             <DialogDescription>Extracted Resume</DialogDescription>
                         </div>
 
-                        {!loading && ready && (
-                            <div className="w-full border border-muted rounded p-4">
-                                <Form {...form}>
-                                    <form onSubmit={form.handleSubmit(onSave)} className="space-y-8">
-                                        <FormField
-                                            control={form.control}
-                                            name="name"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Name</FormLabel>
-                                                    <FormControl>
-                                                        <Input placeholder="Name" {...field} />
-                                                    </FormControl>
-                                                    <FormDescription>
-                                                        This is your public display name.
-                                                    </FormDescription>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="email"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Email</FormLabel>
-                                                    <FormControl>
-                                                        <Input placeholder="Email" {...field} />
-                                                    </FormControl>
-                                                    <FormDescription>
-                                                        This is your public display name.
-                                                    </FormDescription>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="phone"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Phone</FormLabel>
-                                                    <FormControl>
-                                                        <Input placeholder="Phone" {...field} />
-                                                    </FormControl>
-                                                    <FormDescription>
-                                                        This is your public display name.
-                                                    </FormDescription>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="location"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Location</FormLabel>
-                                                    <FormControl>
-                                                        <Input placeholder="Location" {...field} />
-                                                    </FormControl>
-                                                    <FormDescription>
-                                                        This is your public display name.
-                                                    </FormDescription>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <Button type="submit" disabled={loading}>
-                                            {loading ? "Saving..." : "Submit"}
-                                        </Button>
-                                    </form>
-                                </Form>
-                            </div>
-                        )}
+                        <div className="w-full border border-muted rounded p-4">
+                            <Form {...form}>
+                                <form
+                                    onSubmit={form.handleSubmit(onSave)}
+                                    className="space-y-8"
+                                >
+                                    {loading || !ready ? (
+                                        <div className="text-center">
+                                            {loading ? "Processing..." : "Preparing form..."}
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <FormField
+                                                control={form.control}
+                                                name="name"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Name</FormLabel>
+                                                        <FormControl>
+                                                            <Input placeholder="Name" {...field} />
+                                                        </FormControl>
+                                                        <FormDescription>
+                                                            This is your public display name.
+                                                        </FormDescription>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={form.control}
+                                                name="email"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Email</FormLabel>
+                                                        <FormControl>
+                                                            <Input placeholder="Email" {...field} />
+                                                        </FormControl>
+                                                        <FormDescription>
+                                                            This is your public display name.
+                                                        </FormDescription>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={form.control}
+                                                name="phone"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Phone</FormLabel>
+                                                        <FormControl>
+                                                            <Input placeholder="Phone" {...field} />
+                                                        </FormControl>
+                                                        <FormDescription>
+                                                            This is your public display name.
+                                                        </FormDescription>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={form.control}
+                                                name="location"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Location</FormLabel>
+                                                        <FormControl>
+                                                            <Input placeholder="Location" {...field} />
+                                                        </FormControl>
+                                                        <FormDescription>
+                                                            This is your public display name.
+                                                        </FormDescription>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <Button type="submit" disabled={loading}>
+                                                {loading ? "Saving..." : "Submit"}
+                                            </Button>
+                                        </>
+                                    )}
+                                </form>
+                            </Form>
+                        </div>
+
                     </div>
                 )}
             </DialogContent>
