@@ -80,9 +80,13 @@ const UploadCandidateResume = () => {
         }
     };
 
-    const onSave = async (data: z.infer<typeof newCandidateForm>) => {
-        
-        console.log(data);
+    const onSave = async () => {
+        const data = form.getValues() as z.infer<typeof newCandidateForm>
+        if (data.email === "" || data.name === "" || data.phone === "" || data.location === "" || resumePath === "") {
+            setError("Please fill in all required fields.");
+            return;
+        }
+
         try {
             await create_candidate_action({ ...data, resume: resumePath! });
             router.push("/candidates"); // or wherever you want to go
@@ -100,7 +104,7 @@ const UploadCandidateResume = () => {
             location: extractedText?.["Contact Information"]?.Location || "",
         });
         setReady(true);
-    }, [extractedText, form]);
+    }, [extractedText]);
 
     // Optional: Cancel handler
     // const onCancel = () => {
