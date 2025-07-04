@@ -19,11 +19,12 @@ import {
     revalidateDbCache,
 } from "@/lib/cache";
 import {z} from "zod";
-import {filterJobType, formSchema, JOB_STAGES} from "@/zod";
+import {filterJobType, formSchema} from "@/zod";
+import {Application, Candidate} from "@/types";
 
 interface FilterInterface extends z.infer<typeof filterJobType> {
     organization: string;
-}
+};
 
 export const create_job_listing = async (
     data: z.infer<typeof formSchema> & {
@@ -46,7 +47,7 @@ export const create_job_listing = async (
 
         if (!inserted_job) {
             trx.rollback();
-        }
+        };
 
         const techs = await trx
             .insert(technologies)
@@ -134,17 +135,16 @@ export const get_job_by_id_db = async (jobId: number) => {
         job_status: jobListingData[0].jobListing.status,
         job_created_at: jobListingData[0].jobListing.created_at,
         job_description: jobListingData[0].jobListing.description,
-        applications: [],
+        applications: [] as Application[],
     };
 
-    const applicationMap = new Map<number, any>();
+    const applicationMap = new Map<number, Application>();
 
     for (const row of jobListingData) {
         if (row.application) {
             let application = applicationMap.get(row.application.id);
 
             if (!application) {
-                // Create a new application object if it doesn't exist in the map
                 application = {
                     application_id: row.application.id,
                     job_id: row.jobListing.id,
@@ -162,8 +162,9 @@ export const get_job_by_id_db = async (jobId: number) => {
                             created_at: row.candidate.created_at,
                             updated_at: row.candidate.updated_at,
                             interview: [],
+                            attachment: [],
                         }
-                        : {}, // Candidate object or empty object
+                        : {} as Candidate, // Candidate object or empty object
                 };
                 applicationMap.set(row.application.id, application);
                 jobListing.applications.push(application);
@@ -252,8 +253,6 @@ export const get_job_listings_stages_db = async (jobId: number) => {
         .groupBy(stages.id);
 };
 
-// export const update_job_listing = async (data: Partial<filterJobType>) => {
-// }
+// export const update_job_listing = async (data: Partial<filterJobType>) => {}
 
-// export const delete_job_listing = async (data) => {
-// }
+// export const delete_job_listing = async (data) => {}

@@ -143,4 +143,9 @@ export const inviteMemberSchema = z.object({
   emailAddress: z.string(),
   role: z.string(),
   redirectUrl: z.string()
-})
+});
+
+export const departmentSchema = z.object({
+    departments: z.array(z.string()),
+    orgId: z.string()
+});

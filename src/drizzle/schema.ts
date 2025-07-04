@@ -1,4 +1,4 @@
-import {int, mysqlTable, varchar, mysqlEnum, timestamp, boolean, json} from 'drizzle-orm/mysql-core';
+import {int, mysqlTable, varchar, mysqlEnum, timestamp, boolean, json, unique} from 'drizzle-orm/mysql-core';
 import {relations} from "drizzle-orm";
 
 export const organization = mysqlTable('organization', {
@@ -41,7 +41,9 @@ export const org_to_department = mysqlTable('org_to_department', {
     id: int('id').primaryKey().autoincrement(),
     department_id: int('department_id').notNull().references(() => departments.id),
     organization_id: varchar({length: 255}).notNull().references(() => organization.clerk_id),
-});
+}, (table) => ({
+    uniqueOrgDept: unique('unique_org_dept').on(table.department_id, table.organization_id),
+}));
 
 export const usersTable = mysqlTable('users_table', {
     id: varchar({length: 255}).primaryKey(),

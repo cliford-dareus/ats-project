@@ -118,4 +118,35 @@ export interface FormErrors {
     [key: string]: string | undefined;
 };
 
+export interface Candidate {
+    id: number;
+    name: string;
+    email: string;
+    phone: string;
+    cv_path: string;
+    status: CANDIDATE_ENUM | null;
+    created_at: Date;
+    updated_at: Date;
+    interview: any[];
+    attachment: any[];
+}
+
+export interface Application {
+    application_id: number;
+    job_id: number;
+    application_updated_at: Date;
+    stageName?: JOB_ENUM | null | undefined;
+    stage_order_id?: number;
+    candidate: Candidate;
+}
+
+export interface JobListing {
+    job_id: number;
+    job_name: string;
+    job_status: string;
+    job_created_at: Date;
+    job_description: string;
+    applications: Application[];
+}
+
 

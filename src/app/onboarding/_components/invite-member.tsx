@@ -5,7 +5,7 @@ import {Input} from "@/components/ui/input";
 import {useDebounce} from "@/hooks/use-debounce";
 import {ArrowLeft} from "lucide-react";
 import {motion} from "motion/react";
-import {useSearchParams} from "next/navigation";
+import {useRouter} from "next/navigation";
 import {useEffect, useRef, useState, useTransition} from "react";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
@@ -31,7 +31,7 @@ const InviteMember = ({orgId, orgName}: Props) => {
     const [invitees, setInvitees] = useState<{ email: string, id: string }[]>([])
     const inputRef = useRef<HTMLInputElement | null>(null);
     const showText = useDebounce(true, 800);
-    // const router = useRouter();
+    const router = useRouter();
     const [isCreatePending, startCreateTransaction] = useTransition();
 
     const form = useForm({
@@ -126,7 +126,7 @@ const InviteMember = ({orgId, orgName}: Props) => {
                                     render={({field}) => {
                                         return (<div className="flex items-center gap-2">
                                             <Input
-                                                ref={inputRef}
+                                                // ref={inputRef}
                                                 className="md:text-5xl border-none outline-none shadow-none h-14 p-0 focus-visible:ring-0"
                                                 placeholder=""
                                                 {...field}
@@ -147,7 +147,7 @@ const InviteMember = ({orgId, orgName}: Props) => {
                     </Form>
 
                     <div className="">
-                        <Button>Skip</Button>
+                        <Button onClick={() => router.push("/onboarding?step=success")}>Skip</Button>
                     </div>
                 </motion.div>
 

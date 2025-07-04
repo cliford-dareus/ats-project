@@ -39,7 +39,7 @@ export function dbCache<T extends  (...args: any[]) => Promise<any>>(
     return cache(unstable_cache<T>(cb, undefined, {tags: [...tags, "*"]}))
 };
 
-export function revalidateDbCache({tag, userId, id,}: {
+export function revalidateDbCache({tag, userId, id}: {
     tag: keyof typeof CACHE_TAGS
     userId?: string
     id?: string

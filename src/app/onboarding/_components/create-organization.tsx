@@ -49,7 +49,7 @@ const CreateOrganization = ({userId}: Props) => {
                     // TODO: Check if Organization is created successfully
                     // Before navigation, ensure that the organization is active
                     const newSearchParams = new URLSearchParams(searchParams);
-                    newSearchParams.set("step", "invite");
+                    newSearchParams.set("step", "department");
                     newSearchParams.set("orgId", new_org.id);
                     newSearchParams.set("orgName", new_org.name);
                     router.push(`/onboarding?${newSearchParams.toString()}`);

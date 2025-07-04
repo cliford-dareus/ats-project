@@ -226,5 +226,22 @@ export function getRangeOption(range?: string, from?: string, to?: string) {
     return RANGE_OPTIONS[range as keyof typeof RANGE_OPTIONS]
 };
 
+export const DEPARTMENTS = [
+    "Finance",
+    "IT",
+    "Legal",
+    "Marketing",
+    "Customer Service",
+    "Sales",
+    "Recruiting",
+    "Training and Development",
+    "Compensation and Benefits",
+    "Health and Safety",
+    "HR Administration",
+    "Performance Management",
+    "Compensation and Benefits",
+    "Employee Relations"
+];
+
 export const getCalendaAvailability = () => {
 };
