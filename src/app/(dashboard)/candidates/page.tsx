@@ -38,7 +38,7 @@ const Page = async ({searchParams}: Props) => {
                 </div>
             </div>
 
-            <CandidatesList application={candidates as CandidatesResponseType[]} pageCount={pageCount}/>
+            <CandidatesList candidate={candidates as CandidatesResponseType[]} pageCount={pageCount}/>
         </div>
     );
 };

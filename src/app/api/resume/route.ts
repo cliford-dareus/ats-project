@@ -35,8 +35,8 @@ export async function POST(req: Request) {
         const result = response.response.text();
 
         // Upload resume to Supabase
-        // const resumeUrlPath = await uploadResumeToSupabase(file);
-        return NextResponse.json({result, resumeUrlPath: "https://hlufgcokypqpzoryrjgb.supabase.co/storage/v1/object/public/resume-bucket//ATS%20classic%20HR%20resume.pdf"});
+        const resumeUrlPath = await uploadResumeToSupabase(file);
+        return NextResponse.json({result, resumeUrlPath});
     } catch (e) {
         return NextResponse.json({error: e}, {status: 500});
     }

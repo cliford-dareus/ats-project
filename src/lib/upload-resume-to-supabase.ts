@@ -1,6 +1,5 @@
 import {supabase} from "@/lib/supabase";
 
-
 export const uploadResumeToSupabase = async (file: File) => {
     const {data, error} = await supabase.storage
         .from("resume-bucket")
@@ -8,7 +7,7 @@ export const uploadResumeToSupabase = async (file: File) => {
 
     if (error) {
         throw error;
-    }
+    };
 
-    return data?.path
+    return data?.fullPath;
 };

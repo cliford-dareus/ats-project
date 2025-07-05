@@ -1,14 +1,8 @@
 import React from 'react';
-import {get_candidate_with_details} from "@/server/queries/drizzle/candidates";
 import {Dialog, DialogContent, DialogTrigger} from "@/components/ui/dialog";
 import {Button} from "@/components/ui/button";
-import {CustomTabsTrigger, Tabs, TabsContent, TabsList} from "@/components/ui/tabs";
-import {BriefcaseBusiness, CircleUser, FileChartColumnIncreasing, SettingsIcon} from "lucide-react";
-import Link from "next/link";
+import {CircleUser, FileChartColumnIncreasing, SettingsIcon} from "lucide-react";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
-import CandidateSummary from "@/app/(dashboard)/candidates/[candidateId]/_components/candidate-summary";
-import CandidateResume from "@/app/(dashboard)/candidates/[candidateId]/_components/candidate-resume";
-import {get_user_applications} from "@/server/queries/drizzle/application";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -16,8 +10,8 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import CandidateInterviews from "@/app/(dashboard)/candidates/[candidateId]/_components/candidate-interviews";
-import CandidateApplications from "@/app/(dashboard)/candidates/[candidateId]/_components/candidate-applications";
+import {get_candidate_with_details_action} from "@/server/actions/candidates-actions";
+import CandidateTabs from "@/app/(dashboard)/candidates/[candidateId]/_components/candidate_tabs";
 
 type Props = {
     params: {
@@ -27,11 +21,7 @@ type Props = {
 
 const Page = async ({params}: Props) => {
     const {candidateId} = await params;
-    // Get the canditate info first then get the details
-    // maybe add a empty page when no details is available
-    const [f] = await get_candidate_with_details(Number(candidateId));
-    const applications = await get_user_applications(Number(candidateId));
-    // const attachment = await get_candidate_attachment(f.candidateId);
+    const [f] = await get_candidate_with_details_action(Number(candidateId));
 
     return (
         <div>
@@ -80,43 +70,7 @@ const Page = async ({params}: Props) => {
                     </Dialog>
                 </div>
             </div>
-
-            <div className="flex px-4 ">
-                <Tabs className="px-0 h-full w-full" defaultValue="summary">
-                    <TabsList className="bg-transparent rounded-none p-0 border-b w-full justify-start">
-                        <CustomTabsTrigger className="px-4 flex items-center gap-4" value="summary">
-                            <BriefcaseBusiness size={20}/>
-                            <Link href=''>Summary</Link>
-                        </CustomTabsTrigger>
-                        <CustomTabsTrigger className="px-4 flex items-center gap-4" value="resume">
-                            <CircleUser size={20}/>
-                            <Link href=''>Resume</Link>
-                        </CustomTabsTrigger>
-                        <CustomTabsTrigger className="px-4 flex items-center gap-4" value="application">
-                            <CircleUser size={20}/>
-                            <Link href=''>Applications</Link>
-                        </CustomTabsTrigger>
-                        <CustomTabsTrigger className="px-4 flex items-center gap-4" value="interviews">
-                            <CircleUser size={20}/>
-                            <Link href=''>Interviews</Link>
-                        </CustomTabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="summary">
-                        <CandidateSummary data={f}/>
-                    </TabsContent>
-                    <TabsContent value="resume">
-                        <CandidateResume data={f}/>
-                    </TabsContent>
-                    <TabsContent value="application">
-                        <CandidateApplications data={f}/>
-                        {/*{JSON.stringify(applications, null, 2)}*/}
-                    </TabsContent>
-                    <TabsContent value="interviews">
-                        <CandidateInterviews data={f}/>
-                    </TabsContent>
-                </Tabs>
-            </div>
+            <CandidateTabs data={f}/>
         </div>
     );
 };

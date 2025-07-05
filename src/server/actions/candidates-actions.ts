@@ -2,7 +2,7 @@
 
 import {auth} from "@clerk/nextjs/server";
 import {canCreateJob} from "@/server/permissions";
-import {create_candidate, get_all_candidates} from "@/server/queries";
+import {create_candidate, get_all_candidates, get_candidate_with_details} from "@/server/queries";
 import {get_candidate_with_stage} from "@/server/queries";
 import {z} from "zod";
 import {filterCandidateType, newCandidateForm} from "@/zod";
@@ -28,6 +28,17 @@ export const get_all_candidates_action = async (unsafeData: z.infer<typeof filte
         return {error: true, message: "There was an error creating your product"}
     }
     return await get_all_candidates(data);
+};
+
+export const get_candidate_with_details_action = async (unsafeData: number) => {
+    const {userId} = await auth();
+    const canCreate = await canCreateJob(userId);
+
+    if (!userId || !canCreate) {
+        return {error: true, message: "There was an error creating your product"}
+    }
+
+    return await get_candidate_with_details(unsafeData);
 };
 
 export const get_candidates_stage_count_action = async () => {
