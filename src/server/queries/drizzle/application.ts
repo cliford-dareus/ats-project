@@ -92,11 +92,12 @@ export const create_application = async (data: z.infer<typeof candidateForm>) =>
 };
 
 export const update_application_stage = async (data: {applicationId: number ,new_stage_id: number}) => {
+    console.log(data);
   await db
     .update(applications)
     .set({ current_stage_id: data.new_stage_id })
     .where(eq(applications.id, data.applicationId))
-  
+
   revalidateDbCache({
     tag: CACHE_TAGS.candidates,
   });

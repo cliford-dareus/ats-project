@@ -71,7 +71,7 @@ const CandidatePreview = ({data, candidates}: Props) => {
                 </span>
             </div>
 
-            <div className='flex flex-col py-4 border-b'>
+            <div className='flex flex-col border-b'>
                 <div className='p-4'>
                     <div className='flex items-center gap-4'>
                         <div

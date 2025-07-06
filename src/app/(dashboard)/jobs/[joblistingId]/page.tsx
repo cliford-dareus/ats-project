@@ -43,7 +43,7 @@ const Page = async ({params}: Props) => {
     ]);
 
     const jobs = Array.isArray(jobsResponse) ? jobsResponse[1] : [];
-    const candidates = Array.isArray(candidatesResponse) ? candidatesResponse[0] : [];
+    const candidates = Array.isArray(candidatesResponse) ? candidatesResponse[1] : [];
     const applications = Array.isArray(applicationsResponse) ? applicationsResponse : [];
     const stages = Array.isArray(stagesResponse) ? stagesResponse : [];
 

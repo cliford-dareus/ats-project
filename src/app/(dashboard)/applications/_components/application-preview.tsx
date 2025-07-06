@@ -1,22 +1,25 @@
-"use client"
+"use client";
 
-import React, {useEffect, useMemo, useRef} from 'react';
-import {DrawerHeader, DrawerTitle} from "@/components/ui/drawer";
+import React, {useEffect, useMemo, useRef, useState} from "react";
 import {Button} from "@/components/ui/button";
 import {ApplicationResponseType} from "@/types";
 import {Badge} from "@/components/ui/badge";
-import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
-import {CustomTabsTrigger, Tabs, TabsContent, TabsList} from "@/components/ui/tabs";
 import {useRouter} from "next/navigation";
 import {cn} from "@/lib/utils";
 import {
-    CalendarClock,
+    Briefcase,
+    CalendarPlus2,
     ChevronDown,
-    CircleUser,
+    Dot,
     Expand,
     File,
-    FileChartColumnIncreasing,
+    FileUser,
+    MessageCircle,
     Paperclip,
+    ScanEye,
+    Share,
+    Tally1,
+    X,
 } from "lucide-react";
 import {
     DropdownMenu,
@@ -25,9 +28,11 @@ import {
     DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
     DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
+import {SheetClose} from "@/components/ui/sheet";
 import {useTriggers} from "@/providers/trigger-provider";
 import {update_application_stage_action} from "@/server/actions/application_actions";
 import {TriggerAction} from "@/plugins/smart-trigger/types";
+import {Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbSeparator} from "@/components/ui/breadcrumb";
 
 type Props = {
     data: ApplicationResponseType;
@@ -37,6 +42,7 @@ type Props = {
 const ApplicationPreview = ({data, applications}: Props) => {
     const {initializeTrigger, stages, executeTrigger, tasks} = useTriggers();
     const ref = useRef<HTMLDivElement>(null);
+    const [open, setOpen] = useState(false);
     const router = useRouter();
 
     const filterApplications = useMemo(() => {
@@ -68,240 +74,245 @@ const ApplicationPreview = ({data, applications}: Props) => {
 
     return (
         <>
-            <div className="flex justify-between p-4">
-                <div onClick={() => {
-                    router.push(`/applications/${data.id}`);
-                }}>
-                    <Expand size={20}/>
-                </div>
-                <span>Export data</span>
-            </div>
-            <DrawerHeader className="px-0 border-b border-t p-4">
-                <div className="flex justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                        <Avatar className="w-14 h-14">
-                            <AvatarImage src="https://github.com/shadcn.png"/>
-                            <AvatarFallback>CN</AvatarFallback>
-                        </Avatar>
-                        <div className="">
-                            <DrawerTitle className="text-xl font-bold">{data.candidate_name}</DrawerTitle>
-                            <p className="text-sm/5 flex items-center gap-2 text-slate-500">
-                                <FileChartColumnIncreasing size={16}/>
-                                <span>Stage: <span className="text-blue-500">{data.current_stage}</span></span>
-                            </p>
-                            <p className="text-sm/5 flex items-center gap-2 text-slate-500">
-                                <CircleUser size={16}/>
-                                <span>Status: {data.candidate_status}</span>
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="flex gap-4">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline">Contact</Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-56">
-                                <DropdownMenuItem>Email</DropdownMenuItem>
-                                <DropdownMenuSeparator/>
-                                <DropdownMenuItem>Call</DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button>Move to <ChevronDown size={16}/></Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-56">
-                                <DropdownMenuLabel>Stages</DropdownMenuLabel>
-                                <DropdownMenuSeparator/>
-                                <DropdownMenuGroup>
-                                    {filterStage.map((stage) => (
-                                        <DropdownMenuItem
-                                            onClick={async () => {
-                                                await update_application_stage_action({
-                                                    candidateId: data.id,
-                                                    current_stage_id: stage.id
-                                                })
-                                                executeTrigger(data.id, stage.id, stage.stage_name as string)
-                                            }}
-                                            key={stage.id}
-                                        >
-                                            <p>{stage.stage_name}</p>
-                                            <div className="flex items-center gap-2">
-                                                {(JSON.parse(stage.trigger) as TriggerAction[]).map((trigger) => (
-                                                <span
-                                                    key={trigger.action_type}
-                                                    className="text-xs/3 flex items-center gap-2 text-slate-500"
-                                                >
-                                                    {trigger.action_type}
-                                                </span>
-                                            ))}</div>
-                                        </DropdownMenuItem>
-                                    ))}
-                                </DropdownMenuGroup>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                </div>
-            </DrawerHeader>
-
-            <div className="p-4 flex flex-col gap-4">
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-4 w-[30%]">
-                        <File size={16}/>
-                        <p className="text-sm/3 flex items-center gap-2 text-slate-500">Applied on 1</p>
-                    </div>
-                    <div className="flex-1 flex items-center gap-2">
-                        {filterApplications && filterApplications.map((application: ApplicationResponseType, index) => (
-                            <span
-                                key={index}
-                                className="flex items-center py-0.5 px-2 rounded bg-muted w-fit text-sm/3"
-                            >
-                                {application.job_apply}
+            <div className="flex items-center justify-between p-4 border-b">
+                <Breadcrumb>
+                    <BreadcrumbList>
+                        <BreadcrumbItem>
+                            <SheetClose className="flex items-center justify-center cursor-pointer">
+                                <X size={20}/>
+                            </SheetClose>
+                        </BreadcrumbItem>
+                        <BreadcrumbSeparator>
+                            <Tally1/>
+                        </BreadcrumbSeparator>
+                        <BreadcrumbItem>
+                            <span onClick={() => {
+                                router.push(`/candidates/${data.id}`)
+                            }} className="flex items-center justify-center cursor-pointer">
+                                <Expand size={16}/>
                             </span>
-                        ))}
+                        </BreadcrumbItem>
+                    </BreadcrumbList>
+                </Breadcrumb>
+                <span className='flex items-center justify-center text-sm text-muted-foreground sm:gap-2.5'>
+                    <Share size={16}/>
+                </span>
+            </div>
+
+            <div className="flex flex-col border-b">
+                <div className="p-4">
+                    <div className='flex items-center gap-4'>
+                        <div
+                            className='flex items-center gap-2 border border-input bg-background rounded-md px-2 py-1 text-sm font-thin self-start text-muted-foreground'
+                        >
+                            <ScanEye size={16}/>
+                            Application Preview
+                        </div>
+
+                        <span className='flex items-center gap-4 text-sm text-muted-foreground'>
+                            <CalendarPlus2 size={16}/>
+                            Created on {new Date(data.created_at).toDateString()}
+                        </span>
                     </div>
-                </div>
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-4 w-[30%]">
-                        <CalendarClock size={16}/>
-                        <p className="text-sm/3 flex items-center gap-2 text-slate-500">Years of Experience</p>
-                    </div>
-                    <span className="bg-muted text-sm/3 py-0.5">6</span>
-                </div>
-                <div className="flex gap-4">
-                    <div className="flex gap-4 w-[30%]">
-                        <Paperclip size={16}/>
-                        <p className="text-sm/3 text-slate-500">Attachment</p>
-                    </div>
-                    <div className="flex-1">
-                        <div className="flex items-center p-2 rounded bg-muted w-36 h-12 text-sm">candidate attachment
+
+                    <div className='flex justify-between mt-4'>
+                        <div className='flex flex-col'>
+                            <span className='text-2xl font-medium text-gray-900'>{data.candidate_name}</span>
+                            <Breadcrumb className=''>
+                                <BreadcrumbList>
+                                    <BreadcrumbItem>
+                                        <span className='text-sm text-muted-foreground'>{data.job_apply}</span>
+                                    </BreadcrumbItem>
+                                    <BreadcrumbSeparator>
+                                        <Dot size={20}/>
+                                    </BreadcrumbSeparator>
+                                    <BreadcrumbItem>
+                                        <span className='text-sm text-muted-foreground'>{data.current_stage}</span>
+                                    </BreadcrumbItem>
+                                    <BreadcrumbSeparator>
+                                        <Dot size={20}/>
+                                    </BreadcrumbSeparator>
+                                    <BreadcrumbItem>
+                                        <Badge
+                                            className='font-thin self-start'
+                                            variant={data.candidate_status == "Active"? "active" : data.candidate_status == "Hired"? "outline" : "default"}
+                                        >
+                                            {data.candidate_status}
+                                        </Badge>
+                                    </BreadcrumbItem>
+                                </BreadcrumbList>
+                            </Breadcrumb>
+                        </div>
+                        <div className='flex items-center gap-4 self-start'>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" className='text-sm'>
+                                        <MessageCircle size={16}/>
+                                        <span>Action</span>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-56">
+                                    <DropdownMenuItem>Email</DropdownMenuItem>
+                                    <DropdownMenuSeparator/>
+                                    <DropdownMenuItem>Call</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" className='text-sm'>
+                                        <span>Move</span>
+                                        <ChevronDown size={16}/>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-56">
+                                    <DropdownMenuLabel>Stages</DropdownMenuLabel>
+                                    <DropdownMenuSeparator/>
+                                    <DropdownMenuGroup>
+                                        {filterStage.map((stage) => (
+                                            <DropdownMenuItem
+                                                onClick={async () => {
+                                                    await update_application_stage_action({
+                                                        applicationId: data.id,
+                                                        new_stage_id: stage.id
+                                                    })
+                                                    executeTrigger(data.id, stage.id, stage.stage_name as string)
+                                                }}
+                                                key={stage.id}
+                                            >
+                                                <p>{stage.stage_name}</p>
+                                                <div className="flex items-center gap-2">
+                                                    {(JSON.parse(stage.trigger) as TriggerAction[]).map((trigger) => (
+                                                        <span
+                                                            key={trigger.action_type}
+                                                            className="text-xs/3 flex items-center gap-2 text-slate-500"
+                                                        >
+                                                            {trigger.action_type}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuGroup>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div className="px-4">
-                <Tabs defaultValue="summary" className="w-full py-2">
-                    <div className="border-b">
-                        <TabsList className="bg-transparent rounded-none p-0">
-                            <CustomTabsTrigger className="px-8 flex items-center gap-4"
-                                               value="summary">Summary</CustomTabsTrigger>
-                            <CustomTabsTrigger className="px-4 flex items-center gap-4"
-                                               value="notes">Interview</CustomTabsTrigger>
-                        </TabsList>
+                {/* This compomemt render slowly investigate why */}
+                <div className='p-4'>
+                    <div className='flex items-center gap-4 text-sm text-muted-foreground'>
+                        <CalendarPlus2 size={16}/>
+                        Pipeline
                     </div>
-
-                    <TabsContent className="" value="summary">
-                        <p className="text-sm/3 flex items-center gap-2 mt-4">stages of:<span
-                            className="text-blue-500">{data.job_apply}</span></p>
-
-                        <div className="flex items-center gap-4 w-full mt-4">
-                            <div className="w-full max-w-4xl mx-auto">
+                    <div className='border rounded-md p-4 mt-2 h-[74px]'>
+                        <div className="flex items-center gap-4 w-full">
+                            <div className="w-full max-w-3xl mx-auto">
                                 {/* Progress Bar Container */}
-                                <div className="flex items-center justify-between">
+                                <div className="flex items-center justify-between h-[40px]">
                                     {/* Progress Steps */}
                                     <div
-                                        className="flex w-full items-center overflow-scroll [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                                        className="flex w-full items-center overflow-scroll [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] h-[40px]">
                                         {
                                             stages.map((stage) => (
                                                 <div ref={ref} key={stage.id}
-                                                     className={cn(data.current_stage == stage.stage_name ? "target" : "", "relative -ml-8 first:ml-0")}>
-                                                    <svg
-                                                        className="w-[200px] h-[50px]"
-                                                        width="350" height="69" viewBox="0 0 305 69" fill="none"
-                                                        xmlns="http://www.w3.org/2000/svg">
-                                                        <path
-                                                            d="M2.08643 0.5H248.992L303.992 34.5L248.992 68.5H2.08643L57.0937 34.5L2.08643 0.5Z"
-                                                            stroke="white"
-                                                            fill={data.current_stage !== stage.stage_name ? "#cbd5e1" : "#dc2626"}
-                                                        />
-                                                    </svg>
-                                                    <p className="absolute top-1/2 -translate-y-1/2 right-1/2 translate-x-1/2 text-white text-xs">{stage.stage_name}</p>
-                                                </div>
-                                            ))
-                                        }
+                                                     className={cn(data.current_stage == stage.stage_name ? "target" : "", "relative -ml-14 first:ml-0")}>
+                                                        <svg
+                                                            className="w-[170px] h-[40px]"
+                                                            width="170" height="69" viewBox="0 0 305 69" fill="none"
+                                                            xmlns="http://www.w3.org/2000.svg">
+                                                            <path
+                                                                d="M2.08643 0.5H248.992L303.992 34.5L248.992 68.5H2.08643L57.0937 34.5L2.08643 0.5Z"
+                                                                stroke="white"
+                                                                fill={data.current_stage !== stage.stage_name ? "#cbd5e1" : "#dc2626"}
+                                                            />
+                                                        </svg>
+                                                        <p className="absolute top-1/2 -translate-y-1/2 right-1/2 translate-x-1/2 text-white text-xs">{stage.stage_name}</p>
+                                                    </div>
+                                                ))
+                                            }
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
 
-                        <div className="w-full flex flex-col border mt-4 rounded">
-                            <div className="py-2 px-4 border-b ">
-                                <h3>Details</h3>
+            <div className='px-4 flex flex-col gap-2 text-sm'>
+                <div className='flex items-center gap-4 h-[30px]'>
+                    <div className='flex gap-4 items-center w-[200px] text-muted-foreground'>
+                        <Briefcase size={18}/>
+                        Other Applications
+                    </div>
+                    <div className="flex-1 flex items-center gap-2">
+                        {filterApplications && filterApplications.map((application: ApplicationResponseType, index) => (
+                            <div key={index} className='flex items-center gap-2 border border-input bg-background rounded-md px-2 py-1 text-sm font-thin self-start text-muted-foreground'>{application.job_apply}</div>
+                        ))}
+                    </div>
+                </div>
+                    <div className='flex items-center gap-4 h-[30px]'>
+                        <div className='flex gap-4 items-center w-[200px] text-muted-foreground'>
+                            <Briefcase size={18}/>
+                            Applied on
+                        </div>
+                        <div className='flex items-center gap-2 border border-input bg-background rounded-md px-2 py-1 text-sm font-thin self-start text-muted-foreground'>Linkedin</div>
+                    </div>
+                    <div className='flex items-center gap-4 h-[30px]'>
+                        <div className='flex gap-4 items-center w-[200px] text-muted-foreground'>
+                            <FileUser size={18}/>
+                            Years of Experience
+                        </div>
+                        <div className=''>1</div>
+                    </div>
+                    <div className='flex items-center gap-4 h-[30px]'>
+                        <div className='flex gap-4 items-center w-[200px] text-muted-foreground'>
+                            <Paperclip size={18}/>
+                            Attachments
+                        </div>
+                        <div className=''>
+                            5
+                        </div>
+                    </div>
+
+                      <div className='border rounded-md mt-4 h-[80px]'>
+                        <div className='flex items-center gap-4 h-full p-4'>
+                            <div className='flex items-center justify-center rounded-md bg-purple-500 w-[50px] h-full'>
+                                <File size={18} color='white'/>
                             </div>
-                            <div className="my-4">
-                                <div className="flex items-center gap-4 py-2 px-4 h-[40px]">
-                                    <div className="w-[200px] flex gap-2 items-center">
-                                        <span className="text-sm/3 text-slate-500">Current status</span>
-                                        <Badge
-                                            className="bg-green-100 text-green-500 font-normal shadow-none">{data.candidate_status}</Badge>
-                                    </div>
-
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-sm/3 text-slate-500">Assign To</span>
-                                        <div className="flex items-center gap-4">
-                                            <Avatar className="h-5 w-5">
-                                                <AvatarImage src="https://github.com/shadcn.png"/>
-                                            </Avatar>
-                                            <span className="text-sm">{data.assign_to}</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-4 py-2 px-4 h-[40px]">
-                                    <div className="w-[200px] flex gap-2 items-center">
-                                        <span className="text-sm/3 text-slate-500">Stages</span>
-                                        <p className="text-sm text-blue-500">{data.current_stage}</p>
-                                    </div>
-
-                                    <div className="w-[200px] flex items-center gap-2">
-                                        <span className="text-sm/3 text-slate-500">Owner</span>
-                                        <p className="text-sm">{data.candidate_status}</p>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center justify-between gap-4 py-2 px-4 h-[40px]">
-                                    <div className="w-[200px] flex gap-2">
-                                        <span className="text-sm/3 text-slate-500">Applied Date</span>
-                                        <p className="text-sm">{data.candidate_id}</p>
-                                    </div>
-
-                                    {/*<div className="">*/}
-                                    {/*    <Button>Move to Next stage</Button>*/}
-                                    {/*</div>*/}
+                            <div className='flex flex-col text-sm'>
+                                <span className=''>Resume-file.pdf</span>
+                                <div className='flex gap-2'>
+                                    <span className='text-muted-foreground'>12MB</span>
+                                    <span><Dot size={18}/></span>
+                                    <span
+                                        className='text-purple-500 cursor-pointer'
+                                        onClick={() => setOpen(true)}
+                                    >
+                                        Preview
+                                    </span>
                                 </div>
                             </div>
                         </div>
-                    </TabsContent>
+                    </div>
+                </div>
 
-                    <TabsContent value="notes">
-                        <div className="w-full flex flex-col border mt-4 rounded">
-                            <div className="py-2 px-4 border-b ">
-                                <h3>Notes</h3>
-                            </div>
-                            <div className="flex py-2 px-4">
-                                <Button>Add Note</Button>
-                            </div>
-                            <div className="flex flex-col gap-4 py-2 px-4">
-                                {tasks.map((task) => (
-                                    <div key={task?.name} className="flex items-center gap-4">
-                                        <div className="w-[200px] flex gap-2 items-center">
-                                            <span className="text-sm/3 text-slate-500">Task Title</span>
-                                            <p className="text-sm">{task?.type}</p>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-sm/3 text-slate-500">Due Date</span>
-                                            {/*<p className="text-sm">{task?.triggerTime.toLocaleDateString()}</p>*/}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+
+
+                <div className='p-4 mt-4'>
+                    <div className='flex items-center justify-between text-sm text-muted-foreground'>
+                        <div className='flex items-center gap-2 border border-input bg-background rounded-md px-2 py-1 text-sm font-thin self-start text-muted-foreground'>
+                            <CalendarPlus2 size={18}/>
+                            Notes
                         </div>
-                    </TabsContent>
-                </Tabs>
-            </div>
+                        <span className='text-purple-500 cursor-pointer font-semibold'>See All</span>
+                    </div>
+                    <div className='h-full border rounded-md p-4 text-muted-foreground mt-4'>
+                        <p>No notes yet</p>
+                    </div>
+                </div>
+
         </>
     );
 };

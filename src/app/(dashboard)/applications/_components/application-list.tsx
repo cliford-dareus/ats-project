@@ -5,7 +5,7 @@ import {ApplicationResponseType} from "@/types";
 import DataTable from "@/components/data-table";
 import {columns} from "@/app/(dashboard)/applications/_components/column";
 import PaginationElement from "@/components/pagination";
-import {Sheet, SheetContent} from "@/components/ui/sheet";
+import {Sheet, SheetContent, SheetHeader, SheetTitle} from "@/components/ui/sheet";
 import ApplicationPreview from "@/app/(dashboard)/applications/_components/application-preview";
 
 type Props = {
@@ -32,7 +32,10 @@ const ApplicationList = ({application, pageCount}: Props) => {
             />
             <PaginationElement pageCount={pageCount}/>
             <Sheet open={!!selectedRow} onOpenChange={() => setSelectedRow(null)}>
-                <SheetContent side="right" className="sm:max-w-xl p-0">
+                                <SheetHeader>
+                                    <SheetTitle></SheetTitle>
+                                </SheetHeader>
+                <SheetContent side="right" className="sm:max-w-xl p-0 [&>button:first-of-type]:hidden">
                     {selectedRow && <ApplicationPreview
                         data={selectedRow as ApplicationResponseType}
                         applications={application as ApplicationResponseType[]}/>
