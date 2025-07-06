@@ -1,4 +1,4 @@
-"use server"
+"use server";
 
 import {taskQueue} from "@/lib/queue";
 import mongodb from "@/lib/mongodb";
