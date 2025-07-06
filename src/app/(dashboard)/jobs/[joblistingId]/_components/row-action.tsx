@@ -17,7 +17,7 @@ const RowAction = ({ row, table }) => {
     const disableSubmit = validRow ? Object.values(validRow)?.some(value => !value): false;
 
   return (
-      <div>
+      <>
           <DropdownMenu>
               <DropdownMenuTrigger asChild disabled={disableSubmit}>
                   <Button variant="ghost" className="h-8 w-8 p-0">
@@ -37,7 +37,7 @@ const RowAction = ({ row, table }) => {
                   <DropdownMenuItem>View payment details</DropdownMenuItem>
               </DropdownMenuContent>
           </DropdownMenu>
-      </div>
+      </>
   );
 };
 
