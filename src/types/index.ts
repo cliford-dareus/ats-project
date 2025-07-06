@@ -17,17 +17,19 @@ export type JobResponseType = {
     department: number;
     status: 'OPEN'|'CLOSED'|'DRAFT'|'ARCHIVED'|'PENDING';
     candidatesCount: number;
-}
+};
 
 export type CandidatesResponseType = {
-    id: number
-    name: string
-    email: string
-    phone: string
-    cv_path: string
-    status: "Active" | "Rejected" | "Hired" | null
-    created_at: Date
-    updated_at: Date
+    id: number;
+    name: string;
+    email: string;
+    phone: string;
+    cv_path: string;
+    status: "Active" | "Rejected" | "Hired" | null;
+    created_at: Date;
+    updated_at: Date;
+    applicationsCount: number;
+    attachmentsCount: number;
 };
 
 export type InterviewType = {
@@ -49,8 +51,8 @@ export interface ApplicationType {
   job_id: number;
   stageName: "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | 'Applied';
   stage_order_id: number;
-    candidate: CandidatesWithInterview;
-}
+  candidate: CandidatesWithInterview;
+};
 
 export type JobListingWithCandidatesType = {
     job_id: number
@@ -66,7 +68,7 @@ export type JobListingWithCandidatesType = {
     stage_order_id: number | null
     candidate_name: string | null
     candidate_id: number | null
-}
+};
 
 export type ApplicationResponseType = {
     id: number;
@@ -80,7 +82,7 @@ export type ApplicationResponseType = {
     assign_to: string;
     created_at: Date;
     updated_at: Date;
-}
+};
 
 export  type StageResponseType = {
     id: number;
@@ -91,7 +93,7 @@ export  type StageResponseType = {
     color: string | null;
     need_schedule: boolean | null;
     trigger: any;
-}
+};
 
 export type TriggerResponseType = {
     id: number;
@@ -100,7 +102,7 @@ export type TriggerResponseType = {
     config: Record<string, never>;
     created_at: Date;
     updated_at: Date;
-}
+};
 
 export type ExtractResponseType = {
     Name: string,
@@ -129,7 +131,7 @@ export interface Candidate {
     updated_at: Date;
     interview: any[];
     attachment: any[];
-}
+};
 
 export interface Application {
     application_id: number;
@@ -138,7 +140,7 @@ export interface Application {
     stageName?: JOB_ENUM | null | undefined;
     stage_order_id?: number;
     candidate: Candidate;
-}
+};
 
 export interface JobListing {
     job_id: number;
@@ -147,6 +149,14 @@ export interface JobListing {
     job_created_at: Date;
     job_description: string;
     applications: Application[];
-}
+};
 
 
+export interface CandidateWithDetails {
+    candidates: Candidate;
+    applications: Application[] | null;
+    stages: StageResponseType[] | null;
+    job_listings: JobListing[] | null;
+    interviews: InterviewType[] | null;
+    scoreCards: any[] | null;
+};

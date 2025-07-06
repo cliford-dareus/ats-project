@@ -72,12 +72,18 @@ const DataTable = <T extends object>({columns, data, onRowClick, status}: Props<
                     return (
                         <TableRow
                             key={row.id}
-                            onClick={() => onRowClick?.(row.original)}
+
                             className="cursor-pointer hover:bg-muted/50"
                         >
                             {row.getVisibleCells().map(cell => {
                                 return (
-                                    <TableCell key={cell.id}>
+                                    <TableCell
+                                        key={cell.id}
+                                        onClick={() => {
+                                            if (cell.column.id === "action" || cell.column.id === "select") return;
+                                            onRowClick?.(row.original)
+                                        }}
+                                    >
                                         {flexRender(
                                             cell.column.columnDef.cell,
                                             cell.getContext()

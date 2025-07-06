@@ -24,11 +24,11 @@ export async function POST(req: Request) {
                           - Name
                           - Contact Information
                           - Skills
-                          - Work Experience: 
+                          - Work Experience:
                             [{date, location, title, description}]
                           - Education
                             [{date, location, title, description}]
-                          
+
                           Resume Text: ${extractedText}`;
 
         const response = await model.generateContent(prompt);
@@ -40,7 +40,4 @@ export async function POST(req: Request) {
     } catch (e) {
         return NextResponse.json({error: e}, {status: 500});
     }
-}
-
-
-
+};
