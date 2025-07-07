@@ -40,18 +40,14 @@ export type InterviewType = {
     interview_location: string,
 };
 
-export interface CandidatesWithInterview extends CandidatesResponseType{
-    interviews: InterviewType;
-};
-
 export interface ApplicationType {
   id: number;
   application_id: number;
   application_updated_at: Date;
   job_id: number;
-  stageName: "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | 'Applied';
-  stage_order_id: number;
-  candidate: CandidatesWithInterview;
+  stageName: "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | 'Applied' | null | undefined;
+  stage_order_id: number | undefined;
+  candidate: Candidate;
 };
 
 export type JobListingWithCandidatesType = {
@@ -115,11 +111,9 @@ export type ExtractResponseType = {
     "Work Experience": string[],
     Education: string[]
 };
-
 export interface FormErrors {
     [key: string]: string | undefined;
 };
-
 export interface Candidate {
     id: number;
     name: string;
@@ -132,7 +126,6 @@ export interface Candidate {
     interview: any[];
     attachment: any[];
 };
-
 export interface Application {
     application_id: number;
     job_id: number;
@@ -141,7 +134,6 @@ export interface Application {
     stage_order_id?: number;
     candidate: Candidate;
 };
-
 export interface JobListing {
     job_id: number;
     job_name: string;
@@ -150,8 +142,6 @@ export interface JobListing {
     job_description: string;
     applications: Application[];
 };
-
-
 export interface CandidateWithDetails {
     candidates: Candidate;
     applications: Application[] | null;
@@ -160,3 +150,27 @@ export interface CandidateWithDetails {
     interviews: InterviewType[] | null;
     scoreCards: any[] | null;
 };
+
+export type UserType = {
+    name: string;
+    image: string;
+    email: string;
+    age: number;
+};
+
+export type NoteType = {
+    _id: string;
+    content: string;
+    type: "POSITIVE" | "NEGATIVE" | "NEUTRAL";
+    note_parent_id: string;
+    note_parent_type: string;
+    created_at: Date;
+    updated_at: Date;
+    user: UserType;
+};
+
+export type NoteResponseType = {
+    notes: NoteType[];
+    total: number;
+};
+

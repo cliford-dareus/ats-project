@@ -20,7 +20,7 @@ import {
 } from "@/lib/cache";
 import {z} from "zod";
 import {filterJobType, formSchema} from "@/zod";
-import {Application, Candidate} from "@/types";
+import {Application, ApplicationType, Candidate} from "@/types";
 
 interface FilterInterface extends z.infer<typeof filterJobType> {
     organization: string;
@@ -135,10 +135,10 @@ export const get_job_by_id_db = async (jobId: number) => {
         job_status: jobListingData[0].jobListing.status,
         job_created_at: jobListingData[0].jobListing.created_at,
         job_description: jobListingData[0].jobListing.description,
-        applications: [] as Application[],
+        applications: [] as ApplicationType[],
     };
 
-    const applicationMap = new Map<number, Application>();
+    const applicationMap = new Map<number, ApplicationType>();
 
     for (const row of jobListingData) {
         if (row.application) {
@@ -146,6 +146,7 @@ export const get_job_by_id_db = async (jobId: number) => {
 
             if (!application) {
                 application = {
+                    id: row.application.id,
                     application_id: row.application.id,
                     job_id: row.jobListing.id,
                     application_updated_at: row.application.updated_at,

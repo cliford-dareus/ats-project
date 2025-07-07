@@ -34,4 +34,4 @@ export const getTasks = async () => {
 
 
 export const cancelTask = async (id: number) => {
-}
+};

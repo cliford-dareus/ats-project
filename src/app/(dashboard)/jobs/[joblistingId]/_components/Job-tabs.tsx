@@ -73,7 +73,7 @@ const JobTabs = ({ applications, stages, jobs, joblistingId, job_name }: Props) 
                             </CustomTabsTrigger>
                         ))}
                     </TabsList>
-                    
+
                     <div className="flex items-center gap-4">
                       <LucideEdit size={18} />
                       <LucideTrash size={18} />

@@ -2,7 +2,7 @@
 
 import React, {useEffect, useMemo, useRef, useState} from "react";
 import {Button} from "@/components/ui/button";
-import {ApplicationResponseType} from "@/types";
+import {ApplicationResponseType, NoteResponseType} from "@/types";
 import {Badge} from "@/components/ui/badge";
 import {useRouter} from "next/navigation";
 import {cn} from "@/lib/utils";
@@ -33,6 +33,11 @@ import {useTriggers} from "@/providers/trigger-provider";
 import {update_application_stage_action} from "@/server/actions/application_actions";
 import {TriggerAction} from "@/plugins/smart-trigger/types";
 import {Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbSeparator} from "@/components/ui/breadcrumb";
+import {get_application_notes} from "@/server/queries/mongo/note";
+import {Dialog, DialogTitle} from "@/components/ui/dialog";
+import CreateNoteModal from "@/components/modal/create-note-modal";
+import {DialogContent, DialogTrigger} from "@/components/ui/dialog";
+import {Skeleton} from "@/components/ui/skeleton";
 
 type Props = {
     data: ApplicationResponseType;
@@ -43,6 +48,7 @@ const ApplicationPreview = ({data, applications}: Props) => {
     const {initializeTrigger, stages, executeTrigger, tasks} = useTriggers();
     const ref = useRef<HTMLDivElement>(null);
     const [open, setOpen] = useState(false);
+    const [notes, setNotes] = useState<NoteResponseType>({notes: [], total: 0});
     const router = useRouter();
 
     const filterApplications = useMemo(() => {
@@ -54,11 +60,21 @@ const ApplicationPreview = ({data, applications}: Props) => {
         return stages.slice(currentStageIndex + 1);
     }, [data, stages]);
 
+
     useEffect(() => {
         const isPreviewingApplication = filterApplications.every(app => app.candidate_name == data.candidate_name);
         if (!isPreviewingApplication) return;
         initializeTrigger(data.job_id);
     }, [data.job_id, initializeTrigger]);
+
+    useEffect(() => {
+        const fetchNotes = async () => {
+            const notes = await get_application_notes({parent_id: `app_${data.id}`, limit: 1, offset: 0});
+            const parsedNotes = JSON.parse(notes as string) as NoteResponseType;
+            setNotes(parsedNotes);
+        };
+        fetchNotes();
+    }, [data.id]);
 
     useEffect(() => {
         if (ref.current?.classList.contains('target')) {
@@ -103,13 +119,13 @@ const ApplicationPreview = ({data, applications}: Props) => {
                 <div className="p-4">
                     <div className='flex items-center gap-4'>
                         <div
-                            className='flex items-center gap-2 border border-input bg-background rounded-md px-2 py-1 text-sm font-thin self-start text-muted-foreground'
+                            className='flex items-center gap-2 border border-input bg-background rounded-md px-4 py-1 text-sm font-thin self-start text-muted-foreground'
                         >
                             <ScanEye size={16}/>
                             Application Preview
                         </div>
 
-                        <span className='flex items-center gap-4 text-sm text-muted-foreground'>
+                        <span className='flex items-center gap-2 text-sm text-muted-foreground'>
                             <CalendarPlus2 size={16}/>
                             Created on {new Date(data.created_at).toDateString()}
                         </span>
@@ -225,7 +241,7 @@ const ApplicationPreview = ({data, applications}: Props) => {
                                                             <path
                                                                 d="M2.08643 0.5H248.992L303.992 34.5L248.992 68.5H2.08643L57.0937 34.5L2.08643 0.5Z"
                                                                 stroke="white"
-                                                                fill={data.current_stage !== stage.stage_name ? "#cbd5e1" : "#dc2626"}
+                                                                fill={data.current_stage !== stage.stage_name ? "#cbd5e1" : "purple"}
                                                             />
                                                         </svg>
                                                         <p className="absolute top-1/2 -translate-y-1/2 right-1/2 translate-x-1/2 text-white text-xs">{stage.stage_name}</p>
@@ -238,11 +254,11 @@ const ApplicationPreview = ({data, applications}: Props) => {
                             </div>
                         </div>
                     </div>
-                </div>
+            </div>
 
             <div className='px-4 flex flex-col gap-2 text-sm'>
                 <div className='flex items-center gap-4 h-[30px]'>
-                    <div className='flex gap-4 items-center w-[200px] text-muted-foreground'>
+                    <div className='flex gap-2 items-center w-[200px] text-muted-foreground'>
                         <Briefcase size={18}/>
                         Other Applications
                     </div>
@@ -252,32 +268,32 @@ const ApplicationPreview = ({data, applications}: Props) => {
                         ))}
                     </div>
                 </div>
-                    <div className='flex items-center gap-4 h-[30px]'>
-                        <div className='flex gap-4 items-center w-[200px] text-muted-foreground'>
+                <div className='flex items-center gap-4 h-[30px]'>
+                        <div className='flex gap-2 items-center w-[200px] text-muted-foreground'>
                             <Briefcase size={18}/>
                             Applied on
                         </div>
                         <div className='flex items-center gap-2 border border-input bg-background rounded-md px-2 py-1 text-sm font-thin self-start text-muted-foreground'>Linkedin</div>
-                    </div>
-                    <div className='flex items-center gap-4 h-[30px]'>
-                        <div className='flex gap-4 items-center w-[200px] text-muted-foreground'>
+                </div>
+                <div className='flex items-center gap-4 h-[30px]'>
+                        <div className='flex gap-2 items-center w-[200px] text-muted-foreground'>
                             <FileUser size={18}/>
                             Years of Experience
                         </div>
                         <div className=''>1</div>
-                    </div>
-                    <div className='flex items-center gap-4 h-[30px]'>
-                        <div className='flex gap-4 items-center w-[200px] text-muted-foreground'>
+                </div>
+                <div className='flex items-center gap-4 h-[30px]'>
+                        <div className='flex gap-2 items-center w-[200px] text-muted-foreground'>
                             <Paperclip size={18}/>
                             Attachments
                         </div>
                         <div className=''>
                             5
                         </div>
-                    </div>
+                </div>
 
-                      <div className='border rounded-md mt-4 h-[80px]'>
-                        <div className='flex items-center gap-4 h-full p-4'>
+                <div className='border rounded-md mt-4 h-[80px]'>
+                        <div className='flex items-center gap-2 h-full p-4'>
                             <div className='flex items-center justify-center rounded-md bg-purple-500 w-[50px] h-full'>
                                 <File size={18} color='white'/>
                             </div>
@@ -295,24 +311,51 @@ const ApplicationPreview = ({data, applications}: Props) => {
                                 </div>
                             </div>
                         </div>
+                </div>
+            </div>
+
+            <div className='p-4 mt-4'>
+                <div className='flex items-center justify-between text-sm text-muted-foreground'>
+                    <div className='flex items-center gap-2 border border-input bg-background rounded-md px-4 py-1 text-sm font-thin self-start text-muted-foreground'>
+                        <CalendarPlus2 size={18}/>
+                        Notes({notes?.total})
                     </div>
+                    <span className='text-purple-500 cursor-pointer font-semibold'>See All</span>
                 </div>
 
-
-
-                <div className='p-4 mt-4'>
-                    <div className='flex items-center justify-between text-sm text-muted-foreground'>
-                        <div className='flex items-center gap-2 border border-input bg-background rounded-md px-2 py-1 text-sm font-thin self-start text-muted-foreground'>
-                            <CalendarPlus2 size={18}/>
-                            Notes
+                {notes?.notes.length > 0 ?
+                <div className='h-full border rounded-md text-muted-foreground mt-4 text-sm'>
+                    {notes?.notes.map((note) => (
+                        <div key={note._id}>
+                            <div className='flex justify-between items-center gap-4 p-4 border-b'>
+                                <span className='font-medium text-black'>{note.user.name}</span>
+                                <span>{new Date(note.created_at).toDateString()}</span>
+                            </div>
+                            <div className='p-4 h-[100px]'>
+                                <p>{note.content}</p>
+                            </div>
                         </div>
-                        <span className='text-purple-500 cursor-pointer font-semibold'>See All</span>
-                    </div>
-                    <div className='h-full border rounded-md p-4 text-muted-foreground mt-4'>
-                        <p>No notes yet</p>
-                    </div>
-                </div>
+                    ))}
+                </div> :
+                <div className='h-full border rounded-md text-muted-foreground mt-4 text-sm'>
+                        <div>
+                            <div className='h-[53px] flex justify-between items-center gap-4 p-4 border-b'></div>
+                            <Skeleton className='p-4 h-[100px]'>
+                                <p>No notes yet</p>
+                            </Skeleton>
+                        </div>
+                </div>}
 
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button >Add Note</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogTitle>Add Note</DialogTitle>
+                        <CreateNoteModal prefix="app" parent_id={data.id} parent_type="application"/>
+                    </DialogContent>
+                </Dialog>
+            </div>
         </>
     );
 };

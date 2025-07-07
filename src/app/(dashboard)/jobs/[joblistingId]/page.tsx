@@ -32,7 +32,7 @@ const Page = async ({params}: Props) => {
 
     const [
         jobsResponse,
-        applicationsResponse,
+        singleJobResponse,
         candidatesResponse,
         stagesResponse,
     ] = await Promise.all([
@@ -44,7 +44,7 @@ const Page = async ({params}: Props) => {
 
     const jobs = Array.isArray(jobsResponse) ? jobsResponse[1] : [];
     const candidates = Array.isArray(candidatesResponse) ? candidatesResponse[1] : [];
-    const applications = Array.isArray(applicationsResponse) ? applicationsResponse : [];
+    const singleJob = Array.isArray(singleJobResponse) ? singleJobResponse : [];
     const stages = Array.isArray(stagesResponse) ? stagesResponse : [];
 
     return (
@@ -53,16 +53,16 @@ const Page = async ({params}: Props) => {
                 <div>
                     <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-4">
-                            <h1 className="font-bold text-xl">{applications[0].job_name}</h1>
+                            <h1 className="font-bold text-xl">{singleJob[0].job_name}</h1>
                             <Badge className="bg-green-100 text-xs text-green-500 font-normal shadow-none">
-                                {applications[0].job_status}
+                                {singleJob[0].job_status}
                             </Badge>
                         </div>
 
                         <div className="flex items-center gap-2">
                             <p className="text-xs text-slate-500">
                                 Published
-                                on{" "}{applications[0].job_created_at.toString().split(" ").slice(0, 3).join(" ")}
+                                on{" "}{singleJob[0].job_created_at.toString().split(" ").slice(0, 3).join(" ")}
                             </p>
                         </div>
                     </div>
@@ -82,11 +82,11 @@ const Page = async ({params}: Props) => {
             </div>
 
             <JobTabs
-                job_name={applications[0].job_name}
+                job_name={singleJob[0].job_name}
                 jobs={jobs as JobResponseType[]}
                 stages={stages as StageResponseType[]}
                 joblistingId={joblistingId}
-                applications={applications[0].applications as ApplicationType[]}
+                applications={singleJob[0].applications as ApplicationType[]}
             />
         </div>
     );
