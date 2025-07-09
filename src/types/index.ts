@@ -43,6 +43,7 @@ export type InterviewType = {
 export interface ApplicationType {
   id: number;
   application_id: number;
+  application_created_at: Date;
   application_updated_at: Date;
   job_id: number;
   stageName: "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | 'Applied' | null | undefined;
@@ -173,4 +174,3 @@ export type NoteResponseType = {
     notes: NoteType[];
     total: number;
 };
-

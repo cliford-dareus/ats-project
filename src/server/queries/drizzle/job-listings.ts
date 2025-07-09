@@ -149,6 +149,7 @@ export const get_job_by_id_db = async (jobId: number) => {
                     id: row.application.id,
                     application_id: row.application.id,
                     job_id: row.jobListing.id,
+                    application_created_at: row.application.created_at,
                     application_updated_at: row.application.updated_at,
                     stageName: row.stage?.stage_name,
                     stage_order_id: row.stage?.stage_order_id,
@@ -201,8 +202,7 @@ export const get_job_by_id_db = async (jobId: number) => {
 export const get_all_job_listings_db = async (filter: FilterInterface) => {
     const filters: SQL[] = [];
 
-    if (filter.location)
-        filters.push(inArray(job_listings.location, filter.location as string[]));
+    if (filter.location) filters.push(inArray(job_listings.location, filter.location as string[]));
     // if(filter.department) filters.push(inArray(job_listings.department, filter.department as string[]))
     // if(filter.keywords) filters.push(inArray(job_listings.keywords, filter.keywords as string[]))
     // if(filter.status) filters.push(eq(job_listings.status, filter.status))
