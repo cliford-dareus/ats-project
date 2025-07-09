@@ -1,7 +1,7 @@
 import pdfParse from "pdf-parse";
 import {NextResponse} from "next/server";
 import {GoogleGenerativeAI} from "@google/generative-ai";
-import {uploadResumeToSupabase} from "@/lib/upload-resume-to-supabase";
+import {uploadFileToSupabase} from "@/lib/upload-file-to-supabase";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY!);
 
@@ -13,7 +13,7 @@ export async function POST(req: Request) {
 
         if(!file) {
             return NextResponse.json({error: "No file provided"}, {status: 400});
-        }
+        };
 
         const bufferArray = file.arrayBuffer();
         const buffer = Buffer.from(await bufferArray);
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
         const result = response.response.text();
 
         // Upload resume to Supabase
-        const resumeUrlPath = await uploadResumeToSupabase(file);
+        const resumeUrlPath = await uploadFileToSupabase(file);
         return NextResponse.json({result, resumeUrlPath});
     } catch (e) {
         return NextResponse.json({error: e}, {status: 500});

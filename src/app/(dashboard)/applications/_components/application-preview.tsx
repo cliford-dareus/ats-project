@@ -38,6 +38,7 @@ import {Dialog, DialogTitle} from "@/components/ui/dialog";
 import CreateNoteModal from "@/components/modal/create-note-modal";
 import {DialogContent, DialogTrigger} from "@/components/ui/dialog";
 import {Skeleton} from "@/components/ui/skeleton";
+import {get_candidate_attachments} from "@/server/queries/mongo/attachment";
 
 type Props = {
     data: ApplicationResponseType;
@@ -49,6 +50,7 @@ const ApplicationPreview = ({data, applications}: Props) => {
     const ref = useRef<HTMLDivElement>(null);
     const [open, setOpen] = useState(false);
     const [notes, setNotes] = useState<NoteResponseType>({notes: [], total: 0});
+    const [attachments, setAttachments] = useState<any[]>([]);
     const router = useRouter();
 
     const filterApplications = useMemo(() => {
@@ -73,8 +75,17 @@ const ApplicationPreview = ({data, applications}: Props) => {
             const parsedNotes = JSON.parse(notes as string) as NoteResponseType;
             setNotes(parsedNotes);
         };
+
         fetchNotes();
-    }, [data.id]);
+    }, [data]);
+
+    useEffect(() => {
+        const fetchAttachments = async () => {
+            const attachments = await get_candidate_attachments(data.candidate_id);
+            setAttachments(JSON.parse(attachments));
+        };
+        fetchAttachments();
+    }, [data]);
 
     useEffect(() => {
         if (ref.current?.classList.contains('target')) {
@@ -103,7 +114,7 @@ const ApplicationPreview = ({data, applications}: Props) => {
                         </BreadcrumbSeparator>
                         <BreadcrumbItem>
                             <span onClick={() => {
-                                router.push(`/candidates/${data.id}`)
+                                router.push(`/applications/${data.id}`)
                             }} className="flex items-center justify-center cursor-pointer">
                                 <Expand size={16}/>
                             </span>
@@ -288,7 +299,7 @@ const ApplicationPreview = ({data, applications}: Props) => {
                             Attachments
                         </div>
                         <div className=''>
-                            5
+                            {attachments.length}
                         </div>
                 </div>
 

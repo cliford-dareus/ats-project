@@ -161,7 +161,7 @@ export const get_applications_with_filter_db = async (filter: z.infer<typeof fil
       job_apply: job_listings.name,
       job_id: applications.job_id,
       job_org: job_listings.organization,
-      candidates_id: candidates.id,
+      candidate_id: candidates.id,
       candidate_name: candidates.name,
       candidate_status: candidates.status,
       location: job_listings.location,

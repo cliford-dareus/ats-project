@@ -1,6 +1,6 @@
 "use client";
 
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {useRouter} from "next/navigation";
 import {Button} from "@/components/ui/button";
 import {CandidatesResponseType} from "@/types";
@@ -8,6 +8,7 @@ import {Bot, Briefcase, CalendarPlus2, Dot, Expand, File, FileText, FileUser, Ma
 import {SheetClose} from "@/components/ui/sheet";
 import {Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbSeparator} from "@/components/ui/breadcrumb";
 import {Badge} from '@/components/ui/badge';
+import {get_candidate_attachments} from "@/server/queries/mongo/attachment";
 
 type Props = {
     data: CandidatesResponseType;
@@ -17,6 +18,7 @@ type Props = {
 const CandidatePreview = ({data, candidates}: Props) => {
     const [open, setOpen] = useState(false);
     const [isPreviewing, setIsPreviewing] = useState<boolean>(false);
+    const [attachments, setAttachments] = useState<any[]>([]);
     const [generatedSummary, setGeneratedSummary] = useState<string>("");
     const router = useRouter();
 
@@ -43,6 +45,14 @@ const CandidatePreview = ({data, candidates}: Props) => {
             setIsPreviewing(false);
         }
     };
+
+    useEffect(() => {
+        const fetchAttachments = async () => {
+            const attachments = await get_candidate_attachments(data.id);
+            setAttachments(JSON.parse(attachments));
+        };
+        fetchAttachments();
+    }, [data]);
 
     return (
         <>
@@ -147,7 +157,7 @@ const CandidatePreview = ({data, candidates}: Props) => {
                             Attachments
                         </div>
                         <div className=''>
-                            {data.attachmentsCount}
+                            {attachments.length}
                         </div>
                     </div>
                 </div>

@@ -1,5 +1,4 @@
 import React from "react";
-import {Dialog, DialogContent, DialogTrigger} from "@/components/ui/dialog";
 import {Button} from "@/components/ui/button";
 import {CircleUser, FileChartColumnIncreasing, SettingsIcon} from "lucide-react";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
@@ -13,6 +12,7 @@ import {
 import {get_candidate_with_details_action} from "@/server/actions/candidates-actions";
 import CandidateTabs from "@/app/(dashboard)/candidates/[candidateId]/_components/candidate_tabs";
 import {CandidateWithDetails} from "@/types";
+import AddCandidateAttachmentModal from "@/components/modal/upload_candidate_attachment_modal";
 
 type Props = {
     params: {
@@ -28,7 +28,7 @@ const Page = async ({params}: Props) => {
         result && typeof result === "object" && "error" in result
             ? result.error
             : null;
-            
+
     if (error) {
         console.error("Error fetching job listings:", error);
         return <div>Error loading jobs.</div>;
@@ -70,15 +70,20 @@ const Page = async ({params}: Props) => {
                             <DropdownMenuItem>Call</DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
-                    <Dialog>
-                        <DialogTrigger asChild>
+
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
                             <Button>
-                                <SettingsIcon/>
+                                <SettingsIcon size={16}/>
+                                Settings
                             </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                        </DialogContent>
-                    </Dialog>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-56">
+                            <DropdownMenuSeparator/>
+                            <DropdownMenuItem>Call</DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
                 </div>
             </div>
             <CandidateTabs data={candidate}/>
