@@ -19,6 +19,7 @@ import { redirect } from "next/navigation";
 import { PluginProvider } from "@/providers/plugins-provider";
 import AuthDropdown from "@/components/auth-dropdown";
 import Provider from "@/providers/providers";
+import { initializePlugins } from "@/lib/plugin-lifecycle";
 
 type Props = {
   children: React.ReactNode;
@@ -43,6 +44,8 @@ const Layout = async ({ children }: Props) => {
   const result = await get_all_candidates_action({ limit: 0, offset: 0 });
   const candidate = Array.isArray(result) ? result[1] : [];
   const stagesCount = await get_candidates_stage_count_action();
+
+//   await initializePlugins(orgId as string);
 
   return (
     <PluginProvider orgId={orgId as string}>

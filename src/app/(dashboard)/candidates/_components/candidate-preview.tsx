@@ -25,7 +25,7 @@ const CandidatePreview = ({data, candidates}: Props) => {
     const generateFn = async () => {
         setIsPreviewing(true);
         try {
-            const response = await fetch("/api/resume/summary", {
+            const response = await fetch("/api/upload/summary", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -34,11 +34,11 @@ const CandidatePreview = ({data, candidates}: Props) => {
             });
 
             if (!response.ok){
-                throw new Error(response.statusText);
+                return;
             };
 
-            const datas = await response.json();
-            setGeneratedSummary(datas.result);
+            const summaryData = await response.json();
+            setGeneratedSummary(summaryData.result);
         } catch (error) {
             console.log(error);
         } finally {
@@ -49,9 +49,10 @@ const CandidatePreview = ({data, candidates}: Props) => {
     useEffect(() => {
         const fetchAttachments = async () => {
             const attachments = await get_candidate_attachments(data.id);
-            setAttachments(JSON.parse(attachments));
+            const parsedAttachments = JSON.parse(attachments);
+            setAttachments(parsedAttachments);
         };
-        fetchAttachments();
+        fetchAttachments().then(r => console.log(r) );
     }, [data]);
 
     return (

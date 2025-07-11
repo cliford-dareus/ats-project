@@ -2,10 +2,10 @@
 import ManagePlugins from "@/components/manage-plugins";
 import {auth} from "@clerk/nextjs/server";
 import {Separator} from "@/components/ui/separator";
+import {getPlugins} from "@/lib/plugins-registry";
 
 const Page = async () => {
-    const {orgId} = await auth()
-    console.log(orgId)
+    const {orgId} = await auth();
 
     return (
         <div className="p-4">

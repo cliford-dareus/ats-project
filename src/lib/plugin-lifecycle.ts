@@ -1,3 +1,4 @@
+"use client"
 
 import {getPlugins} from "@/lib/plugins-registry";
 // import {queries} from "@/drizzle/queries";

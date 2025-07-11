@@ -1,7 +1,7 @@
 'use client'
 
 import {ApplicationType, StageResponseType} from "@/types";
-import React from "react";
+import React, {useEffect, useState} from "react";
 import DropIndicator from "@/components/kanban/drop-indicator";
 import {motion} from "motion/react";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
@@ -22,33 +22,32 @@ type Props = {
 
 const Card = ({data, handleDragStart, stage, tasks}: Props) => {
 
-    //
-    // const [timeLeft, setTimeLeft] = useState(
-    //     tasks.map(() => ({
-    //         hours: 0,
-    //         minutes: 0,
-    //         expires: false,
-    //     }))
-    // );
-    //
-    // useEffect(() => {
-    //     const updateTimeLeft = () => {
-    //         const updatedTimeLeft = tasks.map(task => {
-    //             const expiredTime = new Date(task.triggerTime!).getTime();
-    //             const timeLeftMs = expiredTime - Date.now();
-    //             const timeLeftSeconds = Math.max(timeLeftMs / 1000, 0); // Prevent negative values
-    //             const hours = Math.floor(timeLeftSeconds / 3600);
-    //             const minutes = Math.floor((timeLeftSeconds % 3600) / 60);
-    //             return { hours, minutes, expires: Date.now() > expiredTime };
-    //         });
-    //         setTimeLeft(updatedTimeLeft);
-    //     };
-    //
-    //     updateTimeLeft();
-    //     const interval = setInterval(updateTimeLeft, 2000);
-    //
-    //     return () => clearInterval(interval);
-    // }, []);
+    const [timeLeft, setTimeLeft] = useState(
+        tasks.map(() => ({
+            hours: 0,
+            minutes: 0,
+            expires: false,
+        }))
+    );
+
+    useEffect(() => {
+        const updateTimeLeft = () => {
+            const updatedTimeLeft = tasks.map(task => {
+                const expiredTime = new Date(task.triggerTime!).getTime();
+                const timeLeftMs = expiredTime - Date.now();
+                const timeLeftSeconds = Math.max(timeLeftMs / 1000, 0); // Prevent negative values
+                const hours = Math.floor(timeLeftSeconds / 3600);
+                const minutes = Math.floor((timeLeftSeconds % 3600) / 60);
+                return { hours, minutes, expires: Date.now() > expiredTime };
+            });
+            setTimeLeft(updatedTimeLeft);
+        };
+
+        updateTimeLeft();
+        const interval = setInterval(updateTimeLeft, 2000);
+
+        return () => clearInterval(interval);
+    }, []);
 
     return (
         <div>

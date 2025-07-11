@@ -21,8 +21,6 @@ const Page = async ({searchParams}: Props) => {
     const locations = location ? (location as string).split(",") : undefined;
     // const departments = location ? (location as string).split(',') : undefined;
 
-    console.log(orgId)
-
     const result = await get_all_job_listings_action({
         offset,
         limit,

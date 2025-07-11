@@ -1,4 +1,3 @@
-// lib/queue.js
 import { Queue, Worker } from 'bullmq';
 import redis from './redis';
 import Trigger from "@/models/trigger";
