@@ -11,6 +11,7 @@ type Props = {
 
 const JobPipeline = ({data, stages}: Props) => {
     const [jobs, setJobs] = useState<ApplicationType[]>();
+    const [showTriggers, setShowTriggers] = useState(false);
 
     useEffect(() => {
         setJobs(data)
@@ -28,6 +29,8 @@ const JobPipeline = ({data, stages}: Props) => {
                         cards={jobs!}
                         color={stage.color}
                         setCards={setJobs}
+                        showTriggers={showTriggers}
+                        setShowTriggers={setShowTriggers}
                     />
                 ))}
             </div>

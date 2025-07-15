@@ -16,7 +16,6 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import Link from "next/link";
 import OrganizationSwitcher from "@/components/organization_switcher";
 import { redirect } from "next/navigation";
-import { PluginProvider } from "@/providers/plugins-provider";
 import AuthDropdown from "@/components/auth-dropdown";
 import Provider from "@/providers/providers";
 import { initializePlugins } from "@/lib/plugin-lifecycle";
@@ -45,11 +44,8 @@ const Layout = async ({ children }: Props) => {
   const candidate = Array.isArray(result) ? result[1] : [];
   const stagesCount = await get_candidates_stage_count_action();
 
-//   await initializePlugins(orgId as string);
-
   return (
-    <PluginProvider orgId={orgId as string}>
-      <Provider>
+      <Provider orgId={orgId as string}>
         <AppSidebar
           candidate={candidate as CandidatesResponseType[]}
           stagescount={stagesCount as StageCountType[]}
@@ -78,7 +74,6 @@ const Layout = async ({ children }: Props) => {
           <>{children}</>
         </SidebarInset>
       </Provider>
-    </PluginProvider>
   );
 };
 

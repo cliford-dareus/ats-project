@@ -1,24 +1,25 @@
-'use client'
+"use client";
 
 import React, {Dispatch, DragEvent, SetStateAction, useState} from "react";
 import Card from "@/components/kanban/card";
-import {ApplicationType, StageResponseType} from "@/types";
+import {ApplicationType, StageResponseType, TriggerResponseType} from "@/types";
 import DropIndicator from "@/components/kanban/drop-indicator";
 import {update_application_stage_action} from "@/server/actions/application_actions";
 import {JOB_ENUM} from "@/zod";
 import {Badge} from "@/components/ui/badge";
-import {EllipsisVertical} from "lucide-react";
-import {Dialog, DialogContent, DialogTitle, DialogTrigger} from "@/components/ui/dialog";
+import {EllipsisVertical, WandSparkles} from "lucide-react";
 import {useForm} from "react-hook-form";
-import {Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
-import {Input} from "@/components/ui/input";
 import {z} from "zod";
 import {zodResolver} from "@hookform/resolvers/zod";
-import {Button} from "@/components/ui/button";
 import {cn} from "@/lib/utils";
-import {usePlugin} from "@/providers/plugins-provider";
-import {useTriggers} from "@/providers/trigger-provider";
-import {TriggerTask} from "@/plugins/smart-trigger/types";
+import {TriggerAction, TriggerTask} from "@/plugins/smart-trigger/types";
+import {usePluginContextHook} from "@/providers/plugins-provider";
+import {isPluginActive} from "@/lib/plugins-registry";
+import {DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuPortal, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger} from "../ui/dropdown-menu";
+import SmartMoveTriggerModal from "@/components/modal/triggers/smart-move-trigger-modal";
+import { add_trigger_to_stage_action } from "@/server/actions/stage_actions";
+import { useModalDialog } from "@/hooks/use-modal-dialog";
+import SmartEmailTriggerModal from "@/components/modal/triggers/smart-email-trigger-modal";
 
 type Props = {
     title: string;
@@ -27,6 +28,8 @@ type Props = {
     color: string | null;
     column: JOB_ENUM;
     setCards: Dispatch<SetStateAction<ApplicationType[] | undefined>>;
+    showTriggers: boolean;
+    setShowTriggers: Dispatch<SetStateAction<boolean>>;
 };
 
 const FormSchema = z.object({
@@ -35,9 +38,12 @@ const FormSchema = z.object({
     }),
 });
 
-const Column = ({title, cards, column, setCards, stage, color}: Props) => {
-    const {isPluginActive} = usePlugin();
-    const {executeTrigger, tasks} = useTriggers();
+const Column = ({title, cards, column, setCards, stage, color, showTriggers, setShowTriggers}: Props) => {
+    // const context = usePluginContext;\
+    const [openSmartMove, setOpenSmartMove] = useState({type: "", stage: "", action_type: ""});
+    const { isModalOpen, openModal, closeModal} = useModalDialog();
+    const context = usePluginContextHook();
+    const tasks = [];
     const smart_trigger = isPluginActive("smart-triggers");
     const [active, setActive] = useState(false);
 
@@ -92,7 +98,7 @@ const Column = ({title, cards, column, setCards, stage, color}: Props) => {
 
                 // add smarter logic
                 if (!smart_trigger) return;
-                executeTrigger(cardToTransfer.application_id, dropStage, stage.stage_name!)
+                context.onTriggerActivated(cardToTransfer.application_id, dropStage, stage.stage_name!)
                 console.log(dropStage);
             }
         }
@@ -153,9 +159,27 @@ const Column = ({title, cards, column, setCards, stage, color}: Props) => {
     };
 
     const filteredCards = cards?.filter((c) => c.stageName === column);
+    const filteredStages = context.jobStages.filter((t) => t.stage_name === stage.stage_name);
+
+    const onSubmitTrigger = async (data: TriggerAction) => {
+        try {
+            await add_trigger_to_stage_action(stage.id, data);
+        } catch (error) {
+            console.log(error);
+        }
+    };
 
     return (
         <div className="min-w-56 w-56">
+            {showTriggers && <div className="h-10">
+                {filteredStages.map((stage) => (
+                    <div key={stage.id}>
+                        {JSON.parse(stage.trigger).map((trigger: TriggerResponseType) => (
+                            <div key={trigger.id}>{trigger.action_type}</div>
+                        ))}
+                    </div>
+                ))}
+            </div>}
             <div className="mb-2 flex items-center justify-between my-4">
                 <div className="flex items-center gap-2">
                     <div className={cn(color, "h-3 w-3 rounded")}></div>
@@ -164,40 +188,74 @@ const Column = ({title, cards, column, setCards, stage, color}: Props) => {
                         className="rounded text-xs px-1  py-.5 flex items-center justify-center bg-muted text-slate-500"
                     >{filteredCards?.length}
                     </Badge>
+                    <WandSparkles onClick={() => setShowTriggers(!showTriggers)} size={18} className="text-slate-400"/>
                 </div>
 
-                <Dialog>
-                    <DialogTrigger>
-                        <EllipsisVertical size={18} className="-mr-1.5 text-slate-400"/>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogTitle>Update Stage</DialogTitle>
-                        <div>
-                            <Form {...form}>
-                                <form>
-                                    <FormField
-                                        control={form.control}
-                                        name="stageName"
-                                        render={({field}) => (
-                                            <FormItem>
-                                                <FormLabel>Stage Name</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="shadcn" {...field} />
-                                                </FormControl>
-                                                <FormDescription>
-                                                    This is your public display name.{stage.stage_name}
-                                                </FormDescription>
-                                                <FormMessage/>
-                                            </FormItem>
-                                        )}
-                                    />
+                <SmartMoveTriggerModal
+                    isModalOpen={isModalOpen && openSmartMove.action_type === "move" && !!openSmartMove.type}
+                    closeModal={closeModal}
+                    triggerType={openSmartMove.type}
+                    onSubmit={onSubmitTrigger}
+                />
+                <SmartEmailTriggerModal
+                    isModalOpen={isModalOpen && openSmartMove.action_type === "email"}
+                    closeModal={closeModal}
+                    onSubmit={onSubmitTrigger}
+                />
 
-                                    <Button>Update Stage</Button>
-                                </form>
-                            </Form>
-                        </div>
-                    </DialogContent>
-                </Dialog>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <EllipsisVertical size={18} className="-mr-1.5 text-slate-400"/>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                        <DropdownMenuItem>
+                            View
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                            Sort
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuGroup>
+                            <DropdownMenuSub>
+                                <DropdownMenuSubTrigger>Trigger</DropdownMenuSubTrigger>
+                                <DropdownMenuPortal>
+                                    <DropdownMenuSubContent>
+                                        <DropdownMenuItem onClick={() => {
+                                            openModal()
+                                            setOpenSmartMove({type: "email", stage: stage.stage_name!, action_type: "email"});
+                                        }}>Smart Email</DropdownMenuItem>
+                                        <DropdownMenuSub>
+                                            <DropdownMenuSubTrigger>Smart Move</DropdownMenuSubTrigger>
+                                            <DropdownMenuPortal>
+                                                <DropdownMenuSubContent>
+                                                    {
+                                                        ["location", "experience", "score"].map((item) => (
+                                                            <DropdownMenuItem
+                                                                key={item}
+                                                                onClick={() => {
+                                                                    openModal()
+                                                                    setOpenSmartMove({type: item, stage: stage.stage_name!, action_type: "move"});
+                                                                }}
+                                                            >
+                                                                {item}
+                                                            </DropdownMenuItem>
+                                                        ))
+                                                    }
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem>More...</DropdownMenuItem>
+                                                </DropdownMenuSubContent>
+                                            </DropdownMenuPortal>
+                                        </DropdownMenuSub>
+                                        <DropdownMenuItem>Smart Schedule</DropdownMenuItem>
+                                    </DropdownMenuSubContent>
+                                </DropdownMenuPortal>
+                            </DropdownMenuSub>
+                            <DropdownMenuItem>
+                                Add to Calendar
+                            </DropdownMenuItem>
+                        </DropdownMenuGroup>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
             <div
                 onDrop={handleDragEnd}

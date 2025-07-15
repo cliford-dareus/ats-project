@@ -29,7 +29,7 @@ import {
     DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import {SheetClose} from "@/components/ui/sheet";
-import {useTriggers} from "@/providers/trigger-provider";
+import {usePluginContextHook} from "@/providers/plugins-provider";
 import {update_application_stage_action} from "@/server/actions/application_actions";
 import {TriggerAction} from "@/plugins/smart-trigger/types";
 import {Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbSeparator} from "@/components/ui/breadcrumb";
@@ -46,7 +46,7 @@ type Props = {
 };
 
 const ApplicationPreview = ({data, applications}: Props) => {
-    const {initializeTrigger, stages, executeTrigger, tasks} = useTriggers();
+    const {setJobId, onTriggerActivated, jobStages} = usePluginContextHook();
     const ref = useRef<HTMLDivElement>(null);
     const [open, setOpen] = useState(false);
     const [notes, setNotes] = useState<NoteResponseType>({notes: [], total: 0});
@@ -58,16 +58,16 @@ const ApplicationPreview = ({data, applications}: Props) => {
     }, [applications, data.candidate_name]);
 
     const filterStage = useMemo(() => {
-        const currentStageIndex = stages.findIndex(stage => stage.stage_name === data.current_stage);
-        return stages.slice(currentStageIndex + 1);
-    }, [data, stages]);
+        const currentStageIndex = jobStages.findIndex(stage => stage.stage_name === data.current_stage);
+        return jobStages.slice(currentStageIndex + 1);
+    }, [data, jobStages]);
 
 
     useEffect(() => {
         const isPreviewingApplication = filterApplications.every(app => app.candidate_name == data.candidate_name);
         if (!isPreviewingApplication) return;
-        initializeTrigger(data.job_id);
-    }, [data.job_id, initializeTrigger]);
+        setJobId(String(data.job_id));
+    }, [data.job_id]);
 
     useEffect(() => {
         const fetchNotes = async () => {
@@ -203,7 +203,7 @@ const ApplicationPreview = ({data, applications}: Props) => {
                                                         applicationId: data.id,
                                                         new_stage_id: stage.id
                                                     })
-                                                    executeTrigger(data.id, stage.id, stage.stage_name as string)
+                                                    // executeTrigger(data.id, stage.id, stage.stage_name as string)
                                                 }}
                                                 key={stage.id}
                                             >
@@ -242,7 +242,7 @@ const ApplicationPreview = ({data, applications}: Props) => {
                                     <div
                                         className="flex w-full items-center overflow-scroll [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] h-[40px]">
                                         {
-                                            stages.map((stage) => (
+                                            jobStages.map((stage) => (
                                                 <div ref={ref} key={stage.id}
                                                      className={cn(data.current_stage == stage.stage_name ? "target" : "", "relative -ml-14 first:ml-0")}>
                                                         <svg

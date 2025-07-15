@@ -34,7 +34,7 @@ const Page = async ({searchParams}: Props) => {
         result && typeof result === "object" && "error" in result
             ? result.error
             : null;
-    console.log(result);
+
     if (error) {
         console.error("Error fetching job listings:", error);
         return <div>Error loading jobs.</div>;

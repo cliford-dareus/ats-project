@@ -1,8 +1,7 @@
 import {PluginConfig} from "@/lib/plugins-registry";
 import React from "react";
-import {useTriggers} from "@/providers/trigger-provider";
 import {StageTrigger} from "./types";
-import {activate, deactivate} from "@/plugins/smart-trigger/lifecycle";
+import {lifecycle} from "@/plugins/smart-trigger/lifecycle";
 
 const DEFAULT_TRIGGERS: StageTrigger[] = [
     {
@@ -18,7 +17,7 @@ const DEFAULT_TRIGGERS: StageTrigger[] = [
 ];
 
 const SmartTriggers = () => {
-    const {triggers} = useTriggers();
+    // const {triggers} = useTriggers();
 
     return (
         <div className="p-4">
@@ -27,7 +26,7 @@ const SmartTriggers = () => {
                 Automate your recruitment workflows with Smart Triggers.
             </p>
 
-            <div className="space-y-4">
+            {/* <div className="space-y-4">
                 <h3 className="font-semibold">Active Triggers ({triggers.length})</h3>
                 <ul className="space-y-2">
                     {triggers.map((trigger) => (
@@ -39,7 +38,7 @@ const SmartTriggers = () => {
                         </li>
                     ))}
                 </ul>
-            </div>
+            </div> */}
         </div>
     );
 };
@@ -50,8 +49,12 @@ const pluginConfig = {
     description: "Automate recruitment workflows with triggers.",
     version: "1.0.0",
     component: SmartTriggers,
-    activate: activate,
-    deactivate: deactivate,
+    settingsComponent: SmartTriggers,
+    activate: lifecycle.activate,
+    deactivate: lifecycle.deactivate,
+    defaultConfig: {
+        triggers: DEFAULT_TRIGGERS,
+    },
 } as PluginConfig;
 
 export default pluginConfig;

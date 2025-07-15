@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import {Button} from "@/components/ui/button";
 import {useRouter} from "next/navigation";
 import {JobResponseType} from "@/types";
@@ -13,7 +13,6 @@ type Props = {
 
 const JobPreview = ({data, jobs}: Props) => {
     const router = useRouter();
-
     return (
         <div className="p-4">
             <DialogTitle>JOB PREVIEW</DialogTitle>

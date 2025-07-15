@@ -1,14 +1,29 @@
+"use client";
+
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { TriggerProvider } from "./trigger-provider";
+import { PluginsProvider } from "./plugins-provider";
 import { NewJobContextProvider } from "./new-job-provider";
+import { fetchPlugins, getPlugins, registerPlugin } from "@/lib/plugins-registry";
+import { useEffect } from "react";
+
+import SmartTriggers from "@/plugins/smart-trigger/index";
+import TinyBird from "@/plugins/analytics/index"
 
 type Props = {
   children: React.ReactNode;
+  orgId: string;
 };
 
-const Provider = ({ children }: Props) => {
+registerPlugin(SmartTriggers);
+registerPlugin(TinyBird);
+
+const Provider = ({ children, orgId }: Props) => {
+    useEffect(() => {
+        fetchPlugins(orgId);
+    }, []);
+
   return (
-    <TriggerProvider>
+    <PluginsProvider>
       <NewJobContextProvider>
         <SidebarProvider
           style={
@@ -20,7 +35,7 @@ const Provider = ({ children }: Props) => {
           {children}
         </SidebarProvider>
       </NewJobContextProvider>
-    </TriggerProvider>
+    </PluginsProvider>
   );
 };
 

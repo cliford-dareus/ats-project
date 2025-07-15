@@ -1,7 +1,7 @@
 import {StageResponseType} from '@/types';
 
 export type TriggerAction = {
-    action_type: 'move' | 'MESSAGE' | 'INTERVIEW' | 'NOTE' | 'todo' | 'tag';
+    action_type: 'move' | 'MESSAGE' | 'INTERVIEW' | 'NOTE' | 'todo' | 'tag' | 'score';
     config: any;
 };
 
@@ -9,6 +9,7 @@ export type StageTrigger = {
     id: string;
     stage: StageResponseType['stage_name'];
     actions: TriggerAction[];
+    condition?: any;
 };
 
 export type TriggerTask = {

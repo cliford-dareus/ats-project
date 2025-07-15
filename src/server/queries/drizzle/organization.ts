@@ -12,6 +12,39 @@ export const create_organization = async (data: z.infer<typeof organizationSchem
     }).$returningId();
 };
 
+export const update_organization_plugins = async (orgId: string, enabled: boolean, pluginId: string) => {
+     try {
+        const result = await db
+          .select({ plugins: organization.plugins })
+          .from(organization)
+          .where(eq(organization.clerk_id, orgId));
+
+        if (!result.length) {
+          return {error: "Organization not found"};
+        };
+
+        const pluginsData = result[0].plugins as { enabled: string[]; settings?: object };
+        const updatedEnabled = enabled
+          ? [...new Set([...pluginsData.enabled, pluginId])] // Add pluginId
+          : pluginsData.enabled.filter((id: string) => id !== pluginId); // Remove pluginId
+
+        const updatedPlugins = {
+          ...pluginsData,
+          enabled: updatedEnabled,
+        };
+
+        await db
+          .update(organization)
+          .set({ plugins: updatedPlugins })
+          .where(eq(organization.clerk_id, orgId));
+
+        return {message: "Success"};
+      } catch (error) {
+        console.error('Error toggling plugin:', error);
+        return {error: "Internal server error"};
+      }
+};
+
 export const add_department_in_organization = async (data: z.infer<typeof departmentSchema>) => {
     return await db.transaction(async (trx) => {
         const org = await trx.select()

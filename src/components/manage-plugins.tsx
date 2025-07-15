@@ -1,50 +1,63 @@
 "use client";
 
-import { getPlugins } from "@/lib/plugins-registry";
-import { usePlugin } from "@/providers/plugins-provider";
+import { fetchPlugins, getPlugins, togglePlugin } from "@/lib/plugins-registry";
+import { usePluginContextHook } from "@/providers/plugins-provider";
+import { useEffect, useState } from "react";
 
 export default function PluginManager({ orgId }: { orgId: string }) {
-  const { activePlugins, setActivePlugins } = usePlugin();
-  const allPlugins = getPlugins();
+    const context = usePluginContextHook();
+    const [plugins, setPlugins] = useState(getPlugins());
+    const allPlugins = getPlugins();
 
-  const togglePlugin = async (pluginId: string) => {
-    const newEnabled = activePlugins.includes(pluginId)
-      ? activePlugins.filter((id) => id !== pluginId)
-      : [...activePlugins, pluginId];
-
-    await fetch(`/api/plugins?orgId=${orgId}`, {
-      method: "PATCH",
-      body: JSON.stringify({ enabledPlugins: newEnabled }),
+  useEffect(() => {
+    // Fetch plugins on mount
+    fetchPlugins(orgId).then(() => {
+      setPlugins(getPlugins());
+      // Activate enabled plugins
+      getPlugins().forEach((plugin) => {
+        if (plugin.enabled && plugin.config.activate) {
+          plugin.config.activate(context);
+        }
+      });
     });
+  }, [orgId]);
 
-    setActivePlugins(newEnabled);
+  const handleToggle = async (pluginId: string, enabled: boolean) => {
+    await togglePlugin(pluginId, enabled, orgId);
+    const plugin = plugins.find((p) => p.id === pluginId);
+    if (plugin) {
+      if (enabled && plugin.config.activate) {
+        plugin.config.activate(context);
+      } else if (!enabled && plugin.config.deactivate) {
+        plugin.config.deactivate(context);
+      }
+    }
+    setPlugins(getPlugins());
   };
 
   return (
     <div className="space-y-4">
       {allPlugins.map((plugin) => (
         <div key={plugin.id} className="p-4 border rounded">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+             <input
+              type="checkbox"
+              checked={plugin.enabled}
+              onChange={(e) => handleToggle(plugin.id, e.target.checked)}
+            />
             <div>
-              <h3 className="text-lg font-semibold">{plugin.name}</h3>
-              <p className="text-gray-600">{plugin.description}</p>
+              <h3 className="text-lg font-semibold">{plugin.config.name}</h3>
+              <p className="text-gray-600">{plugin.config.description}</p>
             </div>
-            <button
-              onClick={() => togglePlugin(plugin.id)}
-              className={`px-4 py-2 rounded ${
-                activePlugins.includes(plugin.id)
-                  ? "bg-red-500 hover:bg-red-600"
-                  : "bg-green-500 hover:bg-green-600"
-              } text-white`}
-            >
-              {activePlugins.includes(plugin.id) ? "Disable" : "Enable"}
-            </button>
           </div>
-          {/* {activePlugins.includes(plugin.id) && plugin.settingsComponent && (
-                        <div className="mt-4">
-                            <plugin.settingsComponent userId={userId} />
-                        </div>
-                    )} */}
+           {/* {plugin.enabled && plugin.config.component && (
+            <div style={{ marginLeft: '20px' }}>
+              <plugin.config.component
+                config={plugin.userConfig}
+                onConfigChange={(config) => updatePluginConfig(clerkId, plugin.id, config)}
+              />
+            </div>
+          )} */}
         </div>
       ))}
     </div>

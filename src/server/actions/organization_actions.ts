@@ -3,7 +3,7 @@
 import {z} from "zod";
 import {auth, clerkClient} from "@clerk/nextjs/server";
 import {canCreateJob} from "../permissions";
-import {create_organization, add_department_in_organization as add_department_query} from "../queries";
+import {create_organization, add_department_in_organization as add_department_query, get_organization_by_id, update_organization_plugins} from "../queries";
 import {departmentSchema, inviteMemberSchema, organizationSchema} from "@/zod";
 
 export const create_organization_invite = async (unsafeData: z.infer<typeof inviteMemberSchema>) => {
@@ -49,4 +49,27 @@ export const add_department_in_organization = async (unsafeData: z.infer<typeof 
     };
 
     return await add_department_query(data);
+};
+
+export const get_organization_plugins = async (orgId: string) => {
+    const {userId} = await auth();
+    const canCreate = await canCreateJob(userId);
+
+    if (!userId || !canCreate) {
+        throw new Error("You are not authorized to create an organization");
+    };
+
+    const org = await get_organization_by_id(orgId);
+    return org[0].plugins || {enabled: [], settings: {}};
+};
+
+export const update_organization_plugins_action = async (orgId: string, enabled: boolean, pluginId: string) => {
+    const {userId} = await auth();
+    const canCreate = await canCreateJob(userId);
+
+    if (!userId || !canCreate) {
+        throw new Error("You are not authorized to create an organization");
+    };
+
+    return await update_organization_plugins(orgId, enabled, pluginId);
 };

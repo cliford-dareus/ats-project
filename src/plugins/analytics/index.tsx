@@ -1,24 +1,24 @@
 import {PluginConfig} from "@/lib/plugins-registry";
 import React from "react";
-import {useTriggers} from "@/providers/trigger-provider";
+// import {useTriggers} from "@/providers/plugins-provider";
 import {activate, deactivate} from "@/plugins/analytics/lifecycle";
 // import {StageTrigger} from "./types";
 
-// const DEFAULT_TRIGGERS: StageTrigger[] = [
-//     {
-//         id: "1",
-//         stage: "Applied",
-//         actions: [
-//             {
-//                 action_type: "MESSAGE",
-//                 config: { template: "welcome-email" }
-//             }
-//         ]
-//     }
-// ];
+const DEFAULT_TRIGGERS: StageTrigger[] = [
+    {
+        id: "1",
+        stage: "Applied",
+        actions: [
+            {
+                action_type: "MESSAGE",
+                config: { template: "welcome-email" }
+            }
+        ]
+    }
+];
 
 const TinyBird = () => {
-    const {triggers} = useTriggers();
+    // const {triggers} = useTriggers();
 
     return (
         <div className="p-4">
@@ -27,7 +27,7 @@ const TinyBird = () => {
                 Automate your recruitment workflows with Smart Triggers.
             </p>
 
-            <div className="space-y-4">
+            {/* <div className="space-y-4">
                 <h3 className="font-semibold">Active Triggers ({triggers.length})</h3>
                 <ul className="space-y-2">
                     {triggers.map((trigger) => (
@@ -39,7 +39,7 @@ const TinyBird = () => {
                         </li>
                     ))}
                 </ul>
-            </div>
+            </div> */}
         </div>
     );
 };
@@ -52,6 +52,9 @@ const pluginConfig = {
     component: TinyBird,
     activate: activate,
     deactivate: deactivate,
+    defaultConfig: {
+        triggers: [],
+    },
 } as PluginConfig;
 
 export default pluginConfig;

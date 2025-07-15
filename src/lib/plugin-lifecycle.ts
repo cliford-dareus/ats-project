@@ -5,7 +5,7 @@ import {getPlugins} from "@/lib/plugins-registry";
 // import {organization} from "@/drizzle/schema";
 // import {eq} from "drizzle-orm";
 
-export const initializePlugins = async (orgId: string) => {
+export const activatePlugins = async (orgId: string) => {
     // const org = await queries.select().from(organization).where(eq(organization.clerk_id, orgId));
     const plugins = {enabled: ["smart-triggers"]};
 

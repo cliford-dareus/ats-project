@@ -8,6 +8,7 @@ import {TriggerAction} from "@/plugins/smart-trigger/types";
 
 export const addTaskToQueue = async (id: number, action: TriggerAction, stage_name: string) => {
     await mongodb();
+    console.log("Adding task to queue", id, action, stage_name);
 
     const name = `Task-${action.action_type}-${Date.now()}`;
     const triggerTime = new Date(Date.now() + 2 * 60 * 1000);

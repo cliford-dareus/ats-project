@@ -11,13 +11,16 @@ import {
     TabsContent,
     TabsList,
 } from "@/components/ui/tabs";
-import { useTriggers } from "@/providers/trigger-provider";
 import {
     ApplicationType,
     JobResponseType,
     StageResponseType,
 } from "@/types";
 import JobCandidate from "./job-candidate";
+import { usePluginContextHook } from "@/providers/plugins-provider";
+import { getPlugins } from "@/lib/plugins-registry";
+import { TriggerAction } from "@/plugins/smart-trigger/types";
+import { getJobListingsStagesAction } from "@/server/actions/job-listings-actions";
 
 type Props = {
     applications: ApplicationType[];
@@ -31,18 +34,11 @@ type TabValue = "candidates" | "pipelines" | "options";
 const DEFAULT_TAB: TabValue = "candidates";
 
 const JobTabs = ({ applications, stages, jobs, joblistingId, job_name }: Props) => {
-    const { initializeTrigger } = useTriggers();
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
-
+    const context = usePluginContextHook();
     const [activeTab, setActiveTab] = React.useState<TabValue>(DEFAULT_TAB);
-
-    useEffect(() => {
-        if (applications.length > 0) {
-            initializeTrigger(applications[0].job_id);
-        }
-    }, [initializeTrigger, applications]);
 
     const handleTabChange = useCallback((value: string) => {
         const newPath = value === DEFAULT_TAB
@@ -50,6 +46,23 @@ const JobTabs = ({ applications, stages, jobs, joblistingId, job_name }: Props) 
             : `${pathname}?tab=${value}`;
         router.push(newPath);
     }, [pathname, router]);
+
+    useEffect(() => {
+        context.setJobId(joblistingId);
+        // const jobId = Number(joblistingId);
+        // const fetchTriggers = async () => {
+        //     const result = await getJobListingsStagesAction(jobId);
+        //     const response = Array.isArray(result) ? result : [];
+
+        //     const parsedTriggers = response.map(cur => ({
+        //         id: String(cur.id),
+        //         stage: cur.stage_name,
+        //         actions: JSON.parse(cur.trigger) as TriggerAction[]
+        //     }));
+        //     context.setTriggers(parsedTriggers);
+        // };
+        // fetchTriggers();
+    }, [joblistingId]);
 
     useEffect(() => {
         const tabParam = searchParams.get('tab') as TabValue;

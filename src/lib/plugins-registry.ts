@@ -1,28 +1,69 @@
 'use client'
 
-// import {cleanupPlugins, initializePlugins} from "@/lib/plugin-lifecycle";
-// import SmartTriggersFeature from "@/components/smart-trigger-plugin";
-
+import { get_organization_plugins, update_organization_plugins_action } from "@/server/actions/organization_actions";
 import React from "react";
-import {StageTrigger} from "@/plugins/smart-trigger/types";
 
 export type PluginConfig = {
     id : string,
     name : string,
     description : string,
     component: React.ComponentType,
-    // settingsComponent: React.ComponentType,
-    activate?: (context: { setTriggers: (triggers: StageTrigger[]) => void }) => void,
-    deactivate?: (context: { setTriggers: (triggers: StageTrigger[]) => void }) => void,
+    settingsComponent: React.ComponentType,
+    activate?: (context: any) => Promise<void>,
+    deactivate?: (context: any) => void,
+    defaultConfig?: any,
 };
 
-const pluginRegistry = new Map<string, PluginConfig>();
+export type pluginState = {
+    enabled: boolean;
+    config: PluginConfig;
+    orgConfig: any;
+};
+
+export const pluginRegistry = new Map<string, pluginState>();
 
 export const registerPlugin = (plugin: PluginConfig) => {
-  if (pluginRegistry.has(module.id)) {
-       throw new Error(`Module with id "${module.id}" is already registered.`);
-     }
-    pluginRegistry.set(plugin.id, plugin);
+  if (pluginRegistry.has(plugin.id)) {
+    throw new Error(`Plugin with id "${plugin.id}" is already registered.`);
+  };
+
+  pluginRegistry.set(plugin.id, {
+    config: plugin,
+    enabled: false,
+    orgConfig: plugin.defaultConfig || {},
+  });
 };
 
-export const getPlugins = () => Array.from(pluginRegistry.values());
+export const getPlugins = () => Array.from(pluginRegistry.entries()).map(([id, state]) => ({
+  id,
+  ...state,
+}));
+
+// Fetch plugins from backend
+export const fetchPlugins = async (orgId: string) => {
+  const plugins = await get_organization_plugins(orgId) as {enabled: string[], settings: any};
+
+  for (const plugin of plugins.enabled) {
+    const existing = pluginRegistry.get(plugin);
+    if (existing) {
+      existing.enabled = true;
+      pluginRegistry.set(plugin, existing);
+    }
+  };
+  return getPlugins();
+};
+
+export const togglePlugin = async (pluginId: string, enabled: boolean, orgId: string) => {
+  const plugin = pluginRegistry.get(pluginId);
+
+  if (plugin) {
+    plugin.enabled = enabled;
+    pluginRegistry.set(pluginId, plugin);
+    await update_organization_plugins_action(orgId, enabled, pluginId);
+  };
+};
+
+export const isPluginActive = (pluginId: string) => {
+  const plugin = pluginRegistry.get(pluginId);
+  return plugin?.enabled || false;
+};

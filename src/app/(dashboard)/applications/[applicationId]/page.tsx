@@ -8,11 +8,10 @@ type Props = {
 
 const Page = async ({params}: Props) => {
     const {applicationId} = await params;
-    console.log(applicationId);
 
     return (
         <div className="p-4">
-            
+
         </div>
     );
 };

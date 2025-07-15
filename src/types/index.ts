@@ -89,7 +89,7 @@ export  type StageResponseType = {
     assign_to: string | null
     color: string | null;
     need_schedule: boolean | null;
-    trigger: any;
+    trigger: string;
 };
 
 export type TriggerResponseType = {
