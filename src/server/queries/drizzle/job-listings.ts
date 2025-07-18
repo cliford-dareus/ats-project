@@ -20,7 +20,7 @@ import {
 } from "@/lib/cache";
 import {z} from "zod";
 import {filterJobType, formSchema} from "@/zod";
-import {Application, ApplicationType, Candidate} from "@/types";
+import {ApplicationType, Candidate} from "@/types";
 
 interface FilterInterface extends z.infer<typeof filterJobType> {
     organization: string;
@@ -106,7 +106,7 @@ export const get_all_job_listings = (filter: FilterInterface) => {
 // Move to applications(get_job_application_by_id)
 export const get_job_by_id = (jobId: number) => {
     const cacheFn = dbCache(get_job_by_id_db, {
-        tags: [getGlobalTag(CACHE_TAGS.applications)],
+        tags: [getGlobalTag(CACHE_TAGS.applications), getIdTag(String(jobId), CACHE_TAGS.applications)],
     });
     return cacheFn(jobId);
 };
@@ -134,6 +134,7 @@ export const get_job_by_id_db = async (jobId: number) => {
         job_name: jobListingData[0].jobListing.name,
         job_status: jobListingData[0].jobListing.status,
         job_created_at: jobListingData[0].jobListing.created_at,
+        job_updated_at: jobListingData[0].jobListing.updated_at,
         job_description: jobListingData[0].jobListing.description,
         applications: [] as ApplicationType[],
     };

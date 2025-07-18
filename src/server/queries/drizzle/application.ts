@@ -107,12 +107,12 @@ export const update_application_stage = async (data: {applicationId: number ,new
   });
 };
 
-export const get_all_applications = async (filter: {organization: string}) => {
-  const cacheFn = dbCache(get_all_applications_db, {
+export const get_application_by_id = async (applicationId: number) => {
+  const cacheFn = dbCache(get_application_by_id_db, {
     tags: [getGlobalTag(CACHE_TAGS.applications)],
   });
 
-  return cacheFn(filter);
+  return cacheFn(applicationId);
 };
 
 export const get_applications_with_filter = async (filter: z.infer<typeof filterApplicationsType>) => {
@@ -144,6 +144,15 @@ export const get_applications_with_stages_db = async () => {
     })
     .from(stages)
     .leftJoin(applications, eq(applications.current_stage_id, stages.id));
+};
+
+export const get_application_by_id_db = async (applicationId: number) => {
+  return db
+    .select()
+    .from(applications)
+    .where(eq(applications.id, applicationId))
+    .leftJoin(scoreCards, eq(scoreCards.applications_id, applications.id))
+    .leftJoin(interviews, eq(interviews.applications_id, applications.id));
 };
 
 export const get_applications_with_filter_db = async (filter: z.infer<typeof filterApplicationsType>) => {
@@ -185,22 +194,7 @@ export const get_applications_with_filter_db = async (filter: z.infer<typeof fil
   return [len, application];
 };
 
-export const get_all_applications_db = async (filter: {organization: string}) => {
-  return db
-    .select({
-      can_contact: applications.can_contact,
-      candidate: applications.candidate,
-      created_at: applications.created_at,
-      current_stage_id: applications.current_stage_id,
-      id: applications.id,
-      job_id: applications.job_id,
-      updated_at: applications.updated_at,
-    })
-    .from(applications)
-    .leftJoin(job_listings, eq(applications.job_id, job_listings.id))
-    .where(eq(job_listings.organization, filter.organization));
-};
-
+// ========================================================
 export const get_user_applications = async (candidateId: number) => {
   return db
     .select()

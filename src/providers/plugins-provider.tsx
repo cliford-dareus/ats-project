@@ -1,27 +1,38 @@
 'use client';
 
 import React, {createContext, useContext, useState, useCallback, useEffect, Dispatch, SetStateAction} from 'react';
-import {StageTrigger, TriggerAction} from '@/plugins/smart-trigger/types';
+import {StageTrigger, TriggerAction, TriggerTask} from '@/plugins/smart-trigger/types';
 import {addTaskToQueue} from '@/server/queries/mongo/smart-task';
 import {getJobListingsStagesAction} from '@/server/actions/job-listings-actions';
 import {StageResponseType} from '@/types';
+import {get_all_tasks_action} from "@/server/actions/application_actions";
 
 const PluginsContext = createContext<PluginsContextType>({
     jobId: null,
+    tasks: [],
     jobStages: [],
     setJobId: () => {},
     triggers: [],
     setTriggers: () => {},
     onTriggerActivated: async () => {},
+    fetchApplicationTasks: async () => {}
 });
 
 type PluginsContextType = {
     jobId: string | null;
+    tasks: TriggerTask[];
     setJobId: Dispatch<SetStateAction<string | null>>;
     jobStages: StageResponseType[];
     triggers: StageTrigger[];
     setTriggers: Dispatch<SetStateAction<StageTrigger[]>>;
-    onTriggerActivated: (applicationId: number, stageId: number, stageName: string) => Promise<void>;
+    fetchApplicationTasks: () => Promise<void>;
+    onTriggerActivated: (data: TriggerPayloadType) => Promise<void>;
+};
+
+type TriggerPayloadType = {
+    applicationId: number;
+    stageId: number;
+    stageName: string;
 };
 
 export const PluginsProvider = ({children}: { children: React.ReactNode }) => {
@@ -30,6 +41,7 @@ export const PluginsProvider = ({children}: { children: React.ReactNode }) => {
     const [jobStages, setJobStages] = useState<StageResponseType[]>([]);
 
     // Plugins config data specific to each job or application
+    const [tasks, setTasks] = useState<any[]>([]);
     const [triggers, setTriggers] = useState<StageTrigger[]>([]);
     // const [jobBoard, setJobBoard] = useState<any[]>([]);
     // const [analytics, setAnalytics] = useState<any[]>([]);
@@ -66,11 +78,21 @@ export const PluginsProvider = ({children}: { children: React.ReactNode }) => {
     };
 
     const onTriggerActivated = useCallback(
-        async (applicationId: number, stageId: number, stageName: string) => {
-            const stageTriggers = triggers.filter((t) => Number(t.id) === stageId);
+        async (data: TriggerPayloadType) => {
+            const { applicationId, stageId, stageName } = data;
+            const stageTriggers = triggers.filter((t) => t.id === String(stageId));
             await processTriggerActions(applicationId, stageTriggers, stageName);
         },
         [triggers]
+    );
+
+    const fetchApplicationTasks = useCallback(
+        async () => {
+            const tasks = await get_all_tasks_action();
+            const parsedTasks = JSON.parse(tasks as string) as {tasks: TriggerTask[]};
+            setTasks(parsedTasks.tasks);
+        },
+        []
     );
 
     useEffect(() => {
@@ -80,7 +102,7 @@ export const PluginsProvider = ({children}: { children: React.ReactNode }) => {
                 const stagesData = await getJobListingsStagesAction(Number(jobId));
                 const validStagesData = Array.isArray(stagesData) ? stagesData : [];
                 const parsedTriggers = validStagesData.map(parseTriggerResponse);
-                
+
                 setJobStages(validStagesData);
                 setTriggers(parsedTriggers);
             } catch (error) {
@@ -92,11 +114,13 @@ export const PluginsProvider = ({children}: { children: React.ReactNode }) => {
     }, [jobId]);
 
     const contextValue: PluginsContextType = {
+        tasks,
         jobId,
         setJobId,
         jobStages,
         triggers,
         setTriggers,
+        fetchApplicationTasks,
         onTriggerActivated
     };
 

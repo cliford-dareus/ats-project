@@ -6,7 +6,7 @@ import {StageResponseType} from "@/types";
 type Props = {
     stage: StageResponseType
     beforeId: number | null;
-    column: JOB_ENUM
+    column: JOB_ENUM | null | undefined;
     active: boolean;
 }
 

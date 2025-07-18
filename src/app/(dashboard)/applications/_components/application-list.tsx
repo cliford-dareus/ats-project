@@ -39,7 +39,6 @@ const ApplicationList = ({application, pageCount}: Props) => {
                     {selectedRow && <ApplicationPreview
                         data={selectedRow as ApplicationResponseType}
                         applications={application as ApplicationResponseType[]}/>
-
                     }
                 </SheetContent>
             </Sheet>

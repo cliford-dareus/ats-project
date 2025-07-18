@@ -1,25 +1,35 @@
 "use client";
 
-import React, {Dispatch, DragEvent, SetStateAction, useState} from "react";
+import React, {Dispatch, DragEvent, SetStateAction, useEffect, useState} from "react";
 import Card from "@/components/kanban/card";
-import {ApplicationType, StageResponseType, TriggerResponseType} from "@/types";
+import {ApplicationType, StageResponseType} from "@/types";
 import DropIndicator from "@/components/kanban/drop-indicator";
 import {update_application_stage_action} from "@/server/actions/application_actions";
 import {JOB_ENUM} from "@/zod";
 import {Badge} from "@/components/ui/badge";
 import {EllipsisVertical, WandSparkles} from "lucide-react";
-import {useForm} from "react-hook-form";
-import {z} from "zod";
-import {zodResolver} from "@hookform/resolvers/zod";
 import {cn} from "@/lib/utils";
-import {TriggerAction, TriggerTask} from "@/plugins/smart-trigger/types";
+import {TriggerAction} from "@/plugins/smart-trigger/types";
 import {usePluginContextHook} from "@/providers/plugins-provider";
 import {isPluginActive} from "@/lib/plugins-registry";
-import {DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuPortal, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger} from "../ui/dropdown-menu";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuPortal,
+    DropdownMenuSeparator,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
+    DropdownMenuTrigger
+} from "../ui/dropdown-menu";
 import SmartMoveTriggerModal from "@/components/modal/triggers/smart-move-trigger-modal";
-import { add_trigger_to_stage_action } from "@/server/actions/stage_actions";
-import { useModalDialog } from "@/hooks/use-modal-dialog";
+import {add_trigger_to_stage_action} from "@/server/actions/stage_actions";
+import {useModalDialog} from "@/hooks/use-modal-dialog";
 import SmartEmailTriggerModal from "@/components/modal/triggers/smart-email-trigger-modal";
+import {useRouter} from "next/navigation";
+import TriggerCard from "../trigger-card";
 
 type Props = {
     title: string;
@@ -32,27 +42,14 @@ type Props = {
     setShowTriggers: Dispatch<SetStateAction<boolean>>;
 };
 
-const FormSchema = z.object({
-    stageName: z.string().min(5, {
-        message: "Stage name must be at least 5 characters.",
-    }),
-});
-
 const Column = ({title, cards, column, setCards, stage, color, showTriggers, setShowTriggers}: Props) => {
-    // const context = usePluginContext;\
+    const [hasRefreshedYet, setHasRefreshedYet] = useState(false);
     const [openSmartMove, setOpenSmartMove] = useState({type: "", stage: "", action_type: ""});
-    const { isModalOpen, openModal, closeModal} = useModalDialog();
+    const {isModalOpen, openModal, closeModal} = useModalDialog();
     const context = usePluginContextHook();
-    const tasks = [];
     const smart_trigger = isPluginActive("smart-triggers");
     const [active, setActive] = useState(false);
-
-    const form = useForm<z.infer<typeof FormSchema>>({
-        resolver: zodResolver(FormSchema),
-        defaultValues: {
-            stageName: "",
-        },
-    });
+    const router = useRouter();
 
     const handleDragStart = (e: DragEvent<HTMLDivElement>, i: number) => {
         (e as DragEvent).dataTransfer.setData("cardId", String(i));
@@ -98,12 +95,15 @@ const Column = ({title, cards, column, setCards, stage, color, showTriggers, set
 
                 // add smarter logic
                 if (!smart_trigger) return;
-                context.onTriggerActivated(cardToTransfer.application_id, dropStage, stage.stage_name!)
-                console.log(dropStage);
+                context.onTriggerActivated({
+                    applicationId: cardToTransfer.application_id,
+                    stageId: dropStage,
+                    stageName: stage.stage_name!
+                })
+                context.fetchApplicationTasks();
             }
         }
     };
-
     const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         highlightIndicator(e);
@@ -169,16 +169,25 @@ const Column = ({title, cards, column, setCards, stage, color, showTriggers, set
         }
     };
 
+    useEffect(() => {
+        const checkExpireAndRefresh = () => {
+            const now = Date.now();
+            const anyExpired = context.tasks.some(task => new Date(task.triggerTime).getTime() < now);
+            if (anyExpired && !hasRefreshedYet) {
+                setHasRefreshedYet(true);
+                context.fetchApplicationTasks();
+                router.refresh();
+            }
+        };
+
+        const interval = setInterval(checkExpireAndRefresh, 5000);
+        return () => clearInterval(interval);
+    }, [context.tasks]);
+
     return (
         <div className="min-w-56 w-56">
-            {showTriggers && <div className="h-10">
-                {filteredStages.map((stage) => (
-                    <div key={stage.id}>
-                        {JSON.parse(stage.trigger).map((trigger: TriggerResponseType) => (
-                            <div key={trigger.id}>{trigger.action_type}</div>
-                        ))}
-                    </div>
-                ))}
+            {showTriggers && <div className="">
+                {filteredStages.map((stage) => <TriggerCard key={stage.id} stage={stage}/>)}
             </div>}
             <div className="mb-2 flex items-center justify-between my-4">
                 <div className="flex items-center gap-2">
@@ -214,7 +223,7 @@ const Column = ({title, cards, column, setCards, stage, color, showTriggers, set
                         <DropdownMenuItem>
                             Sort
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator />
+                        <DropdownMenuSeparator/>
                         <DropdownMenuGroup>
                             <DropdownMenuSub>
                                 <DropdownMenuSubTrigger>Trigger</DropdownMenuSubTrigger>
@@ -222,7 +231,11 @@ const Column = ({title, cards, column, setCards, stage, color, showTriggers, set
                                     <DropdownMenuSubContent>
                                         <DropdownMenuItem onClick={() => {
                                             openModal()
-                                            setOpenSmartMove({type: "email", stage: stage.stage_name!, action_type: "email"});
+                                            setOpenSmartMove({
+                                                type: "email",
+                                                stage: stage.stage_name!,
+                                                action_type: "email"
+                                            });
                                         }}>Smart Email</DropdownMenuItem>
                                         <DropdownMenuSub>
                                             <DropdownMenuSubTrigger>Smart Move</DropdownMenuSubTrigger>
@@ -234,14 +247,18 @@ const Column = ({title, cards, column, setCards, stage, color, showTriggers, set
                                                                 key={item}
                                                                 onClick={() => {
                                                                     openModal()
-                                                                    setOpenSmartMove({type: item, stage: stage.stage_name!, action_type: "move"});
+                                                                    setOpenSmartMove({
+                                                                        type: item,
+                                                                        stage: stage.stage_name!,
+                                                                        action_type: "move"
+                                                                    });
                                                                 }}
                                                             >
                                                                 {item}
                                                             </DropdownMenuItem>
                                                         ))
                                                     }
-                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuSeparator/>
                                                     <DropdownMenuItem>More...</DropdownMenuItem>
                                                 </DropdownMenuSubContent>
                                             </DropdownMenuPortal>
@@ -268,7 +285,6 @@ const Column = ({title, cards, column, setCards, stage, color, showTriggers, set
                         key={c.application_id}
                         stage={stage}
                         data={c}
-                        tasks={tasks.filter((t: TriggerTask) => t.stages === stage.stage_name && t.application_id === c.application_id )}
                         handleDragStart={(e) => handleDragStart(e, c.application_id!)}
                     />;
                 })}

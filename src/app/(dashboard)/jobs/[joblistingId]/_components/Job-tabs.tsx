@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useCallback } from "react";
+import React, {useEffect, useCallback} from "react";
 import { BriefcaseBusiness, CircleUser, LucideEdit, LucideTrash } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import JobPipeline from "./job-pipeline";
@@ -18,9 +18,6 @@ import {
 } from "@/types";
 import JobCandidate from "./job-candidate";
 import { usePluginContextHook } from "@/providers/plugins-provider";
-import { getPlugins } from "@/lib/plugins-registry";
-import { TriggerAction } from "@/plugins/smart-trigger/types";
-import { getJobListingsStagesAction } from "@/server/actions/job-listings-actions";
 
 type Props = {
     applications: ApplicationType[];
@@ -49,19 +46,6 @@ const JobTabs = ({ applications, stages, jobs, joblistingId, job_name }: Props) 
 
     useEffect(() => {
         context.setJobId(joblistingId);
-        // const jobId = Number(joblistingId);
-        // const fetchTriggers = async () => {
-        //     const result = await getJobListingsStagesAction(jobId);
-        //     const response = Array.isArray(result) ? result : [];
-
-        //     const parsedTriggers = response.map(cur => ({
-        //         id: String(cur.id),
-        //         stage: cur.stage_name,
-        //         actions: JSON.parse(cur.trigger) as TriggerAction[]
-        //     }));
-        //     context.setTriggers(parsedTriggers);
-        // };
-        // fetchTriggers();
     }, [joblistingId]);
 
     useEffect(() => {
@@ -96,7 +80,7 @@ const JobTabs = ({ applications, stages, jobs, joblistingId, job_name }: Props) 
                       <JobCandidate data={applications} job_name={job_name} />
                     </TabsContent>
                     <TabsContent value="pipelines">
-                        <JobPipeline data={applications} stages={stages} />
+                        <JobPipeline data={applications} stages={stages}/>
                     </TabsContent>
                     <TabsContent value="options">
                         <JobOptions job_id={Number(joblistingId)} data={jobs} stages={stages} />

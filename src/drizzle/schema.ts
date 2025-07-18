@@ -137,7 +137,7 @@ export const stagesRelations = relations(stages, ({one, many}) => ({
 export const triggers = mysqlTable('triggers', {
     id: int('id').primaryKey().autoincrement(),
     action_type: varchar({length: 255}).notNull(),
-    config: json('config').notNull().default({template: '', options: []}),
+    config: json('config').notNull().default({template: '', options: [], delay: 1, delayFormat: 'minutes'}),
     stage_id: int('stage_id'),
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
@@ -222,9 +222,3 @@ export const scoresCards_relation = relations(scoreCards, ({one}) => ({
     interviews: one(interviews, {fields: [scoreCards.interviews_id], references: [interviews.id]}),
     applications: one(applications, {fields: [scoreCards.applications_id], references: [applications.id]}),
 }));
-
-
-
-
-
-

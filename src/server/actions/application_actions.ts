@@ -2,8 +2,9 @@
 
 import {
     create_application,
-    get_all_applications,
+    get_application_by_id,
     get_applications_with_filter,
+    getTasks,
     update_application_stage
 } from "@/server/queries";
 import {auth} from "@clerk/nextjs/server";
@@ -33,6 +34,16 @@ export const update_application_stage_action = async (data: { applicationId: num
     return await update_application_stage(data);
 };
 
+export const get_application_by_id_action = async (data: { applicationId: number }) => {
+    const {userId} = await auth();
+
+    if (!userId) {
+        return {error: true, message: "There was an error retrieving application"}
+    }
+
+    return await get_application_by_id(data.applicationId);
+};
+
 export const get_applications_with_filter_action = async (unsafeData: z.infer<typeof filterApplicationsType>) => {
     const {userId} = await auth();
     const {success, data} = await filterApplicationsType.spa(unsafeData);
@@ -44,19 +55,18 @@ export const get_applications_with_filter_action = async (unsafeData: z.infer<ty
     return get_applications_with_filter(data);
 };
 
-export const get_all_applications_action = async (unsafeData: z.infer<typeof filterApplicationsType>) => {
-    const {userId} = await auth();
-    const {success, data} = await filterApplicationsType.spa(unsafeData);
-
-    if (!userId || !success) {
-        return {error: true, message: "There was an error retrieving applications"}
-    }
-
-    return get_all_applications(data);
-};
-
 // export const get_application_action = async (data: { candidateId: number }) => {
 // };
 
 // export const delete_application_action = async (data: { candidateId: number }) => {
 // };
+
+export const get_all_tasks_action = async () => {
+     const {userId} = await auth();
+
+    if (!userId) {
+        return {error: true, message: "There was an error retrieving applications"}
+    }
+
+    return await getTasks();
+};

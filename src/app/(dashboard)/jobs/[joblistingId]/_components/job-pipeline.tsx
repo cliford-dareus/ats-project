@@ -6,7 +6,7 @@ import Column from "@/components/kanban/column";
 
 type Props = {
     data: ApplicationType[];
-    stages: StageResponseType[]
+    stages: StageResponseType[];
 };
 
 const JobPipeline = ({data, stages}: Props) => {

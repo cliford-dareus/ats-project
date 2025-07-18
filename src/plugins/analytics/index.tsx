@@ -18,8 +18,6 @@ const DEFAULT_TRIGGERS: StageTrigger[] = [
 ];
 
 const TinyBird = () => {
-    // const {triggers} = useTriggers();
-
     return (
         <div className="p-4">
             <h2 className="text-xl font-bold mb-4">Smart Triggers</h2>
@@ -50,6 +48,7 @@ const pluginConfig = {
     description: "Automate recruitment workflows with triggers.",
     version: "1.0.0",
     component: TinyBird,
+    settingsComponent: TinyBird,
     activate: activate,
     deactivate: deactivate,
     defaultConfig: {

@@ -1,7 +1,7 @@
 import {StageResponseType} from '@/types';
 
 export type TriggerAction = {
-    action_type: 'move' | 'MESSAGE' | 'INTERVIEW' | 'NOTE' | 'todo' | 'tag' | 'score';
+    action_type: 'move' | 'MESSAGE' | 'INTERVIEW' | 'NOTE' | 'todo' | 'tag' | 'score' | 'email';
     config: any;
 };
 

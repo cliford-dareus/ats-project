@@ -11,43 +11,23 @@ import {getTimeElapsed} from "@/lib/utils";
 import {Dialog, DialogContent, DialogTrigger} from "@/components/ui/dialog";
 import CreateApplicationSchedule from "@/components/modal/create-application-schedule";
 import {Clock} from "lucide-react";
+import {usePluginContextHook} from "@/providers/plugins-provider";
 import {TriggerTask} from "@/plugins/smart-trigger/types";
 
 type Props = {
     data: ApplicationType;
     handleDragStart: (e: React.DragEvent<HTMLDivElement>, i: number) => void;
     stage: StageResponseType;
-    tasks: TriggerTask[]
 };
 
-const Card = ({data, handleDragStart, stage, tasks}: Props) => {
-
-    const [timeLeft, setTimeLeft] = useState(
-        tasks.map(() => ({
-            hours: 0,
-            minutes: 0,
-            expires: false,
-        }))
-    );
+const Card = ({data, handleDragStart, stage}: Props) => {
+    const {tasks} = usePluginContextHook();
+    const [activeTrigger, setActiveTrigger] = useState<TriggerTask[]>([]);
 
     useEffect(() => {
-        const updateTimeLeft = () => {
-            const updatedTimeLeft = tasks.map(task => {
-                const expiredTime = new Date(task.triggerTime!).getTime();
-                const timeLeftMs = expiredTime - Date.now();
-                const timeLeftSeconds = Math.max(timeLeftMs / 1000, 0); // Prevent negative values
-                const hours = Math.floor(timeLeftSeconds / 3600);
-                const minutes = Math.floor((timeLeftSeconds % 3600) / 60);
-                return { hours, minutes, expires: Date.now() > expiredTime };
-            });
-            setTimeLeft(updatedTimeLeft);
-        };
-
-        updateTimeLeft();
-        const interval = setInterval(updateTimeLeft, 2000);
-
-        return () => clearInterval(interval);
-    }, []);
+        const filteredTasks = tasks.filter(task => task.application_id === data.application_id);
+        setActiveTrigger(filteredTasks);
+    }, [tasks, data.application_id]);
 
     return (
         <div>
@@ -65,12 +45,10 @@ const Card = ({data, handleDragStart, stage, tasks}: Props) => {
                             <AvatarImage src="https://github.com/shadcn.png"/>
                             <AvatarFallback>CN</AvatarFallback>
                         </Avatar>
-                        {/* TODO: ADD THE INDICATOR SOMEWHERE ELSE*/}
-                        <div className="absolute -top-4 -left-2">
-                            {tasks.length && <div className="mt-2">
+                        {activeTrigger.length > 0 && activeTrigger.some(task => new Date(task.triggerTime).getTime() > Date.now()) &&
+                            <div className="absolute -top-4 -left-2">
                                 <Clock size={18}/>
                             </div>}
-                        </div>
                     </div>
 
                     <div className="">
