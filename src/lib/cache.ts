@@ -5,6 +5,7 @@ export type ValidTags =
     | ReturnType<typeof getGlobalTag>
     | ReturnType<typeof getUserTag>
     | ReturnType<typeof getIdTag>
+    | ReturnType<typeof getOrgTag>
 
 export const CACHE_TAGS = {
   candidates: "candidates",
@@ -26,6 +27,10 @@ export function getUserTag(userId: string, tag: keyof typeof CACHE_TAGS) {
 
 export function getIdTag(id: string, tag: keyof typeof CACHE_TAGS) {
     return `id:${id}-${CACHE_TAGS[tag]}` as const
+};
+
+export function getOrgTag(orgId: string, tag: keyof typeof CACHE_TAGS) {
+    return `org:${orgId}-${CACHE_TAGS[tag]}` as const
 };
 
 export function clearFullCache() {

@@ -27,9 +27,7 @@ interface FilterInterface extends z.infer<typeof filterJobType> {
 };
 
 export const create_job_listing = async (
-    data: z.infer<typeof formSchema> & {
-        userId: string | null;
-    },
+    data: z.infer<typeof formSchema>,
 ) => {
     return await db.transaction(async (trx) => {
         const [inserted_job] = await trx
@@ -67,16 +65,26 @@ export const create_job_listing = async (
             });
         };
 
-        await trx.insert(stages).values(
-            data.jobStages.map((item, i) => ({
+        await trx.insert(stages).values([
+            // Add Applied as the first stage (order 0)
+            {
+                job_id: inserted_job.id,
+                stage_name: 'Applied',
+                stage_order_id: 0,
+                assign_to: data.userId,
+                need_schedule: false,
+                color: '#6B7280', // Gray color for applied state
+            },
+            // Then add the custom stages starting from order 1
+            ...data.jobStages.map((item, i) => ({
                 job_id: inserted_job.id,
                 stage_name: item.stage_name,
-                stage_order_id: i,
-                assign_to: "sss",
+                stage_order_id: i + 1,
+                assign_to: item.stage_assign_to,
                 need_schedule: item.need_schedule,
                 color: item.color,
             })),
-        );
+        ]);
 
         revalidateDbCache({
             tag: CACHE_TAGS.jobs,

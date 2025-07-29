@@ -38,5 +38,5 @@ export const getTasks = async () => {
     return JSON.stringify({tasks});
 };
 
-export const cancelTask = async (id: number) => {
-};
+// export const cancelTask = async (id: number) => {
+// };

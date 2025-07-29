@@ -52,8 +52,15 @@ const AddCandidateAttachmentModal = ({candidateId}: Props) => {
                 method: "POST",
                 body: formData,
             });
+
+            if (!result.ok) {
+                setError("Failed to upload file");
+                return;
+            };
             const rawResponse = await result.json();
-            console.log(rawResponse);
+            // close modal
+            setValue("");
+            setIsFileSelected(false);
         } catch (error) {
             setError(`Error processing resume. Please try again. ${error}`);
             setIsFileSelected(false);
@@ -138,6 +145,7 @@ const AddCandidateAttachmentModal = ({candidateId}: Props) => {
                             </Button>
                        </div>
                 </form>
+                {error && <div className="text-red-500">{error}</div>}
             </div>
         </DialogContent>
     </Dialog>

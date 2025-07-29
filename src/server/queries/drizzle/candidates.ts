@@ -7,11 +7,9 @@ import {filterCandidateType, newCandidateForm} from "@/zod";
 
 export const create_candidate = async (data: z.infer<typeof newCandidateForm>) => {
     const [candidate] = await db.insert(candidates).values({...data, cv_path: data.resume as string}).$returningId();
-
     revalidateDbCache({
         tag: CACHE_TAGS.candidates,
     });
-
     return candidate;
 };
 

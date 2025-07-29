@@ -1,11 +1,9 @@
 import { Queue, Worker } from 'bullmq';
 import redis from './redis';
 import Trigger from "@/models/trigger";
-import { update_application_stage_action } from '@/server/actions/application_actions';
 import { applications, stages } from '@/drizzle/schema';
 import { db } from '@/drizzle/db';
 import { eq } from 'drizzle-orm';
-import { CACHE_TAGS, revalidateDbCache } from './cache';
 import mongodb from "@/lib/mongodb";
 
 // Create a queue instance

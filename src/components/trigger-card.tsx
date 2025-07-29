@@ -2,15 +2,8 @@
 
 import React from "react";
 import {StageResponseType, TriggerResponseType} from "@/types";
-import {GitCompareArrows, Network, Send} from "lucide-react";
-
-type ConfigType = {
-    condition: {
-        type: string;
-        target: string;
-        location: string;
-    };
-};
+import {GitCompareArrows, Network, Send} from "lucide-react"
+import {ConfigType} from "@/plugins/smart-trigger/types";
 
 type Props = {
     stage: StageResponseType;

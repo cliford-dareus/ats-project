@@ -9,10 +9,7 @@ import {canCreateJob} from "@/server/permissions";
 
 const jobIdSchema = z.number();
 
-export const create_job_action = async (unsafeData: z.infer<typeof formSchema>): Promise<{
-    error: boolean;
-    message: string
-} | undefined> => {
+export const create_job_action = async (unsafeData: z.infer<typeof formSchema>) => {
     const {userId} = await auth();
     const {success, data} = await formSchema.spa(unsafeData);
     const canCreate = await canCreateJob(userId);
@@ -21,7 +18,7 @@ export const create_job_action = async (unsafeData: z.infer<typeof formSchema>):
         return {error: true, message: "There was an error creating your product"}
     }
 
-    const {id} = await create_job_listing({...data, userId: userId});
+    const {id} = await create_job_listing(data);
     redirect(`/jobs/${id}`);
 };
 

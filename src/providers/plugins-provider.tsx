@@ -6,6 +6,7 @@ import {addTaskToQueue} from '@/server/queries/mongo/smart-task';
 import {getJobListingsStagesAction} from '@/server/actions/job-listings-actions';
 import {StageResponseType} from '@/types';
 import {get_all_tasks_action} from "@/server/actions/application_actions";
+import { getPlugins } from '@/lib/plugins-registry';
 
 const PluginsContext = createContext<PluginsContextType>({
     jobId: null,
@@ -41,7 +42,7 @@ export const PluginsProvider = ({children}: { children: React.ReactNode }) => {
     const [jobStages, setJobStages] = useState<StageResponseType[]>([]);
 
     // Plugins config data specific to each job or application
-    const [tasks, setTasks] = useState<any[]>([]);
+    const [tasks, setTasks] = useState<TriggerTask[]>([]);
     const [triggers, setTriggers] = useState<StageTrigger[]>([]);
     // const [jobBoard, setJobBoard] = useState<any[]>([]);
     // const [analytics, setAnalytics] = useState<any[]>([]);
@@ -97,6 +98,7 @@ export const PluginsProvider = ({children}: { children: React.ReactNode }) => {
 
     useEffect(() => {
         if (!jobId) return;
+
         const fetchStagesAndTriggers = async () => {
             try {
                 const stagesData = await getJobListingsStagesAction(Number(jobId));
@@ -111,6 +113,7 @@ export const PluginsProvider = ({children}: { children: React.ReactNode }) => {
         };
 
         fetchStagesAndTriggers();
+
     }, [jobId]);
 
     const contextValue: PluginsContextType = {

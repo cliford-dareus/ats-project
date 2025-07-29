@@ -1,6 +1,5 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {CACHE_TAGS, revalidateDbCache} from '@/lib/cache';
-import {revalidatePath} from "next/cache";
 
 export async function POST(req: NextRequest) {
     const body = await req.json();

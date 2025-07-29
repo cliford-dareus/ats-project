@@ -33,7 +33,8 @@ export const formSchema = z.object({
     jobOptional: z.object({
         job_effective_date: z.date().optional(),
         job_agency: z.string().optional(),
-    })
+    }),
+    userId: z.string().nullish(),
 });
 
 export const techSchema = z.object({

@@ -1,8 +1,21 @@
 import {StageResponseType} from '@/types';
 
+export type ConfigType = {
+    condition: {
+        type: string;
+        target: string;
+        location?: string;
+        template?: string;
+        experience?: number;
+        operator?: string;
+    };
+    delay: number;
+    delayFormat: "minutes" | "hours" | "days"
+};
+
 export type TriggerAction = {
     action_type: 'move' | 'MESSAGE' | 'INTERVIEW' | 'NOTE' | 'todo' | 'tag' | 'score' | 'email';
-    config: any;
+    config: ConfigType;
 };
 
 export type StageTrigger = {

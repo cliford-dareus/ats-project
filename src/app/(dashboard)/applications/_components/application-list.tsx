@@ -17,14 +17,14 @@ const ApplicationList = ({application, pageCount}: Props) => {
     const [selectedRow, setSelectedRow] = useState<ApplicationResponseType | null>(null);
 
     useEffect(() => {
-        if (selectedRow){
+        if (selectedRow) {
             const filter = application.filter((app) => app.id === selectedRow.id);
             setSelectedRow(filter[0])
         }
-    }, [application]);
+    }, [application, selectedRow]);
 
     return (
-        <div>
+        <>
             <DataTable<ApplicationResponseType>
                 columns={columns} data={application}
                 status='application'
@@ -32,9 +32,9 @@ const ApplicationList = ({application, pageCount}: Props) => {
             />
             <PaginationElement pageCount={pageCount}/>
             <Sheet open={!!selectedRow} onOpenChange={() => setSelectedRow(null)}>
-                                <SheetHeader>
-                                    <SheetTitle></SheetTitle>
-                                </SheetHeader>
+                <SheetHeader>
+                    <SheetTitle></SheetTitle>
+                </SheetHeader>
                 <SheetContent side="right" className="sm:max-w-xl p-0 [&>button:first-of-type]:hidden">
                     {selectedRow && <ApplicationPreview
                         data={selectedRow as ApplicationResponseType}
@@ -42,7 +42,7 @@ const ApplicationList = ({application, pageCount}: Props) => {
                     }
                 </SheetContent>
             </Sheet>
-        </div>
+        </>
     );
 };
 

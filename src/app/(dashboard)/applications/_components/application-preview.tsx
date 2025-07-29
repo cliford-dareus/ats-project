@@ -46,7 +46,7 @@ type Props = {
 };
 
 const ApplicationPreview = ({data, applications}: Props) => {
-    const {setJobId, onTriggerActivated, jobStages} = usePluginContextHook();
+    const {setJobId, jobStages} = usePluginContextHook();
     const ref = useRef<HTMLDivElement>(null);
     const [open, setOpen] = useState(false);
     const [notes, setNotes] = useState<NoteResponseType>({notes: [], total: 0});
@@ -264,10 +264,10 @@ const ApplicationPreview = ({data, applications}: Props) => {
                                 </div>
                             </div>
                         </div>
-                    </div>
+                </div>
             </div>
 
-            <div className='px-4 flex flex-col gap-2 text-sm'>
+            <div className='px-4 flex flex-col gap-2 text-sm mt-4'>
                 <div className='flex items-center gap-4 h-[30px]'>
                     <div className='flex gap-2 items-center w-[200px] text-muted-foreground'>
                         <Briefcase size={18}/>

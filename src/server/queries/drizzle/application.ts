@@ -27,12 +27,21 @@ interface CandidateInfo {
 };
 
 export const create_application = async (data: z.infer<typeof candidateForm>) => {
-  const [current_stage] = await db
+  // Get the "Applied" stage (should be stage_order_id = 0)
+  const [applied_stage] = await db
     .select()
     .from(stages)
     .where(
-      and(eq(stages.job_id, Number(data.job!)), eq(stages.stage_order_id, 0)),
+      and(
+        eq(stages.job_id, Number(data.job!)), 
+        eq(stages.stage_order_id, 0),
+        eq(stages.stage_name, 'Applied')
+      )
     );
+
+  if (!applied_stage) {
+    throw new Error('Applied stage not found for this job');
+  }
 
   // Check if user is passing a candidate id
   // Check if candidate is in the database
@@ -65,19 +74,20 @@ export const create_application = async (data: z.infer<typeof candidateForm>) =>
       const [application] = await db.insert(applications).values({
         job_id: Number(data.job),
         candidate: candidate.id,
-        current_stage_id: current_stage.id,
+        current_stage_id: applied_stage.id, // Use Applied stage
       });
 
       return application;
     } catch (err) {
       console.log(err);
+      throw err;
     }
   }
 
   await db.insert(applications).values({
     job_id: Number(data.job),
     candidate: Number(data.candidate),
-    current_stage_id: Number(current_stage.id),
+    current_stage_id: applied_stage.id, // Use Applied stage
   });
 
   revalidateDbCache({
@@ -196,12 +206,29 @@ export const get_applications_with_filter_db = async (filter: z.infer<typeof fil
 
 // ========================================================
 export const get_user_applications = async (candidateId: number) => {
+  const cacheFn = dbCache(get_user_applications_db, {
+    tags: [getGlobalTag(CACHE_TAGS.applications)],
+  });
+
+  return cacheFn(candidateId);
+};
+
+const get_user_applications_db = async (candidateId: number) => {
   return db
-    .select()
-    .from(applications)
-    .where(eq(applications.candidate, candidateId))
-    .leftJoin(scoreCards, eq(scoreCards.applications_id, applications.id))
-    .leftJoin(interviews, eq(interviews.applications_id, applications.id));
+      .select({
+        id: applications.id,
+        job_name: job_listings.name,
+        job_id: applications.job_id,
+        current_stage: stages.stage_name,
+        stage_color: stages.color,
+        applied_date: applications.created_at,
+        job_location: job_listings.location,
+        job_status: job_listings.status,
+      })
+      .from(applications)
+      .leftJoin(job_listings, eq(applications.job_id, job_listings.id))
+      .leftJoin(stages, eq(applications.current_stage_id, stages.id))
+      .where(eq(applications.candidate, candidateId));
 };
 
 export const add_interview = async ({

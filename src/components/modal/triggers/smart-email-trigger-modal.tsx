@@ -43,7 +43,7 @@ const SmartEmailTriggerModal = ({isModalOpen, closeModal, onSubmit}: Props) => {
                 config: {
                     condition: {
                         type: "email",
-                        email: data.email,
+                        target: data.email,
                         template: data.template,
                     },
                     delay: data.delay,

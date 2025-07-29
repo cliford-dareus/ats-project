@@ -1,226 +1,321 @@
-'use client'
+'use client';
 
-import React, {useActionState, useEffect, useState} from 'react';
-import StepOneCollapse from "@/app/(dashboard)/jobs/new/_component/step-one-collapse";
-import MultiSelect from "@/components/multi-select";
-import {JOB_ENUM, stageSchema} from "@/zod";
-import {DropdownMenu, DropdownMenuContent, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
-import {Lock, Plus, X} from "lucide-react";
-import {Input} from "@/components/ui/input";
-import {Button} from "@/components/ui/button";
-import {z} from "zod";
-import CustomButton from "@/components/custom-button";
-import {useForm} from "react-hook-form";
 import {FormErrors} from "@/types";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
-import {useNewJobContext} from "@/providers/new-job-provider";
+import CustomButton from "@/components/custom-button";
+import React, {useActionState, useEffect, useState} from "react";
 import {stepThreeFormAction} from "@/app/(dashboard)/jobs/new/step-three/_actions";
-import {Switch} from "@/components/ui/switch";
+import {JOB_ENUM, stageSchema} from "@/zod";
+import {z} from "zod";
+import {Plus, X, Users, Settings, Workflow, GripVertical} from "lucide-react";
+import StepOneCollapse from "@/app/(dashboard)/jobs/new/_component/step-one-collapse";
+import StepTwoCollapse from "@/app/(dashboard)/jobs/new/_component/step-two-collapse";
+import {useNewJobContext} from "@/providers/new-job-provider";
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
-import {cn} from "@/lib/utils";
+import {Switch} from "@/components/ui/switch";
+import {Badge} from "@/components/ui/badge";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const initialState: FormErrors = {};
 
-const STAGEOPTIONS = {
-    stage_name: "" as JOB_ENUM,
-    stage_assign_to: '',
-    color: '',
-    need_schedule: false,
-    type: ''
-};
-
-const JOB_STAGES = [
-    {name: "New Candidate", color: 'bg-red-500'},
-    {name: "Screening", color: 'bg-green-500'},
-    {name: "Phone Interview", color: 'bg-blue-500'},
-    {name: "Interview", color: 'bg-purple-500'},
-    {name: "Offer", color: 'bg-indigo-500'},
+const STAGE_COLORS = [
+    { name: 'Blue', value: '#3B82F6', class: 'bg-blue-500' },
+    { name: 'Green', value: '#10B981', class: 'bg-green-500' },
+    { name: 'Purple', value: '#8B5CF6', class: 'bg-purple-500' },
+    { name: 'Orange', value: '#F59E0B', class: 'bg-orange-500' },
+    { name: 'Red', value: '#EF4444', class: 'bg-red-500' },
+    { name: 'Indigo', value: '#6366F1', class: 'bg-indigo-500' },
+    { name: 'Pink', value: '#EC4899', class: 'bg-pink-500' },
+    { name: 'Teal', value: '#14B8A6', class: 'bg-teal-500' },
 ];
 
-const Page = () => {
-    const [openStage, setOpenStage] = useState<JOB_ENUM | null>(null);
-    const [stageOptions, setStageOptions] = useState<z.infer<typeof stageSchema> & { type: string }>(STAGEOPTIONS);
+const JOB_STAGES = [
+    'New Candidate',
+    'Screening',
+    'Phone Interview',
+    'Interview',
+    'Offer',
+];
+
+export default function StepThreeForm() {
     const [currentStages, setCurrentStages] = useState<z.infer<typeof stageSchema>[]>([]);
     const [serverErrors, formAction] = useActionState(stepThreeFormAction, initialState);
-    const form = useForm();
-    const {updateNewJobDetails, updateStageOptions, newJobData, removeJob} = useNewJobContext();
-
-    const handleSaveStage = (item: z.infer<typeof stageSchema>) => {
-        const newStages = currentStages.map((stage) => {
-            if (stage.stage_name === item.stage_name) {
-                return stageOptions
-            }
-            return stage;
-        })
-
-        setCurrentStages(newStages);
-        updateStageOptions(newStages);
-    };
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [newStage, setNewStage] = useState<z.infer<typeof stageSchema>>({
+        stage_name: '',
+        stage_assign_to: '',
+        need_schedule: false,
+        color: '#3B82F6'
+    });
+    const {updateStageOptions, newJobData} = useNewJobContext();
 
     useEffect(() => {
         setCurrentStages(newJobData.jobStages);
     }, [newJobData]);
 
+    const handleAddStage = () => {
+        if (newStage.stage_name && newStage.stage_assign_to) {
+            const updatedStages = [...currentStages, newStage];
+            setCurrentStages(updatedStages);
+            updateStageOptions(updatedStages);
+            setNewStage({
+                stage_name: '',
+                stage_assign_to: '',
+                need_schedule: false,
+                color: '#3B82F6'
+            });
+            setIsDialogOpen(false);
+        }
+    };
+
+    const handleRemoveStage = (index: number) => {
+        const updatedStages = currentStages.filter((_, i) => i !== index);
+        setCurrentStages(updatedStages);
+        updateStageOptions(updatedStages);
+    };
+
+    const moveStage = (fromIndex: number, toIndex: number) => {
+        const updatedStages = [...currentStages];
+        const [movedStage] = updatedStages.splice(fromIndex, 1);
+        updatedStages.splice(toIndex, 0, movedStage);
+        setCurrentStages(updatedStages);
+        updateStageOptions(updatedStages);
+    };
+
     return (
-        <>
-            <div className="flex flex-col items-center mb-8 mt-4">
-                <h1 className="text-slate-500">Workflow</h1>
-                <p className="text-2xl font-semibold leading-7">Control your job workflow</p>
+        <div className="space-y-8">
+            {/* Header */}
+            <div className="text-center space-y-2">
+                <h1 className="text-3xl font-bold text-gray-900">Hiring Workflow</h1>
+                <p className="text-gray-600">Design your hiring pipeline and interview process</p>
             </div>
 
-            <StepOneCollapse/>
+            {/* Previous Steps Summary */}
+            <div className="space-y-4">
+                <StepOneCollapse />
+                <StepTwoCollapse />
+            </div>
 
-            <form
-                action={formData => {
-                    formData.append("jobStages", JSON.stringify(currentStages));
-                    formAction(formData);
-                }}
-                className="flex flex-1 flex-col items-center mt-8"
-            >
-                <div className="w-full flex flex-col mb-2">
-                    <h2>Pipeline</h2>
-                    <p className="text-slate-500 text-sm">Manage candidates by setting a hiring workflow</p>
-                </div>
+            <form action={formData => {
+                formData.append("jobStages", JSON.stringify(currentStages));
+                formAction(formData);
+            }} className="space-y-8">
 
-                <div
-                    className="flex w-full justify-between items-center gap-2 border bg-muted min-h-8 p-2 rounded mb-2">
-                    <div className="flex items-center gap-4">
-                        <span className="w-4 h-4 rounded bg-slate-700"></span>
-                        <p>Applied</p>
-                    </div>
-                    <Lock size={18}/>
-                </div>
-
-                {currentStages.length > 0 &&
-                    <div className="w-full">
-                        <div className="flex flex-col gap-2 w-full">
-                            {currentStages.map((item, index) => (
-                                <div
-                                    key={index}
-                                >
-                                    <div
-                                        className="relative flex bg-muted justify-between items-center w-full p-2 min-h-8 rounded border"
-                                        onClick={() => {
-                                            setOpenStage(item.stage_name as JOB_ENUM)
-                                        }}
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <span className={cn([JOB_STAGES[index].color], "w-4 h-4 rounded")}></span>
-                                            <p className="w-[150px]">{item.stage_name}</p>
-                                        </div>
-                                        <div
-                                            className="flex items-center justify-between w-[30px] absolute right-0 top-0 bottom-0"
-                                            onClick={() => removeJob(item, "jobStages")}
-                                        >
-                                            <X className="cursor-pointer" size={20}/>
-                                        </div>
-
-                                    </div>
-                                    {openStage === item.stage_name &&
-                                        <div className="w-full border p-4 flex flex-col gap-4">
-                                            {/* TODO: FIX THE OPTION ALTERING ALL OF THE STAGE */}
-                                            <div className="flex items-center gap-4">
-                                                <div className="flex-1">
-                                                    <Label>Stage Name</Label>
-                                                    <Input
-                                                        defaultValue={item.stage_name}
-                                                        // value={stageOptions.stage_name}
-                                                        onChange={(e) => {
-                                                            setStageOptions({
-                                                                ...stageOptions,
-                                                                stage_name: e.target.value as JOB_ENUM
-                                                            });
-                                                        }}
-                                                    />
-                                                </div>
-
-                                                <div className="flex-2">
-                                                    <Label>Type</Label>
-                                                    <Select value={stageOptions.type} onValueChange={(value) => {
-                                                        setStageOptions({...stageOptions, type: value})
-                                                    }}>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Select a fruit"/>
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-
-                                            </div>
-
-                                            <div className="flex items-center gap-4">
-                                                <Label>Can contact</Label>
-                                                <Switch
-                                                    checked={item.need_schedule}
-                                                    onCheckedChange={() => setStageOptions({
-                                                        ...stageOptions, need_schedule: !stageOptions.need_schedule,
-                                                    })}
-                                                />
-                                            </div>
-
-                                            <div className="flex items-center gap-4">
-                                                <Button variant="outline">Cancel</Button>
-                                                <Button onClick={() => {
-                                                    setOpenStage(null);
-                                                    handleSaveStage(item);
-                                                }}
-                                                >Save</Button>
-                                            </div>
-                                        </div>}
+                {/* Workflow Card */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Workflow size={20} className="text-blue-500" />
+                            Hiring Pipeline
+                        </CardTitle>
+                        <p className="text-sm text-gray-600">
+                            Create stages that candidates will move through during the hiring process
+                        </p>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        {/* Default Applied Stage */}
+                        <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center">
+                                    <span className="text-white text-sm font-medium">1</span>
                                 </div>
-                            ))}
+                                <div className="flex-1">
+                                    <h3 className="font-medium text-gray-900">Applied</h3>
+                                    <p className="text-sm text-gray-600">Default stage for new applications</p>
+                                </div>
+                                <Badge variant="secondary">Default</Badge>
+                            </div>
                         </div>
-                    </div>
-                }
 
-                <MultiSelect
-                    className="w-full flex flex-col gap-2"
-                    schema={stageSchema}
-                    fieldName={"jobStages"}
-                    setValue={form.setValue}
-                    getValues={form.getValues}
-                    renderForm={(onSubmit, forms) => (
-                        <DropdownMenu>
-                            <DropdownMenuTrigger
-                                className="w-full text-blue-500 py-1 rounded flex items-center justify-center gap-2">
-                                <Plus size={18}/>
-                                Add new pipeline stage
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                                <Select
-                                    {...forms.register("stage_name")}
-                                    onValueChange={(e) => forms.setValue("stage_name", e)}
-                                >
-                                    <SelectTrigger className="w-[180px]">
-                                        <SelectValue placeholder="Select a fruit"/>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {JOB_STAGES.map(stage => (
-                                            <SelectItem key={stage.name}
-                                                        value={stage.name}>{stage.name}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <Input {...forms.register('stage_assign_to')} placeholder="Years of Experience"/>
-                                <Button
-                                    onClick={() => {
-                                        onSubmit(forms.watch() as z.infer<typeof stageSchema>)
-                                        updateNewJobDetails({
-                                            ...forms.watch() as z.infer<typeof stageSchema>,
-                                            color: JOB_STAGES.find(d => d.name == forms.watch().stage_name)?.color,
-                                            need_schedule: false
-                                        }, "jobStages")
-                                    }}>Add</Button>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    )}
-                />
-                <CustomButton text="Continue"/>
+                        {/* Custom Stages */}
+                        {currentStages.length > 0 && (
+                            <div className="space-y-3">
+                                {currentStages.map((stage, index) => (
+                                    <div key={index} className="p-4 bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">
+                                        <div className="flex items-center gap-3">
+                                            <button
+                                                type="button"
+                                                className="cursor-grab hover:cursor-grabbing text-gray-400 hover:text-gray-600"
+                                            >
+                                                <GripVertical size={16} />
+                                            </button>
+
+                                            <div
+                                                className="w-8 h-8 rounded-full flex items-center justify-center"
+                                                style={{ backgroundColor: stage.color }}
+                                            >
+                                                <span className="text-white text-sm font-medium">{index + 2}</span>
+                                            </div>
+
+                                            <div className="flex-1">
+                                                <h3 className="font-medium text-gray-900">{stage.stage_name}</h3>
+                                                <div className="flex items-center gap-4 mt-1">
+                                                    <p className="text-sm text-gray-600">
+                                                        <Users size={14} className="inline mr-1" />
+                                                        Assigned to: {stage.stage_assign_to}
+                                                    </p>
+                                                    {stage.need_schedule && (
+                                                        <Badge variant="outline" className="text-xs">
+                                                            <Settings size={12} className="mr-1" />
+                                                            Requires Scheduling
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => handleRemoveStage(index)}
+                                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                            >
+                                                <X size={16} />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Add Stage Button */}
+                        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button variant="outline" className="w-full h-12 border-dashed">
+                                    <Plus size={18} className="mr-2" />
+                                    Add Hiring Stage
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-md">
+                                <DialogHeader>
+                                    <DialogTitle>Add New Hiring Stage</DialogTitle>
+                                </DialogHeader>
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="stage_name">Stage Name</Label>
+                                        {/* <Input
+                                            id="stage_name"
+                                            placeholder="e.g. Phone Interview, Technical Assessment"
+                                            value={newStage.stage_name}
+                                            onChange={(e) => setNewStage({...newStage, stage_name: e.target.value})}
+                                        /> */}
+                                        <Select
+                                            name="stage_name"
+                                            onValueChange={(value) => setNewStage({...newStage, stage_name:  value as JOB_ENUM})}
+                                        >
+                                            <SelectTrigger className="">
+                                                <SelectValue placeholder="Select a stage name"/>
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {JOB_STAGES.map(stage => (
+                                                    <SelectItem key={stage} value={stage}>{stage}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="stage_assign_to">Assign To</Label>
+                                        <Input
+                                            id="stage_assign_to"
+                                            placeholder="e.g. HR Manager, Engineering Team"
+                                            value={newStage.stage_assign_to}
+                                            onChange={(e) => setNewStage({...newStage, stage_assign_to: e.target.value})}
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label>Stage Color</Label>
+                                        <div className="flex gap-2 flex-wrap">
+                                            {STAGE_COLORS.map((color) => (
+                                                <button
+                                                    key={color.value}
+                                                    type="button"
+                                                    className={`w-8 h-8 rounded-full ${color.class} ${
+                                                        newStage.color === color.value ? 'ring-2 ring-offset-2 ring-gray-400' : ''
+                                                    }`}
+                                                    onClick={() => setNewStage({...newStage, color: color.value})}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center space-x-2">
+                                        <Switch
+                                            id="need_schedule"
+                                            checked={newStage.need_schedule}
+                                            onCheckedChange={(checked) => setNewStage({...newStage, need_schedule: checked})}
+                                        />
+                                        <Label htmlFor="need_schedule" className="text-sm">
+                                            Requires scheduling (interviews, assessments)
+                                        </Label>
+                                    </div>
+
+                                    <div className="flex gap-2 pt-4">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => setIsDialogOpen(false)}
+                                            className="flex-1"
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            onClick={handleAddStage}
+                                            className="flex-1"
+                                            disabled={!newStage.stage_name || !newStage.stage_assign_to}
+                                        >
+                                            Add Stage
+                                        </Button>
+                                    </div>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+
+                        {/* Workflow Preview */}
+                        {currentStages.length > 0 && (
+                            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                <h3 className="font-medium text-blue-900 mb-3">Workflow Preview</h3>
+                                <div className="flex items-center gap-2 overflow-x-auto">
+                                    <Badge variant="secondary">Applied</Badge>
+                                    {currentStages.map((stage, index) => (
+                                        <React.Fragment key={index}>
+                                            <div className="w-2 h-0.5 bg-blue-300" />
+                                            <Badge
+                                                variant="secondary"
+                                                style={{ backgroundColor: stage.color + '20', color: stage.color }}
+                                            >
+                                                {stage.stage_name}
+                                            </Badge>
+                                        </React.Fragment>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* Action Buttons */}
+                <div className="flex justify-between pt-6 border-t">
+                    <Button variant="outline" type="button" onClick={() => window.history.back()}>
+                        Back
+                    </Button>
+                    <CustomButton
+                        text="Continue to Review"
+                        className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                    />
+                </div>
             </form>
-        </>
+        </div>
     );
-};
-
-export default Page;
+}

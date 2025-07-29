@@ -15,7 +15,7 @@ export const activatePlugins = async (orgId: string) => {
 
     enabledPlugins.forEach(pluginId => {
         const plugin = registeredPlugins.find(p => p.id === pluginId);
-        plugin?.activate?.(pluginId);
+        // plugin?.activate?.(pluginId);
     });
 };
 
@@ -25,6 +25,6 @@ export const cleanupPlugins = (orgId: string) => {
 
     enabledPlugins.forEach(pluginId => {
         const plugin = getPlugins().find(p => p.id === pluginId);
-        plugin?.deactivate?.(pluginId);
+        // plugin?.deactivate?.(pluginId);
     });
 };
