@@ -71,7 +71,7 @@ const Layout = async ({ children }: Props) => {
               <AuthDropdown user={user} orgId={orgId} />
             </div>
           </header>
-          <>{children}</>
+          <div className="max-h-[calc(100vh_-_100px)] overflow-scroll no-scrollbar">{children}</div>
         </SidebarInset>
       </Provider>
   );

@@ -1,7 +1,6 @@
 import {PluginConfig} from "@/lib/plugins-registry";
 import React from "react";
-// import {useTriggers} from "@/providers/plugins-provider";
-import {activate, deactivate} from "@/plugins/analytics/lifecycle";
+import {lifecycle} from "./lifecycle";
 // import {StageTrigger} from "./types";
 
 const DEFAULT_TRIGGERS: StageTrigger[] = [
@@ -49,8 +48,9 @@ const pluginConfig = {
     version: "1.0.0",
     component: TinyBird,
     settingsComponent: TinyBird,
-    activate: activate,
-    deactivate: deactivate,
+    actions: lifecycle,
+    // activate: activate,
+    // deactivate: deactivate,
     defaultConfig: {
         triggers: [],
     },

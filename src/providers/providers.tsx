@@ -8,6 +8,7 @@ import { useEffect } from "react";
 
 import SmartTriggers from "@/plugins/smart-trigger/index";
 import TinyBird from "@/plugins/analytics/index"
+import ExternalJobBoard from "@/plugins/external-job-board/index";
 
 type Props = {
   children: React.ReactNode;
@@ -16,14 +17,11 @@ type Props = {
 
 registerPlugin(SmartTriggers);
 registerPlugin(TinyBird);
+registerPlugin(ExternalJobBoard);
 
 const Provider = ({ children, orgId }: Props) => {
-    useEffect(() => {
-        fetchPlugins(orgId);
-    }, []);
-
   return (
-    <PluginsProvider>
+    <PluginsProvider orgId={orgId}>
       <NewJobContextProvider>
         <SidebarProvider
           style={

@@ -1,33 +1,42 @@
 'use client';
 
 import React, {createContext, useContext, useState, useCallback, useEffect, Dispatch, SetStateAction} from 'react';
-import {StageTrigger, TriggerAction, TriggerTask} from '@/plugins/smart-trigger/types';
-import {addTaskToQueue} from '@/server/queries/mongo/smart-task';
-import {getJobListingsStagesAction} from '@/server/actions/job-listings-actions';
+import {StageTrigger, TriggerTask} from '@/plugins/smart-trigger/types';
 import {StageResponseType} from '@/types';
 import {get_all_tasks_action} from "@/server/actions/application_actions";
-import { getPlugins } from '@/lib/plugins-registry';
+import {fetchPlugins, getPlugins, pluginRegistry} from '@/lib/plugins-registry';
+import { RANGE_OPTIONS } from '@/lib/utils';
 
 const PluginsContext = createContext<PluginsContextType>({
+    orgId: null,
+    chartRange: RANGE_OPTIONS.last_7_days,
     jobId: null,
     tasks: [],
+    analytics: {},
     jobStages: [],
+    setJobStages: () => {},
     setJobId: () => {},
     triggers: [],
     setTriggers: () => {},
-    onTriggerActivated: async () => {},
-    fetchApplicationTasks: async () => {}
+    fetchApplicationTasks: async () => {},
+    setAnalytics: () => {},
+    setOrgId: () => {},
 });
 
 type PluginsContextType = {
+    orgId: string | null;
+    chartRange: {startDate: Date | null, endDate: Date | null};
     jobId: string | null;
     tasks: TriggerTask[];
+    analytics: {};
     setJobId: Dispatch<SetStateAction<string | null>>;
     jobStages: StageResponseType[];
+    setJobStages: Dispatch<SetStateAction<StageResponseType[]>>;
     triggers: StageTrigger[];
     setTriggers: Dispatch<SetStateAction<StageTrigger[]>>;
     fetchApplicationTasks: () => Promise<void>;
-    onTriggerActivated: (data: TriggerPayloadType) => Promise<void>;
+    setAnalytics: Dispatch<SetStateAction<{}>>;
+    setOrgId: Dispatch<SetStateAction<string | null>>;
 };
 
 type TriggerPayloadType = {
@@ -36,56 +45,21 @@ type TriggerPayloadType = {
     stageName: string;
 };
 
-export const PluginsProvider = ({children}: { children: React.ReactNode }) => {
-    // Setup for smart-trigger
+export const PluginsProvider = ({children, orgId}: { children: React.ReactNode, orgId: string }) => {
+    const [orgIdState, setOrgIdState] = useState<string | null>(orgId);
+    const [plugins, setPlugins] = useState(getPlugins());
     const [jobId, setJobId] = useState<string | null>(null);
     const [jobStages, setJobStages] = useState<StageResponseType[]>([]);
 
     // Plugins config data specific to each job or application
+    //SMART TRIGGERS
     const [tasks, setTasks] = useState<TriggerTask[]>([]);
     const [triggers, setTriggers] = useState<StageTrigger[]>([]);
-    // const [jobBoard, setJobBoard] = useState<any[]>([]);
-    // const [analytics, setAnalytics] = useState<any[]>([]);
-
-
-    const processTriggerActions = async (
-        applicationId: number,
-        stageTriggers: StageTrigger[],
-        stageName: string
-    ) => {
-        for (const trigger of stageTriggers) {
-            for (const action of trigger.actions) {
-                if (action.action_type === null) continue;
-                await addTaskToQueue(applicationId, action, stageName);
-            }
-        }
-    };
-
-    const parseTriggerResponse = (stageData: StageResponseType): StageTrigger => {
-        try {
-            return {
-                id: String(stageData.id),
-                stage: stageData.stage_name,
-                actions: JSON.parse(stageData.trigger) as TriggerAction[]
-            };
-        } catch (error) {
-            console.error(`Failed to parse trigger for stage ${stageData.id}:`, error);
-            return {
-                id: String(stageData.id),
-                stage: stageData.stage_name,
-                actions: []
-            };
-        }
-    };
-
-    const onTriggerActivated = useCallback(
-        async (data: TriggerPayloadType) => {
-            const { applicationId, stageId, stageName } = data;
-            const stageTriggers = triggers.filter((t) => t.id === String(stageId));
-            await processTriggerActions(applicationId, stageTriggers, stageName);
-        },
-        [triggers]
-    );
+    //EXTERNAL JOB BOARD
+    const [jobBoard, setJobBoard] = useState<any[]>([]);
+    //ANALYTICS
+    const [chartRange, setChartRange] = useState<any>(RANGE_OPTIONS.last_7_days);
+    const [analytics, setAnalytics] = useState<{}>({});
 
     const fetchApplicationTasks = useCallback(
         async () => {
@@ -96,36 +70,36 @@ export const PluginsProvider = ({children}: { children: React.ReactNode }) => {
         []
     );
 
-    useEffect(() => {
-        if (!jobId) return;
-
-        const fetchStagesAndTriggers = async () => {
-            try {
-                const stagesData = await getJobListingsStagesAction(Number(jobId));
-                const validStagesData = Array.isArray(stagesData) ? stagesData : [];
-                const parsedTriggers = validStagesData.map(parseTriggerResponse);
-
-                setJobStages(validStagesData);
-                setTriggers(parsedTriggers);
-            } catch (error) {
-                console.error('Failed to fetch stages and triggers:', error);
-            }
-        };
-
-        fetchStagesAndTriggers();
-
-    }, [jobId]);
-
-    const contextValue: PluginsContextType = {
+     const contextValue: PluginsContextType = {
+        orgId: orgIdState,
+        chartRange,
         tasks,
         jobId,
         setJobId,
         jobStages,
+        analytics,
+        setJobStages,
         triggers,
         setTriggers,
         fetchApplicationTasks,
-        onTriggerActivated
+        setAnalytics,
+        setOrgId: setOrgIdState,
     };
+
+    useEffect(() => {
+        if (!orgIdState) return;
+        fetchPlugins(orgIdState).then((plugins) => {
+            setPlugins(plugins);
+        });
+    }, [orgIdState]);
+
+    useEffect(() => {
+        Array.from(pluginRegistry.entries()).forEach(([id, state]) => {
+            if (state.enabled && state.config.actions?.activate) {
+                state.config.actions.activate(contextValue);
+            }
+        })
+    }, [plugins]);
 
     return (
         <PluginsContext.Provider value={contextValue}>

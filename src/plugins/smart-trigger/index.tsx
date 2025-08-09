@@ -1,7 +1,7 @@
 import {PluginConfig} from "@/lib/plugins-registry";
 import React from "react";
 import {StageTrigger} from "./types";
-import {lifecycle} from "@/plugins/smart-trigger/lifecycle";
+import lifecycle from "@/plugins/smart-trigger/lifecycle";
 
 const DEFAULT_TRIGGERS: StageTrigger[] = [
     {
@@ -50,8 +50,7 @@ const pluginConfig = {
     version: "1.0.0",
     component: SmartTriggers,
     settingsComponent: SmartTriggers,
-    activate: lifecycle.activate,
-    deactivate: lifecycle.deactivate,
+    actions: lifecycle,
     defaultConfig: {
         triggers: DEFAULT_TRIGGERS,
     },

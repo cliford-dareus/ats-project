@@ -1,17 +1,17 @@
 "use client";
 
-import React, {Dispatch, DragEvent, SetStateAction, useEffect, useState} from "react";
+import React, { Dispatch, DragEvent, SetStateAction, useEffect, useState } from "react";
 import Card from "@/components/kanban/card";
-import {ApplicationType, StageResponseType} from "@/types";
+import { ApplicationType, StageResponseType } from "@/types";
 import DropIndicator from "@/components/kanban/drop-indicator";
-import {update_application_stage_action} from "@/server/actions/application_actions";
-import {JOB_ENUM} from "@/zod";
-import {Badge} from "@/components/ui/badge";
-import {EllipsisVertical, WandSparkles} from "lucide-react";
-import {cn} from "@/lib/utils";
-import {TriggerAction} from "@/plugins/smart-trigger/types";
-import {usePluginContextHook} from "@/providers/plugins-provider";
-import {isPluginActive} from "@/lib/plugins-registry";
+import { update_application_stage_action } from "@/server/actions/application_actions";
+import { JOB_ENUM } from "@/zod";
+import { Badge } from "@/components/ui/badge";
+import { EllipsisVertical, WandSparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { TriggerAction } from "@/plugins/smart-trigger/types";
+import { usePluginContextHook } from "@/providers/plugins-provider";
+import { isPluginActive, pluginRegistry } from "@/lib/plugins-registry";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -25,11 +25,12 @@ import {
     DropdownMenuTrigger
 } from "../ui/dropdown-menu";
 import SmartMoveTriggerModal from "@/components/modal/triggers/smart-move-trigger-modal";
-import {add_trigger_to_stage_action} from "@/server/actions/stage_actions";
-import {useModalDialog} from "@/hooks/use-modal-dialog";
+import { add_trigger_to_stage_action } from "@/server/actions/stage_actions";
+import { useModalDialog } from "@/hooks/use-modal-dialog";
 import SmartEmailTriggerModal from "@/components/modal/triggers/smart-email-trigger-modal";
-import {useRouter} from "next/navigation";
+import { useRouter } from "next/navigation";
 import TriggerCard from "../trigger-card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 type Props = {
     title: string;
@@ -42,12 +43,12 @@ type Props = {
     setShowTriggers: Dispatch<SetStateAction<boolean>>;
 };
 
-const Column = ({title, cards, column, setCards, stage, color, showTriggers, setShowTriggers}: Props) => {
+const Column = ({ title, cards, column, setCards, stage, color, showTriggers, setShowTriggers }: Props) => {
     const [hasRefreshedYet, setHasRefreshedYet] = useState(false);
-    const [openSmartMove, setOpenSmartMove] = useState({type: "", stage: "", action_type: ""});
-    const {isModalOpen, openModal, closeModal} = useModalDialog();
+    const [openSmartMove, setOpenSmartMove] = useState({ type: "", stage: "", action_type: "" });
+    const { isModalOpen, openModal, closeModal } = useModalDialog();
     const context = usePluginContextHook();
-    const smart_trigger = isPluginActive("smart-triggers");
+    const smartTriggers = pluginRegistry.get("smart-triggers");
     const [active, setActive] = useState(false);
     const router = useRouter();
 
@@ -62,7 +63,7 @@ const Column = ({title, cards, column, setCards, stage, color, showTriggers, set
         clearHighlights();
 
         const indicators = getIndicators();
-        const {element} = getNearestIndicator(e, indicators);
+        const { element } = getNearestIndicator(e, indicators);
 
         const before = Number(element?.dataset.before) || -1;
         const dropStage = Number(element?.dataset.stage);
@@ -73,7 +74,7 @@ const Column = ({title, cards, column, setCards, stage, color, showTriggers, set
             let cardToTransfer = copy.find((c) => c.application_id === cardId);
 
             if (!cardToTransfer) return;
-            cardToTransfer = {...cardToTransfer, stageName: column};
+            cardToTransfer = { ...cardToTransfer, stageName: column };
             copy = copy.filter((c) => c.application_id !== cardId);
             const moveToBack = before === -1;
 
@@ -83,7 +84,7 @@ const Column = ({title, cards, column, setCards, stage, color, showTriggers, set
                 const insertAtIndex = copy.findIndex((el) => el.application_id === before);
                 if (insertAtIndex === undefined) return;
                 copy.splice(insertAtIndex, 0, cardToTransfer!);
-            }
+            };
 
             if (title !== "Applied" && cardToTransfer.application_id) {
                 console.log("CARD", cardToTransfer.application_id)
@@ -93,17 +94,18 @@ const Column = ({title, cards, column, setCards, stage, color, showTriggers, set
                 });
                 setCards(copy);
 
-                // add smarter logic
-                if (!smart_trigger) return;
-                context.onTriggerActivated({
-                    applicationId: cardToTransfer.application_id,
-                    stageId: dropStage,
-                    stageName: stage.stage_name!
-                })
+                if (smartTriggers?.config && typeof smartTriggers.config.actions?.triggerAction === "function" && smartTriggers.enabled) {
+                    smartTriggers.config.actions?.triggerAction(context, {
+                        applicationId: cardToTransfer.application_id,
+                        stageId: dropStage,
+                        stageName: stage.stage_name!
+                    });
+                }
                 context.fetchApplicationTasks();
-            }
-        }
+            };
+        };
     };
+
     const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         highlightIndicator(e);
@@ -137,7 +139,7 @@ const Column = ({title, cards, column, setCards, stage, color, showTriggers, set
                 const offset = e.clientY - (box.top + DISTANCE_OFFSET);
 
                 if (offset < 0 && offset > closest.offset) {
-                    return {offset: offset, element: child};
+                    return { offset: offset, element: child };
                 } else {
                     return closest;
                 }
@@ -186,8 +188,8 @@ const Column = ({title, cards, column, setCards, stage, color, showTriggers, set
 
     return (
         <div className="min-w-56 w-56">
-            {showTriggers && <div className="">
-                {filteredStages.map((stage) => <TriggerCard key={stage.id} stage={stage}/>)}
+            {smartTriggers?.enabled && showTriggers && <div className="">
+                {filteredStages.map((stage) => <TriggerCard key={stage.id} stage={stage} />)}
             </div>}
             <div className="mb-2 flex items-center justify-between my-4">
                 <div className="flex items-center gap-2">
@@ -197,7 +199,14 @@ const Column = ({title, cards, column, setCards, stage, color, showTriggers, set
                         className="rounded text-xs px-1  py-.5 flex items-center justify-center bg-muted text-slate-500"
                     >{filteredCards?.length}
                     </Badge>
-                    <WandSparkles onClick={() => setShowTriggers(!showTriggers)} size={18} className="text-slate-400"/>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <WandSparkles onClick={() => setShowTriggers(!showTriggers)} size={18} className="text-slate-400 cursor-pointer" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            {smartTriggers?.enabled ? <p>Smart Triggers</p> : <p>The Smart Triggers plugin is not enabled.</p>}
+                        </TooltipContent>
+                    </Tooltip>
                 </div>
 
                 <SmartMoveTriggerModal
@@ -214,7 +223,7 @@ const Column = ({title, cards, column, setCards, stage, color, showTriggers, set
 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <EllipsisVertical size={18} className="-mr-1.5 text-slate-400"/>
+                        <EllipsisVertical size={18} className="-mr-1.5 text-slate-400" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
                         <DropdownMenuItem>
@@ -223,7 +232,7 @@ const Column = ({title, cards, column, setCards, stage, color, showTriggers, set
                         <DropdownMenuItem>
                             Sort
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator/>
+                        <DropdownMenuSeparator />
                         <DropdownMenuGroup>
                             <DropdownMenuSub>
                                 <DropdownMenuSubTrigger>Trigger</DropdownMenuSubTrigger>
@@ -258,7 +267,7 @@ const Column = ({title, cards, column, setCards, stage, color, showTriggers, set
                                                             </DropdownMenuItem>
                                                         ))
                                                     }
-                                                    <DropdownMenuSeparator/>
+                                                    <DropdownMenuSeparator />
                                                     <DropdownMenuItem>More...</DropdownMenuItem>
                                                 </DropdownMenuSubContent>
                                             </DropdownMenuPortal>
@@ -278,17 +287,17 @@ const Column = ({title, cards, column, setCards, stage, color, showTriggers, set
                 onDrop={handleDragEnd}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
-                className="h-full w-full transition-colors relative z-50 overflow-y-scroll"
+                className={cn("h-full w-full transition-colors no-scrollbar", { "bg-blue-100": active })}
             >
                 {filteredCards?.map((c: ApplicationType) => {
                     return <Card
-                        key={c.application_id}
+                        key={c.id}
                         stage={stage}
                         data={c}
                         handleDragStart={(e) => handleDragStart(e, c.application_id!)}
                     />;
                 })}
-                <DropIndicator beforeId={null} stage={stage} column={column} active={active}/>
+                <DropIndicator beforeId={null} stage={stage} column={column} active={active} />
             </div>
         </div>
     );

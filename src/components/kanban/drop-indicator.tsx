@@ -8,7 +8,7 @@ type Props = {
     beforeId: number | null;
     column: JOB_ENUM | null | undefined;
     active: boolean;
-}
+};
 
 const DropIndicator = ({stage, beforeId, column, active}: Props) => {
     return (

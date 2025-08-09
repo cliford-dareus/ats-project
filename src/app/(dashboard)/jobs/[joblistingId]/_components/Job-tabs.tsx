@@ -1,7 +1,7 @@
 "use client";
 
 import React, {useEffect, useCallback} from "react";
-import { BriefcaseBusiness, CircleUser, LucideEdit, LucideTrash } from "lucide-react";
+import { BriefcaseBusiness, CircleUser, LucideEdit, LucideSettings, LucideTrash } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import JobPipeline from "./job-pipeline";
 import JobOptions from "./job-options";
@@ -18,6 +18,7 @@ import {
 } from "@/types";
 import JobCandidate from "./job-candidate";
 import { usePluginContextHook } from "@/providers/plugins-provider";
+import { pluginRegistry } from "@/lib/plugins-registry";
 
 type Props = {
     applications: ApplicationType[];
@@ -49,6 +50,13 @@ const JobTabs = ({ applications, stages, jobs, joblistingId, job_name }: Props) 
     }, [joblistingId]);
 
     useEffect(() => {
+        const smartTriggers = pluginRegistry.get("smart-triggers");
+        if (smartTriggers?.config && typeof smartTriggers.config.actions?.activate === "function" && smartTriggers.enabled) {
+            smartTriggers.config.actions?.activate(context);
+        }
+    }, [context.jobId]);
+
+    useEffect(() => {
         const tabParam = searchParams.get('tab') as TabValue;
         setActiveTab(tabParam || DEFAULT_TAB);
     }, [searchParams]);
@@ -58,7 +66,7 @@ const JobTabs = ({ applications, stages, jobs, joblistingId, job_name }: Props) 
             <div className="flex px-4">
                 <Tabs className="px-0 h-full w-full" value={activeTab} onValueChange={handleTabChange}>
                   <div className="flex items-center justify-between">
-                    <TabsList className="bg-transparent rounded-none p-0 border-b w-full justify-start">
+                    <TabsList className="bg-transparent rounded-none p-0 border-b justify-start">
                         {['candidates', 'pipelines', 'options'].map((tab) => (
                             <CustomTabsTrigger
                                 key={tab}
@@ -71,10 +79,13 @@ const JobTabs = ({ applications, stages, jobs, joblistingId, job_name }: Props) 
                         ))}
                     </TabsList>
 
-                    <div className="flex items-center gap-4">
-                      <LucideEdit size={18} />
-                      <LucideTrash size={18} />
-                    </div>
+
+                      {/* <LucideEdit size={18} /> */}
+                      <div className="flex items-center gap-2 px-4 py-1 text-sm border rounded-md h-full cursor-pointer">
+                        <LucideSettings size={18} />
+                        <span>Setting Page</span>
+                      </div>
+
                   </div>
                     <TabsContent value="candidates">
                       <JobCandidate data={applications} job_name={job_name} />

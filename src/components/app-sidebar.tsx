@@ -58,6 +58,12 @@ const data = {
             isActive: false,
         },
         {
+            title: "Reports",
+            url: "/reports",
+            icon: Users,
+            isActive: false,
+        },
+        {
             title: "Settings",
             url: "/settings",
             icon: Settings,

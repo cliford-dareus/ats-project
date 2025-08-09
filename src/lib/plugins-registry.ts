@@ -9,6 +9,7 @@ export type PluginConfig = {
     description : string,
     component: React.ComponentType,
     settingsComponent: React.ComponentType,
+    actions?: any,
     activate?: (context: any) => Promise<void>,
     deactivate?: (context: any) => void,
     defaultConfig?: any,

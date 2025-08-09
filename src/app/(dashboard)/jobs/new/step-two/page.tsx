@@ -23,8 +23,8 @@ const initialState: FormErrors = {};
 export default function StepTwoForm() {
     const [currentStages, setCurrentStages] = useState<z.infer<typeof techSchema>[]>([]);
     const [serverErrors, formAction] = useActionState(stepTwoFormAction, initialState);
-    const form = useForm();
     const {updateNewJobDetails, newJobData, removeJob} = useNewJobContext();
+    const form = useForm();
 
     useEffect(() => {
         setCurrentStages(newJobData.jobTechnology);
@@ -106,7 +106,7 @@ export default function StepTwoForm() {
                                                 <FormItem>
                                                     <FormLabel>Technology/Skill</FormLabel>
                                                     <FormControl>
-                                                        <Input 
+                                                        <Input
                                                             {...forms.register("technology")}
                                                             placeholder="e.g. React, Python, AWS"
                                                         />
@@ -117,7 +117,7 @@ export default function StepTwoForm() {
                                                 <FormItem>
                                                     <FormLabel>Years of Experience</FormLabel>
                                                     <FormControl>
-                                                        <Input 
+                                                        <Input
                                                             {...forms.register("year_of_experience")}
                                                             type="number"
                                                             placeholder="e.g. 3"
@@ -126,7 +126,7 @@ export default function StepTwoForm() {
                                                     <FormMessage />
                                                 </FormItem>
 
-                                                <Button 
+                                                <Button
                                                     type="button"
                                                     onClick={() => {
                                                         form.setValue('jobTechnology', currentStages);
@@ -151,8 +151,8 @@ export default function StepTwoForm() {
                     <Button variant="outline" type="button" onClick={() => window.history.back()}>
                         Back
                     </Button>
-                    <CustomButton 
-                        text="Continue to Workflow" 
+                    <CustomButton
+                        text="Continue to Workflow"
                         className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
                     />
                 </div>

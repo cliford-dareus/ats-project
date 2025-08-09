@@ -59,11 +59,11 @@ const SideNavigation = () => {
                 return newJobData.jobStages.length > 0;
             default:
                 return false;
-        }
+        };
     };
 
     return (
-        <div className="space-y-6 px-4">
+        <div className="space-y-20 px-4">
             {/* Header */}
             <div className="space-y-4">
                 <Link href="/jobs">
@@ -74,13 +74,13 @@ const SideNavigation = () => {
                 </Link>
 
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Create New Job</h1>
+                    <h1 className="text-xl font-bold text-gray-900">Create New Job</h1>
                     <p className="text-gray-600 mt-1">Set up your job listing step by step</p>
                 </div>
             </div>
 
             {/* Progress Steps */}
-            <div className="space-y-2">
+            <div className="space-y-4">
                 {steps.map((step, index) => {
                     const isActive = currentStep === index;
                     const isCompleted = isStepCompleted(index);
@@ -109,9 +109,9 @@ const SideNavigation = () => {
                                         : "bg-gray-50 border-gray-100 cursor-not-allowed opacity-60"
                                 )}
                             >
-                                <div className="flex items-start gap-3">
+                                <div className="flex items-center gap-3">
                                     <div className={cn(
-                                        "flex items-center justify-center w-12 h-12 rounded-full border-2 transition-colors",
+                                        "flex items-center justify-center w-8 h-8 rounded-full border-2 transition-colors",
                                         isActive
                                             ? "bg-blue-500 border-blue-500 text-white"
                                             : isCompleted
@@ -120,7 +120,7 @@ const SideNavigation = () => {
                                             ? "bg-white border-gray-300 text-gray-600"
                                             : "bg-gray-100 border-gray-200 text-gray-400"
                                     )}>
-                                        {isCompleted ? <Check size={20} /> : step.icon}
+                                        {isCompleted ? <Check size={18} /> : step.icon}
                                     </div>
 
                                     <div className="flex-1 min-w-0">
