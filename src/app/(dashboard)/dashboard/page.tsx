@@ -35,8 +35,6 @@ const Page = async ({ searchParams }: Props) => {
         getRecruitmentFunnel()
     ]);
 
-    const currentView = view || 'modern';
-
     return (
         <div className="min-h-screen bg-gray-50/50">
             <Dashboard

@@ -31,10 +31,10 @@ import {
 } from "lucide-react";
 
 interface AnalyticsData {
-    applications: Array<{ date: string; count: number; }>;
-    hires: Array<{ date: string; count: number; }>;
-    sources: Array<{ name: string; value: number; color: string; }>;
-    stages: Array<{ stage: "Applied" | "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | 'Hired' | null; count: number; conversion: number; }>;
+    applications: { date: string; count: number; }[];
+    hires: { date: string; count: number; }[];
+    sources: { name: string; value: number; color: string}[];
+    stages: { stage: "Applied" | "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | "Drafted" | 'Hired' | null; stageOrder: number;  count: number; conversion: number; }[];
 };
 
 interface Props {

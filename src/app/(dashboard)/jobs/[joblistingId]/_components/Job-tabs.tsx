@@ -1,7 +1,7 @@
 "use client";
 
 import React, {useEffect, useCallback} from "react";
-import {BriefcaseBusiness, CircleUser, LucideEdit, LucideSettings, LucideTrash, Settings, Share} from "lucide-react";
+import {BriefcaseBusiness, CircleUser, Settings, Share} from "lucide-react";
 import {usePathname, useRouter, useSearchParams} from "next/navigation";
 import JobPipeline from "./job-pipeline";
 import JobOptions from "./job-options";

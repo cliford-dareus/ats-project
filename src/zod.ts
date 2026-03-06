@@ -128,10 +128,12 @@ export const stepThreeSchema = z.array(
 );
 
 export const updateJobSchema = z.object({
-    job_name: z.string().optional(),
-    job_description: z.string().optional(),
-    job_location: z.string().optional(),
-    salary_up_to: z.string().optional(),
+    job_name: z.string(),
+    job_description: z.string(),
+    job_location: z.string(),
+    salary_up_to: z.string(),
+    department: z.string(),
+    type: z.string()
 });
 
 export const organizationSchema = z.object({

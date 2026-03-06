@@ -15,14 +15,10 @@ import {
     ArrowUpRight,
     ArrowDownRight,
     MoreHorizontal,
-    Plus,
-    Filter,
     Calendar
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import QuickActions from "./quick-actions";
-import PerformanceMetrics from "./performance-metrics";
 import AnalyticsOverview from "./analytics-overview";
 import DashboardSummary from "./dashboard-summary";
 
@@ -184,8 +180,8 @@ const Dashboard = ({
                 {/* Header */}
                 <div className="flex items-center justify-between pt-6">
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight">
-                            Good {timeOfDay}, {userName}
+                        <h1 className="text-3xl font-bold tracking-tight uppercase">
+                            Good {timeOfDay},  {userName}
                         </h1>
                         <p className="text-muted-foreground">
                             Here&apos;s what&apos;s happening with your recruitment today.
@@ -224,104 +220,6 @@ const Dashboard = ({
                         color="orange"
                     />
                 </div>
-
-                {/* Additional Dashboard Sections */}
-                {/* <div className="grid gap-6 lg:grid-cols-2"> */}
-                {/* Action Items Summary */}
-                {/* <DashboardSummary className="lg:col-span-1" /> */}
-
-                {/* Quick Actions */}
-                {/* <QuickActions upcomingInterviews={upcomingInterviews} /> */}
-
-                {/* Performance Metrics */}
-                {/* <PerformanceMetrics /> */}
-                {/* </div> */}
-
-                {/* <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4"> */}
-                {/* Action Items Summary */}
-                {/* <DashboardSummary className="lg:col-span-1" /> */}
-
-                {/* Recent Activity */}
-                {/* <Card className="md:col-span-1">
-                        <CardHeader className="flex flex-row items-center justify-between">
-                            <div>
-                                <CardTitle>Recent Activity</CardTitle>
-                                <CardDescription>Latest updates from your recruitment pipeline</CardDescription>
-                            </div>
-                            <Button variant="ghost" size="sm">
-                                <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {recentActivity.slice(0, 5).map((activity) => (
-                                <div key={activity.id} className="flex items-center space-x-3">
-                                    <div className={cn("p-2 rounded-full", getActivityColor(activity.type))}>
-                                        {getActivityIcon(activity.type)}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium truncate">
-                                            {activity.candidate && `${activity.candidate} `}
-                                            {activity.type === 'application' && 'applied for'}
-                                            {activity.type === 'interview' && 'scheduled interview for'}
-                                            {activity.type === 'hire' && 'was hired for'}
-                                            {activity.type === 'job_posted' && 'New job posted:'}
-                                            {activity.job && ` ${activity.job}`}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {activity.timestamp.toLocaleDateString()}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
-                            <Button variant="ghost" className="w-full" asChild>
-                                <Link href="/activity">View all activity</Link>
-                            </Button>
-                        </CardContent>
-                    </Card> */}
-
-                {/* Upcoming Interviews */}
-                {/* <Card className="md:col-span-1">
-                        <CardHeader className="flex flex-row items-center justify-between">
-                            <div>
-                                <CardTitle>Upcoming Interviews</CardTitle>
-                                <CardDescription>Scheduled for the next 7 days</CardDescription>
-                            </div>
-                            <Button variant="ghost" size="sm">
-                                <Calendar className="h-4 w-4" />
-                            </Button>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {upcomingInterviews.slice(0, 4).map((interview) => (
-                                <div key={interview.id} className="flex items-center space-x-3">
-                                    <Avatar className="h-8 w-8">
-                                        <AvatarImage src={interview.candidateAvatar} />
-                                        <AvatarFallback>
-                                            {interview.candidateName.split(' ').map(n => n[0]).join('')}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium truncate">
-                                            {interview.candidateName}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground truncate">
-                                            {interview.jobTitle}
-                                        </p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-xs font-medium">
-                                            {interview.time.toLocaleDateString()}
-                                        </p>
-                                        <Badge variant="outline" className="text-xs">
-                                            {interview.type}
-                                        </Badge>
-                                    </div>
-                                </div>
-                            ))}
-                            <Button variant="ghost" className="w-full" asChild>
-                                <Link href="/interviews">View all interviews</Link>
-                            </Button>
-                        </CardContent>
-                    </Card> */}
 
                 {/* Job Pipeline Overview */}
                 <Card className="md:col-span-1 lg:col-span-1">
