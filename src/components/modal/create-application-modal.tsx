@@ -90,7 +90,7 @@ const CreateApplicationModal = ({job, candidates}: { job: JobResponseType[], can
                     <Command/>
                 </div>
                 <div className="">
-                    <DialogTitle className="text-2xl">Create Candidate</DialogTitle>
+                    <DialogTitle className="text-2xl uppercase">Create Candidate</DialogTitle>
                     <DialogDescription>Complete each step to create a candidate!</DialogDescription>
                 </div>
             </DialogHeader>

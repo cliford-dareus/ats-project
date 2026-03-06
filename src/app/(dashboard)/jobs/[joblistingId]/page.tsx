@@ -47,8 +47,6 @@ const Page = async ({params}: Props) => {
     const singleJob = (Array.isArray(singleJobResponse) ? singleJobResponse : [])[0];
     const stages = Array.isArray(stagesResponse) ? stagesResponse : [];
 
-    console.log(singleJob)
-
     return (
         <div>
             <div className="flex flex-col md:flex-row items-center justify-between w-full p-4">
