@@ -115,7 +115,7 @@ export const jobTechnologyRelation = relations(job_technologies, ({one}) => ({
 export const stages = mysqlTable('stages', {
     id: int('id').primaryKey().autoincrement(),
     job_id: int().notNull().references(() => job_listings.id, {onDelete: 'cascade'}),
-    stage_name: mysqlEnum('stage_name', ['Applied', 'New Candidate', 'Screening', 'Phone Interview', 'Interview', 'Offer']),
+    stage_name: mysqlEnum('stage_name', ['Applied', 'New Candidate', 'Screening', 'Phone Interview', 'Interview', 'Offer', "Drafted"]),
     stage_order_id: int().notNull(),
     color: varchar({length: 255}),
     need_schedule: boolean().default(true),

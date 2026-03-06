@@ -11,6 +11,7 @@ export const columns: ColumnDef<ApplicationResponseType>[] = [
     {
         id: 'select',
         header: ({ table }) => (
+          <div className="px-4">
             <IndeterminateCheckbox
                 {...{
                     checked: table.getIsAllRowsSelected(),
@@ -18,9 +19,10 @@ export const columns: ColumnDef<ApplicationResponseType>[] = [
                     onChange: table.getToggleAllRowsSelectedHandler(),
                 }}
             />
+          </div>
         ),
         cell: ({ row }) => (
-            <div className="px-1">
+            <div className="px-4">
                 <IndeterminateCheckbox
                     {...{
                         checked: row.getIsSelected(),
@@ -35,11 +37,16 @@ export const columns: ColumnDef<ApplicationResponseType>[] = [
     {
         accessorKey: "Name",
         header: 'Name',
-        cell: ({ row }) => row.original.candidate_name
+        cell: ({ row }) => (
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold text-zinc-900">{row.original.candidate_name}</span>
+            <span className="text-xs text-zinc-500">email@email.com</span>
+          </div>
+        )
     },
     {
-        accessorKey: "Job",
-        header: 'Job',
+        accessorKey: "Role",
+        header: 'Role',
         cell: ({ row }) => row.original.job_apply
     },
     {
@@ -49,12 +56,16 @@ export const columns: ColumnDef<ApplicationResponseType>[] = [
     },
     {
         accessorKey: "stage",
-        header: 'Stage',
-        cell: ({ row }) => row.original.current_stage
+        header: 'Status',
+        cell: ({ row }) => (
+          <div className="px-2.5 py-1 rounded-full text-xs font-medium border w-1/2 text-center">
+            {row.original.current_stage}
+          </div>
+        )
     },
     {
         id: "action",
-        header: '',
+        header: 'action',
         cell: () => (
             <div className="flex items-center">
                 <Ellipsis size={20}/>

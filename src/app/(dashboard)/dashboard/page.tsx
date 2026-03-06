@@ -5,9 +5,9 @@ import {
     getDashboardMetrics,
     getRecentActivity,
     getUpcomingInterviews,
-    getJobPipelineData
+    getJobPipelineData,
+    getRecruitmentFunnel
 } from "@/server/actions/dashboard-actions";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type Props = {
     searchParams: {
@@ -27,11 +27,12 @@ const Page = async ({ searchParams }: Props) => {
         getRangeOption(range, rangeFrom, rangeTo) || RANGE_OPTIONS.last_7_days;
 
     // Fetch dashboard data
-    const [metrics, recentActivity, upcomingInterviews, jobPipeline] = await Promise.all([
+    const [metrics, recentActivity, upcomingInterviews, jobPipeline, recruitmentFunnel] = await Promise.all([
         getDashboardMetrics(),
         getRecentActivity(),
         getUpcomingInterviews(),
-        getJobPipelineData()
+        getJobPipelineData(),
+        getRecruitmentFunnel()
     ]);
 
     const currentView = view || 'modern';
@@ -43,6 +44,7 @@ const Page = async ({ searchParams }: Props) => {
                 recentActivity={recentActivity}
                 upcomingInterviews={upcomingInterviews}
                 jobPipeline={jobPipeline}
+                recruitmentFunnel={recruitmentFunnel}
                 userName={user?.fullName || 'User'}
             />
         </div>

@@ -11,7 +11,7 @@ import { EllipsisVertical, WandSparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TriggerAction } from "@/plugins/smart-trigger/types";
 import { usePluginContextHook } from "@/providers/plugins-provider";
-import { isPluginActive, pluginRegistry } from "@/lib/plugins-registry";
+import { pluginRegistry } from "@/lib/plugins-registry";
 import {
     DropdownMenu,
     DropdownMenuContent,

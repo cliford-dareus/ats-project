@@ -7,7 +7,7 @@ import {Card, CardContent, CardHeader} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
 import {Badge} from "@/components/ui/badge";
 
-const StepTwoCollapse = () => {
+const StepThreeCollapse = () => {
     const [isOpen, setIsOpen] = useState(true);
     const {newJobData} = useNewJobContext();
 
@@ -24,26 +24,26 @@ const StepTwoCollapse = () => {
                         <Code size={18} className="text-blue-600" />
                         <span className="font-medium text-blue-900">Technical Requirements</span>
                         <Badge variant="secondary" className="bg-blue-200 text-blue-800">
-                            {newJobData.jobTechnology.length} requirements
+                            {newJobData.jobStages.length} requirements
                         </Badge>
                     </div>
                     {isOpen ? <ChevronUp size={18} className="text-blue-600" /> : <ChevronDown size={18} className="text-blue-600" />}
                 </Button>
             </CardHeader>
-            
+
             {isOpen && (
                 <CardContent className="pt-0">
-                    {newJobData.jobTechnology.length > 0 ? (
+                    {newJobData.jobStages.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                            {newJobData.jobTechnology.map((tech, index) => (
+                            {newJobData.jobStages.map((stage, index) => (
                                 <div key={index} className="flex items-center justify-between p-2 bg-white border border-blue-200 rounded text-sm">
-                                    <span className="font-medium">{tech.technology}</span>
-                                    <span className="text-gray-600">{tech.year_of_experience} years</span>
+                                    <span className="font-medium">{stage.stage_name}</span>
+                                    <span className="text-gray-600">{stage.stage_assign_to} years</span>
                                 </div>
                             ))}
                         </div>
                     ) : (
-                        <p className="text-blue-700 text-sm">No requirements added yet</p>
+                        <p className="text-blue-700 text-sm">No stage added yet</p>
                     )}
                 </CardContent>
             )}
@@ -51,4 +51,4 @@ const StepTwoCollapse = () => {
     );
 };
 
-export default StepTwoCollapse;
+export default StepThreeCollapse;

@@ -9,7 +9,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import {get_candidate_with_details_action} from "@/server/actions/candidates-actions";
+import { get_candidate_by_id_action } from "@/server/actions/candidates-actions";
 import CandidateTabs from "@/app/(dashboard)/candidates/[candidateId]/_components/candidate_tabs";
 import {CandidateWithDetails} from "@/types";
 import AddCandidateAttachmentModal from "@/components/modal/upload_candidate_attachment_modal";
@@ -22,8 +22,8 @@ type Props = {
 
 const Page = async ({params}: Props) => {
     const {candidateId} = await params;
-    const result = await get_candidate_with_details_action(Number(candidateId));
-    const candidate = (Array.isArray(result) ? result[0] : []) as CandidateWithDetails;
+    const result = await get_candidate_by_id_action(Number(candidateId));
+    const candidate = result && typeof result === "object" ? result : {};
     const error =
         result && typeof result === "object" && "error" in result
             ? result.error
@@ -45,14 +45,14 @@ const Page = async ({params}: Props) => {
                                 <AvatarFallback>CN</AvatarFallback>
                             </Avatar>
                             <div className="">
-                                <h1 className="text-xl font-bold">{candidate.candidates?.name}</h1>
+                                <h1 className="text-xl font-bold">{candidate.candidate?.name}</h1>
                                 <p className="text-sm/5 flex items-center gap-2 text-slate-500">
                                     <FileChartColumnIncreasing size={16}/>
                                     <span>Software Developer</span>
                                 </p>
                                 <p className="text-sm/5 flex items-center gap-2 text-slate-500">
                                     <CircleUser size={16}/>
-                                    <span>Status: {candidate?.candidates?.status}</span>
+                                    <span>Status: {candidate?.candidate?.status}</span>
                                 </p>
                             </div>
                         </div>

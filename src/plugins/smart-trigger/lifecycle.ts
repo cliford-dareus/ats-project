@@ -1,21 +1,21 @@
-import {getJobListingsStagesAction} from "@/server/actions/job-listings-actions";
+import {get_job_listings_stages_action} from "@/server/actions/job-listings-actions";
 import { StageResponseType } from "@/types";
 import {StageTrigger, TriggerAction} from "@/plugins/smart-trigger/types";
 import { add_task_to_queue_action } from "@/server/actions/stage_actions";
 
 const lifecycle = {
     activate: async (context: any) => {
-        if (!context.jobId) return;
-        // Get the triggers from the backend
-        const stagesData = await getJobListingsStagesAction(Number(context.jobId));
-        const validStagesData = Array.isArray(stagesData) ? stagesData : [];
-        const parsedTriggers = validStagesData.map(lifecycle.parseTriggerResponse);
+        if (context.jobId) {
+            // Get the triggers from the backend
+            const stagesData = await get_job_listings_stages_action(Number(context.jobId));
+            const validStagesData = Array.isArray(stagesData) ? stagesData : [];
+            const parsedTriggers = validStagesData.map(lifecycle.parseTriggerResponse);
 
-        context.setJobStages(validStagesData);
-        context.setTriggers(parsedTriggers);
-        console.log("Activating Smart Triggers plugin");
+            context.setJobStages(validStagesData);
+            context.setTriggers(parsedTriggers);
+            console.log("Activating Smart Triggers plugin");
+        };
     },
-
     deactivate: (context: any) => {
         // Clear triggers when deactivated
         context.setTriggers([]);
@@ -28,18 +28,18 @@ const lifecycle = {
     },
     parseTriggerResponse : (stageData: StageResponseType): StageTrigger => {
         try {
-        return {
-            id: String(stageData.id),
-            stage: stageData.stage_name,
-            actions: JSON.parse(stageData.trigger) as TriggerAction[]
-        };
+            return {
+                id: String(stageData.id),
+                stage: stageData.stage_name,
+                actions: JSON.parse(stageData.trigger) as TriggerAction[]
+            };
         } catch (error) {
-        console.error(`Failed to parse trigger for stage ${stageData.id}:`, error);
-        return {
-            id: String(stageData.id),
-            stage: stageData.stage_name,
-            actions: []
-        };
+            console.error(`Failed to parse trigger for stage ${stageData.id}:`, error);
+            return {
+                id: String(stageData.id),
+                stage: stageData.stage_name,
+                actions: []
+            };
         }
     },
     processTriggerActions: async (

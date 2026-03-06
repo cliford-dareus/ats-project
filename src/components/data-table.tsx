@@ -1,24 +1,36 @@
-'use client'
+"use client";
 
-import React from 'react';
+import React from "react";
 import {
     ColumnDef,
     flexRender,
     getCoreRowModel,
     getFilteredRowModel,
     getPaginationRowModel,
-    useReactTable
+    useReactTable,
 } from "@tanstack/react-table";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
 
 interface Props<T extends object> {
     columns: ColumnDef<T>[];
     data: T[];
     status: string;
     onRowClick?: (data: T) => void;
-};
+}
 
-const DataTable = <T extends object>({columns, data, onRowClick, status}: Props<T>) => {
+const DataTable = <T extends object>({
+                                         columns,
+                                         data,
+                                         onRowClick,
+                                         status,
+                                     }: Props<T>) => {
     const [rowSelection, setRowSelection] = React.useState({});
     const [validRows, setValidRows] = React.useState({});
 
@@ -42,17 +54,17 @@ const DataTable = <T extends object>({columns, data, onRowClick, status}: Props<
 
     return (
         <Table id={`table-${status}`}>
-            <TableHeader>
-                {table.getHeaderGroups().map(headerGroup => (
-                    <TableRow key={headerGroup.id}>
-                        {headerGroup.headers.map(header => {
+            <TableHeader className="">
+                {table.getHeaderGroups().map((headerGroup) => (
+                    <TableRow className="cursor-pointer h-[50px] hover:bg-muted/50 uppercase" key={headerGroup.id}>
+                        {headerGroup.headers.map((header) => {
                             return (
                                 <TableHead key={header.id} colSpan={header.colSpan}>
                                     {header.isPlaceholder ? null : (
                                         <>
                                             {flexRender(
                                                 header.column.columnDef.header,
-                                                header.getContext()
+                                                header.getContext(),
                                             )}
                                             {header.column.getCanFilter() ? (
                                                 <div>
@@ -62,7 +74,7 @@ const DataTable = <T extends object>({columns, data, onRowClick, status}: Props<
                                         </>
                                     )}
                                 </TableHead>
-                            )
+                            );
                         })}
                     </TableRow>
                 ))}
@@ -70,33 +82,31 @@ const DataTable = <T extends object>({columns, data, onRowClick, status}: Props<
             <TableBody>
                 {table.getRowModel().rows.map((row) => {
                     return (
-                        <TableRow
-                            key={row.id}
-
-                            className="cursor-pointer hover:bg-muted/50"
-                        >
-                            {row.getVisibleCells().map(cell => {
+                        <TableRow key={row.id} className="cursor-pointer hover:bg-muted/50">
+                            {row.getVisibleCells().map((cell) => {
                                 return (
                                     <TableCell
+                                        className="text-sm text-zinc-500"
                                         key={cell.id}
                                         onClick={() => {
-                                            if (cell.column.id === "action" || cell.column.id === "select") return;
-                                            onRowClick?.(row.original)
+                                            if (
+                                                cell.column.id === "action" ||
+                                                cell.column.id === "select"
+                                            )
+                                                return;
+                                            onRowClick?.(row.original);
                                         }}
                                     >
-                                        {flexRender(
-                                            cell.column.columnDef.cell,
-                                            cell.getContext()
-                                        )}
+                                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                     </TableCell>
-                                )
+                                );
                             })}
                         </TableRow>
-                    )
+                    );
                 })}
             </TableBody>
         </Table>
-    )
+    );
 };
 
 export default DataTable;

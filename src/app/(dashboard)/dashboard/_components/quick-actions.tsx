@@ -27,7 +27,7 @@ interface QuickAction {
     badge?: string;
 };
 
-const QuickActions = ({upcomingInterviews}: {upcomingInterviews: UpcomingInterview[]}) => {
+const QuickActions = ({upcomingInterviews}: {upcomingInterviews?: UpcomingInterview[]}) => {
     const actions: QuickAction[] = [
         {
             title: "Post New Job",
@@ -91,8 +91,8 @@ const QuickActions = ({upcomingInterviews}: {upcomingInterviews: UpcomingIntervi
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {actions.map((action, index) => (
                             <Link key={index} href={action.href}>
-                                <div className="group relative p-4 rounded-lg border border-gray-200 hover:border-gray-300 transition-all duration-200 hover:shadow-md cursor-pointer">
-                                    <div className="flex flex-col">
+                                <div className="group relative p-2 rounded-lg border border-gray-200 hover:border-gray-300 transition-all duration-200 hover:shadow-md cursor-pointer">
+                                    <div className="flex items-center justify-center">
                                         <div className={`p-2 rounded-lg ${action.color} text-white group-hover:scale-110 transition-transform duration-200 self-start`}>
                                             <action.icon className="h-4 w-4" />
                                         </div>

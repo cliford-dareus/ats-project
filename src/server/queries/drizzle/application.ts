@@ -26,6 +26,7 @@ interface CandidateInfo {
   location: string;
 };
 
+// TODO: FIX LATER
 export const create_application = async (data: z.infer<typeof candidateForm>) => {
   // Get the "Applied" stage (should be stage_order_id = 0)
   const [applied_stage] = await db
@@ -33,7 +34,7 @@ export const create_application = async (data: z.infer<typeof candidateForm>) =>
     .from(stages)
     .where(
       and(
-        eq(stages.job_id, Number(data.job!)), 
+        eq(stages.job_id, Number(data.job!)),
         eq(stages.stage_order_id, 0),
         eq(stages.stage_name, 'Applied')
       )
@@ -41,9 +42,14 @@ export const create_application = async (data: z.infer<typeof candidateForm>) =>
 
   if (!applied_stage) {
     throw new Error('Applied stage not found for this job');
-  }
+  };
 
   // Check if user is passing a candidate id
+  const canditate_exist = await db.select()
+    .from(candidates)
+    .where(
+        eq(candidates.name, data.candidate!)
+    );
   // Check if candidate is in the database
   // If not, create a new candidate record
   // If user is passing a candidate id, update the candidate record
@@ -82,7 +88,7 @@ export const create_application = async (data: z.infer<typeof candidateForm>) =>
       console.log(err);
       throw err;
     }
-  }
+  };
 
   await db.insert(applications).values({
     job_id: Number(data.job),
@@ -102,7 +108,6 @@ export const create_application = async (data: z.infer<typeof candidateForm>) =>
 };
 
 export const update_application_stage = async (data: {applicationId: number ,new_stage_id: number}) => {
-    console.log(data);
   await db
     .update(applications)
     .set({ current_stage_id: data.new_stage_id })

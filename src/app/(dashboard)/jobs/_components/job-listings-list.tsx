@@ -18,11 +18,13 @@ const JobListingsList = ({jobs, pageCount}: Props) => {
 
     return (
         <>
-            <DataTable<JobResponseType>
-                columns={columns} data={jobs}
-                status="jobs"
-                onRowClick={(rowData) => setSelectedRow(rowData)}
-            />
+            <div className="rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
+                <DataTable<JobResponseType>
+                    columns={columns} data={jobs}
+                    status="jobs"
+                    onRowClick={(rowData) => setSelectedRow(rowData)}
+                />
+            </div>
             <PaginationElement pageCount={pageCount}/>
             <Sheet open={!!selectedRow} onOpenChange={() => setSelectedRow(null)}>
                 <SheetHeader>

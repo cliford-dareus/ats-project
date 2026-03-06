@@ -1,9 +1,9 @@
-import { Queue, Worker } from 'bullmq';
+import {Queue, Worker} from 'bullmq';
 import redis from './redis';
 import Trigger from "@/models/trigger";
-import { applications, stages } from '@/drizzle/schema';
-import { db } from '@/drizzle/db';
-import { eq } from 'drizzle-orm';
+import {applications, stages} from '@/drizzle/schema';
+import {db} from '@/drizzle/db';
+import {eq} from 'drizzle-orm';
 import mongodb from "@/lib/mongodb";
 
 // Create a queue instance
@@ -22,7 +22,6 @@ export const taskWorker = new Worker(
             case 'move':
                 if (job.data.config.condition.type && job.data.config.condition.type === 'location') {
                     console.log(job.data.config.condition.location);
-
                     const result = await db.select().from(applications).where(eq(applications.id, job.data.application_id))
                     const application = Array.isArray(result) ? result[0] : null;
                     if (!application) return;
@@ -34,15 +33,15 @@ export const taskWorker = new Worker(
                     const stageId = stage.find((s) => s.stage_name === job.data.config.condition.target)?.id;
 
                     await db
-                            .update(applications)
-                            .set({ current_stage_id: stageId })
-                            .where(eq(applications.id, application.id!));
+                        .update(applications)
+                        .set({current_stage_id: stageId})
+                        .where(eq(applications.id, application.id!));
 
                     try {
                         await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/triggers`, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ jobId: application.job_id }),
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({jobId: application.job_id}),
                         });
                     } catch (error) {
                         console.error('Cache revalidation failed:', error);
@@ -58,10 +57,6 @@ export const taskWorker = new Worker(
                     // Update application score
                     console.log(job.data.config.condition.score)
                 };
-
-                // revalidateDbCache({
-                //     tag: CACHE_TAGS.applications,
-                // });
 
                 await Trigger.deleteOne({_id: job.data.trigger_id});
                 break;
@@ -81,7 +76,7 @@ export const taskWorker = new Worker(
                 console.error(`Unknown job type: ${job.data}`);
         }
     },
-    { connection: redis }
+    {connection: redis}
 );
 
 // Log worker events for debugging

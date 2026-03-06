@@ -41,8 +41,7 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
 ## TODO
-- [] Tutorial for new user
-- [] Automate email and mass email
+- [x] Automate email and mass email
 - [] Job Posting Insight(Analytic) plugin
 - [] Job settings to change stage behavior
 - [] Add activity(Task) to track user responsibility

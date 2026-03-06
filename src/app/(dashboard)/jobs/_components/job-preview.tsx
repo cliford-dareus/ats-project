@@ -6,15 +6,15 @@ import {JobResponseType, NoteResponseType} from "@/types";
 import {Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbSeparator} from "@/components/ui/breadcrumb";
 import {SheetClose} from "@/components/ui/sheet";
 import {
-    Briefcase,
+    Briefcase, Building2, Calendar,
     CalendarPlus2,
-    ChevronDown,
-    Dot,
-    Expand, File, FileUser,
+    ChevronDown, Clock,
+    Dot, Edit3,
+    Expand, File, FileUser, MapPin,
     MessageCircle,
     ScanEye,
-    Share,
-    Tally1,
+    Share, Share2,
+    Tally1, Users,
     X
 } from "lucide-react";
 import {
@@ -28,6 +28,7 @@ import {Button} from "@/components/ui/button";
 import {Skeleton} from "@/components/ui/skeleton";
 import {Dialog, DialogContent, DialogTitle, DialogTrigger} from "@/components/ui/dialog";
 import CreateNoteModal from "@/components/modal/create-note-modal";
+import {newDate} from "date-fns-jalali";
 
 type Props = {
     data: JobResponseType;
@@ -65,209 +66,102 @@ const JobPreview = ({data, jobs}: Props) => {
                 </span>
             </div>
 
-            <div className="flex flex-col">
-                <div className="p-4">
-                    <div className='flex items-center gap-4'>
-                        <div
-                            className='flex items-center gap-2 border border-input bg-background rounded-md px-4 py-1 text-sm font-thin self-start text-muted-foreground'
-                        >
-                            <ScanEye size={16}/>
-                            Job Preview
-                        </div>
-
-                        <span className='flex items-center gap-2 text-sm text-muted-foreground'>
-                            <CalendarPlus2 size={16}/>
-                            Created on {new Date(data.created_at).toDateString()}
-                        </span>
+            <div className="p-4">
+                <div className="flex items-center gap-3">
+                    <div
+                        className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-brand-500/20">
+                        <Building2 className="text-white w-5 h-5"/>
                     </div>
-
-                    <div className='flex justify-between mt-4'>
-                        <div className='flex flex-col'>
-                            <span className='text-2xl font-medium text-gray-900'>{data.name}</span>
-                            <Breadcrumb className=''>
-                                <BreadcrumbList>
-                                    <BreadcrumbItem>
-                                        <span className='text-sm text-muted-foreground'>{data.department}</span>
-                                    </BreadcrumbItem>
-                                    <BreadcrumbSeparator>
-                                        <Dot size={20}/>
-                                    </BreadcrumbSeparator>
-                                    <BreadcrumbItem>
-                                        <span className='text-sm text-muted-foreground'>{data.location}</span>
-                                    </BreadcrumbItem>
-                                </BreadcrumbList>
-                            </Breadcrumb>
-                        </div>
-                        <div className='flex items-center gap-4 self-start'>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" className='text-sm'>
-                                        <MessageCircle size={16}/>
-                                        <span>Action</span>
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-56">
-                                    <DropdownMenuItem>Email</DropdownMenuItem>
-                                    <DropdownMenuSeparator/>
-                                    <DropdownMenuItem>Call</DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" className='text-sm'>
-                                        <span>Move</span>
-                                        <ChevronDown size={16}/>
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-56">
-                                    <DropdownMenuLabel>Stages</DropdownMenuLabel>
-                                    <DropdownMenuSeparator/>
-                                    <DropdownMenuGroup>
-                                        {/*{filterStage.map((stage) => (*/}
-                                        {/*    <DropdownMenuItem*/}
-                                        {/*        onClick={async () => {*/}
-                                        {/*            await update_application_stage_action({*/}
-                                        {/*                applicationId: data.id,*/}
-                                        {/*                new_stage_id: stage.id*/}
-                                        {/*            })*/}
-                                        {/*            // executeTrigger(data.id, stage.id, stage.stage_name as string)*/}
-                                        {/*        }}*/}
-                                        {/*        key={stage.id}*/}
-                                        {/*    >*/}
-                                        {/*        <p>{stage.stage_name}</p>*/}
-                                        {/*        <div className="flex items-center gap-2">*/}
-                                        {/*            {(JSON.parse(stage.trigger) as TriggerAction[]).map((trigger) => (*/}
-                                        {/*                <span*/}
-                                        {/*                    key={trigger.action_type}*/}
-                                        {/*                    className="text-xs/3 flex items-center gap-2 text-slate-500"*/}
-                                        {/*                >*/}
-                                        {/*                    {trigger.action_type}*/}
-                                        {/*                </span>*/}
-                                        {/*            ))}*/}
-                                        {/*        </div>*/}
-                                        {/*    </DropdownMenuItem>*/}
-                                        {/*))}*/}
-                                    </DropdownMenuGroup>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-                    </div>
-
-                    <div className=""></div>
-                </div>
-
-                <div className="px-4">
-                    <div className="border rounded-md p-4">
-                        <div className="flex items-center gap-4">
-                            <span className="text-sm text-muted-foreground">Description</span>
-                        </div>
-                        <div className="mt-2">
-                            <p>{data.description}</p>
-                        </div>
+                    <div>
+                        <h3 className="text-lg font-bold text-zinc-900">Job Preview</h3>
+                        <p className="text-xs text-zinc-500 font-medium uppercase tracking-wider">Internal View</p>
                     </div>
                 </div>
-            </div>
 
-            <div className='px-4 flex flex-col gap-2 text-sm mt-4'>
-                <div className='flex items-center gap-4 h-[30px]'>
-                    <div className='flex gap-2 items-center w-[200px] text-muted-foreground'>
-                        <Briefcase size={18}/>
-                        Other Applications
-                    </div>
-                    <div className="flex-1 flex items-center gap-2">
-                        {/*{filterApplications && filterApplications.map((application: ApplicationResponseType, index) => (*/}
-                        {/*    <div key={index} className='flex items-center gap-2 border border-input bg-background rounded-md px-2 py-1 text-sm font-thin self-start text-muted-foreground'>{application.job_apply}</div>*/}
-                        {/*))}*/}
-                    </div>
-                </div>
-                <div className='flex items-center gap-4 h-[30px]'>
-                    <div className='flex gap-2 items-center w-[200px] text-muted-foreground'>
-                        <Briefcase size={18}/>
-                        Applied on
-                    </div>
-                    <div className='flex items-center gap-2 border border-input bg-background rounded-md px-2 py-1 text-sm font-thin self-start text-muted-foreground'>Linkedin</div>
-                </div>
-                <div className='flex items-center gap-4 h-[30px]'>
-                    <div className='flex gap-2 items-center w-[200px] text-muted-foreground'>
-                        <FileUser size={18}/>
-                        Years of Experience
-                    </div>
-                    <div className=''>1</div>
-                </div>
-                {/*<div className='flex items-center gap-4 h-[30px]'>*/}
-                {/*    <div className='flex gap-2 items-center w-[200px] text-muted-foreground'>*/}
-                {/*        <Paperclip size={18}/>*/}
-                {/*        Attachments*/}
-                {/*    </div>*/}
-                {/*    <div className=''>*/}
-                {/*        {attachments.length}*/}
-                {/*    </div>*/}
-                {/*</div>*/}
-
-                <div className='border rounded-md mt-4 h-[80px]'>
-                    <div className='flex items-center gap-2 h-full p-4'>
-                        <div className='flex items-center justify-center rounded-md bg-purple-500 w-[50px] h-full'>
-                            <File size={18} color='white'/>
+                <div className="flex-1 overflow-y-auto py-4 space-y-4">
+                    {/* Title & Status */}
+                    <div>
+                        <div className="flex items-center justify-between mb-2">
+                              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold border uppercase tracking-wider bg-green-300">
+                                {data.status}
+                              </span>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    className="p-2 text-zinc-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-all">
+                                    <Edit3 className="w-4 h-4"/>
+                                </button>
+                                <button
+                                    className="p-2 text-zinc-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-all">
+                                    <Share2 className="w-4 h-4"/>
+                                </button>
+                            </div>
                         </div>
-                        <div className='flex flex-col text-sm'>
-                            <span className=''>Resume-file.pdf</span>
-                            <div className='flex gap-2'>
-                                <span className='text-muted-foreground'>12MB</span>
-                                <span><Dot size={18}/></span>
-                                <span
-                                    className='text-purple-500 cursor-pointer'
-                                    // onClick={() => setOpen(true)}
-                                >
-                                        Preview
-                                    </span>
+                        <h2 className="text-2xl font-bold text-zinc-900 leading-tight">{data.name}</h2>
+                        <p className="text-zinc-500 mt-1 font-medium">{data.department}</p>
+                    </div>
+
+                    {/* Quick Stats */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-zinc-50 p-4 rounded-2xl border border-zinc-100">
+                            <div className="flex items-center gap-2 text-zinc-400 mb-1">
+                                <Users className="w-4 h-4"/>
+                                <span className="text-xs font-bold uppercase tracking-wider">Applicants</span>
+                            </div>
+                            <p className="text-xl font-bold text-zinc-900">{data.candidatesCount}</p>
+                        </div>
+                        <div className="bg-zinc-50 p-4 rounded-2xl border border-zinc-100">
+                            <div className="flex items-center gap-2 text-zinc-400 mb-1">
+                                <Calendar className="w-4 h-4"/>
+                                <span className="text-xs font-bold uppercase tracking-wider">Posted Date</span>
+                            </div>
+                            <p className="text-xl font-bold text-zinc-900">{new Date(data.created_at).toDateString()}</p>
+                        </div>
+                    </div>
+
+                    {/* Details List */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-4 text-zinc-600">
+                            <div className="w-8 h-8 bg-zinc-100 rounded-lg flex items-center justify-center">
+                                <MapPin className="w-4 h-4"/>
+                            </div>
+                            <div>
+                                <p className="text-xs text-zinc-400 font-bold uppercase tracking-wider">Location</p>
+                                <p className="text-sm font-semibold">{data.location}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-4 text-zinc-600">
+                            <div className="w-8 h-8 bg-zinc-100 rounded-lg flex items-center justify-center">
+                                <Clock className="w-4 h-4"/>
+                            </div>
+                            <div>
+                                <p className="text-xs text-zinc-400 font-bold uppercase tracking-wider">Type</p>
+                                <p className="text-sm font-semibold">Full-Time</p>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <div className='p-4 mt-4'>
-                <div className='flex items-center justify-between text-sm text-muted-foreground'>
-                    <div className='flex items-center gap-2 border border-input bg-background rounded-md px-4 py-1 text-sm font-thin self-start text-muted-foreground'>
-                        <CalendarPlus2 size={18}/>
-                        Notes({notes?.total})
-                    </div>
-                    <span className='text-purple-500 cursor-pointer font-semibold'>See All</span>
-                </div>
-
-                {notes?.notes.length > 0 ?
-                    <div className='h-full border rounded-md text-muted-foreground mt-4 text-sm'>
-                        {notes?.notes.map((note) => (
-                            <div key={note._id}>
-                                <div className='flex justify-between items-center gap-4 p-4 border-b'>
-                                    <span className='font-medium text-black'>{note.user.name}</span>
-                                    <span>{new Date(note.created_at).toDateString()}</span>
-                                </div>
-                                <div className='p-4 h-[100px]'>
-                                    <p>{note.content}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div> :
-                    <div className='h-full border rounded-md text-muted-foreground mt-4 text-sm'>
-                        <div>
-                            <div className='h-[53px] flex justify-between items-center gap-4 p-4 border-b'></div>
-                            <Skeleton className='p-4 h-[100px]'>
-                                <p>No notes yet</p>
-                            </Skeleton>
+                    {/* Description Placeholder */}
+                    <div className="space-y-4 pt-4 border-t border-zinc-100">
+                        <h4 className="text-sm font-bold text-zinc-900">Job Description</h4>
+                        <div className="space-y-3">
+                            <p className="text-sm text-zinc-600 leading-relaxed">
+                                We are lo
+                                oking for a talented {data.name} to join our growing team in {data.location}.
+                                As a key member of the {data.department} department, you will be responsible for driving
+                                innovation
+                                and delivering high-quality solutions.
+                            </p>
+                            <ul className="space-y-2">
+                                {['Lead development of core features', 'Collaborate with cross-functional teams', 'Mentor junior engineers', 'Participate in code reviews'].map((item, i) => (
+                                    <li key={i} className="flex items-start gap-2 text-sm text-zinc-600">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 flex-shrink-0"/>
+                                        {item}
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
-                    </div>}
-
-                <Dialog>
-                    <DialogTrigger asChild>
-                        <Button >Add Note</Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogTitle>Add Note</DialogTitle>
-                        <CreateNoteModal prefix="app" parent_id={data.id} parent_type="application"/>
-                    </DialogContent>
-                </Dialog>
+                    </div>
+                </div>
             </div>
         </>
     );

@@ -22,8 +22,8 @@ export const get_all_candidates = async (filter: z.infer<typeof filterCandidateT
     return cacheFn(filter);
 };
 
-export const get_candidate_with_details = async (unsafedata: number) => {
-    const cacheFn = dbCache(get_candidate_with_details_db, {
+export const get_candidate_by_id = async (unsafedata: number) => {
+    const cacheFn = dbCache(get_candidate_by_id_db, {
         tags: [
             getIdTag(String(unsafedata), CACHE_TAGS.candidates)
         ]
@@ -31,29 +31,34 @@ export const get_candidate_with_details = async (unsafedata: number) => {
     return cacheFn(unsafedata);
 };
 
-export const get_candidate_with_details_db = async (unsafedata: number) => {
-    return await db
-        .select({
-            candidates,
-            applications,
-            stages,
-            job_listings,
-            interviews,
-            scoreCards,
-        })
-        .from(candidates)
-        .leftJoin(applications, eq(applications.candidate, candidates.id))
-        .leftJoin(stages, eq(applications.current_stage_id, stages.id))
-        .leftJoin(job_listings, eq(applications.job_id, job_listings.id))
-        .leftJoin(interviews, eq(interviews.applications_id, applications.id))
-        .leftJoin(scoreCards, eq(scoreCards.interviews_id, interviews.id))
-        .where(eq(candidates.id, unsafedata));
+export const get_candidate_by_id_db = async (unsafedata: number) => {
+   const [
+        candidate,
+        application,
+        attachment,
+        interview,
+        scoreCard,
+    ] = await Promise.all([
+        db.select().from(candidates).where(eq(candidates.id, unsafedata)),
+        db.select().from(applications).where(eq(applications.candidate, unsafedata)),
+        db.select().from(attachments).where(eq(attachments.candidate_id, unsafedata)),
+        db.select().from(interviews).where(eq(interviews.applications_id, unsafedata)),
+        db.select().from(scoreCards).where(eq(scoreCards.interviews_id, unsafedata)),
+    ]);
+
+    return {
+        candidate: candidate[0],
+        application,
+        attachment,
+        interview,
+        scoreCard,
+    };
 };
 
 const get_all_candidates_db = async (filter: z.infer<typeof filterCandidateType>) => {
     const filters: SQL[] = []
 
-    if (filter?.name) filters.push(eq(candidates.name, filter.name))
+    if (filter?.name) filters.push(eq(candidates.name, filter.name));
 
     const candidate = await db.select({
         id: candidates.id,

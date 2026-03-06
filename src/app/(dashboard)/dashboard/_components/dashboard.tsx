@@ -70,6 +70,7 @@ type Props = {
     recentActivity: RecentActivity[];
     upcomingInterviews: UpcomingInterview[];
     jobPipeline: JobPipelineData[];
+    recruitmentFunnel: { stage: "Applied" | "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | 'Hired' | "Drafted" | null ; stageOrder: number; count: number; conversion: number }[];
     userName: string;
 };
 
@@ -78,6 +79,7 @@ const Dashboard = ({
     recentActivity,
     upcomingInterviews,
     jobPipeline,
+    recruitmentFunnel,
     userName
 }: Props) => {
     const [timeOfDay, setTimeOfDay] = useState('');
@@ -109,14 +111,7 @@ const Dashboard = ({
             { name: 'Referrals', value: 54, color: '#FFBB28' },
             { name: 'Other', value: 32, color: '#FF8042' }
         ],
-        stages: [
-            { stage: 'Applied', count: 234, conversion: 100 },
-            { stage: 'Screening', count: 156, conversion: 67 },
-            { stage: 'Interview', count: 89, conversion: 57 },
-            { stage: 'Final Round', count: 34, conversion: 38 },
-            { stage: 'Offer', count: 18, conversion: 53 },
-            { stage: 'Hired', count: 12, conversion: 67 }
-        ]
+        stages: recruitmentFunnel
     };
 
     useEffect(() => {
@@ -184,10 +179,10 @@ const Dashboard = ({
     };
 
     return (
-        <div className="flex  gap-6 p-6">
-            <div className=" space-y-6">
+        <div className="w-full flex">
+            <div className=" space-y-6 px-6 w-full">
                 {/* Header */}
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between pt-6">
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight">
                             Good {timeOfDay}, {userName}
@@ -196,16 +191,6 @@ const Dashboard = ({
                             Here&apos;s what&apos;s happening with your recruitment today.
                         </p>
                     </div>
-                    {/* <div className="flex items-center space-x-2">
-                        <Button variant="outline" size="sm">
-                            <Filter className="mr-2 h-4 w-4" />
-                            Filter
-                        </Button>
-                        <Button size="sm">
-                            <Plus className="mr-2 h-4 w-4" />
-                            New Job
-                        </Button>
-                    </div> */}
                 </div>
 
                 {/* Metrics Grid */}
@@ -241,23 +226,23 @@ const Dashboard = ({
                 </div>
 
                 {/* Additional Dashboard Sections */}
-                <div className="grid gap-6 lg:grid-cols-2">
-                    {/* Action Items Summary */}
-                    <DashboardSummary className="lg:col-span-1" />
+                {/* <div className="grid gap-6 lg:grid-cols-2"> */}
+                {/* Action Items Summary */}
+                {/* <DashboardSummary className="lg:col-span-1" /> */}
 
-                    {/* Quick Actions */}
-                    <QuickActions upcomingInterviews={upcomingInterviews} />
+                {/* Quick Actions */}
+                {/* <QuickActions upcomingInterviews={upcomingInterviews} /> */}
 
-                    {/* Performance Metrics */}
-                    {/* <PerformanceMetrics /> */}
-                </div>
+                {/* Performance Metrics */}
+                {/* <PerformanceMetrics /> */}
+                {/* </div> */}
 
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                    {/* Action Items Summary */}
-                    {/* <DashboardSummary className="lg:col-span-1" /> */}
+                {/* <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4"> */}
+                {/* Action Items Summary */}
+                {/* <DashboardSummary className="lg:col-span-1" /> */}
 
-                    {/* Recent Activity */}
-                    {/* <Card className="md:col-span-1">
+                {/* Recent Activity */}
+                {/* <Card className="md:col-span-1">
                         <CardHeader className="flex flex-row items-center justify-between">
                             <div>
                                 <CardTitle>Recent Activity</CardTitle>
@@ -294,8 +279,8 @@ const Dashboard = ({
                         </CardContent>
                     </Card> */}
 
-                    {/* Upcoming Interviews */}
-                    {/* <Card className="md:col-span-1">
+                {/* Upcoming Interviews */}
+                {/* <Card className="md:col-span-1">
                         <CardHeader className="flex flex-row items-center justify-between">
                             <div>
                                 <CardTitle>Upcoming Interviews</CardTitle>
@@ -338,49 +323,49 @@ const Dashboard = ({
                         </CardContent>
                     </Card> */}
 
-                    {/* Job Pipeline Overview */}
-                    {/* <Card className="md:col-span-1 lg:col-span-1">
-                        <CardHeader>
-                            <CardTitle>Pipeline Overview</CardTitle>
-                            <CardDescription>Applications by stage across all jobs</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {jobPipeline.slice(0, 3).map((job, index) => (
-                                <div key={index} className="space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-sm font-medium truncate">{job.jobTitle}</p>
-                                        <span className="text-xs text-muted-foreground">
-                                            {job.totalApplications} total
-                                        </span>
-                                    </div>
-                                    <div className="flex space-x-1">
-                                        {job.stages.map((stage, stageIndex) => (
-                                            <div
-                                                key={stageIndex}
-                                                className="flex-1 h-2 rounded-full"
-                                                style={{
-                                                    backgroundColor: stage.color,
-                                                    opacity: stage.count > 0 ? 1 : 0.3
-                                                }}
-                                                title={`${stage.name}: ${stage.count}`}
-                                            />
-                                        ))}
-                                    </div>
+                {/* Job Pipeline Overview */}
+                <Card className="md:col-span-1 lg:col-span-1">
+                    <CardHeader>
+                        <CardTitle>Pipeline Overview</CardTitle>
+                        <CardDescription>Applications by stage across all jobs</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {jobPipeline.slice(0, 3).map((job, index) => (
+                            <div key={index} className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <p className="text-sm font-medium truncate">{job.jobTitle}</p>
+                                    <span className="text-xs text-muted-foreground">
+                                        {job.totalApplications} total
+                                    </span>
                                 </div>
-                            ))}
-                            <Button variant="ghost" className="w-full" asChild>
-                                <Link href="/jobs">View all jobs</Link>
-                            </Button>
-                        </CardContent>
-                    </Card> */}
-                </div>
+                                <div className="flex space-x-1">
+                                    {job.stages.map((stage, stageIndex) => (
+                                        <div
+                                            key={stageIndex}
+                                            className="flex-1 h-2 rounded-full"
+                                            style={{
+                                                backgroundColor: stage.color,
+                                                opacity: stage.count > 0 ? 1 : 0.3
+                                            }}
+                                            title={`${stage.name}: ${stage.count}`}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                        <Button variant="ghost" className="w-full" asChild>
+                            <Link href="/jobs">View all jobs</Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+                {/* </div> */}
 
                 {/* Analytics Overview */}
                 <AnalyticsOverview data={analyticsData} />
             </div>
 
-            <div className="flex flex-col gap-6 p-6 border bg-slate-100 rounded-lg">
-                 <Card className="md:col-span-1">
+            <div className="flex flex-col gap-6 p-6 border bg-slate-100">
+                <Card className="md:col-span-1">
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div>
                             <CardTitle>Recent Activity</CardTitle>
@@ -462,7 +447,7 @@ const Dashboard = ({
                 </Card>
 
                 {/*  Quick Actions */}
-                <QuickActions upcomingInterviews={upcomingInterviews} />
+                <DashboardSummary className="lg:col-span-1 min-w-[350px]" />
             </div>
         </div>
     );

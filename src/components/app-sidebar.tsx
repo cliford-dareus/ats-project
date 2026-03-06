@@ -14,13 +14,17 @@ import {
     LucideLayoutDashboard,
     FileUser,
     BriefcaseBusiness,
-    Users, Settings
+    Users, Settings,
+    FileText
 } from "lucide-react";
 import React, {useEffect} from "react";
 import {usePathname, useRouter} from "next/navigation";
 import SidebarSettings from "@/app/(dashboard)/settings/_components/sidebar-settings";
 import JobListingSidebar from "@/app/(dashboard)/jobs/_components/job-listing-sidebar";
-import SidebarCandidate from "@/app/(dashboard)/applications/_components/sidebar-candidate";
+import SidebarCandidate from "@/app/(dashboard)/applications/_components/application-sidebar";
+import CandidatesSidebar from "@/app/(dashboard)/candidates/_components/candidates-sidebar";
+import ReportsSidebar from "@/app/(dashboard)/reports/_components/reports-sidebar";
+import TrashSidebar from "@/app/(dashboard)/trash/_components/trash-sidebar";
 import {CandidatesResponseType} from "@/types";
 import {StageCountType} from "@/app/(dashboard)/layout";
 import StepNavigation from "@/app/(dashboard)/jobs/new/_component/side-navigation";
@@ -60,7 +64,7 @@ const data = {
         {
             title: "Reports",
             url: "/reports",
-            icon: Users,
+            icon: FileText,
             isActive: false,
         },
         {
@@ -171,6 +175,12 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar> & {
                                 <JobListingSidebar/>
                             ) : activeItem.title === "Applications" ? (
                                 <SidebarCandidate candidate={props.candidate} stagesCount={props.stagescount as StageCountType[]}/>
+                            ) : activeItem.title === "Candidates" ? (
+                                <CandidatesSidebar/>
+                            ) : activeItem.title === "Reports" ? (
+                                <ReportsSidebar/>
+                            ) : activeItem.title === "Trash" ? (
+                                <TrashSidebar/>
                             ) : activeItem.title === "Settings" ? (
                                 <SidebarSettings/>
                             ) : pathname.startsWith("/jobs/new/step") ? (

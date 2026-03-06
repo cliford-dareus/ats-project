@@ -1,17 +1,17 @@
 import type {Metadata} from "next";
-import {Geist, Geist_Mono} from "next/font/google";
+import {Geist_Mono, Inter, Ubuntu_Mono } from "next/font/google";
 import "./globals.css";
 import {ClerkProvider} from "@clerk/nextjs";
 
-const geistSans = Geist({
-    variable: "--font-geist-sans",
+const geistSans = Inter({
+    variable: "--font-inter-sans",
     subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-    variable: "--font-geist-mono",
-    subsets: ["latin"],
-});
+const geistMono = Ubuntu_Mono({
+         variable: "--font-ubuntu-mono",
+        weight: ["400", "700"]
+    });
 
 export const metadata: Metadata = {
     title: "Create Next App",

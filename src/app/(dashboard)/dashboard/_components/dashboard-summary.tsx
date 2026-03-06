@@ -156,7 +156,7 @@ const DashboardSummary = ({ className }: Props) => {
           ))}
         </div>
 
-        <div className="mt-6 pt-4 border-t">
+        {/* <div className="mt-6 pt-4 border-t">
           <div className="flex items-center justify-between mb-3">
             <h4 className="font-medium">Weekly Goals Progress</h4>
             <span className="text-sm text-muted-foreground">3 of 5 completed</span>
@@ -184,9 +184,9 @@ const DashboardSummary = ({ className }: Props) => {
               <span>Close 2 positions</span>
             </div>
           </div>
-        </div>
+        </div> */}
 
-        <div className="mt-6 pt-4 border-t">
+        {/* <div className="mt-6 pt-4 border-t">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-600">94%</div>
@@ -205,7 +205,7 @@ const DashboardSummary = ({ className }: Props) => {
               <div className="text-xs text-muted-foreground">Candidate Rating</div>
             </div>
           </div>
-        </div>
+        </div> */}
       </CardContent>
     </Card>
   );

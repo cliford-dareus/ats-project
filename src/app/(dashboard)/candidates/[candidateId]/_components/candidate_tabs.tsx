@@ -58,10 +58,10 @@ const CandidateTabs = ({data}: Props) => {
                                     </CustomTabsTrigger>
                                 ))}
                             </TabsList>
-                            <AddCandidateAttachmentModal candidateId={data.candidates.id}/>
+                            <AddCandidateAttachmentModal candidateId={data.candidate?.id}/>
                         </div>
 
-                    <TabsContent value="summary">
+                    <TabsContent value="profile">
                         <CandidateSummary data={data}/>
                     </TabsContent>
                     <TabsContent value="resume">

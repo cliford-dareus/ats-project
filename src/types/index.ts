@@ -9,12 +9,12 @@ export type JobResponseType = {
     name: string;
     location: string;
     description: string;
-    salary_up_to: string;
+    salary: string;
     createdBy: string;
     created_at: Date;
     updated_at: Date;
     organization: string;
-    department: number;
+    department: string;
     status: 'OPEN'|'CLOSED'|'DRAFT'|'ARCHIVED'|'PENDING';
     candidatesCount: number;
 };
@@ -46,8 +46,8 @@ export interface ApplicationType {
   application_created_at: Date;
   application_updated_at: Date;
   job_id: number;
-  stageName: "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | 'Applied' | null | undefined;
-  stage_order_id: number | undefined;
+  stageName: "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | 'Applied' | "Drafted" | null | undefined;
+  stage_order_id: number | undefined
   candidate: Candidate;
 };
 
@@ -84,7 +84,7 @@ export type ApplicationResponseType = {
 export  type StageResponseType = {
     id: number;
     job_id: number;
-    stage_name: "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | 'Applied' | null
+    stage_name: "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | 'Applied' | "Drafted" | null
     stage_order_id: number
     assign_to: string | null
     color: string | null;
@@ -112,9 +112,11 @@ export type ExtractResponseType = {
     "Work Experience": string[],
     Education: string[]
 };
+
 export interface FormErrors {
     [key: string]: string | undefined;
 };
+
 export interface Candidate {
     id: number;
     name: string;
@@ -127,6 +129,7 @@ export interface Candidate {
     interview: any[];
     attachment: any[];
 };
+
 export interface Application {
     application_id: number;
     job_id: number;
@@ -135,21 +138,31 @@ export interface Application {
     stage_order_id?: number;
     candidate: Candidate;
 };
+
+export interface Experience {
+    id: number;
+    name: string;
+    years_experience: number
+}
+
 export interface JobListing {
     job_id: number;
     job_name: string;
     job_status: string;
     job_created_at: Date;
     job_description: string;
+    job_department: string;
+    job_technologies: Experience[];
     applications: Application[];
 };
+
 export interface CandidateWithDetails {
-    candidates: Candidate;
-    applications: Application[] | null;
-    stages: StageResponseType[] | null;
-    job_listings: JobListing[] | null;
-    interviews: InterviewType[] | null;
-    scoreCards: any[] | null;
+    candidate: Candidate;
+    application: Application[] | null;
+    stage: StageResponseType[] | null;
+    job_listing: JobListing[] | null;
+    interview: InterviewType[] | null;
+    scoreCard: any[] | null;
 };
 
 export type UserType = {

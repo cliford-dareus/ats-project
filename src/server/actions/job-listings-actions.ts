@@ -46,7 +46,7 @@ export const get_job_by_id_action = async (unsafeData: z.infer<typeof jobIdSchem
     return await get_job_by_id(jobId);
 };
 
-export const getJobListingsStagesAction = async (unsafeData: z.infer<typeof jobIdSchema>)=> {
+export const get_job_listings_stages_action = async (unsafeData: z.infer<typeof jobIdSchema>)=> {
     const {userId} = await auth();
     const jobId = jobIdSchema.parse(unsafeData);
     const canCreate = await canCreateJob(userId);

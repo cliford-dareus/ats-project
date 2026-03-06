@@ -57,7 +57,7 @@ const Card = ({ data, handleDragStart, stage }: Props) => {
                             stage.stage_name === "Applied" ?
                                 (<Link
                                     className="text-xs text-blue-500 leading-4"
-                                    href={`/applications/review/${data.candidate.id}`}>Review Application</Link>)
+                                    href={`/applications/${data.application_id}/review/${data.candidate.id}`}>Review Application</Link>)
                                 :
                                 (<Link
                                     className="text-xs text-blue-500 leading-4"

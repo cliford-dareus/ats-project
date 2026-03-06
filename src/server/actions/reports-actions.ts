@@ -173,17 +173,18 @@ export async function getReportData() {
       performanceMetrics
     }
   };
-}
+};
 
 export async function generateReport(reportType: string, dateRange: { from: Date; to: Date }) {
   const { orgId } = await auth();
   if (!orgId) throw new Error("Unauthorized");
 
   // This would generate specific reports based on type
-  // For now, return a success response
+  
+
   return {
     success: true,
     reportId: `report_${Date.now()}`,
     downloadUrl: `/api/reports/download/${reportType}_${Date.now()}.pdf`
   };
-}
+};

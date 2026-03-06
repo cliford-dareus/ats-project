@@ -1,11 +1,11 @@
 import {z} from "zod";
 
-export const JOB_STAGES = ['New Candidate', 'Screening', 'Phone Interview', 'Interview', 'Offer', 'Applied'] as const;
+export const JOB_STAGES = ['New Candidate', 'Screening', 'Phone Interview', 'Interview', 'Offer', 'Applied' , 'Drafted'] as const;
 export const FILE_TYPES = ['RESUME', 'COVER_LETTER', 'OFFER_LETTER', "OTHER"] as const;
 export const CANDIDATE_TYPE = ['Active', 'Rejected', 'Hired'] as const;
 export const JOB_STATUS = ["OPEN", "CLOSED", "DRAFT", "ARCHIVED", "PENDING"] as const;
 
-export type JOB_ENUM = 'New Candidate' | 'Screening' | 'Phone Interview' | 'Interview' | 'Offer' | 'Applied';
+export type JOB_ENUM = 'New Candidate' | 'Screening' | 'Phone Interview' | 'Interview' | 'Offer' | 'Applied' | 'Drafted';
 export type CANDIDATE_ENUM = 'Active' | 'Rejected' | 'Hired';
 
 export const formSchema = z.object({
@@ -83,6 +83,7 @@ export const filterJobType = z.object({
     location: z.string().or(z.array(z.string())).optional(),
     keywords: z.array(z.string()).optional(),
     department: z.array(z.string()).optional(),
+    salary: z.array(z.string()).optional(),
     organization: z.string(),
     status: z.string().or(z.array(z.string())).optional(),
     limit: z.number().optional(),
