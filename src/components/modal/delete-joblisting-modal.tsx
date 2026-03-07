@@ -3,9 +3,15 @@ import {Command, Trash2} from "lucide-react";
 import React from "react";
 import {Button} from "@/components/ui/button";
 
-const DeleteJobListingModal = () => {
+type DeleteJobModalProps = {
+    isDeleteJobOpen: boolean;
+    setIsDeleteJobOpen:  React.Dispatch<React.SetStateAction<boolean>>;
+    data: any
+};
+
+const DeleteJobListingModal = ({isDeleteJobOpen, setIsDeleteJobOpen, data}:DeleteJobModalProps) => {
     return (
-        <Dialog>
+        <Dialog open={isDeleteJobOpen} onOpenChange={setIsDeleteJobOpen}>
             <DialogContent>
                 <DialogHeader className="flex flex-row gap-4 items-center">
                     <div
@@ -21,7 +27,7 @@ const DeleteJobListingModal = () => {
                 <div className="p-8 space-y-6">
                     <div className="space-y-3">
                         <p className="text-zinc-600 leading-relaxed">
-                            Are you sure you want to delete the job opening for <span className="font-bold text-zinc-900">"{job.title}"</span>?
+                            Are you sure you want to delete the job opening for <span className="font-bold text-zinc-900">"{data.name}"</span>?
                         </p>
                         <p className="text-sm text-zinc-500 bg-zinc-50 p-4 rounded-xl border border-zinc-100">
                             This action cannot be undone. All applicant data associated with this job will be archived.
@@ -31,7 +37,7 @@ const DeleteJobListingModal = () => {
                     <div className="flex gap-3">
                         <Button
                             variant="ghost"
-                            // onClick={onClose}
+                            onClick={() => setIsDeleteJobOpen(false)}
                             className="flex-1 py-3 border border-zinc-200 text-zinc-700 rounded-xl font-bold hover:bg-zinc-50 transition-all"
                         >
                             Cancel
@@ -39,7 +45,7 @@ const DeleteJobListingModal = () => {
                         <Button
                             onClick={() => {
                                 // onDelete(job.id);
-                                // onClose();
+                                setIsDeleteJobOpen(false);
                             }}
                             className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-all shadow-lg shadow-red-500/20 flex items-center justify-center gap-2"
                         >

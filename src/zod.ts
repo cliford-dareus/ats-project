@@ -133,7 +133,8 @@ export const updateJobSchema = z.object({
     job_location: z.string(),
     salary_up_to: z.string(),
     department: z.string(),
-    type: z.string()
+    type: z.string(),
+    status: z.enum(JOB_STATUS)
 });
 
 export const organizationSchema = z.object({

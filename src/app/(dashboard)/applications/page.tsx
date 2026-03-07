@@ -2,9 +2,7 @@ import React from "react";
 import ApplicationList from "@/app/(dashboard)/applications/_components/application-list";
 import { ApplicationResponseType } from "@/types";
 import { auth } from "@clerk/nextjs/server";
-import ExtractFileButton from "@/components/extract-file-button";
-import { Plus } from "lucide-react";
-import { get_applications_with_filter_action } from "@/server/actions/application_actions";
+import { get_all_applications_action } from "@/server/actions/application_actions";
 import ListPageTop from "@/components/list-page-top";
 
 type Props = {
@@ -21,7 +19,7 @@ const Page = async ({ searchParams }: Props) => {
   const offset = typeof page === "string" ? (parseInt(page) - 1) * limit : 0;
   // const locations = location ? (location as string).split(',') : undefined;
 
-  const result = await get_applications_with_filter_action({
+  const result = await get_all_applications_action({
     limit,
     offset,
     organization: orgId!,

@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {Button} from "@/components/ui/button";
 import EditJobListingModal from "@/components/modal/edit-joblisting-modal";
+import DeleteJoblistingModal from "@/components/modal/delete-joblisting-modal";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-expect-error
@@ -16,7 +17,8 @@ const RowAction = ({row, table}) => {
     const meta = table.options.meta;
     const validRow = meta?.validRows[row.id];
     const disableSubmit = validRow ? Object.values(validRow)?.some(value => !value) : false;
-    const [isOpen, setIsOpen] = useState(false)
+    const [isEditJobOpen, setIsEditJobOpen] = useState(false);
+    const [isDeleteJobOpen, setIsDeleteJobOpen] = useState(false);
 
     return (
         <>
@@ -36,13 +38,16 @@ const RowAction = ({row, table}) => {
                     </DropdownMenuItem>
                     <DropdownMenuSeparator/>
                     <DropdownMenuItem>
-                        <div onClick={() => setIsOpen(true)}>Edit job</div>
+                        <div onClick={() => setIsEditJobOpen(true)}>Edit job</div>
                     </DropdownMenuItem>
-                    <DropdownMenuItem>View payment details</DropdownMenuItem>
+                    <DropdownMenuItem>
+                        <div onClick={() => setIsDeleteJobOpen(true)}>Delete Job</div>
+                    </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
 
-            <EditJobListingModal isOpen={isOpen} setIsOpen={setIsOpen}/>
+            <EditJobListingModal isEditJobOpen={isEditJobOpen} setIsEditJobOpen={setIsEditJobOpen} data={row.original}/>
+            <DeleteJoblistingModal isDeleteJobOpen={isDeleteJobOpen} setIsDeleteJobOpen={setIsDeleteJobOpen} data={row.original} />
         </>
     );
 };

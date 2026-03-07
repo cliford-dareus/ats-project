@@ -1,256 +1,263 @@
 import {
-  applications,
-  attachments,
-  candidates,
-  interviews,
-  job_listings,
-  scoreCards,
-  stages,
+    applications,
+    attachments,
+    candidates,
+    interviews,
+    job_listings,
+    scoreCards,
+    stages,
 } from "@/drizzle/schema";
-import { db } from "@/drizzle/db";
-import { and, eq, SQL } from "drizzle-orm";
+import {db} from "@/drizzle/db";
+import {and, eq, SQL} from "drizzle-orm";
 import {
-  CACHE_TAGS,
-  dbCache,
-  getGlobalTag,
-  revalidateDbCache,
+    CACHE_TAGS,
+    dbCache,
+    getGlobalTag,
+    revalidateDbCache,
 } from "@/lib/cache";
-import { candidateForm, filterApplicationsType } from "@/zod";
-import { z } from "zod";
+import {candidateForm, filterApplicationsType} from "@/zod";
+import {z} from "zod";
 
 interface CandidateInfo {
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string;
-  location: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone: string;
+    location: string;
 };
 
 // TODO: FIX LATER
 export const create_application = async (data: z.infer<typeof candidateForm>) => {
-  // Get the "Applied" stage (should be stage_order_id = 0)
-  const [applied_stage] = await db
-    .select()
-    .from(stages)
-    .where(
-      and(
-        eq(stages.job_id, Number(data.job!)),
-        eq(stages.stage_order_id, 0),
-        eq(stages.stage_name, 'Applied')
-      )
-    );
+    // Get the "Applied" stage (should be stage_order_id = 0)
+    const [applied_stage] = await db
+        .select()
+        .from(stages)
+        .where(
+            and(
+                eq(stages.job_id, Number(data.job)),
+                eq(stages.stage_order_id, 0),
+                eq(stages.stage_name, 'Applied')
+            )
+        );
 
-  if (!applied_stage) {
-    throw new Error('Applied stage not found for this job');
-  };
+    // Check if user is passing a candidate id
+    const canditate_exist = await db.select()
+        .from(candidates)
+        .where(eq(candidates.name, data.candidate!));
 
-  // Check if user is passing a candidate id
-  const canditate_exist = await db.select()
-    .from(candidates)
-    .where(
-        eq(candidates.name, data.candidate!)
-    );
-  // Check if candidate is in the database
-  // If not, create a new candidate record
-  // If user is passing a candidate id, update the candidate record
-  // Both cases, update the application record to associate the candidate with the job and current stage
-  if (!data.candidate) {
-    try {
-      const info = data.candidate_info as CandidateInfo;
-      // const file = data.candidate_file as { resume: FileList, cover_letter: FileList }
+    const candidateAlreadyHaveApplication = await db.select()
+        .from(applications)
+        .where(and(eq(applications.job_id, data.job), eq(applications.candidate, data.candidate)));
 
-      const [candidate] = await db
-        .insert(candidates)
-        .values({
-          name: `${info.first_name} ${info.last_name}`,
-          // location: info.location,
-          email: info.email,
-          phone: info.phone,
-          cv_path: `no path-${info.first_name}`,
-        })
-        .$returningId();
+    if(candidateAlreadyHaveApplication.length > 0){
+        return "Candidate already have an application"
+    };
 
-      await db.insert(attachments).values({
-        file_name: `${info.first_name} ${"resume"}`,
-        file_url: "udhsjhdjsh.com",
-        candidate_id: candidate.id,
-        attachment_type: "RESUME",
-      });
+    if (!data.candidate && !canditate_exist) {
+        try {
+            const info = data.candidate_info as CandidateInfo;
+            // const file = data.candidate_file as { resume: FileList, cover_letter: FileList }
 
-      const [application] = await db.insert(applications).values({
+            const [candidate] = await db
+                .insert(candidates)
+                .values({
+                    name: `${info.first_name} ${info.last_name}`,
+                    // location: info.location,
+                    email: info.email,
+                    phone: info.phone,
+                    cv_path: `no path-${info.first_name}`,
+                })
+                .$returningId();
+
+            await db.insert(attachments).values({
+                file_name: `${info.first_name} ${"resume"}`,
+                file_url: "udhsjhdjsh.com",
+                candidate_id: candidate.id,
+                attachment_type: "RESUME",
+            });
+
+            const [application] = await db.insert(applications).values({
+                job_id: Number(data.job),
+                candidate: candidate.id,
+                current_stage_id: applied_stage.id, // Use Applied stage
+            });
+
+            revalidateDbCache({
+                tag: CACHE_TAGS.applications,
+            });
+
+            revalidateDbCache({
+                tag: CACHE_TAGS.jobs,
+            });
+
+            return application;
+        } catch (err) {
+            console.log(err);
+            throw err;
+        }
+    };
+
+    await db.insert(applications).values({
         job_id: Number(data.job),
-        candidate: candidate.id,
+        candidate: Number(data.candidate),
         current_stage_id: applied_stage.id, // Use Applied stage
-      });
+    });
 
-      return application;
-    } catch (err) {
-      console.log(err);
-      throw err;
-    }
-  };
+    revalidateDbCache({
+        tag: CACHE_TAGS.applications,
+    });
 
-  await db.insert(applications).values({
-    job_id: Number(data.job),
-    candidate: Number(data.candidate),
-    current_stage_id: applied_stage.id, // Use Applied stage
-  });
+    revalidateDbCache({
+        tag: CACHE_TAGS.jobs,
+    });
 
-  revalidateDbCache({
-    tag: CACHE_TAGS.applications,
-  });
-
-  revalidateDbCache({
-    tag: CACHE_TAGS.jobs,
-  });
-
-  return "application created";
+    return "application created";
 };
 
-export const update_application_stage = async (data: {applicationId: number ,new_stage_id: number}) => {
-  await db
-    .update(applications)
-    .set({ current_stage_id: data.new_stage_id })
-    .where(eq(applications.id, data.applicationId))
+export const update_application_stage = async (data: { applicationId: number, new_stage_id: number }) => {
+    await db
+        .update(applications)
+        .set({current_stage_id: data.new_stage_id})
+        .where(eq(applications.id, data.applicationId))
 
-  revalidateDbCache({
-    tag: CACHE_TAGS.candidates,
-  });
+    revalidateDbCache({
+        tag: CACHE_TAGS.candidates,
+    });
 
-  revalidateDbCache({
-    tag: CACHE_TAGS.applications,
-  });
+    revalidateDbCache({
+        tag: CACHE_TAGS.applications,
+    });
 };
 
 export const get_application_by_id = async (applicationId: number) => {
-  const cacheFn = dbCache(get_application_by_id_db, {
-    tags: [getGlobalTag(CACHE_TAGS.applications)],
-  });
+    const cacheFn = dbCache(get_application_by_id_db, {
+        tags: [getGlobalTag(CACHE_TAGS.applications)],
+    });
 
-  return cacheFn(applicationId);
+    return cacheFn(applicationId);
 };
 
 export const get_applications_with_filter = async (filter: z.infer<typeof filterApplicationsType>) => {
-  const cacheFn = dbCache(get_applications_with_filter_db, {
-    tags: [getGlobalTag(CACHE_TAGS.applications)],
-  });
+    const cacheFn = dbCache(get_applications_with_filter_db, {
+        tags: [getGlobalTag(CACHE_TAGS.applications)],
+    });
 
-  return cacheFn(filter);
+    return cacheFn(filter);
 };
 
 export const get_candidate_with_stage = async () => {
-  const cacheFn = dbCache(get_applications_with_stages_db, {
-    tags: [getGlobalTag(CACHE_TAGS.stages)],
-  });
+    const cacheFn = dbCache(get_applications_with_stages_db, {
+        tags: [getGlobalTag(CACHE_TAGS.stages)],
+    });
 
-  return cacheFn();
+    return cacheFn();
 };
 
 export const get_applications_with_stages_db = async () => {
-  return db
-    .select({
-      color: stages.color,
-      stageId: stages.id,
-      stages: stages.stage_name,
-      count: db.$count(
-        applications,
-        eq(applications.current_stage_id, stages.id),
-      ),
-    })
-    .from(stages)
-    .leftJoin(applications, eq(applications.current_stage_id, stages.id));
+    return db
+        .select({
+            color: stages.color,
+            stageId: stages.id,
+            stages: stages.stage_name,
+            count: db.$count(
+                applications,
+                eq(applications.current_stage_id, stages.id),
+            ),
+        })
+        .from(stages)
+        .leftJoin(applications, eq(applications.current_stage_id, stages.id));
 };
 
 export const get_application_by_id_db = async (applicationId: number) => {
-  return db
-    .select()
-    .from(applications)
-    .where(eq(applications.id, applicationId))
-    .leftJoin(scoreCards, eq(scoreCards.applications_id, applications.id))
-    .leftJoin(interviews, eq(interviews.applications_id, applications.id));
+    return db
+        .select()
+        .from(applications)
+        .where(eq(applications.id, applicationId))
+        .leftJoin(scoreCards, eq(scoreCards.applications_id, applications.id))
+        .leftJoin(interviews, eq(interviews.applications_id, applications.id));
 };
 
 export const get_applications_with_filter_db = async (filter: z.infer<typeof filterApplicationsType>) => {
-  const filters: SQL[] = [];
+    const filters: SQL[] = [];
 
-  if (filter.stages)
-    filters.push(eq(applications.current_stage_id, filter.stages));
-  // if(filter.department) filters.push(inArray(job_listings.department, filter.department as string[]))
-  // if(filter.keywords) filters.push(inArray(job_listings.keywords, filter.keywords as string[]))
-  // if(filter.status) filters.push(eq(job_listings.status, filter.status))
+    if (filter.stages)
+        filters.push(eq(applications.current_stage_id, filter.stages));
+    // if(filter.department) filters.push(inArray(job_listings.department, filter.department as string[]))
+    // if(filter.keywords) filters.push(inArray(job_listings.keywords, filter.keywords as string[]))
+    // if(filter.status) filters.push(eq(job_listings.status, filter.status))
 
-  const application = await db
-    .select({
-      id: applications.id,
-      job_apply: job_listings.name,
-      job_id: applications.job_id,
-      job_org: job_listings.organization,
-      candidate_id: candidates.id,
-      candidate_name: candidates.name,
-      candidate_status: candidates.status,
-      location: job_listings.location,
-      current_stage: stages.stage_name,
-      assign_to: stages.assign_to,
-      // apply_date: applications.created_at,
-      candidatesCount: db.$count(
-        applications,
-        eq(applications.job_id, job_listings.id),
-      ),
-    })
-    .from(applications)
-    .leftJoin(job_listings, eq(applications.job_id, job_listings.id))
-    .leftJoin(candidates, eq(applications.candidate, candidates.id))
-    .leftJoin(stages, eq(applications.current_stage_id, stages.id))
-    .where(and(...filters, eq(job_listings.organization, filter.organization)))
-    .limit(filter.limit!)
-    .offset(filter.offset!);
+    const application = await db
+        .select({
+            id: applications.id,
+            job_apply: job_listings.name,
+            job_id: applications.job_id,
+            job_org: job_listings.organization,
+            candidate_id: candidates.id,
+            candidate_name: candidates.name,
+            candidate_status: candidates.status,
+            location: job_listings.location,
+            current_stage: stages.stage_name,
+            assign_to: stages.assign_to,
+            // apply_date: applications.created_at,
+            candidatesCount: db.$count(
+                applications,
+                eq(applications.job_id, job_listings.id),
+            ),
+        })
+        .from(applications)
+        .leftJoin(job_listings, eq(applications.job_id, job_listings.id))
+        .leftJoin(candidates, eq(applications.candidate, candidates.id))
+        .leftJoin(stages, eq(applications.current_stage_id, stages.id))
+        .where(and(...filters, eq(job_listings.organization, filter.organization)))
+        .limit(filter.limit!)
+        .offset(filter.offset!);
 
-  const len = application.length;
-  return [len, application];
+    const len = application.length;
+    return [len, application];
 };
 
 // ========================================================
 export const get_user_applications = async (candidateId: number) => {
-  const cacheFn = dbCache(get_user_applications_db, {
-    tags: [getGlobalTag(CACHE_TAGS.applications)],
-  });
+    const cacheFn = dbCache(get_user_applications_db, {
+        tags: [getGlobalTag(CACHE_TAGS.applications)],
+    });
 
-  return cacheFn(candidateId);
+    return cacheFn(candidateId);
 };
 
 const get_user_applications_db = async (candidateId: number) => {
-  return db
-      .select({
-        id: applications.id,
-        job_name: job_listings.name,
-        job_id: applications.job_id,
-        current_stage: stages.stage_name,
-        stage_color: stages.color,
-        applied_date: applications.created_at,
-        job_location: job_listings.location,
-        job_status: job_listings.status,
-      })
-      .from(applications)
-      .leftJoin(job_listings, eq(applications.job_id, job_listings.id))
-      .leftJoin(stages, eq(applications.current_stage_id, stages.id))
-      .where(eq(applications.candidate, candidateId));
+    return db
+        .select({
+            id: applications.id,
+            job_name: job_listings.name,
+            job_id: applications.job_id,
+            current_stage: stages.stage_name,
+            stage_color: stages.color,
+            applied_date: applications.created_at,
+            job_location: job_listings.location,
+            job_status: job_listings.status,
+        })
+        .from(applications)
+        .leftJoin(job_listings, eq(applications.job_id, job_listings.id))
+        .leftJoin(stages, eq(applications.current_stage_id, stages.id))
+        .where(eq(applications.candidate, candidateId));
 };
 
 export const add_interview = async ({
-  applicationId,
-  location,
-  start_at,
-  end_at,
-}: {
-  applicationId: number;
-  location: string;
-  start_at: Date;
-  end_at: Date;
+                                        applicationId,
+                                        location,
+                                        start_at,
+                                        end_at,
+                                    }: {
+    applicationId: number;
+    location: string;
+    start_at: Date;
+    end_at: Date;
 }) => {
-  return await db.insert(interviews).values({
-    applications_id: applicationId,
-    locations: location,
-    start_at: start_at,
-    end_at: end_at,
-  });
+    return await db.insert(interviews).values({
+        applications_id: applicationId,
+        locations: location,
+        start_at: start_at,
+        end_at: end_at,
+    });
 };
