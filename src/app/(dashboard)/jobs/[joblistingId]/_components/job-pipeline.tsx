@@ -1,8 +1,5 @@
-'use client'
-
-import React, {useEffect, useState} from 'react';
 import {ApplicationType, StageResponseType} from "@/types";
-import Column from "@/components/kanban/column";
+import Kanban from "@/app/(dashboard)/jobs/[joblistingId]/_components/kanban";
 
 type Props = {
     data: ApplicationType[];
@@ -10,30 +7,9 @@ type Props = {
 };
 
 const JobPipeline = ({data, stages}: Props) => {
-    const [jobs, setJobs] = useState<ApplicationType[]>();
-    const [showTriggers, setShowTriggers] = useState(false);
-
-    useEffect(() => {
-        setJobs(data)
-    }, [data]);
-
     return (
         <div className="h-[calc(100vh-200px)]">
-            <div className="flex h-full gap-4 overflow-y-hidden overflow-x-scroll">
-                {stages?.map((stage) => (
-                    <Column
-                        key={stage.stage_order_id}
-                        title={stage.stage_name as string}
-                        column={stage.stage_name!}
-                        stage={stage}
-                        cards={jobs!}
-                        color={stage.color}
-                        setCards={setJobs}
-                        showTriggers={showTriggers}
-                        setShowTriggers={setShowTriggers}
-                    />
-                ))}
-            </div>
+            <Kanban stages={stages} data={data}/>
         </div>
     );
 };

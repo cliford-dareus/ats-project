@@ -17,6 +17,7 @@ import {
 } from "@/lib/cache";
 import {candidateForm, filterApplicationsType} from "@/zod";
 import {z} from "zod";
+import {revalidatePath} from "next/cache";
 
 interface CandidateInfo {
     first_name: string;
@@ -120,13 +121,9 @@ export const update_application_stage = async (data: { applicationId: number, ne
         .set({current_stage_id: data.new_stage_id})
         .where(eq(applications.id, data.applicationId))
 
-    revalidateDbCache({
-        tag: CACHE_TAGS.candidates,
-    });
-
-    revalidateDbCache({
-        tag: CACHE_TAGS.applications,
-    });
+    revalidateDbCache({tag: CACHE_TAGS.candidates,});
+    revalidateDbCache({tag: CACHE_TAGS.applications});
+    // revalidatePath('/(dashboard)/jobs/[joblistingId]');
 };
 
 export const get_application_by_id = async (applicationId: number) => {

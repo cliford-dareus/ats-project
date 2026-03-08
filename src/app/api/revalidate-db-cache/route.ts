@@ -3,7 +3,6 @@ import {CACHE_TAGS, revalidateDbCache} from '@/lib/cache';
 
 export async function POST(req: NextRequest) {
     const body = await req.json();
-
     try {
         revalidateDbCache({
             id: body.jobId,

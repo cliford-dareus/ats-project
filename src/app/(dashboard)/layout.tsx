@@ -1,78 +1,78 @@
-import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/app-sidebar";
+import {SidebarInset, SidebarTrigger} from "@/components/ui/sidebar";
+import {AppSidebar} from "@/components/app-sidebar";
 import React from "react";
 import {
-  get_all_candidates_action,
-  get_candidates_stage_count_action,
+    get_all_candidates_action,
+    get_candidates_stage_count_action,
 } from "@/server/actions/candidates-actions";
-import { CandidatesResponseType } from "@/types";
-import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
-import { Bell, Plus } from "lucide-react";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import {CandidatesResponseType} from "@/types";
+import {Separator} from "@/components/ui/separator";
+import {Button} from "@/components/ui/button";
+import {Bell, Plus} from "lucide-react";
+import {auth, currentUser} from "@clerk/nextjs/server";
 import Link from "next/link";
 import OrganizationSwitcher from "@/components/organization_switcher";
-import { redirect } from "next/navigation";
+import {redirect} from "next/navigation";
 import AuthDropdown from "@/components/auth-dropdown";
 import Provider from "@/providers/providers";
 
 type Props = {
-  children: React.ReactNode;
+    children: React.ReactNode;
 };
 
 export type StageCountType = {
-  stageId: number;
-  stages: "New Candidate" | "Screening" | "Phone Interview" | "Offer" | null;
-  count: number;
-  color: string;
+    stageId: number;
+    stages: "New Candidate" | "Screening" | "Phone Interview" | "Offer" | null;
+    count: number;
+    color: string;
 };
 
-const Layout = async ({ children }: Props) => {
-  const user = await currentUser();
+const Layout = async ({children}: Props) => {
+    const user = await currentUser();
 
-  if (!user) {
-    return redirect("/sign-in");
-  }
+    if (!user) {
+        return redirect("/sign-in");
+    }
 
-  const { orgId } = await auth();
+    const {orgId} = await auth();
 
-  const result = await get_all_candidates_action({ limit: 0, offset: 0 });
-  const candidate = Array.isArray(result) ? result[1] : [];
-  const stagesCount = await get_candidates_stage_count_action();
+    const result = await get_all_candidates_action({limit: 0, offset: 0});
+    const candidate = Array.isArray(result) ? result[1] : [];
+    const stagesCount = await get_candidates_stage_count_action();
 
-  return (
-    <Provider orgId={orgId as string}>
-      <AppSidebar
-        candidate={candidate as CandidatesResponseType[]}
-        stagescount={stagesCount as StageCountType[]}
-      />
-      <SidebarInset>
-        <header className="sticky top-0 flex shrink-0 items-center gap-2 border-b bg-background p-4">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 h-4" />
-          <OrganizationSwitcher />
-          <Separator orientation="vertical" className="mr-2 h-4" />
-          <div className="ml-auto flex items-center gap-4">
-            <Button className="p-0">
-              <Link
-                href="/jobs/new"
-                className="flex items-center gap-2 w-full h-full px-4 py-1.5"
-              >
-                <Plus size={20} />
-                <p>Create New Job</p>
-              </Link>
-            </Button>
+    return (
+        <Provider orgId={orgId as string}>
+            <AppSidebar
+                candidate={candidate as CandidatesResponseType[]}
+                stagescount={stagesCount as StageCountType[]}
+            />
+            <SidebarInset>
+                <header className="sticky top-0 flex shrink-0 items-center gap-2 border-b bg-background p-4">
+                    <SidebarTrigger className="-ml-1"/>
+                    <Separator orientation="vertical" className="mr-2 h-4"/>
+                    <OrganizationSwitcher/>
+                    <Separator orientation="vertical" className="mr-2 h-4"/>
+                    <div className="ml-auto flex items-center gap-4">
+                        <Button className="p-0">
+                            <Link
+                                href="/jobs/new"
+                                className="flex items-center gap-2 w-full h-full px-4 py-1.5"
+                            >
+                                <Plus size={20}/>
+                                <p>Create New Job</p>
+                            </Link>
+                        </Button>
 
-            <Bell size={18} />
-            <AuthDropdown user={user} orgId={orgId} />
-          </div>
-        </header>
-        <div className="max-h-[calc(100vh_-_100px)] max-w-7xl w-full mx-auto overflow-scroll no-scrollbar">
-          {children}
-        </div>
-      </SidebarInset>
-    </Provider>
-  );
+                        <Bell size={18}/>
+                        <AuthDropdown user={user} orgId={orgId}/>
+                    </div>
+                </header>
+                <div className="max-h-[calc(100vh_-_100px)] max-w-7xl w-full mx-auto overflow-scroll no-scrollbar">
+                    {children}
+                </div>
+            </SidebarInset>
+        </Provider>
+    );
 };
 
 export default Layout;

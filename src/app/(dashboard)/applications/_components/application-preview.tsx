@@ -31,7 +31,7 @@ import {
 import {SheetClose} from "@/components/ui/sheet";
 import {usePluginContextHook} from "@/providers/plugins-provider";
 import {update_application_stage_action} from "@/server/actions/application_actions";
-import {TriggerAction} from "@/plugins/smart-trigger/types";
+import {TriggerAction} from "@/lib/smart-trigger/types";
 import {Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbSeparator} from "@/components/ui/breadcrumb";
 import {get_application_notes} from "@/server/queries/mongo/note";
 import {Dialog, DialogTitle} from "@/components/ui/dialog";

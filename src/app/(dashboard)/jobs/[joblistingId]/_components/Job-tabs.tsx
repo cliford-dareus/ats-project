@@ -17,8 +17,6 @@ import {
     StageResponseType,
 } from "@/types";
 import JobCandidate from "./job-candidate";
-import {usePluginContextHook} from "@/providers/plugins-provider";
-import {pluginRegistry} from "@/lib/plugins-registry";
 
 type Props = {
     applications: ApplicationType[];
@@ -35,7 +33,6 @@ const JobTabs = ({applications, stages, jobs, joblistingId, singleJob}: Props) =
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
-    const context = usePluginContextHook();
     const [activeTab, setActiveTab] = React.useState<TabValue>(DEFAULT_TAB);
 
     const handleTabChange = useCallback((value: string) => {
@@ -45,16 +42,16 @@ const JobTabs = ({applications, stages, jobs, joblistingId, singleJob}: Props) =
         router.push(newPath);
     }, [pathname, router]);
 
-    useEffect(() => {
-        context.setJobId(joblistingId);
-    }, [joblistingId]);
-
-    useEffect(() => {
-        const smartTriggers = pluginRegistry.get("smart-triggers");
-        if (smartTriggers?.config && typeof smartTriggers.config.actions?.activate === "function" && smartTriggers.enabled) {
-            smartTriggers.config.actions?.activate(context);
-        }
-    }, [context.jobId]);
+    // useEffect(() => {
+    //     context.setJobId(joblistingId);
+    // }, [joblistingId]);
+    //
+    // useEffect(() => {
+    //     const smartTriggers = pluginRegistry.get("smart-revalidate-db-cache");
+    //     if (smartTriggers?.config && typeof smartTriggers.config.actions?.activate === "function" && smartTriggers.enabled) {
+    //         smartTriggers.config.actions?.activate(context);
+    //     }
+    // }, [context.jobId]);
 
     useEffect(() => {
         const tabParam = searchParams.get('tab') as TabValue;
@@ -89,7 +86,7 @@ const JobTabs = ({applications, stages, jobs, joblistingId, singleJob}: Props) =
                         <JobCandidate job={singleJob}/>
                     </TabsContent>
                     <TabsContent value="pipelines">
-                        <JobPipeline data={applications} stages={stages}/>
+                        <JobPipeline data={applications} stages={stages} />
                     </TabsContent>
                     <TabsContent value="options">
                         <JobOptions job_id={Number(joblistingId)} data={jobs} stages={stages}/>

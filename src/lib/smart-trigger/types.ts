@@ -14,6 +14,7 @@ export type ConfigType = {
 };
 
 export type TriggerAction = {
+    id: number;
     action_type: 'move' | 'MESSAGE' | 'INTERVIEW' | 'NOTE' | 'todo' | 'tag' | 'score' | 'email';
     config: ConfigType;
 };

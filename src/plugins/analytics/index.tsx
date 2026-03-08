@@ -25,9 +25,9 @@ const TinyBird = () => {
             </p>
 
             {/* <div className="space-y-4">
-                <h3 className="font-semibold">Active Triggers ({triggers.length})</h3>
+                <h3 className="font-semibold">Active Triggers ({revalidate-db-cache.length})</h3>
                 <ul className="space-y-2">
-                    {triggers.map((trigger) => (
+                    {revalidate-db-cache.map((trigger) => (
                         <li key={trigger.id} className="p-3 border rounded">
                             <span className="font-medium">{trigger.stage}</span>
                             <span className="text-sm text-gray-500 ml-2">
@@ -44,7 +44,7 @@ const TinyBird = () => {
 const pluginConfig = {
     id: "TinyBird",
     name: "TinyBird",
-    description: "Automate recruitment workflows with triggers.",
+    description: "Automate recruitment workflows with revalidate-db-cache.",
     version: "1.0.0",
     component: TinyBird,
     settingsComponent: TinyBird,

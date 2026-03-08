@@ -1,40 +1,34 @@
-"use client";
-
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { PluginsProvider } from "./plugins-provider";
-import { NewJobContextProvider } from "./new-job-provider";
-import { fetchPlugins, getPlugins, registerPlugin } from "@/lib/plugins-registry";
-import { useEffect } from "react";
-
-import SmartTriggers from "@/plugins/smart-trigger/index";
-import TinyBird from "@/plugins/analytics/index"
-import ExternalJobBoard from "@/plugins/external-job-board/index";
+import {SidebarProvider} from "@/components/ui/sidebar";
+import {NewJobContextProvider} from "./new-job-provider";
+import {PluginProvider} from "@/providers/plugin-provider";
+import {useServerFlags} from "@/lib/plugins-registry";
+import {SocketProvider} from "@/providers/socket-provider";
 
 type Props = {
-  children: React.ReactNode;
-  orgId: string;
+    children: React.ReactNode;
+    orgId: string;
 };
 
-registerPlugin(SmartTriggers);
-registerPlugin(TinyBird);
-registerPlugin(ExternalJobBoard);
-
-const Provider = ({ children, orgId }: Props) => {
-  return (
-    <PluginsProvider orgId={orgId}>
-      <NewJobContextProvider>
-        <SidebarProvider
-          style={
-            {
-              "--sidebar-width": "350px",
-            } as React.CSSProperties
-          }
-        >
-          {children}
-        </SidebarProvider>
-      </NewJobContextProvider>
-    </PluginsProvider>
-  );
+const Provider = async ({children, orgId}: Props) => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const initialPlugins = await useServerFlags(orgId);
+    return (
+        <SocketProvider>
+            <NewJobContextProvider>
+                <PluginProvider initialPlugins={initialPlugins}>
+                    <SidebarProvider
+                        style={
+                            {
+                                "--sidebar-width": "350px",
+                            } as React.CSSProperties
+                        }
+                    >
+                        {children}
+                    </SidebarProvider>
+                </PluginProvider>
+            </NewJobContextProvider>
+        </SocketProvider>
+    );
 };
 
 export default Provider;

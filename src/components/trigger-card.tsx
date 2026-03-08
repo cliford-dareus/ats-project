@@ -3,7 +3,7 @@
 import React from "react";
 import {StageResponseType, TriggerResponseType} from "@/types";
 import {GitCompareArrows, Network, Send} from "lucide-react"
-import {ConfigType} from "@/plugins/smart-trigger/types";
+import {ConfigType} from "@/lib/smart-trigger/types";
 
 type Props = {
     stage: StageResponseType;

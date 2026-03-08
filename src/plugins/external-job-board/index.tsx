@@ -16,7 +16,7 @@ const ExternalJobBoard = () => {
 const pluginConfig = {
     id: "external-job-board",
     name: "External Job Board",
-    description: "Automate recruitment workflows with triggers.",
+    description: "Automate recruitment workflows with revalidate-db-cache.",
     version: "1.0.0",
     component: ExternalJobBoard,
     settingsComponent: ExternalJobBoard,

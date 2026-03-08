@@ -3,11 +3,11 @@
 import {taskQueue} from "@/lib/queue";
 import mongodb from "@/lib/mongodb";
 import Trigger from "@/models/trigger";
-import {TriggerAction} from "@/plugins/smart-trigger/types";
+import {TriggerAction} from "@/lib/smart-trigger/types";
 import {milliseconds} from "date-fns";
 
 
-export const addTaskToQueue = async (id: number, action: TriggerAction, stage_name: string) => {
+export const addTaskToQueue = async (id: number, action: TriggerAction, stage_name: string, jobId: number) => {
     await mongodb();
     console.log("Adding task to queue", id, action, stage_name);
 
@@ -25,9 +25,10 @@ export const addTaskToQueue = async (id: number, action: TriggerAction, stage_na
     });
 
     await taskQueue.add('executeTask', {
+        application_id: id,
         trigger_id: trigger._id,
         type: action.action_type,
-        application_id: id,
+        jobId: jobId,
         config: action.config
     }, {delay: delayMs});
 };

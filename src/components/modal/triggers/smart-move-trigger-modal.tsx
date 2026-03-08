@@ -15,7 +15,7 @@ import {zodResolver} from '@hookform/resolvers/zod';
 import {z} from 'zod';
 import {Input} from '@/components/ui/input';
 import {Plus} from 'lucide-react';
-import {TriggerAction} from '@/plugins/smart-trigger/types';
+import {TriggerAction} from '@/lib/smart-trigger/types';
 import {CITIES} from "@/lib/utils";
 
 type Props = {

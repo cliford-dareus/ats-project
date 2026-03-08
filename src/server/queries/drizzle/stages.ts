@@ -1,7 +1,7 @@
 
 import {db} from "@/drizzle/db";
 import {stages, triggers} from "@/drizzle/schema";
-import { TriggerAction } from "@/plugins/smart-trigger/types";
+import { TriggerAction } from "@/lib/smart-trigger/types";
 import {eq} from "drizzle-orm";
 
 export const add_trigger_to_stage = async (stageId: number, action: TriggerAction) => {
