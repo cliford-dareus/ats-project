@@ -29,15 +29,16 @@ export const setupWorker = (io: SocketServer) => {
                             return;
                         };
 
+                        //  Delete Later
                         // Get the application stage id from the stage name
                         const stageResults = await db.select().from(stages).where(eq(stages.job_id, application.job_id!));
                         const stage = stageResults.find((s) => s.stage_name === job.data.config.condition.target);
                         const stageId = stage?.id;
-
-                        if (!stageId) {
+                        if (stageId !== job.data.newStageId) {
                             console.warn(`Target stage ${job.data.config.condition.target} not found`);
                             return;
                         }
+                        // =============================
 
                         await db
                             .update(applications)

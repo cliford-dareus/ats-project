@@ -8,7 +8,7 @@ import {
     stages,
 } from "@/drizzle/schema";
 import {db} from "@/drizzle/db";
-import {and, eq, SQL} from "drizzle-orm";
+import {and, asc, desc, eq, SQL, sql, inArray} from "drizzle-orm";
 import {
     CACHE_TAGS,
     dbCache,
@@ -50,7 +50,7 @@ export const create_application = async (data: z.infer<typeof candidateForm>) =>
         .from(applications)
         .where(and(eq(applications.job_id, data.job), eq(applications.candidate, data.candidate)));
 
-    if(candidateAlreadyHaveApplication.length > 0){
+    if (candidateAlreadyHaveApplication.length > 0) {
         return "Candidate already have an application"
     };
 
@@ -96,7 +96,7 @@ export const create_application = async (data: z.infer<typeof candidateForm>) =>
             console.log(err);
             throw err;
         }
-    };
+    }
 
     await db.insert(applications).values({
         job_id: Number(data.job),
@@ -140,6 +140,14 @@ export const get_applications_with_filter = async (filter: z.infer<typeof filter
     });
 
     return cacheFn(filter);
+};
+
+export const get_job_all_applications = async (jobId: number) => {
+    const cacheFn = dbCache(get_job_all_applications_db, {
+        tags: [getGlobalTag(CACHE_TAGS.applications)],
+    });
+
+    return cacheFn(jobId);
 };
 
 export const get_candidate_with_stage = async () => {
@@ -212,6 +220,143 @@ export const get_applications_with_filter_db = async (filter: z.infer<typeof fil
     const len = application.length;
     return [len, application];
 };
+
+export const get_job_all_applications_db = async (jobId: number) => {
+    const rows = await db
+        .select({
+            application: applications,
+            candidate: candidates,
+            attachment: attachments,
+            interview: interviews,
+            stage: stages,
+        })
+        .from(applications)
+        .leftJoin(candidates, eq(applications.candidate, candidates.id))
+        .leftJoin(attachments, eq(candidates.id, attachments.candidate_id))
+        .leftJoin(interviews, eq(applications.id, interviews.applications_id))
+        .leftJoin(stages, eq(applications.current_stage_id, stages.id))
+        .where(eq(applications.job_id, jobId))
+        .orderBy(
+            applications.current_stage_id,
+            asc(applications.position_in_stage),
+            desc(applications.created_at)
+        );
+
+    // MANUALLY REDUCE THE ROWS
+    const result = rows.reduce<Record<number, any>>((acc, row) => {
+        const appId = row.application.id;
+
+        if (!acc[appId]) {
+            acc[appId] = {
+                ...row.application,
+                candidate: {
+                    ...row.candidate,
+                    attachments: [],
+                },
+                interviews: [],
+                stage: row.stage.stage_name,
+            };
+        }
+
+        // Add unique attachments
+        if (row.attachment && !acc[appId].candidate.attachments.find((a: any) => a.id === row.attachment.id)) {
+            acc[appId].candidate.attachments.push(row.attachment);
+        }
+
+        // Add unique interviews
+        if (row.interview && !acc[appId].interviews.find((i: any) => i.id === row.interview.id)) {
+            acc[appId].interviews.push(row.interview);
+        }
+
+        return acc;
+    }, {});
+
+    return Object.values(result);
+};
+
+export async function move_application_and_reorder_db({
+                                                          applicationId,
+                                                          newStageId,
+                                                          sourceStageId,
+                                                          targetOrders,
+                                                          sourceOrders,
+                                                      }: {
+    applicationId: number;
+    newStageId: number;
+    sourceStageId?: number;
+    targetOrders: any[];
+    sourceOrders?: any[];
+}) {
+    try {
+        await db.transaction(async (tx) => {
+            // 1. Update stage (only if moving)
+            if (sourceStageId && sourceStageId !== newStageId) {
+                await tx
+                    .update(applications)
+                    .set({current_stage_id: newStageId})
+                    .where(eq(applications.id, applicationId));
+            }
+
+            // 2. Update target stage orders
+            if (targetOrders.length > 0) {
+                const targetCases = targetOrders.map(
+                    ({id, position}) => sql`WHEN
+                    ${id}
+                    THEN
+                    ${position}`
+                );
+                const targetIds = targetOrders.map(o => o.id);
+
+                await tx
+                    .update(applications)
+                    .set({
+                        position_in_stage: sql`CASE
+                        ${applications.id}
+                        ${sql.join(targetCases, sql` `)}
+                        END`,
+                    })
+                    .where(
+                        and(
+                            eq(applications.current_stage_id, newStageId),
+                            inArray(applications.id, targetIds)
+                        )
+                    );
+            }
+
+            // 3. Update source stage orders (if it was a move)
+            if (sourceOrders && sourceOrders.length > 0 && sourceStageId) {
+                const sourceCases = sourceOrders.map(
+                    ({id, position}) => sql`WHEN
+                    ${id}
+                    THEN
+                    ${position}`
+                );
+                const sourceIds = sourceOrders.map(o => o.id);
+
+                await tx
+                    .update(applications)
+                    .set({
+                        position_in_stage: sql`CASE
+                        ${applications.id}
+                        ${sql.join(sourceCases, sql` `)}
+                        END`,
+                    })
+                    .where(
+                        and(
+                            eq(applications.current_stage_id, sourceStageId),
+                            inArray(applications.id, sourceIds)
+                        )
+                    );
+            }
+        });
+
+        revalidatePath("/jobs/[jobId]");
+        return {success: true};
+    } catch (err) {
+        console.error("Move + reorder transaction failed:", err);
+        return {success: false, error: "Failed to move application and update order"};
+    }
+}
 
 // ========================================================
 export const get_user_applications = async (candidateId: number) => {

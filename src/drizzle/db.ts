@@ -1,7 +1,7 @@
 import {config} from "dotenv";
 import {drizzle} from 'drizzle-orm/mysql2';
 import mysql from 'mysql2/promise';
-// import * as schema from "./schema"
+import * as schema from "./schema"
 
 config({path: ".env"}); // or .env.local
 

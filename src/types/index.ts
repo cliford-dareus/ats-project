@@ -42,13 +42,14 @@ export type InterviewType = {
 
 export interface ApplicationType {
   id: number;
-  application_id: number;
-  application_created_at: Date;
-  application_updated_at: Date;
+  created_at: Date;
+  updated_at: Date;
   job_id: number;
-  stageName: "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | 'Applied' | "Drafted" | null | undefined;
-  stage_order_id: number | undefined
+  stage: "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | 'Applied' | "Drafted" | null | undefined;
+  current_stage_id: number | undefined;
+  position_in_stage: number;
   candidate: Candidate;
+  interview: InterviewType[];
 };
 
 export type JobListingWithCandidatesType = {

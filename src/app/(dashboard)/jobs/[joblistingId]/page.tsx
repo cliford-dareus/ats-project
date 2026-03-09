@@ -20,6 +20,7 @@ import JobTabs from "@/app/(dashboard)/jobs/[joblistingId]/_components/Job-tabs"
 import {KanbanProvider} from "@/providers/kanban-provider";
 import {useServerFlags} from "@/lib/plugins-registry";
 import {lifecycle} from "@/lib/smart-trigger/lifecycle";
+import {get_job_all_applications_action} from "@/server/actions/application_actions";
 
 type Props = {
     params: {
@@ -41,17 +42,20 @@ const Page = async ({params}: Props) => {
     const [
         jobsResponse,
         singleJobResponse,
+        applicationsResponse,
         candidatesResponse,
         stagesResponse,
     ] = await Promise.all([
         get_all_job_listings_action({organization: orgId}),
         get_job_by_id_action(Number(joblistingId)),
+        get_job_all_applications_action(Number(joblistingId)),
         get_all_candidates_action({limit: 1000, offset: 0}),
         get_job_listings_stages(Number(joblistingId)),
     ]);
 
     const jobs = Array.isArray(jobsResponse) ? jobsResponse[1] : [];
     const candidates = Array.isArray(candidatesResponse) ? candidatesResponse[1] : [];
+    const applications = Array.isArray(applicationsResponse) ? applicationsResponse : [];
     const singleJob = (Array.isArray(singleJobResponse) ? singleJobResponse : [])[0];
     const stages = Array.isArray(stagesResponse) ? stagesResponse : [];
 
@@ -110,7 +114,7 @@ const Page = async ({params}: Props) => {
                     jobs={jobs as JobResponseType[]}
                     stages={stages as StageResponseType[]}
                     joblistingId={joblistingId}
-                    applications={singleJob.applications as ApplicationType[]}
+                    applications={applications as ApplicationType[]}
                     singleJob={singleJob as JobListing}
                 />
             </div>

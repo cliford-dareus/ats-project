@@ -5,6 +5,9 @@ import mongodb from "@/lib/mongodb";
 import Trigger from "@/models/trigger";
 import {TriggerAction} from "@/lib/smart-trigger/types";
 import {milliseconds} from "date-fns";
+import {db} from "@/drizzle/db";
+import {stages} from "@/drizzle/schema";
+import {eq} from "drizzle-orm";
 
 
 export const addTaskToQueue = async (id: number, action: TriggerAction, stage_name: string, jobId: number) => {
@@ -15,6 +18,11 @@ export const addTaskToQueue = async (id: number, action: TriggerAction, stage_na
     const delay = action.config.delay;
     const delayFormat = action.config.delayFormat as 'minutes' | 'hours' | 'days';
     const delayMs = milliseconds({[`${delayFormat}`]: delay});
+
+    // Get the application stage id from the stage name
+    const stageResults = await db.select().from(stages).where(eq(stages.job_id, jobId!));
+    const stage = stageResults.find((s) => s.stage_name === action.config.condition.target);
+    const stageId = stage?.id;
 
     const trigger = await Trigger.create({
         stages: stage_name,
@@ -29,6 +37,7 @@ export const addTaskToQueue = async (id: number, action: TriggerAction, stage_na
         trigger_id: trigger._id,
         type: action.action_type,
         jobId: jobId,
+        newStageId: stageId,
         config: action.config
     }, {delay: delayMs});
 };

@@ -25,9 +25,9 @@ const Card = ({data, handleDragStart, stage}: Props) => {
     const [activeTrigger, setActiveTrigger] = useState<TriggerTask[]>([]);
 
     useEffect(() => {
-        const filteredTasks = tasks.filter(task => task.application_id === data.application_id);
+        const filteredTasks = tasks.filter(task => task.application_id === data.id);
         setActiveTrigger(filteredTasks);
-    }, [tasks, data.application_id]);
+    }, [tasks, data.id]);
 
     return (
         <>
@@ -57,7 +57,7 @@ const Card = ({data, handleDragStart, stage}: Props) => {
                             stage.stage_name === "Applied" ?
                                 (<Link
                                     className="text-xs text-blue-500 leading-4"
-                                    href={`/applications/${data.application_id}/review/${data.candidate.id}`}>Review
+                                    href={`/applications/${data.id}/review/${data.candidate.id}`}>Review
                                     Application</Link>)
                                 :
                                 (<Link
@@ -80,7 +80,7 @@ const Card = ({data, handleDragStart, stage}: Props) => {
                             </DialogContent>
                         </Dialog>
                     }
-                    <p className="text-xs text-slate-400 mt-2">{getTimeElapsed(data.application_updated_at)} days
+                    <p className="text-xs text-slate-400 mt-2">{getTimeElapsed(data.updated_at)} days
                         ago</p>
                 </div>
             </motion.div>

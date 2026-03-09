@@ -47,7 +47,7 @@ export const lifecycle = {
         applicationId: number,
         stageTriggers: StageTrigger[],
         stageName: string,
-        jobId: number
+        jobId: number,
     ) => {
         for (const trigger of stageTriggers) {
             for (const action of trigger.actions) {

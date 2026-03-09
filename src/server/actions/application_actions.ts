@@ -3,14 +3,15 @@
 import {
     create_application,
     get_application_by_id,
-    get_applications_with_filter,
-    getTasks,
+    get_applications_with_filter, get_job_all_applications, get_job_all_applications_db,
+    getTasks, move_application_and_reorder_db,
     update_application_stage
 } from "@/server/queries";
 import {auth} from "@clerk/nextjs/server";
 import {canCreateJob} from "@/server/permissions";
 import {z} from "zod";
 import {candidateForm, filterApplicationsType} from "@/zod";
+import {CACHE_TAGS, dbCache, getGlobalTag} from "@/lib/cache";
 
 export const create_application_action = async (unsafeData: z.infer<typeof candidateForm>) => {
     const {userId} = await auth();
@@ -53,6 +54,20 @@ export const update_application_stage_action = async (data: { applicationId: num
     }
 
     return await update_application_stage(data);
+};
+
+export const get_job_all_applications_action = async (jobId: number) => {
+    const {userId} = await auth();
+
+    if (!userId) {
+        return {error: true, message: "There was an error updating application stage"}
+    }
+
+    return await get_job_all_applications(jobId);
+};
+
+export const moveApplicationAndReorder = async (payload) => {
+    return await move_application_and_reorder_db(payload)
 };
 
 // export const delete_application_action = async (data: { candidateId: number }) => {

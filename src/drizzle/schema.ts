@@ -1,4 +1,4 @@
-import {int, mysqlTable, varchar, mysqlEnum, timestamp, boolean, json, unique} from 'drizzle-orm/mysql-core';
+import {int, mysqlTable, varchar, mysqlEnum, timestamp, boolean, json, unique, index} from 'drizzle-orm/mysql-core';
 import {relations} from "drizzle-orm";
 
 export const organization = mysqlTable('organization', {
@@ -120,9 +120,13 @@ export const stages = mysqlTable('stages', {
     color: varchar({length: 255}),
     need_schedule: boolean().default(true),
     assign_to: varchar({length: 255}),
-});
+}, (table) => ({
+    jobStageUnique: index("job_stage_unique").on(table.job_id, table.stage_name),
+    jobIdx: index("job_idx").on(table.job_id),
+}));
 
 export const stagesRelations = relations(stages, ({one, many}) => ({
+    applications: many(applications),
     jobId: one(job_listings, {
         fields: [stages.job_id],
         references: [job_listings.id],
@@ -182,16 +186,29 @@ export const applications = mysqlTable('applications', {
     current_stage_id: int(),
     candidate: int().references(() => candidates.id, {onDelete: 'cascade'}),
     can_contact: boolean().default(false),
+    position_in_stage: int("position_in_stage").notNull().default(0),
     // activities: json("activities").notNull().default({}),
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    // Fast lookup + sorting per stage
+    stagePositionIdx: index("stage_position_idx").on(
+        table.current_stage_id,
+        table.position_in_stage
+    ),
+    jobIdx: index("job_idx").on(table.job_id),
+    candidateIdx: index("candidate_idx").on(table.candidate),
+}));
 
 export const applications_relations = relations(applications, ({one}) => ({
     interviews: one(interviews),
     score: one(scoreCards),
     candidates: one(candidates, {fields: [applications.candidate], references: [candidates.id]}),
     job: one(job_listings, {fields: [applications.job_id], references: [job_listings.id]}),
+    stage: one(stages, {
+        fields: [applications.current_stage_id],
+        references: [stages.id],
+    }),
 }));
 
 export const interviews = mysqlTable('interviews', {
