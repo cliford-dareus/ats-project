@@ -5,9 +5,10 @@ import {ApplicationType, StageResponseType} from "@/types";
 type Props = {
     data: ApplicationType[];
     stages: StageResponseType[];
+    jobDetails: {jobName: string, department: string}
 };
 
-const Kanban = ({data, stages}: Props) => {
+const Kanban = ({data, stages, jobDetails}: Props) => {
     const [jobs, setJobs] = useState<ApplicationType[]>();
     const [showTriggers, setShowTriggers] = useState(false);
 
@@ -25,6 +26,7 @@ const Kanban = ({data, stages}: Props) => {
                     stage={stage}
                     cards={jobs! ?? data}
                     jobId={data[0].job_id}
+                    jobDetails={jobDetails}
                     color={stage.color}
                     setCards={setJobs}
                     showTriggers={showTriggers}

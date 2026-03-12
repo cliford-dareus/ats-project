@@ -217,6 +217,8 @@ export const interviews = mysqlTable('interviews', {
     locations: varchar({length: 255}).notNull(),
     start_at: timestamp('start_at'),
     end_at: timestamp('end_at'),
+    // type: mysqlEnum('type', ['VIDEO', 'PHONE', 'ONSITE'])
+    // link:varchar({length: 255}),
     status: mysqlEnum('status', ['SCHEDULE', 'AWAITING_FEEDBACK', 'COMPLETE']),
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),

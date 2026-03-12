@@ -42,6 +42,7 @@ type Props = {
     showTriggers: boolean;
     setShowTriggers: Dispatch<SetStateAction<boolean>>;
     jobId: number;
+    jobDetails: {jobName: string, department: string}
 };
 
 export default function Column({
@@ -54,6 +55,7 @@ export default function Column({
                                    showTriggers,
                                    setShowTriggers,
                                    jobId,
+                                    jobDetails
                                }: Props) {
     const { socket } = useSocket();
     const [active, setActive] = useState(false);
@@ -456,6 +458,7 @@ export default function Column({
                         key={card.id}
                         stage={stage}
                         data={card}
+                        jobDetails={jobDetails}
                         handleDragStart={(e) => handleDragStart(e, card.id!)}
                     />
                 ))}

@@ -4,7 +4,6 @@ import mongodb from "@/lib/mongodb";
 import Experience from "@/models/experience";
 import { eq } from "drizzle-orm";
 
-
 export const create_candidate_experience = async (data: any) => {
     try {
         await mongodb();

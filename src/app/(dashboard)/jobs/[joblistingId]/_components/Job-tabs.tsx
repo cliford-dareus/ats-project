@@ -76,8 +76,10 @@ const JobTabs = ({applications, stages, jobs, joblistingId, singleJob}: Props) =
                             ))}
                         </TabsList>
                         <div className="flex items-center gap-4 text-zinc-500 text-sm">
-                            <span className="flex items-center px-2 py-1  rounded-md gap-2"><Share size={16} className=""/> Share</span>
-                            <span className="flex items-center px-2 py-1  rounded-md gap-2"><Settings size={16} className=""/> Setting</span>
+                            <span className="flex items-center px-2 py-1  rounded-md gap-2"><Share size={16}
+                                                                                                   className=""/> Share</span>
+                            <span className="flex items-center px-2 py-1  rounded-md gap-2"><Settings size={16}
+                                                                                                      className=""/> Setting</span>
                             <span className="flex items-center px-2 py-1  rounded-md">Edit Job Ad</span>
                         </div>
                     </div>
@@ -86,7 +88,11 @@ const JobTabs = ({applications, stages, jobs, joblistingId, singleJob}: Props) =
                         <JobCandidate job={singleJob}/>
                     </TabsContent>
                     <TabsContent value="pipelines">
-                        <JobPipeline data={applications} stages={stages} />
+                        <JobPipeline
+                            data={applications}
+                            stages={stages}
+                            jobDetails={{job_name: singleJob.job_name, department:singleJob.job_department}}
+                        />
                     </TabsContent>
                     <TabsContent value="options">
                         <JobOptions job_id={Number(joblistingId)} data={jobs} stages={stages}/>

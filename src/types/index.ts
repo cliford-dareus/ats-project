@@ -38,6 +38,9 @@ export type InterviewType = {
     candidate_id: number,
     interview_date: Date,
     interview_location: string,
+    locations: string;
+    type: "Video" | "Phone" | "Onsite";
+    link: string;
 };
 
 export interface ApplicationType {
@@ -72,13 +75,18 @@ export type ApplicationResponseType = {
     id: number;
     candidate_id: number;
     candidate_name: string;
-    candidate_status: CANDIDATE_ENUM;
+    candidate_email: string;
+    candidate_phone: string;
+    can_contact: boolean;
+    status: CANDIDATE_ENUM;
     job_apply: string;
     job_id: number;
     location: string;
+    department: string;
     current_stage: JOB_ENUM;
     assign_to: string;
-    created_at: Date;
+    interview: InterviewType;
+    apply_date: Date;
     updated_at: Date;
 };
 
@@ -175,13 +183,13 @@ export type UserType = {
 
 export type NoteType = {
     _id: string;
-    content: string;
+    text: string;
     type: "POSITIVE" | "NEGATIVE" | "NEUTRAL";
-    note_parent_id: string;
-    note_parent_type: string;
+    note_id: string;
+    note_type: string;
     created_at: Date;
     updated_at: Date;
-    user: UserType;
+    author: string;
 };
 
 export type NoteResponseType = {

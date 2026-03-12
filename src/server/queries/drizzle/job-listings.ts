@@ -166,7 +166,7 @@ export const get_job_by_id = (jobId: number) => {
 };
 
 export const get_job_by_id_db = async (jobId: number): Promise<JobListing[]> => {
-    const jobListingData = await db
+    const rows = await db
         .select({
             jobListing: job_listings,
             department: departments,
@@ -188,11 +188,11 @@ export const get_job_by_id_db = async (jobId: number): Promise<JobListing[]> => 
         .leftJoin(stages, eq(applications.current_stage_id, stages.id))
         .where(eq(job_listings.id, jobId));
 
-    if (jobListingData.length === 0) {
+    if (rows.length === 0) {
         return []; // Or throw an error if preferred
     };
 
-    const firstRow = jobListingData[0];
+    const firstRow = rows[0];
     const jobListing: JobListing = {
         job_id: firstRow.jobListing.id,
         job_name: firstRow.jobListing.name,
@@ -209,7 +209,7 @@ export const get_job_by_id_db = async (jobId: number): Promise<JobListing[]> => 
     const technologyMap = new Map<number, Technology>();
     const applicationMap = new Map<number, ApplicationType>();
 
-    for (const row of jobListingData) {
+    for (const row of rows) {
         if (row.experience?.id) {
             if (!technologyMap.has(row.experience.id)) {
                 technologyMap.set(row.experience.id, row.experience);

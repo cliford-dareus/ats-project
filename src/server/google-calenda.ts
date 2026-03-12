@@ -38,56 +38,63 @@ export async function getCalendarEventTimes(
         .filter(event => event != null) as { start: Date; end: Date }[]
 };
 
-export async function createCalendarEvent({
-                                              clerkUserId,
-                                              guestName,
-                                              guestEmail,
-                                              startTime,
-                                              guestNotes,
-                                              durationInMinutes,
-                                              eventName,
-                                          }: {
-    clerkUserId: string
-    guestName: string
-    guestEmail: string
-    startTime: Date
-    guestNotes?: string | null
-    durationInMinutes: number
-    eventName: string
-}) {
-    const oAuthClient = await getOAuthClient(clerkUserId)
-    const calendar = await clerkClient()
-    const calendarUser = await calendar.users.getUser(clerkUserId)
+export async function createCalendarEvent({clerkUserId, payload}) {
+    const oAuthClient = await getOAuthClient(clerkUserId);
+    const calendar = await clerkClient();
+    const calendarUser = await calendar.users.getUser(clerkUserId);
+
+    const { summary, description, startDateTime, endDateTime, attendeeEmail } = payload;
 
     if (calendarUser.primaryEmailAddress == null) {
         throw new Error("Clerk user has no email")
-    }
+    };
 
-    const calendarEvent = await google.calendar("v3").events.insert({
-        calendarId: "primary",
-        auth: oAuthClient,
-        sendUpdates: "all",
-        requestBody: {
-            attendees: [
-                {email: guestEmail, displayName: guestName},
-                {
-                    email: calendarUser.primaryEmailAddress.emailAddress,
-                    displayName: calendarUser.fullName,
-                    responseStatus: "accepted",
-                },
-            ],
-            description: guestNotes ? `Additional Details: ${guestNotes}` : undefined,
-            start: {
-                dateTime: startTime.toISOString(),
-            },
-            end: {
-                dateTime: addMinutes(startTime, durationInMinutes).toISOString(),
-            },
-            summary: `${guestName} + ${calendarUser.fullName}: ${eventName}`,
+    const event = {
+        summary,
+        description,
+        start: {
+            dateTime: startDateTime,
+            timeZone: "UTC",
         },
-    })
+        end: {
+            dateTime: endDateTime,
+            timeZone: "UTC",
+        },
+        attendees: [{ email: attendeeEmail }],
+        // conferenceData: {
+        //     createRequest: {
+        //         requestId: Math.random().toString(36).substring(7),
+        //         conferenceSolutionKey: { type: "hangoutsMeet" },
+        //     },
+        // },
+    };
 
-    return calendarEvent.data;
+    try {
+        const calendarEvent = await google.calendar("v3").events.insert({
+            calendarId: "primary",
+            auth: oAuthClient,
+            sendUpdates: "all",
+            requestBody: event,
+        });
+
+        return {
+            success: true,
+            event: calendarEvent.data,
+            // meetLink: response.data.hangoutLink
+        }
+    } catch (error) {
+        console.error("Error creating event", error);
+        res.status(500).json({ error: "Failed to create calendar event" });
+    }
+            // attendees: [
+            //     {email: guestEmail, displayName: guestName},
+            //     {
+            //         email: calendarUser.primaryEmailAddress.emailAddress,
+            //         displayName: calendarUser.fullName,
+            //         responseStatus: "accepted",
+            //     },
+            // ],
+
 }
 
 export const getOAuthClient = async (clerkUserId: string) => {

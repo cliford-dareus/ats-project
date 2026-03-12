@@ -53,6 +53,7 @@ const Layout = async ({children}: Props) => {
                     <OrganizationSwitcher/>
                     <Separator orientation="vertical" className="mr-2 h-4"/>
                     <div className="ml-auto flex items-center gap-4">
+                        <Bell size={18}/>
                         <Button className="p-0">
                             <Link
                                 href="/jobs/new"
@@ -62,8 +63,6 @@ const Layout = async ({children}: Props) => {
                                 <p>Create New Job</p>
                             </Link>
                         </Button>
-
-                        <Bell size={18}/>
                         <AuthDropdown user={user} orgId={orgId}/>
                     </div>
                 </header>

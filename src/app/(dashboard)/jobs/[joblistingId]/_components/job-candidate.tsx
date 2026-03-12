@@ -143,7 +143,7 @@ const JobCandidate = ({job}: Props) => {
                             <div className="">
                                 {applications.map((application) => (
                                     <div
-                                        key={application.application_id}
+                                        key={application.id}
                                         onClick={() => setSelectedApplications(application)}
                                         className={cn("flex items-center justify-between px-4  py-2 cursor-pointer border rounded-md mt-1",
                                             selectedApplications?.id == application.id ? "bg-zinc-100" : ""
@@ -152,9 +152,9 @@ const JobCandidate = ({job}: Props) => {
                                         <div className="flex gap-4 items-center">
                                             <Checkbox
                                                 className="text-zinc-400"
-                                                checked={selectedCandidates.includes(application.application_id)}
-                                                onCheckedChange={() => handleSelectCandidate(application.application_id)}
-                                                id={String(application.application_id)}
+                                                checked={selectedCandidates.includes(application.id)}
+                                                onCheckedChange={() => handleSelectCandidate(application.id)}
+                                                id={String(application.id)}
                                             />
                                             <Avatar className="w-6 h-6">
                                                 <AvatarImage src="https://github.com/shadcn.png"/>
@@ -334,7 +334,7 @@ const JobCandidate = ({job}: Props) => {
                                                     <div>
                                                         <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Applied
                                                             On</p>
-                                                        <p className="text-sm font-semibold text-zinc-900">{new Date(selectedApplications.application_created_at).toLocaleDateString()}</p>
+                                                        <p className="text-sm font-semibold text-zinc-900">{new Date(selectedApplications.created_at).toLocaleDateString()}</p>
                                                     </div>
                                                 </div>
 
@@ -363,7 +363,7 @@ const JobCandidate = ({job}: Props) => {
                                                             Stage</p>
                                                         <span
                                                             className="px-2 py-0.5 bg-brand-50 text-brand-700 text-[10px] font-bold rounded-full border border-brand-100 uppercase tracking-wider">
-                    {selectedApplications.stageName}
+                    {selectedApplications.stage}
                   </span>
                                                     </div>
                                                 </div>

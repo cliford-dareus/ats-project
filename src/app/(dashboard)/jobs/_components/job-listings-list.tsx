@@ -23,7 +23,6 @@ const JobListingsList = ({jobs, pageCount}: Props) => {
                     columns={columns} data={jobs}
                     status="jobs"
                     onRowClick={(rowData) => setSelectedRow(rowData)}
-
                 />
             </div>
             <PaginationElement pageCount={pageCount}/>

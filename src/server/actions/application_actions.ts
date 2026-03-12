@@ -3,7 +3,7 @@
 import {
     create_application,
     get_application_by_id,
-    get_applications_with_filter, get_job_all_applications, get_job_all_applications_db,
+    get_applications_with_filter, get_job_all_applications,
     getTasks, move_application_and_reorder_db,
     update_application_stage
 } from "@/server/queries";
@@ -11,7 +11,6 @@ import {auth} from "@clerk/nextjs/server";
 import {canCreateJob} from "@/server/permissions";
 import {z} from "zod";
 import {candidateForm, filterApplicationsType} from "@/zod";
-import {CACHE_TAGS, dbCache, getGlobalTag} from "@/lib/cache";
 
 export const create_application_action = async (unsafeData: z.infer<typeof candidateForm>) => {
     const {userId} = await auth();
@@ -33,17 +32,17 @@ export const get_all_applications_action = async (unsafeData: z.infer<typeof fil
         return {error: true, message: "There was an error retrieving applications"}
     }
 
-    return get_applications_with_filter(data);
+    return await get_applications_with_filter(data);
 };
 
-export const get_application_by_id_action = async (data: { applicationId: number }) => {
+export const get_application_by_id_action = async (applicationId: number) => {
     const {userId} = await auth();
 
     if (!userId) {
         return {error: true, message: "There was an error retrieving application"}
     }
 
-    return await get_application_by_id(data.applicationId);
+    return await get_application_by_id(applicationId);
 };
 
 export const update_application_stage_action = async (data: { applicationId: number, new_stage_id: number }) => {
@@ -66,8 +65,16 @@ export const get_job_all_applications_action = async (jobId: number) => {
     return await get_job_all_applications(jobId);
 };
 
-export const moveApplicationAndReorder = async (payload) => {
-    return await move_application_and_reorder_db(payload)
+export const moveApplicationAndReorder = async (unsafeData) => {
+    // const {userId} = await auth();
+    // const {success, data} = await candidateForm.spa(unsafeData);
+    // const canCreate = await canCreateJob(userId);
+    //
+    // if (!userId || !success ||  !canCreate) {
+    //     return { error: true, message: ""}
+    // };
+
+    return await move_application_and_reorder_db(unsafeData)
 };
 
 // export const delete_application_action = async (data: { candidateId: number }) => {

@@ -1,7 +1,7 @@
 import {
     applications,
     attachments,
-    candidates,
+    candidates, departments,
     interviews,
     job_listings,
     scoreCards,
@@ -15,7 +15,7 @@ import {
     getGlobalTag,
     revalidateDbCache,
 } from "@/lib/cache";
-import {candidateForm, filterApplicationsType} from "@/zod";
+import {candidateForm, filterApplicationsType, JOB_ENUM} from "@/zod";
 import {z} from "zod";
 import {revalidatePath} from "next/cache";
 
@@ -48,7 +48,13 @@ export const create_application = async (data: z.infer<typeof candidateForm>) =>
 
     const candidateAlreadyHaveApplication = await db.select()
         .from(applications)
-        .where(and(eq(applications.job_id, data.job), eq(applications.candidate, data.candidate)));
+        .where(
+            and(
+                eq(applications.job_id, Number(data.job)),
+                eq(applications.candidate, Number(data.candidate))
+
+            )
+        );
 
     if (candidateAlreadyHaveApplication.length > 0) {
         return "Candidate already have an application"
@@ -150,15 +156,15 @@ export const get_job_all_applications = async (jobId: number) => {
     return cacheFn(jobId);
 };
 
-export const get_candidate_with_stage = async () => {
-    const cacheFn = dbCache(get_applications_with_stages_db, {
+export const get_application_stage = async () => {
+    const cacheFn = dbCache(get_applications_stages_db, {
         tags: [getGlobalTag(CACHE_TAGS.stages)],
     });
 
     return cacheFn();
 };
 
-export const get_applications_with_stages_db = async () => {
+export const get_applications_stages_db = async () => {
     return db
         .select({
             color: stages.color,
@@ -174,12 +180,32 @@ export const get_applications_with_stages_db = async () => {
 };
 
 export const get_application_by_id_db = async (applicationId: number) => {
-    return db
-        .select()
+    return  await db
+        .select({
+            id: applications.id,
+            status: job_listings.status,
+            current_stage: stages.stage_name,
+            apply_date: applications.created_at,
+            updated_at: applications.updated_at,
+            candidate_id: candidates.id,
+            candidate_name: candidates.name,
+            candidate_email: candidates.email,
+            candidate_phone: candidates.phone,
+            job_id: job_listings.id,
+            job_apply: job_listings.name,
+            location: job_listings.location,
+            interview: interviews,
+            department: departments.name,
+            stage: stages.stage_name,
+        })
         .from(applications)
-        .where(eq(applications.id, applicationId))
-        .leftJoin(scoreCards, eq(scoreCards.applications_id, applications.id))
-        .leftJoin(interviews, eq(interviews.applications_id, applications.id));
+        .leftJoin(job_listings, eq(job_listings.id, applications.job_id))
+        .leftJoin(departments, eq(departments.id, job_listings.department))
+        .leftJoin(candidates, eq(candidates.id, applications.candidate))
+        .leftJoin(interviews, eq(interviews.applications_id, applications.id))
+        .leftJoin(stages, eq(applications.current_stage_id, stages.id))
+        .where(eq(applications.id, applicationId));
+
 };
 
 export const get_applications_with_filter_db = async (filter: z.infer<typeof filterApplicationsType>) => {
@@ -194,20 +220,21 @@ export const get_applications_with_filter_db = async (filter: z.infer<typeof fil
     const application = await db
         .select({
             id: applications.id,
-            job_apply: job_listings.name,
+            status: job_listings.status,
+            can_contact: applications.can_contact,
+            current_stage: stages.stage_name,
+            location: job_listings.location,
+            assign_to: stages.assign_to,
+            apply_date: applications.created_at,
+            // Job Info
             job_id: applications.job_id,
+            job_apply: job_listings.name,
             job_org: job_listings.organization,
+            //  Candidate Info
             candidate_id: candidates.id,
             candidate_name: candidates.name,
-            candidate_status: candidates.status,
-            location: job_listings.location,
-            current_stage: stages.stage_name,
-            assign_to: stages.assign_to,
-            // apply_date: applications.created_at,
-            candidatesCount: db.$count(
-                applications,
-                eq(applications.job_id, job_listings.id),
-            ),
+            candidate_email: candidates.email,
+            candidate_phone: candidates.phone,
         })
         .from(applications)
         .leftJoin(job_listings, eq(applications.job_id, job_listings.id))
@@ -254,17 +281,17 @@ export const get_job_all_applications_db = async (jobId: number) => {
                     attachments: [],
                 },
                 interviews: [],
-                stage: row.stage.stage_name,
+                stage: row.stage ? row.stage.stage_name : "",
             };
         }
 
         // Add unique attachments
-        if (row.attachment && !acc[appId].candidate.attachments.find((a: any) => a.id === row.attachment.id)) {
+        if (row.attachment && !acc[appId].candidate.attachments.find((a: any) => a.id === row?.attachment?.id)) {
             acc[appId].candidate.attachments.push(row.attachment);
         }
 
         // Add unique interviews
-        if (row.interview && !acc[appId].interviews.find((i: any) => i.id === row.interview.id)) {
+        if (row.interview && !acc[appId].interviews.find((i: any) => i.id === row?.interview?.id)) {
             acc[appId].interviews.push(row.interview);
         }
 
@@ -350,7 +377,8 @@ export async function move_application_and_reorder_db({
             }
         });
 
-        revalidatePath("/jobs/[jobId]");
+        // revalidatePath("/jobs/[jobId]");
+        revalidateDbCache({tag: CACHE_TAGS.applications});
         return {success: true};
     } catch (err) {
         console.error("Move + reorder transaction failed:", err);
@@ -358,33 +386,9 @@ export async function move_application_and_reorder_db({
     }
 }
 
-// ========================================================
-export const get_user_applications = async (candidateId: number) => {
-    const cacheFn = dbCache(get_user_applications_db, {
-        tags: [getGlobalTag(CACHE_TAGS.applications)],
-    });
-
-    return cacheFn(candidateId);
-};
-
-const get_user_applications_db = async (candidateId: number) => {
-    return db
-        .select({
-            id: applications.id,
-            job_name: job_listings.name,
-            job_id: applications.job_id,
-            current_stage: stages.stage_name,
-            stage_color: stages.color,
-            applied_date: applications.created_at,
-            job_location: job_listings.location,
-            job_status: job_listings.status,
-        })
-        .from(applications)
-        .leftJoin(job_listings, eq(applications.job_id, job_listings.id))
-        .leftJoin(stages, eq(applications.current_stage_id, stages.id))
-        .where(eq(applications.candidate, candidateId));
-};
-
+// ========================================================================
+// INTERVIEW
+// =======================================================================
 export const add_interview = async ({
                                         applicationId,
                                         location,

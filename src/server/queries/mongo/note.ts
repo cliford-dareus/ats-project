@@ -9,25 +9,33 @@ import { canCreateJob } from "@/server/permissions";
 import { auth } from "@clerk/nextjs/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import {candidateForm} from "@/zod";
+import {CACHE_TAGS, revalidateDbCache} from "@/lib/cache";
 
 
-export const create_note = async (data: z.infer<typeof noteSchema>) => {
+export const create_note = async (unsafeData: z.infer<typeof noteSchema>) => {
     try {
         await mongodb();
 
         const {userId} = await auth();
-        if (!userId) throw new Error("User not found");
-
-        const user = await db.select().from(usersTable).where(eq(usersTable.id, userId))
-        if (!user) throw new Error("User not found");
-
+        const {success, data} = await noteSchema.spa(unsafeData);
         const canCreate = await canCreateJob(userId);
-        if (!canCreate) throw new Error("You are not authorized to create a note");
 
-        const note = await Note.create({...data, created_by: user[0].id});
-        return JSON.stringify(note);
+        const user = await db.select().from(usersTable).where(eq(usersTable.id, userId!))
+        if (!user || !success ||  !canCreate) {
+            return {error: true, message: "There was an error creating your the notes"}
+        };
+
+        await Note.create({...data, created_by: user[0].id});
+
+        revalidateDbCache({
+            tag: CACHE_TAGS.applications,
+        });
+
+        return "Note created successfully...";
     } catch (error) {
         console.log(error);
+        return "Failed to create note..."
     }
 };
 
@@ -42,26 +50,25 @@ export const get_candidate_notes = async (parent_id: string) => {
     }
 };
 
-export const get_application_notes = async ({parent_id, limit, offset}: { parent_id: string, limit: number, offset: number }) => {
+export const get_application_notes = async ({id, limit, offset}: { id: number, limit: number, offset: number }) => {
     try {
         await mongodb();
+        const note_id = 'application' + "_" + id
 
         const completeNotes: any[] = [];
 
-        const notes = await Note.find({note_parent_id: parent_id}).limit(limit).skip(offset).sort({created_at: -1});
-        const total = await Note.countDocuments({note_parent_id: parent_id});
-
+        const notes = await Note.find({note_id: note_id}).limit(limit).skip(offset).sort({created_at: -1});
         for (const note of notes) {
             const copy = {...note._doc};
             const user = await db.select().from(usersTable).where(eq(usersTable.id, note.created_by))
-            copy.user = user[0];
+            copy.author = user[0].name;
             completeNotes.push(copy);
         };
 
-        return JSON.stringify({notes: completeNotes, total});
+        return JSON.stringify({error: false, notes: completeNotes});
     } catch (error) {
         console.log(error);
-        return JSON.stringify({notes: [], total: 0});
+        return JSON.stringify({error: true, notes: []});
     }
 };
 

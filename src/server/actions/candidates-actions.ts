@@ -3,7 +3,7 @@
 import {auth} from "@clerk/nextjs/server";
 import {canCreateJob} from "@/server/permissions";
 import {create_candidate, get_all_candidates, get_candidate_by_id} from "@/server/queries";
-import {get_candidate_with_stage} from "@/server/queries";
+import {get_application_stage} from "@/server/queries";
 import {z} from "zod";
 import {filterCandidateType, newCandidateForm} from "@/zod";
 
@@ -49,5 +49,5 @@ export const get_candidates_stage_count_action = async () => {
         return {error: true, message: "There was an error creating your product"}
     }
 
-    return await get_candidate_with_stage();
+    return await get_application_stage();
 };
