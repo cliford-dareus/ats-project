@@ -48,7 +48,7 @@ const ReportsSidebar = () => {
             reports: [
                 { id: "candidate-demographics", name: "Demographics", description: "Candidate diversity data" },
                 { id: "skill-analysis", name: "Skill Analysis", description: "In-demand skills trends" },
-                { id: "candidate-experience", name: "Candidate Experience", description: "Application experience metrics" },
+                { id: "candidate-experience", name: "Candidate CandidateDetails", description: "Application experience metrics" },
                 { id: "rejection-analysis", name: "Rejection Analysis", description: "Common rejection reasons" }
             ]
         },

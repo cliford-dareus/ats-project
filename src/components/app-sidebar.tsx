@@ -31,15 +31,10 @@ import StepNavigation from "@/app/(dashboard)/jobs/new/_component/side-navigatio
 import SidebarDashboard from "@/app/(dashboard)/dashboard/_components/sidebar-dashboard";
 
 const data = {
-    user: {
-        name: "shadcn",
-        email: "m@example.com",
-        avatar: "/avatars/shadcn.jpg",
-    },
     navMain: [
         {
             title: "Dashboard",
-            url: "/dashboard",
+            url: "/",
             icon: LucideLayoutDashboard,
             isActive: true,
         },
@@ -87,13 +82,13 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar> & {
     stagescount: StageCountType[],
 }) {
     const pathname = usePathname();
-    const [activeItem, setActiveItem] = React.useState(data.navMain[0]);
     const {setOpen} = useSidebar();
     const router = useRouter();
 
-    useEffect(() => {
-      setActiveItem(data.navMain.find(nav => pathname.startsWith(nav.url))!);
-    }, [pathname]);
+    const activeItem = data.navMain.find(nav =>
+        nav.url === "/" ? pathname === "/" : pathname.startsWith(nav.url)
+    ) || data.navMain[0];
+
 
     return (
         <Sidebar
@@ -170,11 +165,12 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar> & {
                     <SidebarGroup className="px-0">
                         <SidebarGroupContent>
                             {activeItem.title === "Dashboard" ? (
-                                <SidebarDashboard />
+                                <SidebarDashboard/>
                             ) : activeItem.title === "Jobs" && !pathname.startsWith('/jobs/new/step') ? (
                                 <JobListingSidebar/>
                             ) : activeItem.title === "Applications" ? (
-                                <SidebarCandidate candidate={props.candidate} stagesCount={props.stagescount as StageCountType[]}/>
+                                <SidebarCandidate candidate={props.candidate}
+                                                  stagesCount={props.stagescount as StageCountType[]}/>
                             ) : activeItem.title === "Candidates" ? (
                                 <CandidatesSidebar/>
                             ) : activeItem.title === "Reports" ? (
@@ -184,7 +180,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar> & {
                             ) : activeItem.title === "Settings" ? (
                                 <SidebarSettings/>
                             ) : pathname.startsWith("/jobs/new/step") ? (
-                                    <StepNavigation/>
+                                <StepNavigation/>
                             ) : (
                                 <div className="px-4">Default</div>
                             )}

@@ -48,7 +48,7 @@ type Props = {
 const Page = async ({params}: Props) => {
     const {applicationId, candidateId} = await params;
 
-    const applicationResult = await get_application_by_id_action({applicationId: Number(applicationId)});
+    const applicationResult = await get_application_by_id_action(Number(applicationId));
     const candidateResult = await get_candidate_by_id_action(Number(candidateId));
 
     // Handle error cases

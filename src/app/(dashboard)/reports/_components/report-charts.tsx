@@ -342,7 +342,7 @@ const ReportCharts = ({ reportData }: Props) => {
               </CardContent>
             </Card>
 
-            {/* Experience Level Distribution */}
+            {/* CandidateDetails Level Distribution */}
             <Card>
               <CardHeader>
                 <CardTitle>Experience Level Distribution</CardTitle>

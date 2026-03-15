@@ -15,6 +15,13 @@
       "when": 1772993577034,
       "tag": "0001_curly_wasp",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1773541749555,
+      "tag": "0002_rapid_diamondback",
+      "breakpoints": true
     }
   ]
 }

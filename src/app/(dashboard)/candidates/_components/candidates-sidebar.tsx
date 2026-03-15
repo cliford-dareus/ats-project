@@ -167,7 +167,7 @@ const CandidatesSidebar = () => {
 
       <Separator />
 
-      {/* Experience Filter */}
+      {/* CandidateDetails Filter */}
       <div className="space-y-3">
         <div className="flex items-center gap-2">
           <Users size={20} />

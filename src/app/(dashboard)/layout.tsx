@@ -36,6 +36,10 @@ const Layout = async ({children}: Props) => {
 
     const {orgId} = await auth();
 
+    if (!orgId) {
+        return redirect("/onboarding");
+    }
+
     const result = await get_all_candidates_action({limit: 0, offset: 0});
     const candidate = Array.isArray(result) ? result[1] : [];
     const stagesCount = await get_candidates_stage_count_action();

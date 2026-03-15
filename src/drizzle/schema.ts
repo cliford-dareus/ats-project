@@ -7,7 +7,9 @@ export const organization = mysqlTable('organization', {
     locations: varchar({length: 255}).notNull().default("New-York"),
     phone: varchar({length: 255}).notNull().default("305-555-0100"),
     email: varchar({length: 255}).notNull().default("company@example.com"),
-    color: varchar({length: 255}).notNull().default("purple"),
+    primary_color: varchar({length: 255}).notNull().default("purple"),
+    font_family: varchar({length: 255}).notNull().default("sans"),
+    subdomain: varchar({length: 255}).notNull(),
     plugins: json('plugins').notNull().default({enabled: [], settings: {}})
 });
 
@@ -64,6 +66,7 @@ export const job_listings = mysqlTable('job_listing', {
     description: varchar({length: 255}).notNull(),
     salary_up_to: varchar({length: 255}).notNull(),
     department: int().notNull(),
+    subdomain: varchar({length: 255}).notNull(),
     organization: varchar({length: 255}).notNull(),
     status: mysqlEnum('status', ["OPEN", "CLOSED", "DRAFT", "ARCHIVED", "PENDING"]).default('PENDING'),
     createdBy: varchar('created_by', {length: 255}).notNull(),
@@ -157,7 +160,8 @@ export const candidates = mysqlTable('candidate', {
     email: varchar({length: 255}).notNull().unique(),
     phone: varchar({length: 255}).notNull().unique(),
     cv_path: varchar({length: 255}).notNull().unique(),
-    // location: varchar({length: 255}).notNull().unique(),
+    subdomain: varchar({length: 255}).notNull(),
+    location: varchar({length: 255}).notNull(),
     status: mysqlEnum('status', ['Active', 'Rejected', 'Hired']).default('Active'),
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
@@ -188,6 +192,7 @@ export const applications = mysqlTable('applications', {
     can_contact: boolean().default(false),
     position_in_stage: int("position_in_stage").notNull().default(0),
     // activities: json("activities").notNull().default({}),
+    subdomain: varchar({length: 255}).notNull(),
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
 }, (table) => ({
@@ -217,8 +222,8 @@ export const interviews = mysqlTable('interviews', {
     locations: varchar({length: 255}).notNull(),
     start_at: timestamp('start_at'),
     end_at: timestamp('end_at'),
-    // type: mysqlEnum('type', ['VIDEO', 'PHONE', 'ONSITE'])
-    // link:varchar({length: 255}),
+    type: mysqlEnum('type', ['VIDEO', 'PHONE', 'ONSITE']),
+    link:varchar({length: 255}),
     status: mysqlEnum('status', ['SCHEDULE', 'AWAITING_FEEDBACK', 'COMPLETE']),
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),

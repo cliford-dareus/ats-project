@@ -2,11 +2,11 @@ import React from 'react';
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {
     AlertCircle, Briefcase,
-    Calendar,
-    Download, ExternalLink,
+    Calendar, CheckCircle, ChevronDown, Clock,
+    Download, ExternalLink, Eye,
     FileText, History, Mail, MapPin,
-    MessageSquare, Sparkles,
-    Star, TrendingUp, Video,
+    MessageSquare, Phone, Sparkles,
+    Star, TrendingUp, Video, XCircle,
 
 } from "lucide-react";
 import {Button} from "@/components/ui/button";
@@ -14,6 +14,14 @@ import {get_application_by_id_action} from "@/server/actions/application_actions
 import {ApplicationResponseType} from "@/types";
 import {get_application_notes} from "@/server/queries/mongo/note";
 import InternalNoteSection from "@/components/internal-note-section";
+import {get_job_listings_stages} from "@/server/queries";
+import {
+    DropdownMenu,
+    DropdownMenuContent, DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 
 type Props = {
     params: {
@@ -27,6 +35,7 @@ const Page = async ({params}: Props) => {
     const response = await get_application_by_id_action(Number(applicationId));
     const applicationResult = (response as unknown as ApplicationResponseType[])[0];
 
+    const stages = await get_job_listings_stages(applicationResult?.job_id);
     const internalNotes = await get_application_notes({
         id: applicationResult.id,
         limit:10,
@@ -79,17 +88,62 @@ const Page = async ({params}: Props) => {
                                     <MessageSquare className="w-4 h-4"/>
                                     Message
                                 </button>
-                                <Button
-                                    className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-all shadow-lg shadow-brand-500/20">
-                                    Advance Stage
-                                </Button>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button className="gap-2">
+                                            <CheckCircle size={16} />
+                                            <span>Advance</span>
+                                            <ChevronDown size={16}/>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuLabel>Advance Candidate</DropdownMenuLabel>
+                                        <DropdownMenuSeparator/>
+                                        {stages.map(stage => (
+                                            <DropdownMenuItem key={stage.id}>
+                                                <Eye size={16} className="mr-2" />
+                                                {stage.stage_name}
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="destructive" className="gap-2">
+                                            <XCircle size={16} />
+                                            <span>Reject</span>
+                                            <ChevronDown size={16}/>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuLabel>Rejection Reasons</DropdownMenuLabel>
+                                        <DropdownMenuSeparator/>
+                                        <DropdownMenuItem>
+                                            <AlertCircle size={16} className="mr-2" />
+                                            Not qualified
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem>
+                                            <CheckCircle size={16} className="mr-2" />
+                                            Position filled
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem>
+                                            <Clock size={16} className="mr-2" />
+                                            No response
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem>
+                                            <XCircle size={16} className="mr-2" />
+                                            Other
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-3 gap-4 mt-2">
                             {/* Left Column: Candidate & Job Info */}
                             <div className="col-span-2 space-y-4">
-                                {/* Experience Comparison Card */}
+                                {/* CandidateDetails Comparison Card */}
                                 <div
                                     className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden"
                                 >
@@ -254,6 +308,10 @@ const Page = async ({params}: Props) => {
                                             <div className="flex items-center gap-2 text-sm text-zinc-600">
                                                 <Mail className="w-4 h-4 text-zinc-400"/>
                                                 {applicationResult.candidate_email}
+                                            </div>
+                                            <div className="flex items-center gap-2 text-sm text-zinc-600">
+                                                <Phone className="w-4 h-4 text-zinc-400"/>
+                                                {applicationResult.candidate_phone}
                                             </div>
                                             <div className="flex items-center gap-2 text-sm text-zinc-600">
                                                 <ExternalLink className="w-4 h-4 text-zinc-400"/>

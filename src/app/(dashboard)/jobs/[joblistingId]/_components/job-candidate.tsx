@@ -26,8 +26,6 @@ import {
 } from "@/components/ui/select";
 import {Button} from "@/components/ui/button";
 
-// import {get_candiate_experience} from "@/server/queries/mongo/experience";
-
 type Props = {
     job: JobListing;
 };
@@ -231,7 +229,7 @@ const JobCandidate = ({job}: Props) => {
                                 <div className="grid grid-cols-3 gap-4 mt-2">
                                     {/* Left Column: Candidate & Job Info */}
                                     <div className="col-span-2 space-y-4">
-                                        {/* Experience Comparison Card */}
+                                        {/* CandidateDetails Comparison Card */}
                                         <div
                                             className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
                                             <div

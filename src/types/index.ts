@@ -126,17 +126,29 @@ export interface FormErrors {
     [key: string]: string | undefined;
 };
 
+export interface CandidateExperience {
+    company: string;
+    role: string;
+    period: string;
+    description: string;
+}
+
 export interface Candidate {
     id: number;
     name: string;
     email: string;
     phone: string;
     cv_path: string;
+    role?: string;
+    location?: string;
     status: CANDIDATE_ENUM | null;
     created_at: Date;
     updated_at: Date;
     interview: any[];
     attachment: any[];
+    skills?: string[];
+    experience?: CandidateExperience[];
+    education?: string[];
 };
 
 export interface Application {
