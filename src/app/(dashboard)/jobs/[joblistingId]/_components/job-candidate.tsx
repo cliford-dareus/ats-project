@@ -72,7 +72,7 @@ const JobCandidate = ({job}: Props) => {
 
         const matches = [] as { name: string, year: number, required: number, match: boolean }[];
         job.job_technologies.forEach(item => {
-            if (countMap.has(item.name) && countMap.get(item.name) >= item.years_experience) {
+            if (countMap.has(item.name) && countMap.get(item.name) >= item.years_experience!) {
                 const match = {
                     name: item.name,
                     year: countMap.get(item.name) ? countMap.get(item.name) : 0,

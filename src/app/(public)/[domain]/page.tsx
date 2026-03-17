@@ -13,7 +13,7 @@ export default async function CareerPage({ params }: {  params: Promise<{ domain
                 No Open Job Available...
             </div>
         )
-    }
+    };
 
 
     return (

@@ -19,7 +19,6 @@ export async function POST(req: Request) {
         // const parsed = await pdfParse(buffer);
         // const extractedText = parsed.text
 
-        console.log("HERE")
         const base64Data = await fileToBase64(file);
 
         const response = await genAI.models.generateContent({
@@ -32,7 +31,7 @@ export async function POST(req: Request) {
                     }
                 },
                 {
-                    text: "Extract information from this resume. Return the data in JSON format with the following structure: { name: string, email: string, role: string, resumeSummary: string, skills: string[], experience: { company: string, role: string, period: string, description: string }[], education: string[] }. If a field is not found, leave it empty or null."
+                    text: "Extract information from this resume. Return the data in JSON format with the following structure: { name: string, email: string, role: string, resumeSummary: string, skills: string[], experience: { company: string, role: string, period: string, description: string, totalExperience: number }[], education: string[] }. If a field is not found, leave it empty or null."
                 }
             ],
             config: {
@@ -53,7 +52,8 @@ export async function POST(req: Request) {
                                     company: {type: Type.STRING},
                                     role: {type: Type.STRING},
                                     period: {type: Type.STRING},
-                                    description: {type: Type.STRING}
+                                    description: {type: Type.STRING},
+                                    totalExperience: {type: Type.NUMBER}
                                 }
                             }
                         },

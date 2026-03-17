@@ -22,8 +22,13 @@ export const get_candidate_details = async (candidate_id: number) => {
         const candidate = await db.select().from(candidates).where(eq(candidates.id, candidate_id))
         if (!candidate) throw new Error("Candidate not found");
 
-        const experience = await CandidateDetails.find({candidate_id});
-        return JSON.stringify(experience);
+        const details = await CandidateDetails.find({candidate_id: candidate_id});
+        return JSON.stringify({
+            resumeSummary: details[0]?.resumeSummary,
+            skills: details[0]?.skills,
+            experience: details[0]?.experience,
+            education: details[0]?.education,
+        });
     } catch (error) {
         console.log(error);
         return JSON.stringify([]);

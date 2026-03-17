@@ -242,7 +242,14 @@ export const DEPARTMENTS = [
     "Employee Relations"
 ];
 
-export const CITIES = ["New York", "San Francisco", "Los Angeles", "Chicago", "Houston", "Philadelphia", "Phoenix", "San Antonio", "Dallas", "Austin", "Jacksonville", "San Jose", "Columbus", "Indianapolis", "Fort Worth", "Charlotte", "Detroit", "El Paso", "Memphis", "Seattle", "Denver", "Washington", "Boston", "Nashville", "Baltimore", "Oklahoma City", "Louisville", "Portland", "Las Vegas", "Milwaukee", "Albuquerque", "Tucson", "Fresno", "Sacramento", "Kansas City", "Mesa", "Atlanta", "Colorado Springs", "Miami", "Omaha", "Raleigh", "Long Beach", "Virginia Beach", "Oakland", "Minneapolis", "Tulsa", "Arlington", "New Orleans", "Wichita", "Honolulu", "Cleveland", "Aurora", "Santa Ana", "Riverside", "Corpus Christi", "St. Louis", "Lexington", "Anchorage", "Pittsburgh", "Newark", "Plano", "Bakersfield", "Buffalo", "Fort Wayne", "Henderson", "Chandler", "Greensboro", "Lincoln", "St. Petersburg", "Glendale", "Chula Vista", "Orlando", "Jersey City", "Fort Lauderdale", "Norfolk", "Durham", "Madison", "Laredo", "Winston-Salem", "Garland", "Reno", "Richmond", "San Bernardino", "Boise", "Chesapeake", "Gilbert", "Scottsdale", "North Las Vegas", "Fremont", "Baton Rouge", "San Diego", "Spokane", "Modesto", "Tacoma", "Oxnard", "Irvine", "Hialeah"]
+export const CITIES = ["New York", "San Francisco", "Los Angeles", "Chicago", "Houston", "Philadelphia", "Phoenix", "San Antonio", "Dallas", "Austin", "Jacksonville", "San Jose", "Columbus", "Indianapolis", "Fort Worth", "Charlotte", "Detroit", "El Paso", "Memphis", "Seattle", "Denver", "Washington", "Boston", "Nashville", "Baltimore", "Oklahoma City", "Louisville", "Portland", "Las Vegas", "Milwaukee", "Albuquerque", "Tucson", "Fresno", "Sacramento", "Kansas City", "Mesa", "Atlanta", "Colorado Springs", "Miami", "Omaha", "Raleigh", "Long Beach", "Virginia Beach", "Oakland", "Minneapolis", "Tulsa", "Arlington", "New Orleans", "Wichita", "Honolulu", "Cleveland", "Aurora", "Santa Ana", "Riverside", "Corpus Christi", "St. Louis", "Lexington", "Anchorage", "Pittsburgh", "Newark", "Plano", "Bakersfield", "Buffalo", "Fort Wayne", "Henderson", "Chandler", "Greensboro", "Lincoln", "St. Petersburg", "Glendale", "Chula Vista", "Orlando", "Jersey City", "Fort Lauderdale", "Norfolk", "Durham", "Madison", "Laredo", "Winston-Salem", "Garland", "Reno", "Richmond", "San Bernardino", "Boise", "Chesapeake", "Gilbert", "Scottsdale", "North Las Vegas", "Fremont", "Baton Rouge", "San Diego", "Spokane", "Modesto", "Tacoma", "Oxnard", "Irvine", "Hialeah"];
 
-export const getCalendaAvailability = () => {
-};
+export const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Open': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+      case 'On Hold': return 'bg-amber-50 text-amber-700 border-amber-100';
+      case 'Closed': return 'bg-zinc-100 text-zinc-600 border-zinc-200';
+      case 'Draft': return 'bg-blue-50 text-blue-700 border-blue-100';
+      default: return 'bg-zinc-50 text-zinc-700 border-zinc-100';
+    }
+  };

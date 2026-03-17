@@ -131,6 +131,7 @@ export interface CandidateExperience {
     role: string;
     period: string;
     description: string;
+    totalExperience: number;
 }
 
 export interface Candidate {
@@ -163,8 +164,8 @@ export interface Application {
 export interface Experience {
     id: number;
     name: string;
-    years_experience: number
-}
+    years_experience: number | null;
+};
 
 export interface JobListing {
     job_id: number;

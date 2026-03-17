@@ -13,6 +13,7 @@ import {
     X
 } from "lucide-react";
 import {Button} from "@/components/ui/button";
+import EditJobListingModal from '@/components/modal/edit-joblisting-modal';
 
 type Props = {
     data: JobResponseType;
@@ -22,6 +23,7 @@ type Props = {
 const JobPreview = ({data, jobs}: Props) => {
     const router = useRouter();
     const [notes, setNotes] = useState<NoteResponseType>({notes: [], total: 0});
+    const [isEditJobOpen, setIsEditJobOpen] = useState(false);
 
     return (
         <>
@@ -68,6 +70,7 @@ const JobPreview = ({data, jobs}: Props) => {
                             </div>
                             <div className="flex items-center gap-2">
                                 <button
+                                    onClick={() => setIsEditJobOpen(true)}
                                     className="p-2 text-zinc-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-all">
                                     <Edit3 className="w-4 h-4"/>
                                 </button>
@@ -103,22 +106,6 @@ const JobPreview = ({data, jobs}: Props) => {
                                 <span className="text-zinc-500">Type</span>
                                 <span className="font-medium ">Full Time</span>
                             </div>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-col gap-2">
-                        <span className="uppercase font-medium">Quick Actions</span>
-                        <div className="flex items-center justify-between gap-3">
-                            <Button variant="ghost" className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-700 transition-all shadow-lg shadow-brand-500/20">
-                                Advance Stage
-                            </Button>
-                            <Button className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-brand-700 transition-all shadow-lg shadow-brand-500/20">
-                                Schedule Interview
-                            </Button>
-                            <Button variant="outline" className="px-4 py-2 border border-zinc-200 rounded-lg text-sm font-medium text-red-600 hover:bg-zinc-50 transition-all flex items-center gap-2">
-                                {/*<MessageSquare className="w-4 h-4" />*/}
-                                Reject Application
-                            </Button>
                         </div>
                     </div>
 
@@ -166,6 +153,8 @@ const JobPreview = ({data, jobs}: Props) => {
                     </div>
                 </div>
             </div>
+
+            <EditJobListingModal isEditJobOpen={isEditJobOpen} setIsEditJobOpen={setIsEditJobOpen} data={data}/>
         </>
     );
 };

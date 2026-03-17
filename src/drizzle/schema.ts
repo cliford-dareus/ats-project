@@ -66,6 +66,7 @@ export const job_listings = mysqlTable('job_listing', {
     description: varchar({length: 255}).notNull(),
     salary_up_to: varchar({length: 255}).notNull(),
     department: int().notNull(),
+    type: mysqlEnum('type', ['REMOTE', 'ONSITE']),
     subdomain: varchar({length: 255}).notNull(),
     organization: varchar({length: 255}).notNull(),
     status: mysqlEnum('status', ["OPEN", "CLOSED", "DRAFT", "ARCHIVED", "PENDING"]).default('PENDING'),

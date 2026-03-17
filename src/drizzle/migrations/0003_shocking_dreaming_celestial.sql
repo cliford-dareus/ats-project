@@ -1,0 +1,1 @@
+ALTER TABLE `job_listing` ADD `type` enum('REMOTE','ONSITE');

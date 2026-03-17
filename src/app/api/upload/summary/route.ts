@@ -3,6 +3,8 @@ import {NextResponse} from "next/server";
 import {GoogleGenerativeAI} from "@google/generative-ai";
 import { supabase } from "@/lib/supabase";
 
+// DELETE ME
+
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY!);
 
 export async function POST(req: Request) {
