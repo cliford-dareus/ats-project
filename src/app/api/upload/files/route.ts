@@ -1,5 +1,5 @@
 import {NextResponse} from "next/server";
-import {uploadFileToSupabase} from "@/lib/upload-file-to-supabase";
+import {uploadFileToSupabase} from "@/lib/upload-file-to-r2";
 import { currentUser } from "@clerk/nextjs/server";
 import { db } from "@/drizzle/db";
 import { candidates } from "@/drizzle/schema";

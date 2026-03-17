@@ -110,21 +110,10 @@ export type TriggerResponseType = {
     updated_at: Date;
 };
 
-export type ExtractResponseType = {
-    Name: string,
-    "Contact Information": {
-        Email: string,
-        Phone: string,
-        Location: string
-    }
-    Skills: string[],
-    "Work Experience": string[],
-    Education: string[]
-};
-
 export interface FormErrors {
     [key: string]: string | undefined;
 };
+
 
 export interface CandidateExperience {
     company: string;
@@ -161,7 +150,7 @@ export interface Application {
     candidate: Candidate;
 };
 
-export interface Experience {
+export interface JobExperience {
     id: number;
     name: string;
     years_experience: number | null;
@@ -174,7 +163,7 @@ export interface JobListing {
     job_created_at: Date;
     job_description: string;
     job_department: string;
-    job_technologies: Experience[];
+    job_technologies: JobExperience[];
     applications: Application[];
 };
 

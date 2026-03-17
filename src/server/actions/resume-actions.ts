@@ -2,7 +2,7 @@
 
 import pdfParse from 'pdf-parse';
 import { GoogleGenAI, Type } from "@google/genai";
-import { supabase } from '@/lib/supabase';
+import { r2Client } from '@/lib/r2';
 import { auth } from '@clerk/nextjs/server';
 import { candidates } from '@/drizzle/schema';
 import { and, eq } from 'drizzle-orm';
@@ -10,21 +10,24 @@ import { db } from '@/drizzle/db';
 import { create } from 'domain';
 import { create_candidate_details } from '../queries/mongo/candidate-details';
 import { CACHE_TAGS, revalidateDbCache } from '@/lib/cache';
+import { GetObjectCommand } from '@aws-sdk/client-s3';
 
 const genAI = new GoogleGenAI({ apiKey: process.env.GOOGLE_GEMINI_API_KEY! });
 
-export const summarizeResume = async (resumePath: string) => {
+export const summarizeResume = async (resumeKey: string) => {
     try {
-        const { data: fileData, error: downloadError } = await supabase.storage
-            .from('resumes') // your bucket name
-            .download(resumePath);
+        const command = new GetObjectCommand({
+            Bucket: process.env.R2_BUCKET_NAME!,
+            Key: resumeKey,
+        });
 
-        if (downloadError || !fileData) {
-            throw new Error(`Failed to download resume: ${downloadError?.message}`);
-        };
+        const response = await r2Client.send(command);
+        const arrayBuffer = await response.Body?.transformToByteArray?.() ||
+            await response.Body?.arrayBuffer?.();
+
+        if (!arrayBuffer) throw new Error('Failed to download file');
 
         // 2. Convert to Buffer & extract text
-        const arrayBuffer = await fileData.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
         const pdfData = await pdfParse(buffer);
@@ -38,7 +41,7 @@ export const summarizeResume = async (resumePath: string) => {
         }
 
         // 3. Create good prompt
-        const response = await genAI.models.generateContent({
+        const summarize = await genAI.models.generateContent({
             model: "gemini-3-flash-preview",
             contents: [
                 {
@@ -80,7 +83,7 @@ export const summarizeResume = async (resumePath: string) => {
             }
         });
 
-        const data = JSON.parse(response.text || "{}");
+        const data = JSON.parse(summarize.text || "{}");
 
         return { success: true, data };
     } catch (err: any) {
@@ -92,39 +95,72 @@ export const summarizeResume = async (resumePath: string) => {
 export const create_application_summary = async (candidate_id: number) => {
     // Get the candidate ID from the session
     const { orgId, userId } = await auth();
+    if (!orgId || !userId) {
+        return { success: false, error: 'Unauthorized' };
+    }
 
     // Get the candidate resume path from the database
-    const candidate = await db.select({ path: candidates.cv_path })
+    const [candidate] = await db.select({
+        cv_path: candidates.cv_path,
+        id: candidates.id
+    })
         .from(candidates)
         .where(and(
             eq(candidates.id, candidate_id),
             // eq(candidates.org_id, orgId)
         ));
 
+    if (!candidate) {
+        return { success: false, error: 'Candidate not found' };
+    }
+
+    if (!candidate.cv_path || candidate.cv_path.startsWith('no-resume-')) {
+        return { success: false, error: 'No resume attached to this candidate' };
+    }
+
     // Summarize the resume
-    const summary = await summarizeResume(candidate[0].path);
+    const summaryResult = await summarizeResume(candidate.cv_path);
+
+    if (!summaryResult.success) {
+        return { success: false, error: summaryResult.error };
+    }
+
+    const { data } = summaryResult;
     // Add the summary to the database
-    if (summary.success) {
+    try {
+        // Save structured details
         await create_candidate_details({
-            candidate_id: candidate_id,
-            resumeSummary: summary.data.resumeSummary,
-            skills: summary.data.skills,
-            experience: summary.data.experience,
-            education: summary.data.education
+            candidate_id,
+            resumeSummary: data.resumeSummary,
+            skills: data.skills,
+            experience: data.experience,
+            education: data.education,
         });
 
-        await db.update(candidates)
+        // Update basic candidate info
+        await db
+            .update(candidates)
             .set({
-                email: summary.data.email,
-                name: summary.data.name,
-                // role: summary.data.role
+                name: data.name || undefined,
+                email: data.email || undefined,
             })
-            .where(eq(candidates.id, candidate_id));
+            .where(eq(candidates.id, candidate.id));
 
         revalidateDbCache({ tag: CACHE_TAGS.candidates });
 
-        return { success: true, data: summary.data };
-    };
-
-    return { success: false, error: summary.error };
+        return {
+            success: true,
+            data: {
+                name: data.name,
+                email: data.email,
+                resumeSummary: data.resumeSummary,
+                skills: data.skills,
+                experience: data.experience,
+                education: data.education,
+            },
+        };
+    } catch (err: any) {
+        console.error(err);
+        return { success: false, error: 'Failed to save summary to database' };
+    }
 };

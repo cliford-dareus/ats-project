@@ -6,31 +6,16 @@ import { ApplicationType, StageResponseType } from "@/types";
 import DropIndicator from "@/components/kanban/drop-indicator";
 import {moveApplicationAndReorder} from "@/server/actions/application_actions";
 import { JOB_ENUM } from "@/zod";
-import { Badge } from "@/components/ui/badge";
-import { EllipsisVertical, WandSparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuPortal,
-    DropdownMenuSeparator,
-    DropdownMenuSub,
-    DropdownMenuSubContent,
-    DropdownMenuSubTrigger,
-    DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
-import SmartMoveTriggerModal from "@/components/modal/triggers/smart-move-trigger-modal";
-import { add_trigger_to_stage_action } from "@/server/actions/stage_actions";
 import { useModalDialog } from "@/hooks/use-modal-dialog";
-import SmartEmailTriggerModal from "@/components/modal/triggers/smart-email-trigger-modal";
 import TriggerCard from "../trigger-card";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { useKanbanContext } from "@/providers/kanban-provider";
 import { usePlugin } from "@/providers/plugin-provider";
 import { lifecycle } from "@/lib/smart-trigger/lifecycle";
 import { useSocket } from "@/providers/socket-provider";
+import SmartTriggerModal from "@/components/modal/triggers/smart-trigger-modal";
+import ColumnHeader from "./column-header";
+import { add_trigger_to_stage_action } from "@/server/actions/stage_actions";
 
 type Props = {
     title: string;
@@ -64,7 +49,6 @@ export default function Column({
         stage: "",
         action_type: "",
     });
-
     const { isModalOpen, openModal, closeModal } = useModalDialog();
     const { triggers, jobStages, fetchApplicationTasks } = useKanbanContext();
     const hasSmartTrigger = usePlugin("smart-triggers");
@@ -251,7 +235,6 @@ export default function Column({
             const appId = data?.payload?.applicationId;
             const newStageId = data?.payload?.newStageId;
             if (!appId || !newStageId) return;
-            console.log("SOCKET MOVE")
 
             // 1. Find the target stage object to get the name
             const targetStage = jobStages.find(s => s.id === newStageId);
@@ -352,8 +335,9 @@ export default function Column({
     };
 
     return (
-        <div className="min-w-56 w-56">
+        <div className="min-w-[230px] w-[230px]">
             {/* Smart Triggers Row */}
+            <span className="sr-only">Smart Triggers</span>
             {hasSmartTrigger && showTriggers && (
                 <div className="mb-3 space-y-2">
                     {stageTriggers.map((st) => (
@@ -363,85 +347,17 @@ export default function Column({
             )}
 
             {/* Header */}
-            <div className="mb-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    {color && <div className={cn(color, "h-3 w-3 rounded-full")} />}
-                    <p className="font-medium text-slate-600 text-sm">{title}</p>
-                    <Badge variant="secondary" className="text-xs">
-                        {filteredCards.length}
-                    </Badge>
+            <ColumnHeader
+                stage={stage.stage_name}
+                color={color}
+                title={title}
+                filteredCards={filteredCards}
+                openModal={openModal}
+                hasSmartTrigger={hasSmartTrigger}
+                setShowTriggers={setShowTriggers}
+                setOpenSmartMove={setOpenSmartMove}
+            />
 
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <WandSparkles
-                                size={18}
-                                className="text-slate-400 cursor-pointer hover:text-slate-600 transition-colors"
-                                onClick={() => setShowTriggers((prev) => !prev)}
-                            />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            {hasSmartTrigger ? "Toggle Smart Triggers" : "Smart Triggers plugin not enabled"}
-                        </TooltipContent>
-                    </Tooltip>
-                </div>
-
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <EllipsisVertical size={18} className="text-slate-400 cursor-pointer -mr-1" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem>View</DropdownMenuItem>
-                        <DropdownMenuItem>Sort</DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuGroup>
-                            <DropdownMenuSub>
-                                <DropdownMenuSubTrigger>Trigger</DropdownMenuSubTrigger>
-                                <DropdownMenuPortal>
-                                    <DropdownMenuSubContent>
-                                        <DropdownMenuItem
-                                            onClick={() => {
-                                                openModal();
-                                                setOpenSmartMove({ type: "email", stage: stage.stage_name!, action_type: "email" });
-                                            }}
-                                        >
-                                            Smart Email
-                                        </DropdownMenuItem>
-
-                                        <DropdownMenuSub>
-                                            <DropdownMenuSubTrigger>Smart Move</DropdownMenuSubTrigger>
-                                            <DropdownMenuPortal>
-                                                <DropdownMenuSubContent>
-                                                    {["location", "experience", "score"].map((type) => (
-                                                        <DropdownMenuItem
-                                                            key={type}
-                                                            onClick={() => {
-                                                                openModal();
-                                                                setOpenSmartMove({
-                                                                    type,
-                                                                    stage: stage.stage_name!,
-                                                                    action_type: "move",
-                                                                });
-                                                            }}
-                                                        >
-                                                            {type.charAt(0).toUpperCase() + type.slice(1)}
-                                                        </DropdownMenuItem>
-                                                    ))}
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem>More...</DropdownMenuItem>
-                                                </DropdownMenuSubContent>
-                                            </DropdownMenuPortal>
-                                        </DropdownMenuSub>
-
-                                        <DropdownMenuItem>Smart Schedule</DropdownMenuItem>
-                                    </DropdownMenuSubContent>
-                                </DropdownMenuPortal>
-                            </DropdownMenuSub>
-
-                            <DropdownMenuItem>Add to Calendar</DropdownMenuItem>
-                        </DropdownMenuGroup>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
 
             {/* Cards + Drop Zone */}
             <div
@@ -467,16 +383,10 @@ export default function Column({
             </div>
 
             {/* Modals */}
-            <SmartMoveTriggerModal
-                isModalOpen={isModalOpen && openSmartMove.action_type === "move" && !!openSmartMove.type}
+            <SmartTriggerModal
+                isModalOpen={isModalOpen && !!openSmartMove.type}
                 closeModal={closeModal}
                 triggerType={openSmartMove.type}
-                onSubmit={onSubmitTrigger}
-            />
-
-            <SmartEmailTriggerModal
-                isModalOpen={isModalOpen && openSmartMove.action_type === "email"}
-                closeModal={closeModal}
                 onSubmit={onSubmitTrigger}
             />
         </div>

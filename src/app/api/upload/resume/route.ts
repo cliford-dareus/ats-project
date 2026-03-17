@@ -1,7 +1,7 @@
 // import pdfParse from "pdf-parse";
 import {NextResponse} from "next/server";
 import {GoogleGenAI, Type} from "@google/genai";
-import {uploadFileToSupabase} from "@/lib/upload-file-to-supabase";
+import {uploadFileToSupabase} from "@/lib/upload-file-to-r2";
 
 const genAI = new GoogleGenAI({apiKey: process.env.GOOGLE_GEMINI_API_KEY!});
 

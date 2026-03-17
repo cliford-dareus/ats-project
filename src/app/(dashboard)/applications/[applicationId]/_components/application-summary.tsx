@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { create_application_summary } from "@/server/actions/resume-actions";
-import { CandidateExperience, Experience } from "@/types";
+import { CandidateExperience, JobExperience } from "@/types";
 import { AlertCircle, CheckCircle2, Download, FileText, Sparkles, TrendingUp } from "lucide-react";
 
 type Props = {
@@ -14,13 +14,13 @@ type Props = {
         education: string[];
     };
     candidate_id: number;
-    jobSkills: Experience[];
+    jobSkills: JobExperience[];
 };
 
 const ApplicationSummary = ({ applicationSummary, candidate_id, jobSkills }: Props) => {
     const { resumeSummary, experience, education, skills } = applicationSummary;
 
-    const getApplicationMatch = (candidate_id: number, jobSkills: Experience[]) => {
+    const getApplicationMatch = (candidate_id: number, jobSkills: JobExperience[]) => {
         const countMap = new Map();
         skills?.forEach(item => countMap.set(item, (countMap.get(item) || 0) + 1));
 

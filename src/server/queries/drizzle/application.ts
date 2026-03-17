@@ -18,107 +18,122 @@ import {
 import {candidateForm, filterApplicationsType, JOB_ENUM} from "@/zod";
 import {z} from "zod";
 import {revalidatePath} from "next/cache";
-
-interface CandidateInfo {
-    first_name: string;
-    last_name: string;
-    email: string;
-    phone: string;
-    location: string;
-};
+import { uploadResumeToR2 } from "@/lib/upload-file-to-r2";
 
 // TODO: FIX LATER
+// ALso add the ORGANIZATION ID to the application
 export const create_application = async (data: z.infer<typeof candidateForm>) => {
-    // Get the "Applied" stage (should be stage_order_id = 0)
-    const [applied_stage] = await db
-        .select()
-        .from(stages)
-        .where(
-            and(
-                eq(stages.job_id, Number(data.job)),
-                eq(stages.stage_order_id, 0),
-                eq(stages.stage_name, 'Applied')
-            )
-        );
+  // 1. Get "Applied" stage
+  const [appliedStage] = await db
+    .select()
+    .from(stages)
+    .where(
+      and(
+        eq(stages.job_id, Number(data.job)),
+        eq(stages.stage_order_id, 0),
+        eq(stages.stage_name, 'Applied')
+      )
+    );
 
-    // Check if user is passing a candidate id
-    const canditate_exist = await db.select()
+  if (!appliedStage) {
+    throw new Error('Applied stage not found for this job');
+  }
+
+  const jobId = Number(data.job);
+
+  // 2. Check for duplicate application
+  if (data.candidate) {
+    const existingApp = await db
+      .select()
+      .from(applications)
+      .where(
+        and(
+          eq(applications.job_id, jobId),
+          eq(applications.candidate, Number(data.candidate))
+        )
+      );
+
+    if (existingApp.length > 0) {
+      return { success: false, message: 'Candidate already has an application for this job' };
+    }
+  }
+
+  try {
+    let candidateId: number;
+
+    if (data.candidate) {
+      // === EXISTING CANDIDATE ===
+      candidateId = Number(data.candidate);
+    } else {
+      // === NEW CANDIDATE ===
+      const info = data.candidate_info as { first_name: string; last_name: string; email: string; phone?: string, location?: string };
+
+      // Better uniqueness check: email (not name)
+      const existingCandidate = await db
+        .select({ id: candidates.id })
         .from(candidates)
-        .where(eq(candidates.name, data.candidate!));
+        .where(eq(candidates.email, info.email));
 
-    const candidateAlreadyHaveApplication = await db.select()
-        .from(applications)
-        .where(
-            and(
-                eq(applications.job_id, Number(data.job)),
-                eq(applications.candidate, Number(data.candidate))
+      if (existingCandidate.length > 0) {
+        return { success: false, message: 'Candidate with this email already exists' };
+      }
 
-            )
-        );
+      const resumeFile = data.resume as File | undefined; // ← from your Zod schema
 
-    if (candidateAlreadyHaveApplication.length > 0) {
-        return "Candidate already have an application"
-    };
+      let cvKey = `no-resume-${info.first_name}-${Date.now()}`;
 
-    if (!data.candidate && !canditate_exist) {
-        try {
-            const info = data.candidate_info as CandidateInfo;
-            // const file = data.candidate_file as { resume: FileList, cover_letter: FileList }
+      if (resumeFile && resumeFile.size > 0) {
+        cvKey = await uploadResumeToR2(resumeFile, `${info.first_name} ${info.last_name}`);
+      }
 
-            const [candidate] = await db
-                .insert(candidates)
-                .values({
-                    name: `${info.first_name} ${info.last_name}`,
-                    // location: info.location,
-                    email: info.email,
-                    phone: info.phone,
-                    cv_path: `no path-${info.first_name}`,
-                })
-                .$returningId();
+      // Create candidate
+      const [newCandidate] = await db
+        .insert(candidates)
+        .values({
+          name: `${info.first_name} ${info.last_name}`,
+          email: info.email,
+          phone: info.phone || null,
+          cv_path: cvKey, // R2 key
+          location: info.location,
+        })
+        .$returningId();
 
-            await db.insert(attachments).values({
-                file_name: `${info.first_name} ${"resume"}`,
-                file_url: "udhsjhdjsh.com",
-                candidate_id: candidate.id,
-                attachment_type: "RESUME",
-            });
+      candidateId = newCandidate.id;
 
-            const [application] = await db.insert(applications).values({
-                job_id: Number(data.job),
-                candidate: candidate.id,
-                current_stage_id: applied_stage.id, // Use Applied stage
-            });
-
-            revalidateDbCache({
-                tag: CACHE_TAGS.applications,
-            });
-
-            revalidateDbCache({
-                tag: CACHE_TAGS.jobs,
-            });
-
-            return application;
-        } catch (err) {
-            console.log(err);
-            throw err;
-        }
+      // Create attachment record
+      await db.insert(attachments).values({
+        file_name: `${info.first_name}'s Resume`,
+        file_url: cvKey, // we store the R2 key
+        candidate_id: candidateId,
+        attachment_type: 'RESUME',
+      });
     }
 
-    await db.insert(applications).values({
-        job_id: Number(data.job),
-        candidate: Number(data.candidate),
-        current_stage_id: applied_stage.id, // Use Applied stage
-    });
+    // 3. Create application (shared for both paths)
+    const [newApplication] = await db
+      .insert(applications)
+      .values({
+        job_id: jobId,
+        candidate: candidateId,
+        current_stage_id: appliedStage.id,
+        subdomain: data.subdomain,
+      })
+      .$returningId();
 
-    revalidateDbCache({
-        tag: CACHE_TAGS.applications,
-    });
+    // Revalidate cache
+    revalidateDbCache({ tag: CACHE_TAGS.applications });
+    revalidateDbCache({ tag: CACHE_TAGS.jobs });
 
-    revalidateDbCache({
-        tag: CACHE_TAGS.jobs,
-    });
-
-    return "application created";
+    return {
+      success: true,
+      applicationId: newApplication.id,
+      candidateId,
+      message: 'Application created successfully',
+    };
+  } catch (err: any) {
+    console.error('Create application error:', err);
+    throw new Error(err.message || 'Failed to create application');
+  }
 };
 
 export const update_application_stage = async (data: { applicationId: number, new_stage_id: number }) => {
@@ -183,16 +198,20 @@ export const get_application_by_id_db = async (applicationId: number) => {
     return  await db
         .select({
             id: applications.id,
-            status: job_listings.status,
             current_stage: stages.stage_name,
             apply_date: applications.created_at,
             updated_at: applications.updated_at,
+            // candidate
             candidate_id: candidates.id,
             candidate_name: candidates.name,
             candidate_email: candidates.email,
             candidate_phone: candidates.phone,
+            candidate_cv: candidates.cv_path,
+            can_contact: applications.can_contact,
+            // job
             job_id: job_listings.id,
             job_apply: job_listings.name,
+            status: job_listings.status,
             location: job_listings.location,
             interview: interviews,
             department: departments.name,
@@ -235,6 +254,7 @@ export const get_applications_with_filter_db = async (filter: z.infer<typeof fil
             candidate_name: candidates.name,
             candidate_email: candidates.email,
             candidate_phone: candidates.phone,
+            candidate_cv: candidates.cv_path,
         })
         .from(applications)
         .leftJoin(job_listings, eq(applications.job_id, job_listings.id))

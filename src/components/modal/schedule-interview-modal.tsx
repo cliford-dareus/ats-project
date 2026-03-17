@@ -87,20 +87,6 @@ const ScheduleInterviewModal = ({isOpen, setIsOpen, application, jobDetails}: Pr
         }
     };
 
-    // useEffect(() => {
-    //     if (!user) {
-    //         return;
-    //     }
-    //     const slots = async () => {
-    //         const response = await getCalendarEventTimes(user.id, {
-    //             start: new Date("1/1/2025"),
-    //             end: new Date("2/2/2025")
-    //         })
-    //         setSlots(response)
-    //     }
-    //     slots();
-    // }, [user]);
-
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogContent>
@@ -172,10 +158,11 @@ const ScheduleInterviewModal = ({isOpen, setIsOpen, application, jobDetails}: Pr
                                             <Select
                                                 value={field.value}
                                                 onValueChange={field.onChange}
-                                                className="w-full px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
                                             >
                                                 <SelectTrigger>{field.value}</SelectTrigger>
-                                                <SelectContent>
+                                                <SelectContent
+                                                     className="w-full px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
+                                                >
                                                     <SelectItem value="15">15 Minutes</SelectItem>
                                                     <SelectItem value="30">30 Minutes</SelectItem>
                                                     <SelectItem value="45">45 Minutes</SelectItem>

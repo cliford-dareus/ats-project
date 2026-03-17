@@ -1,7 +1,7 @@
 import pdfParse from "pdf-parse";
 import {NextResponse} from "next/server";
 import {GoogleGenerativeAI} from "@google/generative-ai";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/r2";
 
 // DELETE ME
 

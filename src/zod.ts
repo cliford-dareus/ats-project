@@ -154,3 +154,25 @@ export const departmentSchema = z.object({
     departments: z.array(z.string()),
     orgId: z.string()
 });
+
+// TRIGGER SCHEMA
+export const locationTriggerSchema = z.object({
+    location: z.string().min(1, 'Location is required'),
+    stage: z.enum(JOB_STAGES, { message: 'Please select a valid stage' }),
+    delay: z.number().min(1, 'Delay must be at least 1'),
+    delayFormat: z.enum(['minutes', 'hours', 'days'], { message: 'Select a delay unit' }),
+});
+
+export const experienceTriggerSchema = z.object({
+    experience: z.number(),
+    stage: z.enum(JOB_STAGES),
+    delay: z.number().min(1, 'Delay must be at least 1'),
+    delayFormat: z.enum(['minutes', 'hours', 'days'], { message: 'Select a delay unit' }),
+});
+
+export const SmartEmailTriggerSchema = z.object({
+    email: z.string(),
+    template: z.string(),
+    delay: z.number(),
+    delayFormat: z.enum(['minutes', 'hours', 'days'], { message: 'Select a delay unit' })
+});
