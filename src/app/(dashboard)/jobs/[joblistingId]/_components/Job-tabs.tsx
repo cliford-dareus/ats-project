@@ -12,7 +12,8 @@ import {
     TabsList,
 } from "@/components/ui/tabs";
 import {
-    ApplicationType, JobListing,
+    ApplicationType,
+    JobListingType,
     JobResponseType,
     StageResponseType,
 } from "@/types";
@@ -23,7 +24,7 @@ type Props = {
     stages: StageResponseType[];
     jobs: JobResponseType[];
     joblistingId: string;
-    singleJob: JobListing;
+    singleJob: JobListingType;
 };
 
 type TabValue = "candidates" | "pipelines" | "options";
@@ -41,17 +42,6 @@ const JobTabs = ({applications, stages, jobs, joblistingId, singleJob}: Props) =
             : `${pathname}?tab=${value}`;
         router.push(newPath);
     }, [pathname, router]);
-
-    // useEffect(() => {
-    //     context.setJobId(joblistingId);
-    // }, [joblistingId]);
-    //
-    // useEffect(() => {
-    //     const smartTriggers = pluginRegistry.get("smart-revalidate-db-cache");
-    //     if (smartTriggers?.config && typeof smartTriggers.config.actions?.activate === "function" && smartTriggers.enabled) {
-    //         smartTriggers.config.actions?.activate(context);
-    //     }
-    // }, [context.jobId]);
 
     useEffect(() => {
         const tabParam = searchParams.get('tab') as TabValue;
@@ -76,10 +66,12 @@ const JobTabs = ({applications, stages, jobs, joblistingId, singleJob}: Props) =
                             ))}
                         </TabsList>
                         <div className="flex items-center gap-4 text-zinc-500 text-sm">
-                            <span className="flex items-center px-2 py-1  rounded-md gap-2"><Share size={16}
-                                                                                                   className=""/> Share</span>
-                            <span className="flex items-center px-2 py-1  rounded-md gap-2"><Settings size={16}
-                                                                                                      className=""/> Setting</span>
+                            <span className="flex items-center px-2 py-1  rounded-md gap-2">
+                                <Share size={16} className=""/> Share
+                            </span>
+                            <span className="flex items-center px-2 py-1  rounded-md gap-2">
+                                <Settings size={16} className=""/>Setting
+                            </span>
                             <span className="flex items-center px-2 py-1  rounded-md">Edit Job Ad</span>
                         </div>
                     </div>
@@ -93,7 +85,7 @@ const JobTabs = ({applications, stages, jobs, joblistingId, singleJob}: Props) =
                             stages={stages}
                             jobDetails={{jobName: singleJob.job_name, department:singleJob.job_department}}
                         />
-                    </TabsContent>      
+                    </TabsContent>
                     <TabsContent value="options">
                         <JobOptions job_id={Number(joblistingId)} data={jobs} stages={stages}/>
                     </TabsContent>

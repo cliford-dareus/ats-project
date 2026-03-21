@@ -348,11 +348,11 @@ export default function Column({
 
             {/* Header */}
             <ColumnHeader
-                stage={stage.stage_name}
                 color={color}
                 title={title}
-                filteredCards={filteredCards}
+                stage={stage.stage_name}
                 openModal={openModal}
+                filteredCards={filteredCards}
                 hasSmartTrigger={hasSmartTrigger}
                 setShowTriggers={setShowTriggers}
                 setOpenSmartMove={setOpenSmartMove}

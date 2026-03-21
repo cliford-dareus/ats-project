@@ -26,7 +26,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { create_candidate_action } from "@/server/actions/candidates-actions";
 import {Candidate} from "@/types";
-import { newCandidateForm } from "@/zod";
+import { newCandidateFormSchema } from "@/zod";
 import { useRouter } from "next/navigation";
 import {ScrollArea} from "@/components/ui/scroll-area";
 
@@ -39,8 +39,8 @@ const UploadCandidateResume = () => {
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
 
-    const form = useForm<z.infer<typeof newCandidateForm>>({
-        resolver: zodResolver(newCandidateForm),
+    const form = useForm<z.infer<typeof newCandidateFormSchema>>({
+        resolver: zodResolver(newCandidateFormSchema),
         defaultValues: { name: "", email: "", phone: "", location: "" },
     });
 
@@ -71,7 +71,7 @@ const UploadCandidateResume = () => {
         }
     };
 
-    const handleSave = async (data: z.infer<typeof newCandidateForm>) => {
+    const handleSave = async (data: z.infer<typeof newCandidateFormSchema>) => {
         if (data.email === "" || data.name === "" || data.phone === "" || data.location === "" || resumePath === "") {
             setError("Please fill in all required fields.");
             return;

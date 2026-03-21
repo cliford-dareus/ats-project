@@ -1,11 +1,11 @@
 import {db} from "@/drizzle/db";
-import {applications, attachments, candidates, interviews, job_listings, scoreCards, stages} from "@/drizzle/schema";
+import {applications, attachments, candidates, interviews, stages} from "@/drizzle/schema";
 import {and, eq, SQL} from "drizzle-orm";
 import {CACHE_TAGS, dbCache, getGlobalTag, getIdTag, revalidateDbCache} from "@/lib/cache";
 import {z} from "zod";
-import {filterCandidateType, newCandidateForm} from "@/zod";
+import {filterCandidateSchema, newCandidateFormSchema} from "@/zod";
 
-export const create_candidate = async (data: z.infer<typeof newCandidateForm>) => {
+export const create_candidate = async (data: z.infer<typeof newCandidateFormSchema>) => {
     const [candidate] = await db.insert(candidates).values({...data, cv_path: data.resume as string}).$returningId();
     revalidateDbCache({
         tag: CACHE_TAGS.candidates,
@@ -13,7 +13,7 @@ export const create_candidate = async (data: z.infer<typeof newCandidateForm>) =
     return candidate;
 };
 
-export const get_all_candidates = async (filter: z.infer<typeof filterCandidateType>) => {
+export const get_all_candidates = async (filter: z.infer<typeof filterCandidateSchema>) => {
     const cacheFn = dbCache(get_all_candidates_db, {
         tags: [
             getGlobalTag(CACHE_TAGS.candidates)
@@ -37,13 +37,13 @@ export const get_candidate_by_id_db = async (unsafedata: number) => {
         application,
         attachment,
         interview,
-        scoreCard,
+        // scoreCard,
     ] = await Promise.all([
         db.select().from(candidates).where(eq(candidates.id, unsafedata)),
         db.select().from(applications).where(eq(applications.candidate, unsafedata)),
         db.select().from(attachments).where(eq(attachments.candidate_id, unsafedata)),
         db.select().from(interviews).where(eq(interviews.applications_id, unsafedata)),
-        db.select().from(scoreCards).where(eq(scoreCards.interviews_id, unsafedata)),
+        // db.select().from(scoreCards).where(eq(scoreCards.interviews_id, unsafedata)),
     ]);
 
     return {
@@ -55,7 +55,7 @@ export const get_candidate_by_id_db = async (unsafedata: number) => {
     };
 };
 
-const get_all_candidates_db = async (filter: z.infer<typeof filterCandidateType>) => {
+const get_all_candidates_db = async (filter: z.infer<typeof filterCandidateSchema>) => {
     const filters: SQL[] = []
 
     if (filter?.name) filters.push(eq(candidates.name, filter.name));

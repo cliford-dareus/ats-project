@@ -20,10 +20,8 @@ const ListPageTop = ({name, count, file}: ListPageTopProps) => {
 
             <div className="flex items-center gap-4">
                 <ExtractFileButton status={file}/>
-                <Button
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">
-                    {/*<Plus size={18} />*/}
-                    Add {file.slice(0, 1).toUpperCase() + file.slice(1)}
+                <Button>
+                    sort
                 </Button>
             </div>
         </div>

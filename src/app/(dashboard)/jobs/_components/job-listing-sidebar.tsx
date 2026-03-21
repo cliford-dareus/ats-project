@@ -1,335 +1,366 @@
 "use client";
 
-import React, { useCallback, useTransition, useState } from "react";
+import React, { useCallback, useTransition, useState, useEffect } from "react";
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import { Check, ChevronsUpDown } from "lucide-react";
 import {
     MapPin,
-    Plus,
-    BriefcaseBusiness,
     Building2,
-    DollarSign,
-    Calendar,
-    Search,
     Clock,
-    Users,
-    Target,
-    TrendingUp,
     CheckCircle,
     XCircle,
     Archive,
-    Eye
+    Eye,
+    Filter,
+    Zap,
+    RotateCcw,
+    ChevronRight,
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { cn, createNewSearchParam } from "@/lib/utils";
+import { AnimatePresence, motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
-import { createNewSearchParam } from "@/lib/utils";
+import { useDebounce } from "@/hooks/use-debounce"; // ← add this hook (or implement below)
+import { CITIES, DEPARTMENTS } from "@/lib/constant";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
+interface FilterOption {
+    value: string;
+    label: string;
+    icon?: any;
+    color?: string;
+    count?: number;
+};
+
+interface FilterGroupProps {
+    // title: string;
+    // icon: any;
+    items: (string | FilterOption)[];
+    selectedValues: string[];
+    onToggle: (value: string) => void;
+};
 
 const JobListingSidebar = () => {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const [, startTransition] = useTransition();
-    const [searchTerm, setSearchTerm] = useState("");
 
-    const locationParam = searchParams.get("location");
-    const departmentParam = searchParams.get("department");
-    const statusParam = searchParams.get("status");
-    const salaryParam = searchParams.get("salary");
+    // Location search input
+    const [open, setOpen] = useState(false);
+    const [locationInput, setLocationInput] = useState(
+        searchParams.get("location") || ""
+    );
+    const debouncedLocation = useDebounce(locationInput.trim(), 600);
 
-    // Create new search params
+    // Create query string helper
     const createQueryString = useCallback(
-        (params: Record<string, string[] | number | null>) => {
+        (params: Record<string, string[] | string | null>) => {
             return createNewSearchParam(params, searchParams);
         },
-        [searchParams],
+        [searchParams]
     );
 
-    // Parse current filters
-    const locations = locationParam ? locationParam.split(",") : [];
-    const departments = departmentParam ? departmentParam.split(",") : [];
-    const statuses = statusParam ? statusParam.split(",") : [];
-    const salaryRanges = salaryParam ? salaryParam.split(",") : [];
+    // Get current selected values for multi-select filters
+    const getSelected = useCallback(
+        (key: string) => searchParams.get(key)?.split(",").filter(Boolean) || [],
+        [searchParams]
+    );
 
-    // Toggle filter value
-    const toggleFilter = (currentValues: string[], value: string, updateFn: (values: string[] | null) => void) => {
-        const newValues = currentValues.includes(value)
-            ? currentValues.filter(v => v !== value)
-            : [...currentValues, value];
-        updateFn(newValues.length > 0 ? newValues : null);
-    };
+    // Toggle multi-select filter (status, type, etc.)
+    const updateMultiFilter = useCallback(
+        (key: string, value: string) => {
+            startTransition(() => {
+                const current = getSelected(key);
+                const next = current.includes(value)
+                    ? current.filter((v) => v !== value)
+                    : [...current, value];
 
-    // Update functions
-    const updateLocations = (newLocations: string[] | null) => {
-        startTransition(() => {
-            const newQueryString = createQueryString({
-                location: newLocations?.length ? newLocations : null,
+                const newQuery = createQueryString({
+                    [key]: next.length ? next.join(",") : null,
+                });
+
+                router.push(`${pathname}?${newQuery}`, { scroll: false });
             });
-            router.push(`${pathname}?${newQueryString}`, { scroll: false });
-        });
-    };
+        },
+        [getSelected, createQueryString, router, pathname]
+    );
 
-    const updateDepartments = (newDepartments: string[] | null) => {
-        startTransition(() => {
-            const newQueryString = createQueryString({
-                department: newDepartments?.length ? newDepartments : null,
+    // Handle location (single value, not array)
+    useEffect(() => {
+        if (searchParams.get("location") ?? "" !== debouncedLocation) {
+            startTransition(() => {
+                const newQuery = createQueryString({
+                    location: debouncedLocation || null,
+                });
+                router.push(`${pathname}?${newQuery}`, { scroll: false });
             });
-            router.push(`${pathname}?${newQueryString}`, { scroll: false });
-        });
-    };
+        }
+    }, [debouncedLocation, searchParams, createQueryString, router, pathname]);
 
-    const updateStatuses = (newStatuses: string[] | null) => {
+    const clearAll = useCallback(() => {
         startTransition(() => {
-            const newQueryString = createQueryString({
-                status: newStatuses?.length ? newStatuses : null,
-            });
-            router.push(`${pathname}?${newQueryString}`, { scroll: false });
+            router.push(pathname, { scroll: false });
+            setLocationInput(""); // also clear input
         });
-    };
+    }, [router, pathname]);
 
-    const updateSalaryRanges = (newSalaryRanges: string[] | null) => {
-        startTransition(() => {
-            const newQueryString = createQueryString({
-                salary: newSalaryRanges?.length ? newSalaryRanges : null,
-            });
-            router.push(`${pathname}?${newQueryString}`, { scroll: false });
-        });
-    };
+    const hasFilters = Array.from(searchParams.keys()).length > 0;
+    console.log("hasFilters", open);
 
-    // Data for filters
-    const jobStatuses = [
-        { value: "OPEN", label: "Open", icon: CheckCircle, color: "bg-green-500", count: 12 },
-        { value: "PENDING", label: "Pending", icon: Clock, color: "bg-yellow-500", count: 5 },
-        { value: "DRAFT", label: "Draft", icon: Eye, color: "bg-blue-500", count: 3 },
-        { value: "CLOSED", label: "Closed", icon: XCircle, color: "bg-red-500", count: 8 },
-        { value: "ARCHIVED", label: "Archived", icon: Archive, color: "bg-gray-500", count: 2 }
-    ];
-
-    const commonLocations = [
-        "New York", "San Francisco", "Los Angeles", "Chicago", "Austin",
-        "Seattle", "Boston", "Denver", "Miami", "Remote"
-    ];
-
-    const departmentOptions = [
-        "Engineering", "Product", "Design", "Marketing", "Sales",
-        "Operations", "HR", "Finance", "Customer Success", "IT"
-    ];
-
-    const salaryRangeOptions = [
-        "0-50k", "50k-75k", "75k-100k", "100k-125k", "125k-150k", "150k+"
-    ];
-
-    const quickActions = [
-        { id: "create-job", name: "Create Job", icon: Plus, color: "bg-blue-500" },
-        { id: "bulk-actions", name: "Bulk Actions", icon: Target, color: "bg-purple-500" },
-        { id: "analytics", name: "Job Analytics", icon: TrendingUp, color: "bg-green-500" },
-        { id: "templates", name: "Templates", icon: BriefcaseBusiness, color: "bg-orange-500" }
+    const config = [
+        {
+            id: "status",
+            title: "Status",
+            icon: Zap,
+            items: [
+                { value: "OPEN", label: "Open", icon: CheckCircle, color: "bg-green-500", count: 12 },
+                { value: "PENDING", label: "Pending", icon: Clock, color: "bg-yellow-500", count: 5 },
+                { value: "DRAFT", label: "Draft", icon: Eye, color: "bg-blue-500", count: 3 },
+                { value: "CLOSED", label: "Closed", icon: XCircle, color: "bg-red-500", count: 8 },
+                { value: "ARCHIVED", label: "Archived", icon: Archive, color: "bg-gray-500", count: 2 },
+            ],
+        },
+        {
+            id: "type",
+            title: "Type",
+            icon: Clock,
+            items: [
+                { value: "FULL_TIME", label: "Full Time", icon: CheckCircle, color: "bg-green-500" },
+                { value: "PART_TIME", label: "Part Time", icon: CheckCircle, color: "bg-green-500" },
+                { value: "REMOTE", label: "Remote", icon: CheckCircle, color: "bg-green-500" },
+                { value: "INTERNSHIP", label: "Internship", icon: CheckCircle, color: "bg-green-500" },
+                { value: "CONTRACT", label: "Contract", icon: CheckCircle, color: "bg-green-500" },
+            ],
+        },
+        {
+            id: "department",
+            title: "Department",
+            icon: Building2,
+            items: DEPARTMENTS,
+        }
     ];
 
     return (
-        <div className="p-4 flex flex-col h-full space-y-6 overflow-y-auto  no-scrollbar">
-            {/* Quick Actions */}
-            {/*<div className="space-y-3">*/}
-            {/*    <div className="flex items-center gap-2">*/}
-            {/*        <BriefcaseBusiness size={20} />*/}
-            {/*        <span className="font-medium text-base">Quick Actions</span>*/}
-            {/*    </div>*/}
-            {/*    <div className="grid grid-cols-2 gap-2">*/}
-            {/*        {quickActions.map((action) => {*/}
-            {/*            const Icon = action.icon;*/}
-            {/*            return (*/}
-            {/*                <Button*/}
-            {/*                    key={action.id}*/}
-            {/*                    variant="outline"*/}
-            {/*                    size="sm"*/}
-            {/*                    className="flex flex-col items-center gap-1 h-auto py-3"*/}
-            {/*                >*/}
-            {/*                    <div className={`p-1.5 rounded ${action.color} text-white`}>*/}
-            {/*                        <Icon size={14} />*/}
-            {/*                    </div>*/}
-            {/*                    <span className="text-xs text-center">{action.name}</span>*/}
-            {/*                </Button>*/}
-            {/*            );*/}
-            {/*        })}*/}
-            {/*    </div>*/}
-            {/*</div>*/}
+        <aside className="flex flex-col bg-white flex-shrink-0 h-[calc(100vh-140px)]">
+            <div className="flex-1 overflow-y-auto no-scrollbar px-6 py-4 space-y-6">
+                <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                        <Filter size={12} className="text-slate-900" />
+                        <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Filters</h2>
+                    </div>
 
-            {/*<Separator />*/}
-
-            {/* Status Filter */}
-            <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                    <Clock size={20} />
-                    <span className="font-medium text-base">Status</span>
-                </div>
-                <div className="space-y-2">
-                    {jobStatuses.map((status) => {
-                        const isSelected = statuses.includes(status.value);
-                        const Icon = status.icon;
-                        return (
-                            <div
-                                key={status.value}
-                                className={`flex items-center justify-between px-3 py-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-primary/10 text-primary" : "hover:bg-muted"
-                                    }`}
-                                onClick={() => toggleFilter(statuses, status.value, updateStatuses)}
+                    <AnimatePresence>
+                        {hasFilters ? (
+                            <motion.button
+                                initial={{ opacity: 0, x: 10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 10 }}
+                                onClick={clearAll}
+                                className="text-[10px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 uppercase tracking-tighter"
                             >
+                                <RotateCcw size={10} />
+                                Reset
+                            </motion.button>
+                        ) : (<button className="text-[10px] font-bold text-white flex items-center gap-1 uppercase tracking-tighter"><RotateCcw size={10} />.</button>)}
+                    </AnimatePresence>
+                </div>
+
+                <Accordion type="single">
+                    {config.map((group) => (
+                        <AccordionItem key={group.id} value={group.id}>
+                            <AccordionTrigger className="px-1 py-2">
                                 <div className="flex items-center gap-2">
-                                    <span className={`w-2 h-2 rounded-full ${status.color}`}></span>
-                                    <Icon size={16} />
-                                    <span className="text-sm">{status.label}</span>
+                                    <group.icon size={14} className="text-slate-400" />
+                                    <span className="font-bold text-[10px] text-slate-400 uppercase tracking-[0.15em]">
+                                        {group.title}
+                                    </span>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <Badge variant="secondary" className="text-xs">{status.count}</Badge>
-                                    {isSelected && <Badge variant="secondary">✓</Badge>}
-                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="pb-1">
+                                <FilterGroup
+                                    key={group.id}
+                                    // title={group.title}
+                                    // icon={group.icon}
+                                    items={group.items}
+                                    selectedValues={getSelected(group.id)}
+                                    onToggle={(val) => updateMultiFilter(group.id, val)}
+                                />
+                            </AccordionContent>
+                        </AccordionItem>
+                    ))}
+
+                    <AccordionItem value="location">
+                        <AccordionTrigger className="px-1 py-2 no-underline hover:no-underline">
+                            <div className="flex items-center gap-2">
+                                <MapPin size={14} className="text-slate-400" />
+                                <span className="font-bold text-[10px] text-slate-400 uppercase tracking-[0.15em]">
+                                    Location
+                                </span>
                             </div>
-                        );
-                    })}
+                        </AccordionTrigger>
+
+                        <Popover open={open} onOpenChange={setOpen}>
+                            <PopoverTrigger asChild>
+                                <button
+                                    type="button"
+                                    role="combobox"
+                                    aria-expanded={open}
+                                    className={cn(
+                                        "flex w-full justify-between items-center px-3 py-1.5 text-sm border border-zinc-200 rounded-lg bg-white shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-all",
+                                        !locationInput && "text-muted-foreground"
+                                    )}
+                                >
+                                    {locationInput || "Select location..."}
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </button>
+                            </PopoverTrigger>
+
+                            <PopoverContent className="w-full p-0" align="start">
+                                <Command shouldFilter={true}>
+                                    <CommandInput
+                                        placeholder="Type city or 'Remote'..."
+                                        value={locationInput}
+                                        onValueChange={setLocationInput}
+                                        className="h-9"
+                                    />
+                                    <CommandList>
+                                        <CommandEmpty>No location found.</CommandEmpty>
+                                        <CommandGroup>
+                                            {CITIES.map((city) => (
+                                                <CommandItem
+                                                    key={city}
+                                                    value={city}
+                                                    onSelect={(currentValue) => {
+                                                        const newValue = currentValue === locationInput ? "" : currentValue;
+                                                        setLocationInput(newValue);
+                                                        setOpen(false);
+
+                                                        // Apply filter immediately (or debounce if preferred)
+                                                        startTransition(() => {
+                                                            const newQuery = createQueryString({
+                                                                location: newValue || null,
+                                                            });
+                                                            router.push(`${pathname}?${newQuery}`, { scroll: false });
+                                                        });
+                                                    }}
+                                                >
+                                                    <Check
+                                                        className={cn(
+                                                            "mr-2 h-4 w-4",
+                                                            locationInput === city ? "opacity-100" : "opacity-0"
+                                                        )}
+                                                    />
+                                                    {city}
+                                                </CommandItem>
+                                            ))}
+                                        </CommandGroup>
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
+                    </AccordionItem>
+                </Accordion>
+
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-slate-100 bg-slate-50/30">
+                <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Active Jobs</p>
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-xl font-bold text-slate-900">42</span>
+                            <span className="text-[10px] font-bold text-emerald-500">+3</span>
+                        </div>
+                    </div>
+                    <div className="space-y-1">
+                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Candidates</p>
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-xl font-bold text-slate-900">1.2k</span>
+                            <span className="text-[10px] font-bold text-blue-500">+12</span>
+                        </div>
+                    </div>
                 </div>
             </div>
-
-            <Separator />
-
-            {/* Location Filter */}
-            <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                    <MapPin size={20} />
-                    <span className="font-medium text-base">Location</span>
-                </div>
-                <div className="space-y-2 max-h-48 overflow-y-auto no-scrollbar">
-                    {commonLocations.map((location) => {
-                        const isSelected = locations.includes(location);
-                        return (
-                            <div
-                                key={location}
-                                className={`flex items-center justify-between px-3 py-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-primary/10 text-primary" : "hover:bg-muted"
-                                    }`}
-                                onClick={() => toggleFilter(locations, location, updateLocations)}
-                            >
-                                <span className="text-sm">{location}</span>
-                                {isSelected && <Badge variant="secondary">✓</Badge>}
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-
-            <Separator />
-
-            {/* Department Filter */}
-            <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                    <Building2 size={20} />
-                    <span className="font-medium text-base">Department</span>
-                </div>
-                <div className="space-y-2 max-h-48 overflow-y-auto no-scrollbar">
-                    {departmentOptions.map((department) => {
-                        const isSelected = departments.includes(department);
-                        return (
-                            <div
-                                key={department}
-                                className={`flex items-center justify-between px-3 py-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-primary/10 text-primary" : "hover:bg-muted"
-                                    }`}
-                                onClick={() => toggleFilter(departments, department, updateDepartments)}
-                            >
-                                <span className="text-sm">{department}</span>
-                                {isSelected && <Badge variant="secondary">✓</Badge>}
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-
-            <Separator />
-
-            {/* Salary Range Filter */}
-            <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                    <DollarSign size={20} />
-                    <span className="font-medium text-base">Salary Range</span>
-                </div>
-                <div className="space-y-2">
-                    {salaryRangeOptions.map((range) => {
-                        const isSelected = salaryRanges.includes(range);
-                        return (
-                            <div
-                                key={range}
-                                className={`flex items-center justify-between px-3 py-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-primary/10 text-primary" : "hover:bg-muted"
-                                    }`}
-                                onClick={() => toggleFilter(salaryRanges, range, updateSalaryRanges)}
-                            >
-                                <span className="text-sm">{range}</span>
-                                {isSelected && <Badge variant="secondary">✓</Badge>}
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-
-            {/* <Separator /> */}
-
-            {/* Quick Stats */}
-            {/* <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <TrendingUp size={20} />
-          <span className="font-medium text-base">Quick Stats</span>
-        </div>
-        <div className="space-y-2">
-          <div className="p-3 rounded border bg-muted/50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Users size={16} className="text-blue-600" />
-                <span className="text-sm">Total Applications</span>
-              </div>
-              <Badge variant="secondary">247</Badge>
-            </div>
-          </div>
-          <div className="p-3 rounded border bg-muted/50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Calendar size={16} className="text-green-600" />
-                <span className="text-sm">This Week</span>
-              </div>
-              <Badge variant="secondary">18</Badge>
-            </div>
-          </div>
-          <div className="p-3 rounded border bg-muted/50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Target size={16} className="text-purple-600" />
-                <span className="text-sm">Avg. Time to Fill</span>
-              </div>
-              <Badge variant="secondary">12d</Badge>
-            </div>
-          </div>
-        </div>
-      </div> */}
-
-            {/* Clear Filters */}
-            <div className="mt-auto">
-                <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => {
-                        startTransition(() => {
-                            router.push(
-                                `${pathname}?${createQueryString({
-                                    location: null,
-                                    department: null,
-                                    status: null,
-                                    salary: null,
-                                })}`,
-                                { scroll: false },
-                            );
-                        });
-                        setSearchTerm("");
-                    }}
-                >
-                    Clear All Filters
-                </Button>
-            </div>
-        </div>
+        </aside>
     );
+};
+
+const FilterGroup: React.FC<FilterGroupProps> = ({
+    // title,
+    // icon: Icon,
+    items,
+    selectedValues,
+    onToggle
+}) => {
+    return (
+        <div className="">
+            {/* <div className="flex items-center gap-2 px-1">
+                <Icon size={14} className="text-slate-400" />
+                <span className="font-bold text-[10px] text-slate-400 uppercase tracking-[0.15em]">{title}</span>
+            </div> */}
+
+            <div className="space-y-0.5">
+                <AnimatePresence mode="wait" initial={false}>
+                    {items.map((item) => {
+                        const value = typeof item === 'string' ? item : item.value;
+                        const label = typeof item === 'string' ? item : item.label;
+                        const isSelected = selectedValues.includes(value);
+                        const StatusIcon = typeof item === 'object' ? item.icon : null;
+
+                        return (
+                            <motion.button
+                                key={value}
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                onClick={() => onToggle(value)}
+                                className={`w-full flex items-center justify-between px-2 py-1 rounded-xl text-[13px] transition-all duration-200 group ${isSelected
+                                    ? "bg-black text-white shadow-md shadow-blue-200"
+                                    : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-900"
+                                    }`}
+                            >
+                                <div className="flex items-center gap-2.5">
+                                    {typeof item === 'object' && item.color && !isSelected && (
+                                        <span className={`w-1 h-1 rounded-full ${item.color}`} />
+                                    )}
+                                    {StatusIcon && <StatusIcon size={12} className={isSelected ? "text-white" : "text-slate-400"} />}
+                                    <span className="truncate max-w-[130px]">{label}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    {typeof item === 'object' && item.count !== undefined && (
+                                        <span className={`text-[10px] font-bold px-1 py-0.5 rounded-md ${isSelected ? "bg-blue-500 text-white" : "bg-slate-100 text-slate-500"
+                                            }`}>
+                                            {item.count}
+                                        </span>
+                                    )}
+                                    {!isSelected && (
+                                        <ChevronRight
+                                            size={12}
+                                            className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-slate-300"
+                                        />
+                                    )}
+                                </div>
+                            </motion.button>
+                        );
+                    })}
+                </AnimatePresence>
+            </div>
+        </div>
+    )
 };
 
 export default JobListingSidebar;

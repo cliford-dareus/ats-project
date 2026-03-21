@@ -2,13 +2,101 @@ import {z} from "zod";
 
 export const JOB_STAGES = ['New Candidate', 'Screening', 'Phone Interview', 'Interview', 'Offer', 'Applied' , 'Drafted'] as const;
 export const FILE_TYPES = ['RESUME', 'COVER_LETTER', 'OFFER_LETTER', "OTHER"] as const;
-export const CANDIDATE_TYPE = ['Active', 'Rejected', 'Hired'] as const;
+export const CANDIDATE_STATUS = ['Active', 'Rejected', 'Hired'] as const;
 export const JOB_STATUS = ["OPEN", "CLOSED", "DRAFT", "ARCHIVED", "PENDING"] as const;
 
 export type JOB_ENUM = 'New Candidate' | 'Screening' | 'Phone Interview' | 'Interview' | 'Offer' | 'Applied' | 'Drafted';
 export type CANDIDATE_ENUM = 'Active' | 'Rejected' | 'Hired';
 
-export const formSchema = z.object({
+export const applicationFormSchema = z.object({
+    candidate_info: z.object({
+        first_name: z.string(),
+        last_name: z.string(),
+        email: z.string(),
+        phone: z.string().optional(),
+        location: z.string().optional(),
+    }).nullish(),
+    file: z.object({
+        file_: z.instanceof(File),
+        file_type: z.enum(FILE_TYPES).default("RESUME")
+    }).nullish(),
+    candidate: z.string().nullish(),
+    job: z.number(),
+});
+
+export const newCandidateFormSchema = z.object({
+    name: z.string(),
+    email: z.string().email({message: "Please enter a valid email address"}),
+    phone: z.string(),
+    location: z.string(),
+    resume: z.string().optional(),
+});
+
+export const departmentSchema = z.object({
+    departments: z.array(z.string()),
+    orgId: z.string()
+});
+
+// FILTER SCHEMA
+export const filterJobSchema = z.object({
+    location: z.string().or(z.array(z.string())).optional(),
+    keywords: z.array(z.string()).optional(),
+    department: z.array(z.string()).optional(),
+    salary: z.array(z.string()).optional(),
+    organization: z.string(),
+    status: z.string().or(z.array(z.string())).optional(),
+    limit: z.number().optional(),
+    offset: z.number().optional(),
+});
+
+export const filterApplicationsSchema = z.object({
+    keywords: z.array(z.string()).optional(),
+    stages: z.number().optional(),
+    limit: z.number().optional(),
+    offset: z.number().optional(),
+    organization: z.string(),
+});
+
+export const filterCandidateSchema = z.object({
+    name: z.string().optional(),
+    limit: z.number(),
+    offset: z.number(),
+});
+
+// TRIGGER SCHEMA
+export const locationTriggerSchema = z.object({
+    location: z.string().min(1, 'Location is required'),
+    stage: z.enum(JOB_STAGES, { message: 'Please select a valid stage' }),
+    delay: z.number().min(1, 'Delay must be at least 1'),
+    delayFormat: z.enum(['minutes', 'hours', 'days'], { message: 'Select a delay unit' }),
+});
+
+export const experienceTriggerSchema = z.object({
+    experience: z.number(),
+    stage: z.enum(JOB_STAGES),
+    delay: z.number().min(1, 'Delay must be at least 1'),
+    delayFormat: z.enum(['minutes', 'hours', 'days'], { message: 'Select a delay unit' }),
+});
+
+export const SmartEmailTriggerSchema = z.object({
+    email: z.string(),
+    template: z.string(),
+    delay: z.number(),
+    delayFormat: z.enum(['minutes', 'hours', 'days'], { message: 'Select a delay unit' })
+});
+
+// JOB LISTING SCHEMA
+export const updateJobSchema = z.object({
+    job_name: z.string(),
+    job_description: z.string(),
+    job_location: z.string(),
+    salary_up_to: z.string(),
+    department: z.string(),
+    type: z.string(),
+    status: z.enum(JOB_STATUS)
+});
+
+export const jobFormSchema = z.object({
     jobInfo: z.object({
         job_name: z.string(),
         job_description: z.string(),
@@ -37,73 +125,19 @@ export const formSchema = z.object({
     userId: z.string().nullish(),
 });
 
-export const techSchema = z.object({
+export const jobTechSchema = z.object({
     technology: z.string(),
     year_of_experience: z.string(),
 });
 
-export const stageSchema = z.object({
+export const jobStageSchema = z.object({
     stage_name: z.enum(JOB_STAGES),
     stage_assign_to: z.string(),
     color: z.string(),
     need_schedule: z.boolean().optional(),
 });
 
-export const candidateForm = z.object({
-    candidate_info: z.object({
-        first_name: z.string().optional(),
-        last_name: z.string().optional(),
-        email: z.string().optional(),
-        phone: z.string().optional(),
-        location: z.string().optional(),
-    }),
-    // candidate_file: z.object({
-    //     resume: z.object({
-    //         // type: z.enum(FILE_TYPES),
-    //         url: z.string(),
-    //     }),
-    //     cover_letter: z.object({
-    //         // type: z.enum(FILE_TYPES),
-    //         url: z.string(),
-    //     })
-    // }),
-    candidate: z.string().nullish(),
-    job: z.string().nullish(),
-});
-
-export const newCandidateForm = z.object({
-    name: z.string(),
-    email: z.string().email({message: "Please enter a valid email address"}),
-    phone: z.string(),
-    location: z.string(),
-    resume: z.string().optional(),
-});
-
-export const filterJobType = z.object({
-    location: z.string().or(z.array(z.string())).optional(),
-    keywords: z.array(z.string()).optional(),
-    department: z.array(z.string()).optional(),
-    salary: z.array(z.string()).optional(),
-    organization: z.string(),
-    status: z.string().or(z.array(z.string())).optional(),
-    limit: z.number().optional(),
-    offset: z.number().optional(),
-});
-
-export const filterApplicationsType = z.object({
-    keywords: z.array(z.string()).optional(),
-    stages: z.number().optional(),
-    limit: z.number().optional(),
-    offset: z.number().optional(),
-    organization: z.string(),
-});
-
-export const filterCandidateType = z.object({
-    name: z.string().optional(),
-    limit: z.number(),
-    offset: z.number(),
-});
-
+// NEW JOB STEPS SCHEMA
 export const stepOneSchema = z.object({
     job_name: z.string(),
     job_description: z.string(),
@@ -127,16 +161,7 @@ export const stepThreeSchema = z.array(
     })
 );
 
-export const updateJobSchema = z.object({
-    job_name: z.string(),
-    job_description: z.string(),
-    job_location: z.string(),
-    salary_up_to: z.string(),
-    department: z.string(),
-    type: z.string(),
-    status: z.enum(JOB_STATUS)
-});
-
+// ORGANIZATION SCHEMA
 export const organizationSchema = z.object({
     clerk_id: z.string(),
     name: z.string().min(2).max(100),
@@ -148,31 +173,4 @@ export const inviteMemberSchema = z.object({
   emailAddress: z.string(),
   role: z.string(),
   redirectUrl: z.string()
-});
-
-export const departmentSchema = z.object({
-    departments: z.array(z.string()),
-    orgId: z.string()
-});
-
-// TRIGGER SCHEMA
-export const locationTriggerSchema = z.object({
-    location: z.string().min(1, 'Location is required'),
-    stage: z.enum(JOB_STAGES, { message: 'Please select a valid stage' }),
-    delay: z.number().min(1, 'Delay must be at least 1'),
-    delayFormat: z.enum(['minutes', 'hours', 'days'], { message: 'Select a delay unit' }),
-});
-
-export const experienceTriggerSchema = z.object({
-    experience: z.number(),
-    stage: z.enum(JOB_STAGES),
-    delay: z.number().min(1, 'Delay must be at least 1'),
-    delayFormat: z.enum(['minutes', 'hours', 'days'], { message: 'Select a delay unit' }),
-});
-
-export const SmartEmailTriggerSchema = z.object({
-    email: z.string(),
-    template: z.string(),
-    delay: z.number(),
-    delayFormat: z.enum(['minutes', 'hours', 'days'], { message: 'Select a delay unit' })
 });

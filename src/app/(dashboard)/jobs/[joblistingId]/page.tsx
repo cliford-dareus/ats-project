@@ -11,7 +11,7 @@ import {
 } from "@/server/actions/job-listings-actions";
 import {
     ApplicationType,
-    CandidatesResponseType, JobListing,
+    CandidatesResponseType, JobListingType,
     JobResponseType,
     StageResponseType,
 } from "@/types";
@@ -102,7 +102,7 @@ const Page = async ({params}: Props) => {
                             </DialogTrigger>
                             <DialogContent>
                                 <CreateApplicationModal
-                                    job={jobs as JobResponseType[]}
+                                    job={singleJob as JobListingType}
                                     candidates={candidates as CandidatesResponseType[]}
                                 />
                             </DialogContent>
@@ -115,7 +115,7 @@ const Page = async ({params}: Props) => {
                     stages={stages as StageResponseType[]}
                     joblistingId={joblistingId}
                     applications={applications as ApplicationType[]}
-                    singleJob={singleJob as JobListing}
+                    singleJob={singleJob as JobListingType}
                 />
             </div>
         </KanbanProvider>

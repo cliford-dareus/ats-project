@@ -4,14 +4,14 @@ import {z} from "zod";
 import {create_job_listing, get_all_job_listings, get_job_by_id, get_job_listings_stages} from "@/server/queries";
 import {auth} from "@clerk/nextjs/server";
 import {redirect} from "next/navigation";
-import {formSchema, filterJobType} from "@/zod";
+import {jobFormSchema, filterJobSchema} from "@/zod";
 import {canCreateJob} from "@/server/permissions";
 
 const jobIdSchema = z.number();
 
-export const create_job_action = async (unsafeData: z.infer<typeof formSchema>) => {
+export const create_job_action = async (unsafeData: z.infer<typeof jobFormSchema>) => {
     const {userId} = await auth();
-    const {success, data} = await formSchema.spa(unsafeData);
+    const {success, data} = await jobFormSchema.spa(unsafeData);
     const canCreate = await canCreateJob(userId);
 
     if (!success || !userId || !canCreate) {
@@ -22,12 +22,11 @@ export const create_job_action = async (unsafeData: z.infer<typeof formSchema>) 
     redirect(`/jobs/${id}`);
 };
 
-export const get_all_job_listings_action = async (unsafeData: z.infer<typeof filterJobType>) => {
+export const get_all_job_listings_action = async (unsafeData: z.infer<typeof filterJobSchema>) => {
     const {userId} = await auth();
-    const {success, data} = await filterJobType.spa(unsafeData);
-    const canCreate = await canCreateJob(userId);
+    const {success, data} = await filterJobSchema.spa(unsafeData);
 
-    if (!success || !userId || !canCreate) {
+    if (!success || !userId) {
         return {error: true, message: "There was an error creating your product"}
     }
 

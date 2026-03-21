@@ -11,6 +11,7 @@ import { get_job_by_id_action } from '@/server/actions/job-listings-actions';
 import ApplicationDetails from './_components/application-details';
 import AppicationHeader from './_components/application-header';
 import ApplicationInterviewCard from './_components/application-interview-card';
+import JobQuickViewCard from '@/components/job-quick-view-card';
 
 type Props = {
     params: {
@@ -26,7 +27,7 @@ const Page = async ({ params }: Props) => {
 
     const stages = await get_job_listings_stages(applicationResult?.job_id);
     const internalNotes = await get_application_notes({
-        id: applicationResult.id,
+        id: Number(applicationId),
         limit: 10,
         offset: 0
     });
@@ -43,7 +44,7 @@ const Page = async ({ params }: Props) => {
                     <div className="">
                         {/* Header */}
                         <AppicationHeader applicationResult={applicationResult} stages={stages} />
-                        
+
                         <div className="grid grid-cols-3 gap-4 mt-2">
                             {/* Left Column: Application Summary And Candidate experience */}
                             <ApplicationSummary
@@ -61,28 +62,12 @@ const Page = async ({ params }: Props) => {
                                 <ApplicationInterviewCard applicationResult={applicationResult} />
 
                                 {/* Job Details Quick View */}
-                                <div className="bg-zinc-900 rounded-2xl p-6 text-white space-y-4">
-                                    <div className="flex items-center gap-2">
-                                        <Briefcase className="w-4 h-4 text-brand-400" />
-                                        <h3 className="font-bold text-sm uppercase tracking-wider">Job
-                                            Overview</h3>
-                                    </div>
-                                    <div>
-                                        <p className="text-lg font-bold leading-tight">{applicationResult.job_apply}</p>
-                                        <p className="text-zinc-400 text-sm">{applicationResult.department}</p>
-                                    </div>
-                                    <div className="space-y-2 pt-2">
-                                        <div className="flex items-center justify-between text-xs">
-                                            <span className="text-zinc-500">Location</span>
-                                            <span
-                                                className="font-medium">{applicationResult.location}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-xs">
-                                            <span className="text-zinc-500">Type</span>
-                                            <span className="font-medium">Full-Time</span>
-                                        </div>
-                                    </div>
-                                </div>
+                                <JobQuickViewCard
+                                    name={applicationResult.job_apply}
+                                    department={applicationResult.department}
+                                    location={applicationResult.location}
+                                    type={applicationResult.type}
+                                />
 
                                 {/* Internal Notes Quick View */}
                                 <InternalNoteSection

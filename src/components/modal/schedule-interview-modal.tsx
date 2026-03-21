@@ -2,7 +2,7 @@
 
 import React, {useState} from 'react';
 import {useUser} from "@clerk/nextjs";
-import {createCalendarEvent, getCalendarEventTimes} from "@/server/google-calenda";
+import {createCalendarEvent} from "@/server/google-calenda";
 import {Button} from "@/components/ui/button";
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {AlertCircle, Clock, Command, Loader2, Send} from "lucide-react";
@@ -17,7 +17,7 @@ import {ApplicationType} from "@/types";
 
 type Props = {
     isOpen: boolean;
-    setIsOpen: React.Dispatch<React.setStateAction<boolean>>;
+    setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
     application: ApplicationType;
     jobDetails: {jobName: string, department: string}
 };

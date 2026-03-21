@@ -40,7 +40,7 @@ const JobPreview = ({data, jobs}: Props) => {
                         </BreadcrumbSeparator>
                         <BreadcrumbItem>
                             <span onClick={() => {
-                                router.push(`/jobs/${data.id}`)
+                                router.push(`/jobs/${data?.id}`)
                             }} className="flex items-center justify-center cursor-pointer">
                                 <Expand size={16}/>
                             </span>
@@ -87,20 +87,20 @@ const JobPreview = ({data, jobs}: Props) => {
                         <span
                             className="px-2.5 py-0.5 rounded-full text-xs font-bold border uppercase tracking-wider bg-green-300"
                         >
-                                {data.status}
+                                {data?.status}
                         </span>
                         <div>
-                            <p className="text-2xl font-bold  leading-tight uppercase">{data.name}</p>
-                            <p className="text-zinc-400 text-sm">{data.department}</p>
+                            <p className="text-2xl font-bold  leading-tight uppercase">{data?.name}</p>
+                            <p className="text-zinc-400 text-sm">{data?.department}</p>
                         </div>
                         <div className="space-y-2 pt-2">
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-zinc-500">Salary</span>
-                                <span className="font-medium">{data.salary}</span>
+                                <span className="font-medium">{data?.salary}</span>
                             </div>
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-zinc-500">Location</span>
-                                <span className="font-medium">{data.location}</span>
+                                <span className="font-medium">{data?.location}</span>
                             </div>
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-zinc-500">Type</span>
@@ -117,14 +117,14 @@ const JobPreview = ({data, jobs}: Props) => {
                                     <Users className="w-4 h-4"/>
                                     <span className="text-xs font-bold uppercase tracking-wider">Applicants</span>
                                 </div>
-                                <p className="text-xl font-bold text-zinc-900">{data.candidatesCount}</p>
+                                <p className="text-xl font-bold text-zinc-900">{data?.candidatesCount}</p>
                             </div>
                             <div className="bg-zinc-50 p-4 rounded-2xl border border-zinc-100">
                                 <div className="flex items-center gap-2 text-zinc-400 mb-1">
                                     <Calendar className="w-4 h-4"/>
                                     <span className="text-xs font-bold uppercase tracking-wider">Posted Date</span>
                                 </div>
-                                <p className="text-xl font-bold text-zinc-900">{new Date(data.created_at).toDateString()}</p>
+                                <p className="text-xl font-bold text-zinc-900">{new Date(data?.created_at).toDateString()}</p>
                             </div>
                         </div>
 
@@ -134,8 +134,8 @@ const JobPreview = ({data, jobs}: Props) => {
                             <div className="space-y-3">
                                 <p className="text-sm text-zinc-600 leading-relaxed">
                                     We are lo
-                                    oking for a talented {data.name} to join our growing team in {data.location}.
-                                    As a key member of the {data.department} department, you will be responsible for
+                                    oking for a talented {data?.name} to join our growing team in {data?.location}.
+                                    As a key member of the {data?.department} department, you will be responsible for
                                     driving
                                     innovation
                                     and delivering high-quality solutions.

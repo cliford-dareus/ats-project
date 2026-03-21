@@ -40,16 +40,9 @@ const Layout = async ({children}: Props) => {
         return redirect("/onboarding");
     }
 
-    const result = await get_all_candidates_action({limit: 0, offset: 0});
-    const candidate = Array.isArray(result) ? result[1] : [];
-    const stagesCount = await get_candidates_stage_count_action();
-
     return (
         <Provider orgId={orgId as string}>
-            <AppSidebar
-                candidate={candidate as CandidatesResponseType[]}
-                stagescount={stagesCount as StageCountType[]}
-            />
+            <AppSidebar />
             <SidebarInset>
                 <header className="sticky top-0 flex shrink-0 items-center gap-2 border-b bg-background p-4">
                     <SidebarTrigger className="-ml-1"/>

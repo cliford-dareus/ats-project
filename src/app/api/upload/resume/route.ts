@@ -77,3 +77,6 @@ export const fileToBase64 = async (file: File): Promise<string> => {
     const buffer = Buffer.from(arrayBuffer);
     return buffer.toString('base64');
 };
+
+const arrayBuffer = await response.Body!.arrayBuffer();
+    const base64 = Buffer.from(arrayBuffer).toString('base64');

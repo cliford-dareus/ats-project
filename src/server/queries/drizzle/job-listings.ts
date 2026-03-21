@@ -19,55 +19,19 @@ import {
     revalidateDbCache,
 } from "@/lib/cache";
 import { z } from "zod";
-import { filterJobType, formSchema } from "@/zod";
+import { filterJobSchema, jobFormSchema } from "@/zod";
+import { ApplicationType, CandidateType, JobListingType } from "@/types";
 
 type Technology = typeof technologies.$inferSelect;
 type Interview = typeof interviews.$inferSelect;
 type Attachment = typeof attachments.$inferSelect;
 // type Stage = typeof stages.$inferSelect;
 
-interface FilterInterface extends z.infer<typeof filterJobType> {
+interface FilterInterface extends z.infer<typeof filterJobSchema> {
     organization: string;
 };
 
-type Candidate = {
-    id: number;
-    name: string;
-    email: string;
-    phone: string;
-    cv_path: string;
-    status: string | null;
-    created_at: Date;
-    updated_at: Date;
-    interview: Interview[];
-    attachment: Attachment[];
-};
-
-type ApplicationType = {
-    id: number;
-    application_id: number;
-    job_id: number;
-    application_created_at: Date;
-    application_updated_at: Date;
-    stageName: string | null;
-    stage_order_id: number | null;
-    candidate: Candidate;
-};
-
-type JobListing = {
-    job_id: number;
-    job_name: string;
-    job_status: string | null;
-    job_department: string;
-    job_location: string;
-    job_created_at: Date;
-    job_updated_at: Date;
-    job_description: string;
-    job_technologies: Technology[];
-    applications: ApplicationType[];
-};
-
-export const create_job_listing = async (data: z.infer<typeof formSchema>,) => {
+export const create_job_listing = async (data: z.infer<typeof jobFormSchema>,) => {
     return await db.transaction(async (trx) => {
         const [inserted_job] = await trx
             .insert(job_listings)
@@ -79,6 +43,7 @@ export const create_job_listing = async (data: z.infer<typeof formSchema>,) => {
                 createdBy: data.userId!,
                 department: Number(data.jobInfo.department),
                 organization: data.jobInfo.organization,
+                subdomain: ""
             })
             .$returningId();
 
@@ -165,7 +130,7 @@ export const get_job_by_id = (jobId: number) => {
     return cacheFn(jobId);
 };
 
-export const get_job_by_id_db = async (jobId: number): Promise<JobListing[]> => {
+export const get_job_by_id_db = async (jobId: number): Promise<JobListingType[]> => {
     const rows = await db
         .select({
             jobListing: job_listings,
@@ -189,20 +154,21 @@ export const get_job_by_id_db = async (jobId: number): Promise<JobListing[]> => 
         .where(eq(job_listings.id, jobId));
 
     if (rows.length === 0) {
-        return []; // Or throw an error if preferred
+        return [];
     };
 
     const firstRow = rows[0];
-    const jobListing: JobListing = {
+    const jobListing: JobListingType = {
         job_id: firstRow.jobListing.id,
         job_name: firstRow.jobListing.name,
         job_status: firstRow.jobListing.status,
         job_department: firstRow.department?.name ?? '',
+        job_type: firstRow.jobListing.type,
         job_location: firstRow.jobListing.location,
         job_created_at: firstRow.jobListing.created_at,
         job_updated_at: firstRow.jobListing.updated_at,
         job_description: firstRow.jobListing.description,
-        job_technologies: [], // We'll populate this below
+        job_technologies: [],
         applications: [],
     };
 
@@ -221,12 +187,14 @@ export const get_job_by_id_db = async (jobId: number): Promise<JobListing[]> => 
             if (!application) {
                 application = {
                     id: row.application.id,
-                    application_id: row.application.id,
                     job_id: row.jobListing.id,
-                    application_created_at: row.application.created_at,
-                    application_updated_at: row.application.updated_at,
-                    stageName: row.stage?.stage_name ?? null,
+                    created_at: row.application.created_at,
+                    updated_at: row.application.updated_at,
+                    stage: row.stage?.stage_name ?? null,
                     stage_order_id: row.stage?.stage_order_id ?? null,
+                    position_in_stage: row.application.position_in_stage ?? null,
+                    current_stage_id: row.stage?.id ?? null,
+                    interview: [],
                     candidate: row.candidate
                         ? {
                             id: row.candidate.id,
@@ -237,10 +205,8 @@ export const get_job_by_id_db = async (jobId: number): Promise<JobListing[]> => 
                             status: row.candidate.status,
                             created_at: row.candidate.created_at,
                             updated_at: row.candidate.updated_at,
-                            interview: [],
-                            attachment: [],
                         }
-                        : {} as unknown as Candidate, // Candidate object or empty object
+                        : {} as unknown as CandidateType, // Candidate object or empty object
                 };
                 applicationMap.set(row.application.id, application);
                 jobListing.applications.push(application);
@@ -249,13 +215,6 @@ export const get_job_by_id_db = async (jobId: number): Promise<JobListing[]> => 
             if (row.interview?.id && application?.candidate.interview) {
                 if (!application.candidate.interview.some((int) => int.id === row.interview!.id)) {
                     application.candidate.interview.push(row.interview);
-                }
-            }
-
-            // Add unique attachment to candidate (many-to-one candidate to attachments)
-            if (row.attachment?.id && application?.candidate.attachment) {
-                if (!application.candidate.attachment.some((att) => att.id === row.attachment!.id)) {
-                    application.candidate.attachment.push(row.attachment);
                 }
             }
         };

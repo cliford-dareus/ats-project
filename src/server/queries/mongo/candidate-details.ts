@@ -1,3 +1,5 @@
+"use server";
+
 import { db } from "@/drizzle/db";
 import { candidates } from "@/drizzle/schema";
 import mongodb from "@/lib/mongodb";

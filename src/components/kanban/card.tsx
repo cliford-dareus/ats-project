@@ -21,11 +21,14 @@ type Props = {
 
 const Card = ({ data, handleDragStart, stage, jobDetails }: Props) => {
     const { tasks } = useKanbanContext();
-    const [activeTrigger, setActiveTrigger] = useState<TriggerTask[]>([]);
     const [isOpen, setIsOpen] = useState(false);
+    const [activeTrigger, setActiveTrigger] = useState<TriggerTask[]>([]);
 
     const hasActiveTrigger = activeTrigger.length > 0 &&
     activeTrigger.some(task => new Date(task.triggerTime).getTime() > Date.now());
+
+    const hasScheduledInterview = data.interview?.length > 0 &&
+    data.interview.some(interview => new Date(interview.interview_date).getTime() > Date.now());
 
     useEffect(() => {
         const filteredTasks = tasks.filter(task => task.application_id === data.id);
@@ -88,7 +91,7 @@ const Card = ({ data, handleDragStart, stage, jobDetails }: Props) => {
                             }`}>
                             {stage.stage_name}
                         </span>
-                        {stage.need_schedule && (
+                        {stage.need_schedule && !hasScheduledInterview && (
                             <button
                                 onClick={() => setIsOpen(true)}
                                 className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 rounded-md text-[9px] font-bold hover:bg-amber-100 transition-colors">

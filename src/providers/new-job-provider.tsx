@@ -8,10 +8,10 @@ import {
     useMemo,
     useState,
 } from 'react';
-import {formSchema, stageSchema, techSchema} from "@/zod";
+import {jobFormSchema, jobStageSchema, jobTechSchema} from "@/zod";
 import {z} from "zod";
 
-const defaultJobListing: z.infer<typeof formSchema> = {
+const defaultJobListing: z.infer<typeof jobFormSchema> = {
     jobInfo: {job_name: "", job_description: "", job_location: "", salary_up_to: "", department: "", organization: ""},
     jobTechnology: [],
     jobStages: [],
@@ -21,9 +21,9 @@ const defaultJobListing: z.infer<typeof formSchema> = {
 const LOCAL_STORAGE_KEY = 'multi-page-form-demo-newDealData';
 
 type newJobContextType = {
-    newJobData: z.infer<typeof formSchema>;
+    newJobData: z.infer<typeof jobFormSchema>;
     updateNewJobDetails: (newInfo: any, stage: string) => void;
-    updateStageOptions: (newStages: z.infer<typeof stageSchema>[]) => void;
+    updateStageOptions: (newStages: z.infer<typeof jobStageSchema>[]) => void;
     dataLoaded: boolean;
     removeJob: (remove: any, stage: string) => void;
     resetLocalStorage: () => void;
@@ -32,7 +32,7 @@ type newJobContextType = {
 export const NewJobContext = createContext<newJobContextType | null>(null);
 
 export const NewJobContextProvider = ({children}: { children: React.ReactNode; }) => {
-    const [newJobData, setNewJobData] = useState<z.infer<typeof formSchema>>(defaultJobListing);
+    const [newJobData, setNewJobData] = useState<z.infer<typeof jobFormSchema>>(defaultJobListing);
     const [dataLoaded, setDataLoaded] = useState(false);
 
     useEffect(() => {
@@ -55,21 +55,21 @@ export const NewJobContextProvider = ({children}: { children: React.ReactNode; }
             if (stage === "jobTechnology") {
                 setNewJobData({
                     ...newJobData,
-                    [stage]: [...newJobData[stage], newInfo as unknown as z.infer<typeof techSchema>]
+                    [stage]: [...newJobData[stage], newInfo as unknown as z.infer<typeof jobTechSchema>]
                 });
             }
 
             if (stage === "jobStages") {
                 setNewJobData({
                     ...newJobData,
-                    [stage]: [...newJobData[stage], newInfo as unknown as z.infer<typeof stageSchema>]
+                    [stage]: [...newJobData[stage], newInfo as unknown as z.infer<typeof jobStageSchema>]
                 });
             }
         },
         [newJobData]
     );
 
-    const updateStageOptions = (newStages: z.infer<typeof stageSchema>[]) => {
+    const updateStageOptions = (newStages: z.infer<typeof jobStageSchema>[]) => {
         setNewJobData({...newJobData, jobStages: newStages});
     };
 
@@ -89,7 +89,7 @@ export const NewJobContextProvider = ({children}: { children: React.ReactNode; }
     )
 
     const saveDataToLocalStorage = (
-        currentDealData: z.infer<typeof formSchema>
+        currentDealData: z.infer<typeof jobFormSchema>
     ) => {
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(currentDealData));
     };
@@ -97,7 +97,7 @@ export const NewJobContextProvider = ({children}: { children: React.ReactNode; }
     const readFromLocalStorage = () => {
         const loadedDataString = localStorage.getItem(LOCAL_STORAGE_KEY);
         if (!loadedDataString) return setNewJobData(defaultJobListing);
-        const validated = formSchema.safeParse(
+        const validated = jobFormSchema.safeParse(
             JSON.parse(loadedDataString)
         );
 

@@ -1,8 +1,4 @@
-import {candidates, job_listings} from "@/drizzle/schema";
 import {CANDIDATE_ENUM, JOB_ENUM} from "@/zod";
-
-export type JobListingType = typeof job_listings.$inferInsert
-export type CandidateType = typeof candidates.$inferInsert
 
 export type JobResponseType = {
     id: number;
@@ -32,45 +28,6 @@ export type CandidatesResponseType = {
     attachmentsCount: number;
 };
 
-export type InterviewType = {
-    id: number,
-    application_id: number,
-    candidate_id: number,
-    interview_date: Date,
-    interview_location: string,
-    locations: string;
-    type: "Video" | "Phone" | "Onsite";
-    link: string;
-};
-
-export interface ApplicationType {
-  id: number;
-  created_at: Date;
-  updated_at: Date;
-  job_id: number;
-  stage: "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | 'Applied' | "Drafted" | null | undefined;
-  current_stage_id: number | undefined;
-  position_in_stage: number;
-  candidate: Candidate;
-  interview: InterviewType[];
-};
-
-export type JobListingWithCandidatesType = {
-    job_id: number
-    job_name: string
-    job_location: string
-    job_status: 'OPEN'|'CLOSED'|'DRAFT'|'ARCHIVED'|'PENDING'
-    job_created_at: Date
-    job_updated_at: Date
-    job_createdBy: string
-    application_id: number | null
-    application_updated_at: Date
-    stageName: JOB_ENUM
-    stage_order_id: number | null
-    candidate_name: string | null
-    candidate_id: number | null
-};
-
 export type ApplicationResponseType = {
     id: number;
     candidate_id: number;
@@ -78,9 +35,10 @@ export type ApplicationResponseType = {
     candidate_email: string;
     candidate_phone: string;
     can_contact: boolean;
-    status: CANDIDATE_ENUM;
+    status: JOB_ENUM;
     job_apply: string;
     job_id: number;
+    type: string;
     location: string;
     department: string;
     current_stage: JOB_ENUM;
@@ -110,10 +68,46 @@ export type TriggerResponseType = {
     updated_at: Date;
 };
 
-export interface FormErrors {
-    [key: string]: string | undefined;
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+export type InterviewType = {
+    id: number,
+    application_id: number,
+    candidate_id: number,
+    interview_date: Date,
+    interview_location: string,
+    locations: string;
+    type: "Video" | "Phone" | "Onsite";
+    link: string;
 };
 
+export interface ApplicationType {
+  id: number;
+  created_at: Date;
+  updated_at: Date;
+  job_id: number;
+  stage: "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | 'Applied' | "Drafted" | null | undefined;
+  current_stage_id?: number | null;
+  stage_order_id?: number | null;
+  position_in_stage?: number;
+  candidate: CandidateType;
+  interview: InterviewType[];
+};
+
+export type JobListingWithCandidatesType = {
+    job_id: number
+    job_name: string
+    job_location: string
+    job_status: 'OPEN'|'CLOSED'|'DRAFT'|'ARCHIVED'|'PENDING'
+    job_created_at: Date
+    job_updated_at: Date
+    job_createdBy: string
+    application_id: number | null
+    application_updated_at: Date
+    stageName: JOB_ENUM
+    stage_order_id: number | null
+    candidate_name: string | null
+    candidate_id: number | null
+};
 
 export interface CandidateExperience {
     company: string;
@@ -123,7 +117,7 @@ export interface CandidateExperience {
     totalExperience: number;
 }
 
-export interface Candidate {
+export interface CandidateType {
     id: number;
     name: string;
     email: string;
@@ -134,8 +128,7 @@ export interface Candidate {
     status: CANDIDATE_ENUM | null;
     created_at: Date;
     updated_at: Date;
-    interview: any[];
-    attachment: any[];
+    interview?: any[];
     skills?: string[];
     experience?: CandidateExperience[];
     education?: string[];
@@ -144,36 +137,42 @@ export interface Candidate {
 export interface Application {
     application_id: number;
     job_id: number;
-    application_updated_at: Date;
+    updated_at: Date;
     stageName?: JOB_ENUM | null | undefined;
     stage_order_id?: number;
-    candidate: Candidate;
+    candidate: CandidateType;
 };
 
-export interface JobExperience {
+export interface JobExperienceType {
     id: number;
     name: string;
     years_experience: number | null;
 };
 
-export interface JobListing {
+export interface JobListingType {
     job_id: number;
     job_name: string;
-    job_status: string;
     job_created_at: Date;
     job_description: string;
     job_department: string;
-    job_technologies: JobExperience[];
-    applications: Application[];
+    job_status: "OPEN" | "CLOSED" | "DRAFT" | "ARCHIVED" | "PENDING" | null;
+    job_type: "Full Time" | "Part Time" | "Contract" | "Internship" | "Remote";
+    job_location: string;
+    job_technologies: JobExperienceType[];
+    applications: ApplicationType[];
 };
 
 export interface CandidateWithDetails {
-    candidate: Candidate;
-    application: Application[] | null;
+    candidate: CandidateType;
+    application: ApplicationType[] | null;
     stage: StageResponseType[] | null;
-    job_listing: JobListing[] | null;
+    job_listing: JobListingType[] | null;
     interview: InterviewType[] | null;
     scoreCard: any[] | null;
+};
+
+export interface FormErrors {
+    [key: string]: string | undefined;
 };
 
 export type UserType = {

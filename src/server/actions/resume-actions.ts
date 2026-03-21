@@ -14,6 +14,16 @@ import { GetObjectCommand } from '@aws-sdk/client-s3';
 
 const genAI = new GoogleGenAI({ apiKey: process.env.GOOGLE_GEMINI_API_KEY! });
 
+// export const fileToBase64 = async (file: File): Promise<string> => {
+//     const arrayBuffer = await file.arrayBuffer();
+//     const buffer = Buffer.from(arrayBuffer);
+//     return buffer.toString('base64');
+// };
+
+// const arrayBuffer = await response.Body!.arrayBuffer();
+// const base64 = Buffer.from(arrayBuffer).toString('base64');
+
+
 export const summarizeResume = async (resumeKey: string) => {
     try {
         const command = new GetObjectCommand({
@@ -22,23 +32,24 @@ export const summarizeResume = async (resumeKey: string) => {
         });
 
         const response = await r2Client.send(command);
-        const arrayBuffer = await response.Body?.transformToByteArray?.() ||
-            await response.Body?.arrayBuffer?.();
+        const arrayBuffer = await response.Body?.transformToByteArray?.() 
+            // await response.Body?.arrayBuffer?.();
 
         if (!arrayBuffer) throw new Error('Failed to download file');
 
         // 2. Convert to Buffer & extract text
         const buffer = Buffer.from(arrayBuffer);
+        const base64 = buffer.toString('base64');
 
-        const pdfData = await pdfParse(buffer);
-        const text = pdfData.text
-            .replace(/\s+/g, ' ')          // normalize spaces
-            .trim()
-            .slice(0, 25000);              // safety limit (~40-50k tokens max)
+        // const pdfData = await pdfParse(buffer);
+        // const text = pdfData.text
+        //     .replace(/\s+/g, ' ')          // normalize spaces
+        //     .trim()
+        //     .slice(0, 25000);              // safety limit (~40-50k tokens max)
 
-        if (text.length < 100) {
-            throw new Error('Could not extract meaningful text from PDF');
-        }
+        // if (text.length < 100) {
+        //     throw new Error('Could not extract meaningful text from PDF');
+        // }
 
         // 3. Create good prompt
         const summarize = await genAI.models.generateContent({
@@ -46,8 +57,8 @@ export const summarizeResume = async (resumeKey: string) => {
             contents: [
                 {
                     inlineData: {
-                        mimeType: Type.STRING,
-                        data: text
+                        mimeType: response.ContentType,
+                        data: base64
                     }
                 },
                 {
@@ -84,7 +95,6 @@ export const summarizeResume = async (resumeKey: string) => {
         });
 
         const data = JSON.parse(summarize.text || "{}");
-
         return { success: true, data };
     } catch (err: any) {
         // console.error(err);
@@ -129,6 +139,7 @@ export const create_application_summary = async (candidate_id: number) => {
     // Add the summary to the database
     try {
         // Save structured details
+        // Check if candidate already has details
         await create_candidate_details({
             candidate_id,
             resumeSummary: data.resumeSummary,

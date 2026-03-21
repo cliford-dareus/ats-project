@@ -21,7 +21,7 @@ import {
 import { subDays, subMonths, startOfMonth, endOfMonth } from "date-fns";
 
 export async function getDashboardMetrics() {
-    const { orgId } = await auth();
+    const { orgId , orgSlug } = await auth();
     if (!orgId) throw new Error("Unauthorized");
 
     const now = new Date();
@@ -118,7 +118,7 @@ export async function getDashboardMetrics() {
 };
 
 export async function getRecentActivity() {
-    const { orgId } = await auth();
+    const { orgId, orgSlug } = await auth();
     if (!orgId) throw new Error("Unauthorized");
 
     const sevenDaysAgo = subDays(new Date(), 7);
@@ -145,7 +145,7 @@ export async function getRecentActivity() {
             id: candidates.id,
             candidateName: candidates.name,
             updatedAt: candidates.updated_at,
-            type: sql<string>`'hire'`
+            type: sql<string>`'hired'`
         })
         .from(candidates)
         .where(
@@ -289,7 +289,7 @@ export async function getApplicationTrends() {
     const { orgId } = await auth();
     if (!orgId) throw new Error("Unauthorized");
 
-    const thirtyDaysAgo = subDays(new Date(), 30);
+    const thirtyDaysAgo = subDays(new Date(), 1030);
 
     const applicationTrends = await db
         .select({

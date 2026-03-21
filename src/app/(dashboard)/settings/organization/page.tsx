@@ -1,9 +1,9 @@
 'use client'
 
-import {useOrganization, useUser} from '@clerk/nextjs';
-import {DataTable} from "@/app/(dashboard)/settings/_components/data-table";
-import {columns, OrganizationMember} from "@/app/(dashboard)/settings/_components/colunm";
-import {Button} from "@/components/ui/button";
+import { useOrganization, useUser } from '@clerk/nextjs';
+import { DataTable } from "@/app/(dashboard)/settings/_components/data-table";
+import { columns, OrganizationMember } from "@/app/(dashboard)/settings/_components/colunm";
+import { Button } from "@/components/ui/button";
 import {
     Dialog,
     DialogContent,
@@ -15,15 +15,15 @@ import {
 import CreateOrganization from "@/app/(dashboard)/settings/_components/create-organization";
 
 const OrgMembersParams = {
-  memberships: {
-    pageSize: 2,
-    keepPreviousData: true,
-  },
+    memberships: {
+        pageSize: 2,
+        keepPreviousData: true,
+    },
 };
 
 const Page = () => {
-  const { user } = useUser();
-    const {isLoaded, memberships} = useOrganization(OrgMembersParams);
+    const { user } = useUser();
+    const { isLoaded, memberships } = useOrganization(OrgMembersParams);
 
     if (!isLoaded) {
         return <>Loading</>
@@ -55,7 +55,7 @@ const Page = () => {
             }
 
             <div className="mt-4">
-                <DataTable columns={columns} data={memberships?.data as unknown as OrganizationMember[]}/>
+                <DataTable columns={columns} data={memberships?.data as unknown as OrganizationMember[]} />
             </div>
         </div>
     )

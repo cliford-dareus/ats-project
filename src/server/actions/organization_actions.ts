@@ -55,7 +55,7 @@ export const get_organization_plugins = async (orgId: string) => {
     const {userId} = await auth();
     const canCreate = await canCreateJob(userId);
 
-    if (!userId || !canCreate) {
+    if (!userId) {
         throw new Error("You are not authorized to create an organization");
     };
 

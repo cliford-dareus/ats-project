@@ -1,7 +1,7 @@
 import {clsx, type ClassValue} from "clsx"
 import {twMerge} from "tailwind-merge"
 import {UseFormReturn} from "react-hook-form";
-import {ApplicationResponseType, CandidatesResponseType} from "@/types";
+import {ApplicationResponseType, CandidateExperience, CandidatesResponseType, JobExperience} from "@/types";
 import {
     differenceInDays, differenceInMonths,
     differenceInWeeks,
@@ -10,6 +10,7 @@ import {
     startOfDay, startOfWeek,
     subDays,
 } from "date-fns";
+import { MatchResult } from "@/app/(dashboard)/applications/[applicationId]/_components/application-summary";
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs))
@@ -225,24 +226,58 @@ export function getRangeOption(range?: string, from?: string, to?: string) {
     return RANGE_OPTIONS[range as keyof typeof RANGE_OPTIONS]
 };
 
-export const DEPARTMENTS = [
-    "Finance",
-    "IT",
-    "Legal",
-    "Marketing",
-    "Customer Service",
-    "Sales",
-    "Recruiting",
-    "Training and Development",
-    "Compensation and Benefits",
-    "Health and Safety",
-    "HR Administration",
-    "Performance Management",
-    "Compensation and Benefits",
-    "Employee Relations"
-];
+ export const getApplicationMatch = (candidate_id: number, jobSkills: JobExperience[], experience: CandidateExperience[]) => {
+        const candidateMap = new Map<string, number>();
+        experience.forEach((item) => {
+            const skill = item.role.trim();
+            const years = Number(item.totalExperience) || 0;
+            candidateMap.set(skill, Math.max(years, candidateMap.get(skill) ?? 0));
+        });
 
-export const CITIES = ["New York", "San Francisco", "Los Angeles", "Chicago", "Houston", "Philadelphia", "Phoenix", "San Antonio", "Dallas", "Austin", "Jacksonville", "San Jose", "Columbus", "Indianapolis", "Fort Worth", "Charlotte", "Detroit", "El Paso", "Memphis", "Seattle", "Denver", "Washington", "Boston", "Nashville", "Baltimore", "Oklahoma City", "Louisville", "Portland", "Las Vegas", "Milwaukee", "Albuquerque", "Tucson", "Fresno", "Sacramento", "Kansas City", "Mesa", "Atlanta", "Colorado Springs", "Miami", "Omaha", "Raleigh", "Long Beach", "Virginia Beach", "Oakland", "Minneapolis", "Tulsa", "Arlington", "New Orleans", "Wichita", "Honolulu", "Cleveland", "Aurora", "Santa Ana", "Riverside", "Corpus Christi", "St. Louis", "Lexington", "Anchorage", "Pittsburgh", "Newark", "Plano", "Bakersfield", "Buffalo", "Fort Wayne", "Henderson", "Chandler", "Greensboro", "Lincoln", "St. Petersburg", "Glendale", "Chula Vista", "Orlando", "Jersey City", "Fort Lauderdale", "Norfolk", "Durham", "Madison", "Laredo", "Winston-Salem", "Garland", "Reno", "Richmond", "San Bernardino", "Boise", "Chesapeake", "Gilbert", "Scottsdale", "North Las Vegas", "Fremont", "Baton Rouge", "San Diego", "Spokane", "Modesto", "Tacoma", "Oxnard", "Irvine", "Hialeah"];
+        let matchedCount = 0;
+        const matches: MatchResult[] = [];
+        jobSkills.forEach((req) => {
+            const skill = req.name.trim();
+            const required = Number(req.years_experience) || 0;
+            const candidateYears = candidateMap.get(skill) ?? 0;
+
+            const isMatch = candidateYears >= required;
+            matches.push({
+                name: skill,
+                candidateYears,
+                requiredYears: required,
+                match: isMatch,
+            });
+
+            if (isMatch) matchedCount++;
+        });
+
+        let score = 0;
+        const totalRequired = jobSkills.length;
+        if (totalRequired > 0) {
+            // score = Math.round((matchedCount / totalRequired) * 100);
+
+            // Optional: more nuanced version (partial credit)
+            let totalPoints = 0;
+            let earnedPoints = 0;
+
+            jobSkills.forEach((req) => {
+                const required = req.years_experience || 0;
+                const candidate = candidateMap.get(req.name.trim()) || 0;
+                totalPoints += required;
+                earnedPoints += Math.min(candidate, required);
+            });
+
+            score = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0;
+        }
+
+        return {
+            score,
+            matchedCount,
+            totalRequired,
+            skills: matches,
+        };
+    }
 
 export const getStatusColor = (status: string) => {
     switch (status) {

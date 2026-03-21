@@ -5,12 +5,12 @@ import {canCreateJob} from "@/server/permissions";
 import {create_candidate, get_all_candidates, get_candidate_by_id} from "@/server/queries";
 import {get_application_stage} from "@/server/queries";
 import {z} from "zod";
-import {filterCandidateType, newCandidateForm} from "@/zod";
+import {filterCandidateSchema, newCandidateFormSchema} from "@/zod";
 
-export const create_candidate_action = async (unsafeData: z.infer<typeof newCandidateForm>) => {
+export const create_candidate_action = async (unsafeData: z.infer<typeof newCandidateFormSchema>) => {
     const {userId} = await auth();
     const canCreate = await canCreateJob(userId);
-    const {success, data} = await newCandidateForm.spa(unsafeData);
+    const {success, data} = await newCandidateFormSchema.spa(unsafeData);
 
     if (!userId || !canCreate || !success) {
         return {error: true, message: "There was an error creating your candidate"}
@@ -19,10 +19,10 @@ export const create_candidate_action = async (unsafeData: z.infer<typeof newCand
     return await create_candidate(data);
 };
 
-export const get_all_candidates_action = async (unsafeData: z.infer<typeof filterCandidateType>) => {
+export const get_all_candidates_action = async (unsafeData: z.infer<typeof filterCandidateSchema>) => {
     const {userId} = await auth();
     const canCreate = await canCreateJob(userId);
-    const {success, data} = await filterCandidateType.spa(unsafeData);
+    const {success, data} = await filterCandidateSchema.spa(unsafeData);
 
     if (!userId || !canCreate || !success) {
         return {error: true, message: "There was an error creating your product"}

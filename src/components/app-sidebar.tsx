@@ -21,7 +21,6 @@ import React, {useEffect} from "react";
 import {usePathname, useRouter} from "next/navigation";
 import SidebarSettings from "@/app/(dashboard)/settings/_components/sidebar-settings";
 import JobListingSidebar from "@/app/(dashboard)/jobs/_components/job-listing-sidebar";
-import SidebarCandidate from "@/app/(dashboard)/applications/_components/application-sidebar";
 import CandidatesSidebar from "@/app/(dashboard)/candidates/_components/candidates-sidebar";
 import ReportsSidebar from "@/app/(dashboard)/reports/_components/reports-sidebar";
 import TrashSidebar from "@/app/(dashboard)/trash/_components/trash-sidebar";
@@ -29,6 +28,7 @@ import {CandidatesResponseType} from "@/types";
 import {StageCountType} from "@/app/(dashboard)/layout";
 import StepNavigation from "@/app/(dashboard)/jobs/new/_component/side-navigation";
 import SidebarDashboard from "@/app/(dashboard)/dashboard/_components/sidebar-dashboard";
+import ApplicationsSidebar from "@/app/(dashboard)/applications/_components/application-sidebar";
 
 const data = {
     navMain: [
@@ -77,10 +77,7 @@ const data = {
     ]
 };
 
-export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar> & {
-    candidate: CandidatesResponseType[],
-    stagescount: StageCountType[],
-}) {
+export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
     const pathname = usePathname();
     const {setOpen} = useSidebar();
     const router = useRouter();
@@ -169,8 +166,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar> & {
                             ) : activeItem.title === "Jobs" && !pathname.startsWith('/jobs/new/step') ? (
                                 <JobListingSidebar/>
                             ) : activeItem.title === "Applications" ? (
-                                <SidebarCandidate candidate={props.candidate}
-                                                  stagesCount={props.stagescount as StageCountType[]}/>
+                                <ApplicationsSidebar />
                             ) : activeItem.title === "Candidates" ? (
                                 <CandidatesSidebar/>
                             ) : activeItem.title === "Reports" ? (

@@ -1,5 +1,3 @@
-'use client';
-
 import React, {useState} from 'react';
 import {ChevronDown, ChevronUp, Code} from "lucide-react";
 import {useNewJobContext} from "@/providers/new-job-provider";
@@ -30,7 +28,7 @@ const StepTwoCollapse = () => {
                     {isOpen ? <ChevronUp size={18} className="text-blue-600" /> : <ChevronDown size={18} className="text-blue-600" />}
                 </Button>
             </CardHeader>
-            
+
             {isOpen && (
                 <CardContent className="pt-0">
                     {newJobData.jobTechnology.length > 0 ? (

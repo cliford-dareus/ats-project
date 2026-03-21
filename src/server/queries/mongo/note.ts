@@ -9,7 +9,7 @@ import { canCreateJob } from "@/server/permissions";
 import { auth } from "@clerk/nextjs/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import {candidateForm} from "@/zod";
+import {applicationFormSchema} from "@/zod";
 import {CACHE_TAGS, revalidateDbCache} from "@/lib/cache";
 
 

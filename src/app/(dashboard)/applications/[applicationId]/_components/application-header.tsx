@@ -32,18 +32,17 @@ const AppicationHeader = ({ applicationResult, stages }: Props) => {
                                 className="text-blue-600 font-bold uppercase">{applicationResult.job_apply}</span>
                         </p>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <Badge
-                            variant={applicationResult?.status === 'PENDING' ? 'default' : applicationResult?.status === 'OPEN' ? 'secondary' : 'destructive'}
-                            className="w-fit"
-                        >
-                            {applicationResult?.status === 'Active' && <CheckCircle size={14} className="mr-1" />}
-                            {applicationResult?.status === 'Rejected' && <XCircle size={14} className="mr-1" />}
-                            {applicationResult?.status === 'Hired' && <Star size={14} className="mr-1" />}
-                            {applicationResult?.status || 'Active'}
-                        </Badge>
-
-                    </div>
+                    {/*<div className="flex items-center gap-3">*/}
+                    {/*    <Badge*/}
+                    {/*        variant={applicationResult?.status === 'PENDING' ? 'default' : applicationResult?.status === 'OPEN' ? 'secondary' : 'destructive'}*/}
+                    {/*        className="w-fit"*/}
+                    {/*    >*/}
+                    {/*        {applicationResult?.status === 'Active' && <CheckCircle size={14} className="mr-1" />}*/}
+                    {/*        {applicationResult?.status === 'Rejected' && <XCircle size={14} className="mr-1" />}*/}
+                    {/*        {applicationResult?.status === 'Hired' && <Star size={14} className="mr-1" />}*/}
+                    {/*        {applicationResult?.status || 'Active'}*/}
+                    {/*    </Badge>*/}
+                    {/*</div>*/}
                 </div>
             </div>
 

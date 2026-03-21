@@ -12,9 +12,9 @@ import {
 } from "lucide-react";
 import {Checkbox} from "@/components/ui/checkbox";
 import {Label} from "@/components/ui/label";
-import {ApplicationType, JobListing} from "@/types";
+import {ApplicationType, JobExperienceType, JobListingType} from "@/types";
 import React, {useEffect, useState} from "react";
-import {cn} from "@/lib/utils";
+import {cn, getApplicationMatch} from "@/lib/utils";
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
 import {
     Select,
@@ -25,20 +25,25 @@ import {
     SelectValue
 } from "@/components/ui/select";
 import {Button} from "@/components/ui/button";
+import { get_candidate_details } from "@/server/queries/mongo/candidate-details";
+import ApplicationSummary, { ApplicationSummaryType, MatchResult } from "@/app/(dashboard)/applications/[applicationId]/_components/application-summary";
+import JobQuickViewCard from "@/components/job-quick-view-card";
 
 type Props = {
-    job: JobListing;
+    job: JobListingType;
 };
 
 const JobCandidate = ({job}: Props) => {
     const applications = job.applications as unknown as ApplicationType[];
     const [selectedCandidates, setSelectedCandidates] = useState<number[]>([]);
     const [selectedApplications, setSelectedApplications] = useState<ApplicationType>();
-    const [experience, setExperience] = useState<{
-        score: number,
-        skills: { name: string, year: number, required: number, match: boolean }[],
-        summary: string
-    }>();
+    const [applicationSummary, setApplicationSummary] = useState<ApplicationSummaryType>({
+        candidate_id: 0,
+        resumeSummary: "",
+        skills: [],
+        experience: [],
+        education: [],
+    });
 
     const handleSelectAll = () => {
         if (selectedCandidates.length === applications.length) {
@@ -59,45 +64,13 @@ const JobCandidate = ({job}: Props) => {
     };
 
     useEffect(() => {
-        const candidateId = selectedApplications?.candidate.id;
-        // const getExperience = async () => {
-        //     const experience = await get_candiate_experience(candidateId as number);
-        //     setExperience(JSON.parse(experience));
-        // };
-        // getExperience();
-        const candidateExp = [{id: 1, name: "React", year: 5}, {id: 2, name: "Python", year: 8}];
-
-        const countMap = new Map();
-        candidateExp.forEach(item => countMap.set(item.name, item.year));
-
-        const matches = [] as { name: string, year: number, required: number, match: boolean }[];
-        job.job_technologies.forEach(item => {
-            if (countMap.has(item.name) && countMap.get(item.name) >= item.years_experience!) {
-                const match = {
-                    name: item.name,
-                    year: countMap.get(item.name) ? countMap.get(item.name) : 0,
-                    required: item.years_experience,
-                    match: true
-                };
-                matches.push(match);
-            } else {
-                const match = {
-                    name: item.name,
-                    year: countMap.get(item.name) ? countMap.get(item.name) : 0,
-                    required: item.years_experience,
-                    match: false
-                };
-                matches.push(match);
-            }
-        });
-
-        const experienceMatch = {
-            score: 85,
-            skills: matches,
-            summary: "Alex has strong frontend fundamentals and exceeds the required experience in React and TypeScript. The only gap is in GraphQL, where they have 1 year of experience compared to our preferred 2 years."
+        const detailsFn = async () => {
+            const rawResponse = await get_candidate_details(selectedApplications?.candidate.id as number);
+            const candidateDetails = JSON.parse(rawResponse);
+            setApplicationSummary(candidateDetails);
         };
 
-        setExperience(experienceMatch)
+        detailsFn();
     }, [selectedApplications, job]);
 
     useEffect(() => {
@@ -228,90 +201,11 @@ const JobCandidate = ({job}: Props) => {
 
                                 <div className="grid grid-cols-3 gap-4 mt-2">
                                     {/* Left Column: Candidate & Job Info */}
-                                    <div className="col-span-2 space-y-4">
-                                        {/* CandidateDetails Comparison Card */}
-                                        <div
-                                            className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
-                                            <div
-                                                className="p-4 border-b border-zinc-100 bg-zinc-50/50 flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    <TrendingUp className="w-4 h-4 text-blue-600"/>
-                                                    <h3 className="font-bold text-zinc-900">Experience Match
-                                                        Analysis</h3>
-                                                </div>
-                                                <div
-                                                    className="flex items-center gap-1.5 px-2.5 py-1 bg-brand-50 text-blue-700 rounded-full border border-blue-100">
-                                                    <Sparkles className="w-3.5 h-3.5"/>
-                                                    <span
-                                                        className="text-xs font-bold">{experience?.score}% Match</span>
-                                                </div>
-                                            </div>
-                                            <div className="p-4 space-y-4">
-                                                <div className="grid grid-cols-2 gap-6">
-                                                    {experience?.skills.map((skill, index) => (
-                                                        <div key={index}
-                                                             className="flex items-center justify-between p-3 rounded-xl bg-zinc-50 border border-zinc-100">
-                                                            <div>
-                                                                <p className="text-sm font-bold text-zinc-900">{skill.name}</p>
-                                                                <p className="text-xs text-zinc-500">{skill.year} years
-                                                                    exp.</p>
-                                                            </div>
-                                                            <div className="flex items-center gap-2">
-                                                                <span
-                                                                    className="text-xs font-medium text-zinc-400">Req:{skill.required}</span>
-                                                                {skill.match ? (
-                                                                    <CheckCircle2 className="w-5 h-5 text-emerald-500"/>
-                                                                ) : (
-                                                                    <AlertCircle className="w-5 h-5 text-amber-500"/>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Resume Preview / Summary */}
-                                        <div
-                                            className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
-                                            <div
-                                                className="p-4 border-b border-zinc-100 bg-zinc-50/50 flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    <FileText className="w-4 h-4 text-zinc-400"/>
-                                                    <h3 className="font-bold text-zinc-900">Resume Summary</h3>
-                                                </div>
-                                                <button
-                                                    className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1">
-                                                    <Download className="w-3.5 h-3.5"/>
-                                                    Download PDF
-                                                </button>
-                                            </div>
-                                            <div className="p-4">
-                                                <div
-                                                    className="prose prose-zinc prose-sm max-w-none text-zinc-600 leading-relaxed">
-                                                    <p>
-                                                        Experienced software engineer with a strong background in
-                                                        building scalable web applications.
-                                                        Expertise in React, Node.js, and cloud infrastructure. Proven
-                                                        track record of leading technical teams
-                                                        and delivering complex projects on time.
-                                                    </p>
-                                                    <h4 className="text-zinc-900 font-bold mt-4 mb-2">Key
-                                                        Accomplishments:</h4>
-                                                    <ul className="list-disc pl-5 space-y-1">
-                                                        <li>Reduced application load time by 40% through code
-                                                            optimization.
-                                                        </li>
-                                                        <li>Implemented automated testing suite increasing coverage to
-                                                            85%.
-                                                        </li>
-                                                        <li>Led a team of 5 developers in a complete system migration.
-                                                        </li>
-                                                    </ul>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                   <ApplicationSummary
+                                        applicationSummary={applicationSummary}
+                                        candidate_id={selectedApplications.candidate.id}
+                                        jobSkills={job.job_technologies as unknown as JobExperienceType[]}
+                                    />
 
                                     {/* Right Column: Sidebar Info */}
                                     <div className="space-y-4">
@@ -384,27 +278,12 @@ const JobCandidate = ({job}: Props) => {
                                         </div>
 
                                         {/* Job Details Quick View */}
-                                        <div className="bg-zinc-900 rounded-2xl p-6 text-white space-y-4">
-                                            <div className="flex items-center gap-2">
-                                                <Briefcase className="w-4 h-4 text-brand-400"/>
-                                                <h3 className="font-bold text-sm uppercase tracking-wider">Job
-                                                    Overview</h3>
-                                            </div>
-                                            <div>
-                                                <p className="text-lg font-bold leading-tight">{job.job_name}</p>
-                                                <p className="text-zinc-400 text-sm">{job.job_department}</p>
-                                            </div>
-                                            <div className="space-y-2 pt-2">
-                                                <div className="flex items-center justify-between text-xs">
-                                                    <span className="text-zinc-500">Location</span>
-                                                    <span className="font-medium">{job.job_department}</span>
-                                                </div>
-                                                <div className="flex items-center justify-between text-xs">
-                                                    <span className="text-zinc-500">Type</span>
-                                                    <span className="font-medium">Full-Time</span>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        <JobQuickViewCard
+                                            name={job.job_name}
+                                            department={job.job_department}
+                                            location={job.job_location}
+                                            type={job.job_type}
+                                        />
                                     </div>
                                 </div>
                             </div>
