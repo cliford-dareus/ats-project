@@ -77,7 +77,7 @@ export const create_job_listing = async (data: z.infer<typeof jobFormSchema>,) =
                 stage_order_id: 0,
                 assign_to: data.userId,
                 need_schedule: false,
-                color: '#6B7280', // Gray color for applied state
+                color: '#a21caf',
             },
             // Add Drafted as the second stage (order 1)
             {
@@ -86,7 +86,7 @@ export const create_job_listing = async (data: z.infer<typeof jobFormSchema>,) =
                 stage_order_id: 1,
                 assign_to: data.userId,
                 need_schedule: false,
-                color: '#6B7280', // Gray color for applied state
+                color: '#52525b', // Gray color for applied state
             },
             // Then add the custom stages starting from order 2
             ...data.jobStages.map((item, i) => ({

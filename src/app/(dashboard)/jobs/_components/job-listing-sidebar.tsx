@@ -31,8 +31,7 @@ import {
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { cn, createNewSearchParam } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
-import { Input } from "@/components/ui/input";
-import { useDebounce } from "@/hooks/use-debounce"; // ← add this hook (or implement below)
+import { useDebounce } from "@/hooks/use-debounce";
 import { CITIES, DEPARTMENTS } from "@/lib/constant";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
@@ -67,7 +66,7 @@ const JobListingSidebar = () => {
 
     // Create query string helper
     const createQueryString = useCallback(
-        (params: Record<string, string[] | string | null>) => {
+        (params: Record<string, string[] | string | number | null >) => {
             return createNewSearchParam(params, searchParams);
         },
         [searchParams]

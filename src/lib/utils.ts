@@ -66,10 +66,7 @@ export const getTimeElapsed = (date: Date) => {
     return Math.floor(diff / (1000 * 3600 * 24));
 };
 
-export const createNewSearchParam = (params: Record<string, string[] | number | null> | {
-    page: number;
-    per_page: string
-}, searchParams: URLSearchParams) => {
+export const createNewSearchParam = (params: Record<string, string | string[] | number | null>, searchParams: URLSearchParams) => {
     const newSearchParams = new URLSearchParams(searchParams?.toString());
 
     for (const [key, value] of Object.entries(params)) {

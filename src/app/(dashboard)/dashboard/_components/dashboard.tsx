@@ -27,6 +27,8 @@ import AnalyticsOverview from "./analytics-overview";
 import DashboardSummary from "./dashboard-summary";
 import StripCalendar from "@/components/strip-calenda";
 import {ScrollArea} from "@/components/ui/scroll-area";
+import MetricCard from "@/components/metric-card";
+import ApplicationBreakdown from './application-breakdown';
 
 interface DashboardMetrics {
     totalApplications: number;
@@ -67,12 +69,19 @@ interface JobPipelineData {
     }[];
 };
 
+export interface RecrutmentFunnel {
+    stage: "Applied" | "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | 'Hired' | "Drafted" | null;
+    count: number;
+    stageColor: string;
+    conversion: number;
+};
+
 type Props = {
     metrics: DashboardMetrics;
     recentActivity: RecentActivity[];
     upcomingInterviews: UpcomingInterview[];
     jobPipeline: JobPipelineData[];
-    recruitmentFunnel: { stage: "Applied" | "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | 'Hired' | "Drafted" | null; stageOrder: number; count: number; conversion: number }[];
+    recruitmentFunnel: RecrutmentFunnel[];
     applicationTrend: {date: string, count: number}[]
     userName: string;
 };
@@ -118,43 +127,6 @@ const Dashboard = ({
         else setTimeOfDay('evening');
     }, []);
 
-    const MetricCard = ({
-        title,
-        value,
-        trend,
-        icon: Icon,
-        color = "blue"
-    }: {
-        title: string;
-        value: number;
-        trend: number;
-        icon: React.ComponentType<{ className?: string }>;
-        color?: string;
-    }) => (
-        <Card className="relative overflow-hidden">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {title}
-                </CardTitle>
-                <Icon className={cn("h-4 w-4", `text-${color}-600`)} />
-            </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">{value.toLocaleString()}</div>
-                <div className="flex items-center text-xs text-muted-foreground">
-                    {trend > 0 ? (
-                        <ArrowUpRight className="mr-1 h-3 w-3 text-green-600" />
-                    ) : (
-                        <ArrowDownRight className="mr-1 h-3 w-3 text-red-600" />
-                    )}
-                    <span className={trend > 0 ? "text-green-600" : "text-red-600"}>
-                        {Math.abs(trend)}%
-                    </span>
-                    <span className="ml-1">from last month</span>
-                </div>
-            </CardContent>
-        </Card>
-    );
-
     const getActivityIcon = (type: string) => {
         switch (type) {
             case 'application': return <Users className="h-4 w-4" />;
@@ -174,6 +146,7 @@ const Dashboard = ({
             default: return 'bg-gray-100 text-gray-600';
         }
     };
+
 
     return (
         <div className="flex-1 w-full grid grid-cols-1 xl:grid-cols-12 gap-4 min-w-0">
@@ -357,6 +330,8 @@ const Dashboard = ({
                         </Button>
                     </CardContent>
                 </Card>
+
+                <ApplicationBreakdown data={recruitmentFunnel} totalApplications={metrics.totalApplications} className="md:col-span-2" />
 
                 {/*  Quick Actions */}
                 {/*<DashboardSummary className="lg:col-span-1" />*/}

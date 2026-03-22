@@ -20,6 +20,19 @@ import {
 } from "drizzle-orm";
 import { subDays, subMonths, startOfMonth, endOfMonth } from "date-fns";
 
+const stageOrder = [
+  "Applied",
+  "New Candidate",
+  "Screening",
+  "Phone Interview",
+  "Interview",
+  "Offer",
+  "Hired",
+  "Drafted"
+] as const;
+
+type StageName = typeof stageOrder[number];
+
 export async function getDashboardMetrics() {
     const { orgId , orgSlug } = await auth();
     if (!orgId) throw new Error("Unauthorized");
@@ -255,7 +268,7 @@ export async function getJobPipelineData() {
         .from(job_listings)
         .leftJoin(stages, eq(job_listings.id, stages.job_id))
         .leftJoin(applications, eq(stages.id, applications.current_stage_id))
-        .where(eq(job_listings.status, 'OPEN'))
+        .where(eq(job_listings.status, 'PENDING'))
         .groupBy(job_listings.id, job_listings.name, stages.stage_name, stages.color, stages.stage_order_id)
         .orderBy(job_listings.id, stages.stage_order_id);
 
@@ -439,20 +452,50 @@ export async function getRecruitmentFunnel() {
     const funnelData = await db
         .select({
             stageName: stages.stage_name,
+            stageColor: stages.color,
             stageOrder: stages.stage_order_id,
             count: count(applications.id)
         })
         .from(stages)
         .leftJoin(applications, eq(stages.id, applications.current_stage_id))
-        .groupBy(stages.stage_name, stages.stage_order_id)
+        .groupBy(stages.stage_name, stages.stage_order_id, stages.color)
         .orderBy(stages.stage_order_id);
 
-    return funnelData.map(stage => ({
-        stage: stage.stageName,
-        stageOrder: stage.stageOrder,
-        count: stage.count,
-        conversion: Math.round((stage.count / funnelData[0].count) * 100)
-    }));
+    const aggregated = funnelData.reduce((acc, item, index) => {
+        const stage = item.stageName!;
+
+        if (!acc[stage]) {
+            acc[stage] = {
+                stage,
+                stageColor: item.stageColor!,
+                count: 0,
+                conversion: 0
+            };
+        }
+
+        acc[stage].count += item.count;
+
+        if (Math.round((item.count / funnelData[index].count) * 100) > acc[stage].conversion) {
+            acc[stage].conversion = Math.round((item.count / funnelData[index].count) * 100);
+        }
+
+        return acc;
+    }, {} as Record<string, { stage: string; count: number; stageColor: string; conversion: number }>);
+
+    const stageOrder = [
+        "Applied",
+        "New Candidate",
+        "Screening",
+        "Phone Interview",
+        "Interview",
+        "Offer",
+        "Hired",
+        "Drafted"
+    ];
+
+    return stageOrder
+        .map(stage => aggregated[stage] ?? { stage, count: 0, conversion: 0 })
+        .sort((a, b) => stageOrder.indexOf(a.stage) - stageOrder.indexOf(b.stage));
 };
 
 export async function getTimeToHireMetrics() {
