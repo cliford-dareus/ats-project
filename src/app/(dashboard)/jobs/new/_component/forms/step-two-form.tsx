@@ -43,7 +43,7 @@ const StepTwoForm = () => {
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                            <Code size={20} className="text-blue-500" />
+                            <Code size={20} className="text-primary" />
                             Technical Requirements
                         </CardTitle>
                         <p className="text-sm text-gray-600">Add the technologies and experience levels required</p>
@@ -52,16 +52,16 @@ const StepTwoForm = () => {
                         {/* Current Requirements */}
                         {currentStages.length > 0 && (
                             <div className="space-y-3">
-                                <h3 className="font-medium text-gray-900">Added Requirements</h3>
+                                <h3 className="font-medium text-foreground">Added Requirements</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     {currentStages.map((item, index) => (
                                         <div key={index}
                                             className="flex items-center justify-between p-4 bg-blue-50 border border-blue-200 rounded-lg">
                                             <div className="flex items-center gap-3">
-                                                <Award size={16} className="text-blue-600" />
+                                                <Award size={16} className="text-primary" />
                                                 <div>
                                                     <p className="font-medium text-gray-900">{item.technology}</p>
-                                                    <p className="text-sm text-gray-600">{item.year_of_experience} years
+                                                    <p className="text-sm text-foreground/60">{item.year_of_experience} years
                                                         experience</p>
                                                 </div>
                                             </div>
@@ -152,7 +152,7 @@ const StepTwoForm = () => {
                     </Button>
                     <CustomButton
                         text="Continue to Workflow"
-                        className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                        className="px-8 py-3 bg-primary hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
                     />
                 </div>
             </div>

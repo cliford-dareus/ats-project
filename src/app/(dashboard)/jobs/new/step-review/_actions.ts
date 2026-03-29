@@ -41,9 +41,15 @@ export const stepReviewFormAction = async (
 
         // Validate required fields
         if (!jobInfo.job_name || !jobInfo.job_description || !jobInfo.job_location) {
-            return {
-                general: "Please complete all required job details"
-            };
+            return {general: "Please complete all required job details..."};
+        }
+
+        if (jobTechnology.length === 0) {
+            return {general: "Please add some Job requirements..."};
+        }
+
+        if(jobStages.length === 0) {
+            return {general: "Please add some Job stages..."};
         }
 
         // Construct the complete job data

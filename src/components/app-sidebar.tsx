@@ -158,7 +158,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
                     {activeItem.title !== "Settings" && <SidebarInput placeholder="Type to search..."/>}
                 </SidebarHeader>
 
-                <SidebarContent>
+                <SidebarContent className="">
                     <SidebarGroup className="px-0">
                         <SidebarGroupContent>
                             {activeItem.title === "Dashboard" ? (

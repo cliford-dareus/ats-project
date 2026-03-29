@@ -30,7 +30,7 @@ type Props = {
 };
 
 const Page = async ({params}: Props) => {
-    const {joblistingId} = await params;
+    const {joblistingId: jobListingId} = await params;
     const {orgId} = await auth();
     if (!orgId) return;
 
@@ -47,10 +47,10 @@ const Page = async ({params}: Props) => {
         stagesResponse,
     ] = await Promise.all([
         get_all_job_listings_action({organization: orgId}),
-        get_job_by_id_action(Number(joblistingId)),
-        get_job_all_applications_action(Number(joblistingId)),
+        get_job_by_id_action(Number(jobListingId)),
+        get_job_all_applications_action(Number(jobListingId)),
         get_all_candidates_action({limit: 1000, offset: 0}),
-        get_job_listings_stages(Number(joblistingId)),
+        get_job_listings_stages(Number(jobListingId)),
     ]);
 
     const jobs = Array.isArray(jobsResponse) ? jobsResponse[1] : [];
@@ -61,7 +61,7 @@ const Page = async ({params}: Props) => {
 
     if (flags['smart-triggers']) {
         const context = {
-            jobId: joblistingId,
+            jobId: jobListingId,
             setTriggers: () => {},
             setJobStages: () => {}
         };
@@ -72,8 +72,8 @@ const Page = async ({params}: Props) => {
 
     return (
         <KanbanProvider initialStages={initialStages} initialTriggers={initialTriggers}>
-            <div>
-                <div className="flex flex-col md:flex-row items-center justify-between w-full p-4">
+            <>
+                <div className="flex flex-col md:flex-row items-center justify-between w-full p-4 overflow-hidden">
                     <div>
                         <div className="flex flex-col">
                             <div className="">
@@ -113,11 +113,11 @@ const Page = async ({params}: Props) => {
                 <JobTabs
                     jobs={jobs as JobResponseType[]}
                     stages={stages as StageResponseType[]}
-                    joblistingId={joblistingId}
+                    jobListingId={jobListingId}
                     applications={applications as ApplicationType[]}
                     singleJob={singleJob as JobListingType}
                 />
-            </div>
+            </>
         </KanbanProvider>
     );
 };

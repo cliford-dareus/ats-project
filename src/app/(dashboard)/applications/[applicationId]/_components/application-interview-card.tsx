@@ -80,7 +80,7 @@ const ApplicationInterviewCard = ({ applicationResult }: Props) => {
                     <p className="text-xs text-zinc-400 mb-3">No interview has been scheduled
                         yet.</p>
                     <button
-                        className="px-4 py-2 bg-white border border-zinc-200 rounded-lg text-xs font-bold text-zinc-700 hover:bg-zinc-50 transition-all shadow-sm">
+                        className="px-4 py-2 bg-white border border-zinc-200 rounded-lg text-xs font-bold text-accent hover:bg-zinc-50 transition-all shadow-sm">
                         Schedule Interview
                     </button>
                 </div>

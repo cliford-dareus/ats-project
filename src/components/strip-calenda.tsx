@@ -1,6 +1,6 @@
 import {useState} from "react";
 import {AnimatePresence, motion} from "framer-motion";
-import {ChevronLeft, ChevronRight} from "lucide-react";
+import {Calendar, ChevronLeft, ChevronRight} from "lucide-react";
 import {Avatar} from "@/components/ui/avatar";
 import {UpcomingInterview} from "@/app/(dashboard)/dashboard/_components/dashboard";
 import {ScrollArea, ScrollBar} from "@/components/ui/scroll-area";
@@ -26,17 +26,21 @@ const StripCalendar: React.FC<{ interviews: UpcomingInterview[] }> = ({interview
 
     return (
         <div className="">
-            <div className="flex w-full justify-between items-center gap-2">
-                <button onClick={() => setSelectedDate(subDays(selectedDate, 1))}
-                        className="p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-400">
-                    <ChevronLeft size={20}/>
+            <div className="flex items-center justify-between">
+                <button
+                    onClick={() => setSelectedDate(subDays(selectedDate, 1))}
+                    className="p-1 hover:bg-brand-light rounded-md transition-colors">
+                    <ChevronLeft size={16} className="text-brand-dark/30"/>
                 </button>
-                <span>{days[0].toLocaleDateString()}-{days[days.length - 1].toLocaleDateString()}</span>
-                <button onClick={() => setSelectedDate(addDays(selectedDate, 1))}
-                        className="p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-400">
-                    <ChevronRight size={20}/>
+                <span
+                    className="text-xs font-bold tracking-tight">{days[0].toLocaleDateString()}-{days[days.length - 1].toLocaleDateString()}</span>
+                <button
+                    onClick={() => setSelectedDate(addDays(selectedDate, 1))}
+                    className="p-1 hover:bg-brand-light rounded-md transition-colors">
+                    <ChevronRight size={16} className="text-brand-dark/30"/>
                 </button>
             </div>
+
             <ScrollArea className="w-full">
                 <div className="flex gap-2 overflow-x-auto pb-4 pt-2 -mx-4 px-4">
                     {days.map((date, i) => {
@@ -51,7 +55,7 @@ const StripCalendar: React.FC<{ interviews: UpcomingInterview[] }> = ({interview
                                 onClick={() => setSelectedDate(date)}
                                 className={`flex-shrink-0 py-2  px-1 rounded-[2rem] flex flex-col items-center justify-center gap-1 transition-all duration-300 border-2 ${
                                     isSelected
-                                        ? 'bg-black  text-white border shadow-xl shadow-blue-200'
+                                        ? 'bg-primary  text-white border shadow-xl shadow-blue-200'
                                         : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'
                                 }`}
                             >
@@ -114,28 +118,29 @@ const StripCalendar: React.FC<{ interviews: UpcomingInterview[] }> = ({interview
                             </div>
                         ))
                     ) : (
+                        <div
+                            className="col-span-full py-4 flex flex-col items-center justify-center rounded-[2rem] border-2 border-dashed border-slate-200  border-foreground/5 p-8 gap-4 bg-background/20">
+                            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm">
+                                <Calendar size={20} className="text-foreground/20"/>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest mb-1">No
+                                    Interviews Scheduled</p>
+                                <button
+                                    className="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline">Schedule
+                                    Now
+                                </button>
+                            </div>
+                        </div>
                         // <div
-                        //     className="col-span-full py-12 flex flex-col items-center justify-center bg-slate-50/50 rounded-[3rem] border-2 border-dashed border-slate-200">
-                        //     <div
-                        //         className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-slate-300 mb-4 shadow-sm">
-                        //         <Calendar size={32}/>
-                        //     </div>
-                        //     <p className="text-sm font-black text-slate-400 uppercase tracking-widest">No interviews
-                        //         scheduled</p>
+                        //     className="col-span-full text-center py-4 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
+                        //     <p className="text-xs text-zinc-400 mb-3">No interview has been scheduled
+                        //         yet.</p>
                         //     <button
-                        //         className="mt-4 text-xs font-black text-blue-600 hover:text-blue-700 uppercase tracking-widest">
-                        //         Schedule Now
+                        //         className="px-4 py-2 text-accent border-zinc-700 rounded-lg text-xs font-bold hover:bg-zinc-50 hover:text-foreground transition-all shadow-sm">
+                        //         Schedule Interview
                         //     </button>
                         // </div>
-                        <div
-                            className="col-span-full text-center py-4 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
-                            <p className="text-xs text-zinc-400 mb-3">No interview has been scheduled
-                                yet.</p>
-                            <button
-                                className="px-4 py-2 bg-white border border-zinc-200 rounded-lg text-xs font-bold text-zinc-700 hover:bg-zinc-50 transition-all shadow-sm">
-                                Schedule Interview
-                            </button>
-                        </div>
                     )}
                 </motion.div>
             </AnimatePresence>

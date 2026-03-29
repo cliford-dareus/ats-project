@@ -24,8 +24,8 @@ const JobListingsList = ({jobs, pageCount}: Props) => {
                     status="jobs"
                     onRowClick={(rowData) => setSelectedRow(rowData)}
                 />
+                <PaginationElement pageCount={pageCount}/>
             </div>
-            <PaginationElement pageCount={pageCount}/>
             <Sheet open={!!selectedRow} onOpenChange={() => setSelectedRow(null)}>
                 <SheetHeader>
                     <SheetTitle></SheetTitle>

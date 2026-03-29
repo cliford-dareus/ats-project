@@ -23,12 +23,14 @@ import { get_dept, stepOneFormAction } from "../../step-one/_actions";
 
 const initialState: FormErrors = {};
 
-const StepOneForm = () => {
-    const [department, setDepartment] = useState<{ id: number, organization_id: string, name: string | null }[]>([]);
+type Props = {
+    orgId: string;
+    departments: { id: number, organization_id: string, name: string | null }[]
+}
+
+const StepOneForm = ({orgId, departments}: Props) => {
     const [serverErrors, formAction] = useActionState(stepOneFormAction, initialState);
     const { updateNewJobDetails, newJobData } = useNewJobContext();
-    const { organization } = useOrganization();
-    const { user } = useUser();
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         updateNewJobDetails({ [e.target.name]: e.target.value }, "jobInfo");
@@ -39,22 +41,9 @@ const StepOneForm = () => {
     };
 
     const handleSelectChange = (value: string) => {
-        updateNewJobDetails({ department: value, organization: organization?.id }, "jobInfo");
+        updateNewJobDetails({ department: value, organization: orgId }, "jobInfo");
     };
 
-    useEffect(() => {
-        const fetchOrganization = async () => {
-            try {
-                if (organization) {
-                    const organizationData = await get_dept(organization.id);
-                    setDepartment(organizationData);
-                }
-            } catch (error) {
-                console.error("Error fetching organization data:", error);
-            }
-        };
-        fetchOrganization();
-    }, [user]);
     return (
         <form action={formAction} className="w-full flex gap-4 h-[calc(100vh_-_200px)]">
             <ScrollArea className="flex-1">
@@ -118,7 +107,7 @@ const StepOneForm = () => {
                                         <SelectValue placeholder="Select department" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {department.map((dept) => (
+                                        {departments.map((dept) => (
                                             <SelectItem key={dept.id} value={String(dept.id) || ''}>
                                                 {dept.name}
                                             </SelectItem>

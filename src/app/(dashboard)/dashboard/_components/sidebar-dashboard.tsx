@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
     Calendar,
     TrendingUp,
@@ -13,9 +13,9 @@ import {
     Filter,
     RefreshCw
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import {Button} from '@/components/ui/button';
+import {Badge} from '@/components/ui/badge';
+import {Separator} from '@/components/ui/separator';
 import QuickActions from './quick-actions';
 
 
@@ -23,10 +23,10 @@ const SidebarDashboard = () => {
     const [selectedTimeframe, setSelectedTimeframe] = useState('week');
 
     const timeframes = [
-        { id: 'today', label: 'Today', period: '24h' },
-        { id: 'week', label: 'This Week', period: '7d' },
-        { id: 'month', label: 'This Month', period: '30d' },
-        { id: 'quarter', label: 'This Quarter', period: '90d' }
+        {id: 'today', label: 'Today', period: '24h'},
+        {id: 'week', label: 'This Week', period: '7d'},
+        {id: 'month', label: 'This Month', period: '30d'},
+        {id: 'quarter', label: 'This Quarter', period: '90d'}
     ];
 
     const quickStats = [
@@ -116,10 +116,14 @@ const SidebarDashboard = () => {
 
     const getPriorityColor = (priority: string) => {
         switch (priority) {
-            case 'high': return 'bg-red-500';
-            case 'medium': return 'bg-yellow-500';
-            case 'low': return 'bg-green-500';
-            default: return 'bg-gray-500';
+            case 'high':
+                return 'bg-red-500';
+            case 'medium':
+                return 'bg-yellow-500';
+            case 'low':
+                return 'bg-green-500';
+            default:
+                return 'bg-gray-500';
         }
     };
 
@@ -129,11 +133,11 @@ const SidebarDashboard = () => {
             <div className="space-y-3">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <Activity size={20} />
+                        <Activity size={20}/>
                         <span className="font-medium text-base">Overview</span>
                     </div>
                     <Button variant="ghost" size="sm">
-                        <RefreshCw size={16} />
+                        <RefreshCw size={16}/>
                     </Button>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -151,10 +155,10 @@ const SidebarDashboard = () => {
                 </div>
             </div>
 
-            <Separator />
+            <Separator/>
 
             {/*  Quick Actions */}
-            <QuickActions />
+            <QuickActions/>
 
             {/* <Separator /> */}
 
@@ -187,10 +191,10 @@ const SidebarDashboard = () => {
 
             {/* <Separator /> */}
 
-            {/* Recent Activity */}
-            {/* <div className="space-y-3">
+            {/* Rce-y-3">
                 <div className="flex items-center gap-2">
-                    <Bell size={20} />
+                    <Bell size={20} /ecent Activity */}
+            {/* <div className="spa>
                     <span className="font-medium text-base">Recent Activity</span>
                 </div>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -211,7 +215,7 @@ const SidebarDashboard = () => {
             {/* <Separator /> */}
 
             {/* Upcoming Tasks */}
-            {/* <div className="space-y-3">
+            <div className="space-y-3">
                 <div className="flex items-center gap-2">
                     <Clock size={20} />
                     <span className="font-medium text-base">Upcoming Tasks</span>
@@ -229,19 +233,19 @@ const SidebarDashboard = () => {
                         </div>
                     ))}
                 </div>
-            </div> */}
+            </div>
 
             {/* Quick Actions */}
-            {/* <div className="mt-auto space-y-2">
-                <Button variant="outline" size="sm" className="w-full justify-start">
-                    <Filter size={16} className="mr-2" />
-                    Customize Dashboard
-                </Button>
-                <Button variant="outline" size="sm" className="w-full justify-start">
-                    <Calendar size={16} className="mr-2" />
-                    View Full Calendar
-                </Button>
-            </div> */}
+            {/*<div className="mt-auto space-y-2">*/}
+            {/*    <Button variant="outline" size="sm" className="w-full justify-start">*/}
+            {/*        <Filter size={16} className="mr-2"/>*/}
+            {/*        Customize Dashboard*/}
+            {/*    </Button>*/}
+            {/*    <Button variant="outline" size="sm" className="w-full justify-start">*/}
+            {/*        <Calendar size={16} className="mr-2"/>*/}
+            {/*        View Full Calendar*/}
+            {/*    </Button>*/}
+            {/*</div>*/}
         </div>
     );
 };

@@ -1,7 +1,7 @@
 "use client";
 
-import React, {useEffect, useState} from "react";
-import {ApplicationResponseType, NoteType} from "@/types";
+import React, {useState} from "react";
+import {ApplicationResponseType} from "@/types";
 import DataTable from "@/components/data-table";
 import {columns} from "@/app/(dashboard)/applications/_components/column";
 import PaginationElement from "@/components/pagination";
@@ -12,7 +12,6 @@ import {
     SheetTitle,
 } from "@/components/ui/sheet";
 import ApplicationPreview from "@/app/(dashboard)/applications/_components/application-preview";
-import {get_application_notes} from "@/server/queries/mongo/note";
 
 type Props = {
     application: ApplicationResponseType[];
@@ -22,17 +21,6 @@ type Props = {
 const ApplicationList = ({application, pageCount}: Props) => {
     const [selectedRow, setSelectedRow] =
         useState<ApplicationResponseType | null>(null);
-    const [internalNotes, setInternalNotes] = useState<{notes: NoteType[]}>({notes: []});
-
-    useEffect(() => {
-        const fetchInternalNotes = async () => {
-            if(selectedRow?.id){
-                const internalNotes = await get_application_notes({id: selectedRow?.id, limit: 10, offset: 0})
-                setInternalNotes(JSON.parse(internalNotes))
-            }
-        }
-        fetchInternalNotes();
-    }, [application, selectedRow]);
 
     return (
         <>
@@ -43,8 +31,8 @@ const ApplicationList = ({application, pageCount}: Props) => {
                     status="application"
                     onRowClick={(rowData) => setSelectedRow(rowData)}
                 />
+                <PaginationElement pageCount={pageCount}/>
             </div>
-            <PaginationElement pageCount={pageCount}/>
             <Sheet open={!!selectedRow} onOpenChange={() => setSelectedRow(null)}>
                 <SheetHeader>
                     <SheetTitle></SheetTitle>
@@ -55,7 +43,6 @@ const ApplicationList = ({application, pageCount}: Props) => {
                 >
                     {selectedRow && (
                         <ApplicationPreview
-                            noteData={internalNotes}
                             data={selectedRow as ApplicationResponseType}
                             applications={application as ApplicationResponseType[]}
                         />

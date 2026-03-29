@@ -13,15 +13,15 @@ type Props = {
 
 const Page = async ({searchParams}: Props) => {
     const {orgId} = await auth();
-    const {location, salary, department, page, per_page} =
-    (await searchParams) ?? {};
+
+    const {location, salary, statuses, types, department, page, per_page} = (await searchParams) ?? {};
 
     const limit = typeof per_page === "string" ? parseInt(per_page) : 8;
     const offset = typeof page === "string" ? (parseInt(page) - 1) * limit : 0;
+    const status = statuses ? (statuses as string).split(",") : undefined
+    const type = types ? (types as string).split(",") : undefined
     const locations = location ? (location as string).split(",") : undefined;
-    const departments = department
-        ? (department as string).split(",")
-        : undefined;
+    const departments = department ? (department as string).split(",") : undefined;
     const salaries = salary ? (salary as string).split(",") : undefined;
 
     const result = await get_all_job_listings_action({

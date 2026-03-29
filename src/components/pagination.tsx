@@ -62,11 +62,13 @@ const PaginationElement = ({pageCount}: Props) => {
         [searchParams]
     );
     return (
-        <div className="mt-4">
+        <div className="p-4 border-t border-foreground/5 w-fit">
             <Pagination>
                 <PaginationContent>
                     <PaginationItem>
-                        <PaginationPrevious onClick={() => {
+                        <PaginationPrevious
+                            className="text-xs font-bold text-foreground/40 hover:text-primary hover:bg-transparent"
+                            onClick={() => {
                             router.push(
                                 `${pathname}?${createQueryString({
                                     page: Number(page) === 1 ? 1 : Number(page) - 1,
@@ -78,16 +80,17 @@ const PaginationElement = ({pageCount}: Props) => {
 
                     {paginationRange.map((page) => (
                         typeof page !== 'string' ?
-                            <PaginationItem key={page}>
+                            <PaginationItem className="text-xs font-bold" key={page}>
                                 <PaginationLink href="#">{page}</PaginationLink>
                             </PaginationItem>
                             :
-                            <PaginationItem key={page}>
+                            <PaginationItem className="text-xs font-bold" key={page}>
                                 <PaginationEllipsis/>
                             </PaginationItem>
                     ))}
                     <PaginationItem>
                         <PaginationNext
+                            className="text-xs font-bold text-foreground/40 hover:text-primary hover:bg-transparent"
                             onClick={() => {
                                 router.push(
                                     `${pathname}?${createQueryString({

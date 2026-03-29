@@ -1,7 +1,7 @@
 "use client";
 
 import React, {useEffect, useCallback} from "react";
-import {BriefcaseBusiness, CircleUser, Settings, Share} from "lucide-react";
+import {BriefcaseBusiness, CircleUser, Edit3, Settings, Share, Share2} from "lucide-react";
 import {usePathname, useRouter, useSearchParams} from "next/navigation";
 import JobPipeline from "./job-pipeline";
 import JobOptions from "./job-options";
@@ -23,14 +23,14 @@ type Props = {
     applications: ApplicationType[];
     stages: StageResponseType[];
     jobs: JobResponseType[];
-    joblistingId: string;
+    jobListingId: string;
     singleJob: JobListingType;
 };
 
 type TabValue = "candidates" | "pipelines" | "options";
 const DEFAULT_TAB: TabValue = "candidates";
 
-const JobTabs = ({applications, stages, jobs, joblistingId, singleJob}: Props) => {
+const JobTabs = ({applications, stages, jobs, jobListingId, singleJob}: Props) => {
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -52,12 +52,12 @@ const JobTabs = ({applications, stages, jobs, joblistingId, singleJob}: Props) =
         <div>
             <div className="flex px-4">
                 <Tabs className="px-0 h-full w-full" value={activeTab} onValueChange={handleTabChange}>
-                    <div className="flex items-center justify-between border-b border-zinc-200">
+                    <div className="flex items-center justify-between border-b border-zinc-200 pb-4">
                         <TabsList className="bg-transparent rounded-none p-0 justify-start">
                             {['candidates', 'pipelines', 'options'].map((tab) => (
                                 <CustomTabsTrigger
                                     key={tab}
-                                    className="px-4 flex items-center gap-4"
+                                    className="px-4 flex items-center gap-4 py-2 rounded-lg text-xs font-bold transition-all"
                                     value={tab}
                                 >
                                     {tab === 'options' ? <BriefcaseBusiness size={20}/> : <CircleUser size={20}/>}
@@ -65,14 +65,22 @@ const JobTabs = ({applications, stages, jobs, joblistingId, singleJob}: Props) =
                                 </CustomTabsTrigger>
                             ))}
                         </TabsList>
-                        <div className="flex items-center gap-4 text-zinc-500 text-sm">
-                            <span className="flex items-center px-2 py-1  rounded-md gap-2">
-                                <Share size={16} className=""/> Share
-                            </span>
-                            <span className="flex items-center px-2 py-1  rounded-md gap-2">
-                                <Settings size={16} className=""/>Setting
-                            </span>
-                            <span className="flex items-center px-2 py-1  rounded-md">Edit Job Ad</span>
+                        <div className="flex items-center gap-6">
+                            <button
+                                className="flex items-center gap-2 text-[10px] font-bold text-foreground/40 uppercase tracking-widest hover:text-primary transition-colors">
+                                <Share2 size={14}/>
+                                Share
+                            </button>
+                            <button
+                                className="flex items-center gap-2 text-[10px] font-bold text-foreground/40 uppercase tracking-widest hover:text-primary transition-colors">
+                                <Settings size={14}/>
+                                Setting
+                            </button>
+                            <button
+                                className="flex items-center gap-2 text-[10px] font-bold text-foreground/40 uppercase tracking-widest hover:text-primary transition-colors">
+                                <Edit3 size={14}/>
+                                Edit Job Ad
+                            </button>
                         </div>
                     </div>
 
@@ -83,11 +91,11 @@ const JobTabs = ({applications, stages, jobs, joblistingId, singleJob}: Props) =
                         <JobPipeline
                             data={applications}
                             stages={stages}
-                            jobDetails={{jobName: singleJob.job_name, department:singleJob.job_department}}
+                            jobDetails={{jobName: singleJob.job_name, department: singleJob.job_department}}
                         />
                     </TabsContent>
                     <TabsContent value="options">
-                        <JobOptions job_id={Number(joblistingId)} data={jobs} stages={stages}/>
+                        <JobOptions job_id={Number(jobListingId)} data={jobs} stages={stages}/>
                     </TabsContent>
                 </Tabs>
             </div>

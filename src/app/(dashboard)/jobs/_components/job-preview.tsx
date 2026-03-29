@@ -6,6 +6,7 @@ import {JobResponseType, NoteResponseType} from "@/types";
 import {Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbSeparator} from "@/components/ui/breadcrumb";
 import {SheetClose} from "@/components/ui/sheet";
 import {
+    Briefcase,
     Building2, Calendar, Clock, Edit3,
     Expand, MapPin,
     Share, Share2,
@@ -52,61 +53,49 @@ const JobPreview = ({data, jobs}: Props) => {
                 </span>
             </div>
 
-            <div className="p-4">
-                <div className="flex-1 overflow-y-auto py-4 space-y-4">
+            <div className="px-4">
+                <div className="flex-1 overflow-y-auto space-y-4">
                     {/* Header */}
-                    <div className="mb-8">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-3">
-                                <div
-                                    className="w-10 h-10 bg-black rounded-xl flex items-center justify-center shadow-lg shadow-brand-500/20">
-                                    <Building2 className="text-white w-5 h-5"/>
+                    <div className="bg-foreground rounded-3xl p-8 text-white relative overflow-hidden">
+                        <div className="relative z-10 space-y-6">
+                            <div className="flex items-center justify-between">
+                                <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center">
+                                    <Briefcase size={24} />
+                                </div>
+                                <div className="flex flex-col items-end gap-2">
+                                    <div className="bg-accent text-foreground text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">
+                                        {data.status}
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Edit3 size={16} className="text-white/40 cursor-pointer hover:text-white transition-colors" />
+                                        <Share2 size={16} className="text-white/40 cursor-pointer hover:text-white transition-colors" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 className="text-2xl font-bold font-mono uppercase tracking-tight">{data.name}</h3>
+                                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-1">{data.department}</p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-y-4 pt-4 border-t border-white/10">
+                                <div>
+                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Salary</p>
+                                    <p className="text-sm font-bold font-mono">{data.salary}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Location</p>
+                                    <p className="text-sm font-bold">{data.location}</p>
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-bold text-zinc-900 uppercase">Job Preview</h3>
-                                    <p className="text-xs text-zinc-500 font-medium  tracking-wider">Internal
-                                        View</p>
+                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Type</p>
+                                    <p className="text-sm font-bold">Full-Time</p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => setIsEditJobOpen(true)}
-                                    className="p-2 text-zinc-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-all">
-                                    <Edit3 className="w-4 h-4"/>
-                                </button>
-                                <button
-                                    className="p-2 text-zinc-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-all">
-                                    <Share2 className="w-4 h-4"/>
-                                </button>
-                            </div>
                         </div>
-                    </div>
 
-                    {/* Info Card */}
-                    <div className="bg-zinc-900 rounded-2xl p-6 text-white space-y-4">
-                        <span
-                            className="px-2.5 py-0.5 rounded-full text-xs font-bold border uppercase tracking-wider bg-green-300"
-                        >
-                                {data?.status}
-                        </span>
-                        <div>
-                            <p className="text-2xl font-bold  leading-tight uppercase">{data?.name}</p>
-                            <p className="text-zinc-400 text-sm">{data?.department}</p>
-                        </div>
-                        <div className="space-y-2 pt-2">
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-zinc-500">Salary</span>
-                                <span className="font-medium">{data?.salary}</span>
-                            </div>
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-zinc-500">Location</span>
-                                <span className="font-medium">{data?.location}</span>
-                            </div>
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-zinc-500">Type</span>
-                                <span className="font-medium ">Full Time</span>
-                            </div>
-                        </div>
+                        {/* Decorative background element */}
+                        <div className="absolute -bottom-12 -right-12 w-48 h-48 bg-primary/20 rounded-full blur-3xl"></div>
                     </div>
 
                     <div className="flex-1 overflow-y-auto py-4 space-y-4">
@@ -153,7 +142,6 @@ const JobPreview = ({data, jobs}: Props) => {
                     </div>
                 </div>
             </div>
-
             <EditJobListingModal isEditJobOpen={isEditJobOpen} setIsEditJobOpen={setIsEditJobOpen} data={data}/>
         </>
     );

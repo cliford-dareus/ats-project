@@ -3,14 +3,14 @@ import { RecrutmentFunnel } from "./dashboard";
 import { useMemo, useState } from "react";
 import {
     ChartContainer,
-    ChartStyle,
     ChartTooltip,
     ChartTooltipContent,
     type ChartConfig,
 } from "@/components/ui/chart";
 import { Label, Pie, PieChart, Sector } from "recharts"
 import { PieSectorDataItem } from "recharts/types/polar/Pie";
-import { color } from "motion/react";
+import {Select, SelectContent, SelectItem, SelectTrigger} from "@/components/ui/select";
+import {JOB_ENUM} from "@/zod";
 
 interface Props {
     data: RecrutmentFunnel[];
@@ -43,18 +43,20 @@ const ApplicationBreakdown = ({ data, className }: Props) => {
             <CardHeader className="flex flex-row items-center justify-between">
                 <div className="flex items-center justify-between w-full">
                     <div className="flex items-center gap-4">
-                        <h3 className="font-black text-slate-900 tracking-tight uppercase">Application Breakdown</h3>
+                        <h3 className="text-xs font-bold text-foreground/40 uppercase tracking-widest">Application Breakdown</h3>
                     </div>
                     <div className="flex items-center gap-3">
-                        <select
-                            onChange={(e) => setActiveStage(e.target.value)}
+                        <Select
+                            onValueChange={(e) => setActiveStage(e as JOB_ENUM)}
                             value={activeStage as string}
-                            className="text-[11px] font-bold text-slate-600 focus:outline-none focus:ring-4 focus:ring-blue-500/5 transition-all cursor-pointer uppercase"
                         >
-                            {stages.map((stage) => (
-                                <option key={stage} value={stage as string}>{stage}</option>
-                            ))}
-                        </select>
+                            <SelectTrigger>{activeStage}</SelectTrigger>
+                            <SelectContent className="text-[11px] font-bold text-slate-600 uppercase">
+                                {stages.map((stage) => (
+                                    <SelectItem key={stage} value={stage as string}>{stage}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                 </div>
             </CardHeader>

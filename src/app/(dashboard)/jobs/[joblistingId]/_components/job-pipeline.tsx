@@ -9,7 +9,7 @@ type Props = {
 
 const JobPipeline = ({data, stages, jobDetails}: Props) => {
     return (
-        <div className="h-[calc(100vh-200px)]">
+        <div className="h-[calc(100vh-200px)] mt-6">
             <Kanban stages={stages} data={data} jobDetails={jobDetails}/>
         </div>
     );

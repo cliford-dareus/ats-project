@@ -29,7 +29,7 @@ const AppicationHeader = ({ applicationResult, stages }: Props) => {
                         <h2 className="text-2xl font-bold text-zinc-900">{applicationResult.candidate_name}</h2>
                         <p className="text-sm text-zinc-500 font-medium">
                             Applying for <span
-                                className="text-blue-600 font-bold uppercase">{applicationResult.job_apply}</span>
+                                className="text-primary font-bold uppercase">{applicationResult.job_apply}</span>
                         </p>
                     </div>
                     {/*<div className="flex items-center gap-3">*/}

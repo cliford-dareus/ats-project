@@ -5,7 +5,7 @@ import {JobResponseType} from "@/types";
 import React from "react";
 import IndeterminateCheckbox from "@/components/indeterminate-checkbox";
 import RowAction from "@/app/(dashboard)/jobs/[joblistingId]/_components/row-action";
-import {Clock, MapPin, Users} from "lucide-react";
+import {Briefcase, Clock, MapPin, Users} from "lucide-react";
 
 const columnHelper = createColumnHelper<JobResponseType>();
 
@@ -41,22 +41,19 @@ export const columns: ColumnDef<JobResponseType>[] = [
         header: "Job Title",
         cell: ({row}) => (
             <div className="flex items-center gap-2">
-                <div
-                    className="w-12 h-12 bg-zinc-50 rounded-xl flex items-center justify-center border border-zinc-100">
-                    <Users className="w-6 h-6 text-zinc-400"/>
+                <div className="w-10 h-10 rounded-xl bg-primary/5 flex items-center justify-center text-brand-dark/30">
+                    <Briefcase size={20} />
                 </div>
                 <div className="flex flex-col">
                     <span className="text-xl font-semibold text-zinc-900">
                       {row.original.name}
                     </span>
 
-                    <div className="flex">
-                        <div className="flex items-center text-sm text-zinc-500">
-                            <Clock size={16}/>
-                            <span className="ml-1">Full-time</span>
-                        </div>
+                    <div className="flex items-center gap-1 text-xs font-bold text-foreground/30 uppercase tracking-widest mt-1">
+                        <Clock size={16}/>
+                        <span className="ml-1">Full-time</span>
                         <span className="text-zinc-300 ml-2">•</span>
-                        <span className="ml-2 ">{row.original.department}</span>
+                        <span className="ml-2">{row.original.department}</span>
                     </div>
                 </div>
             </div>
@@ -76,9 +73,9 @@ export const columns: ColumnDef<JobResponseType>[] = [
         accessorKey: "applicants No",
         header: "Applicants No.",
         cell: ({row}) => (
-            <div className="mr-4">
-                <span className="text-lg font-bold text-zinc-900">{row.original.candidatesCount}</span>
-                <p className="text-xs text-zinc-400 uppercase font-bold tracking-wider">Applicants</p>
+            <div className="mr-4 text-right">
+                <span className="text-lg font-bold">{row.original.candidatesCount}</span>
+                <p className="text-xs font-bold text-foreground/30 uppercase tracking-widest">Applicants</p>
             </div>
         )
     },

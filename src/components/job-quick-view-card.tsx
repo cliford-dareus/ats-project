@@ -9,7 +9,7 @@ type Props = {
 
 const JobQuickViewCard = ({name, department, location, type}: Props) => {
     return (
-        <div className="bg-zinc-900 rounded-2xl p-6 text-white space-y-4">
+        <div className="bg-foreground rounded-2xl p-6 text-white space-y-4">
             <div className="flex items-center gap-2">
                 <Briefcase className="w-4 h-4 text-brand-400" />
                 <h3 className="font-bold text-sm uppercase tracking-wider">Job

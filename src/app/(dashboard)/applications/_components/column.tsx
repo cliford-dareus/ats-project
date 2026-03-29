@@ -10,18 +10,18 @@ import {Ellipsis} from "lucide-react";
 export const columns: ColumnDef<ApplicationResponseType>[] = [
     {
         id: 'select',
-        header: ({ table }) => (
-          <div className="px-4">
-            <IndeterminateCheckbox
-                {...{
-                    checked: table.getIsAllRowsSelected(),
-                    indeterminate: table.getIsSomeRowsSelected(),
-                    onChange: table.getToggleAllRowsSelectedHandler(),
-                }}
-            />
-          </div>
+        header: ({table}) => (
+            <div className="px-4">
+                <IndeterminateCheckbox
+                    {...{
+                        checked: table.getIsAllRowsSelected(),
+                        indeterminate: table.getIsSomeRowsSelected(),
+                        onChange: table.getToggleAllRowsSelectedHandler(),
+                    }}
+                />
+            </div>
         ),
-        cell: ({ row }) => (
+        cell: ({row}) => (
             <div className="px-4">
                 <IndeterminateCheckbox
                     {...{
@@ -37,30 +37,35 @@ export const columns: ColumnDef<ApplicationResponseType>[] = [
     {
         accessorKey: "Name",
         header: 'Name',
-        cell: ({ row }) => (
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold text-zinc-900">{row.original.candidate_name}</span>
-            <span className="text-xs text-zinc-500">email@email.com</span>
-          </div>
+        cell: ({row}) => (
+            <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-background overflow-hidden border-2 border-white shadow-sm">
+                    {/*<img src={app.avatar} alt={app.name} />*/}
+                </div>
+                <div>
+                    <h4 className="text-sm font-bold group-hover:text-primary transition-colors">{row.original.candidate_name}</h4>
+                    <p className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest mt-1">{row.original.candidate_email}</p>
+                </div>
+            </div>
         )
     },
     {
         accessorKey: "Role",
         header: 'Role',
-        cell: ({ row }) => row.original.job_apply
+        cell: ({row}) => row.original.job_apply
     },
     {
         accessorKey: "location",
         header: 'Location',
-        cell: ({ row }) => row.original.location
+        cell: ({row}) => row.original.location
     },
     {
         accessorKey: "stage",
         header: 'Status',
-        cell: ({ row }) => (
-          <div className="px-2.5 py-1 rounded-full text-xs font-medium border w-1/2 text-center">
-            {row.original.current_stage}
-          </div>
+        cell: ({row}) => (
+            <div className="px-2.5 py-1 rounded-full text-xs font-medium border w-1/2 text-center">
+                {row.original.current_stage}
+            </div>
         )
     },
     {

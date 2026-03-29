@@ -5,7 +5,7 @@ import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 import {
     AlertCircle,
     Briefcase,
-    Calendar, CheckCircle2, Download, ExternalLink, FileText, History,
+    Calendar, CheckCircle2, Clock, Download, ExternalLink, FileText, History, Linkedin,
     LucideEllipsis, LucideMail, Mail,
     MessageSquare,
     Sparkles, Star, TrendingUp
@@ -25,8 +25,11 @@ import {
     SelectValue
 } from "@/components/ui/select";
 import {Button} from "@/components/ui/button";
-import { get_candidate_details } from "@/server/queries/mongo/candidate-details";
-import ApplicationSummary, { ApplicationSummaryType, MatchResult } from "@/app/(dashboard)/applications/[applicationId]/_components/application-summary";
+import {get_candidate_details} from "@/server/queries/mongo/candidate-details";
+import ApplicationSummary, {
+    ApplicationSummaryType,
+    MatchResult
+} from "@/app/(dashboard)/applications/[applicationId]/_components/application-summary";
 import JobQuickViewCard from "@/components/job-quick-view-card";
 
 type Props = {
@@ -78,63 +81,68 @@ const JobCandidate = ({job}: Props) => {
     }, [applications]);
 
     return (
-        <div>
-            <div className="flex gap-8 h-full overflow-scroll">
+        <>
+            <div className="flex gap-4 h-full">
                 <Tabs defaultValue="all">
-                    <div className="w-full">
-                        <TabsList className="bg-transparent rounded-none p-0 h-auto">
-                            <div className="flex items-center py-4 w-full">
-                                <Select defaultValue="all">
-                                    <SelectTrigger className="w-full max-w-48">
-                                        <SelectValue placeholder="Select a status"/>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectGroup>
-                                            <SelectItem value="all">
-                                                <TabsTrigger value="all">All Applied</TabsTrigger>
-                                            </SelectItem>
-                                            <SelectItem value="drafted">
-                                                <TabsTrigger value="drafted">All Drafted</TabsTrigger>
-                                            </SelectItem>
-                                        </SelectGroup>
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                    <div
+                        className="flex mt-4 items-center justify-between bg-white border border-foreground/5 rounded-xl cursor-pointer hover:bg-primary/5 transition-colors">
+                        <TabsList className="bg-transparent rounded-none  outline-none p-0 h-auto w-full">
+                            <Select defaultValue="all">
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Select a status"/>
+                                </SelectTrigger>
+                                <SelectContent className="outline-none border-none bg-transparent">
+                                    <SelectGroup>
+                                        <SelectItem value="all">
+                                            <TabsTrigger value="all">All Applied</TabsTrigger>
+                                        </SelectItem>
+                                        <SelectItem value="drafted">
+                                            <TabsTrigger value="drafted">All Drafted</TabsTrigger>
+                                        </SelectItem>
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
                         </TabsList>
                     </div>
 
                     {/* All Applied */}
                     <TabsContent value="all">
-                        <div className="rounded h-full">
-                            <div className="h-[40px] flex items-center gap-4">
+                        <div className="bg-white rounded-2xl border border-foreground/5 shadow-sm overflow-hidden flex flex-col">
+                            <div className="p-4 border-b border-foreground/5 flex items-center gap-3">
                                 <Checkbox className="text-zinc-400" onCheckedChange={() => handleSelectAll()} id="all"/>
                                 <Label htmlFor="all">Select All</Label>
                             </div>
 
-                            <div className="">
+                            <div className="flex-1 overflow-y-auto">
                                 {applications.map((application) => (
                                     <div
                                         key={application.id}
                                         onClick={() => setSelectedApplications(application)}
-                                        className={cn("flex items-center justify-between px-4  py-2 cursor-pointer border rounded-md mt-1",
-                                            selectedApplications?.id == application.id ? "bg-zinc-100" : ""
+                                        className={cn(
+                                            "p-4 flex items-center gap-3 cursor-pointer transition-all group border-b border-foreground/5 last:border-0",
+                                            selectedApplications?.id === application.id ? "bg-primary/5" : "hover:bg-background/50"
                                         )}
                                     >
-                                        <div className="flex gap-4 items-center">
-                                            <Checkbox
-                                                className="text-zinc-400"
-                                                checked={selectedCandidates.includes(application.id)}
-                                                onCheckedChange={() => handleSelectCandidate(application.id)}
-                                                id={String(application.id)}
-                                            />
-                                            <Avatar className="w-6 h-6">
-                                                <AvatarImage src="https://github.com/shadcn.png"/>
-                                                <AvatarFallback>CN</AvatarFallback>
-                                            </Avatar>
-                                            <span>{application.candidate.name}</span>
-                                        </div>
+
+                                        <Checkbox
+                                            className="text-zinc-400"
+                                            checked={selectedCandidates.includes(application.id)}
+                                            onCheckedChange={() => handleSelectCandidate(application.id)}
+                                            id={String(application.id)}
+                                        />
+                                        <Avatar
+                                            className="w-8 h-8 rounded-full overflow-hidden border-2 border-white shadow-sm">
+                                            <AvatarImage src="https://github.com/shadcn.png"/>
+                                            <AvatarFallback>CN</AvatarFallback>
+                                        </Avatar>
+                                        <span className={cn(
+                                            "text-xs font-bold transition-colors flex-1 truncate",
+                                            selectedApplications?.id === application.id ? "text-primary" : "text-foreground/60 group-hover:text-primary"
+                                        )}>{application.candidate.name}</span>
+
                                         <span className="ml-4">
-                                            <LucideMail size={16} className="text-zinc-400"/>
+                                            <LucideMail size={16}
+                                                        className="text-foreground/20 group-hover:text-primary transition-colors"/>
                                         </span>
                                     </div>
                                 ))}
@@ -168,8 +176,9 @@ const JobCandidate = ({job}: Props) => {
                 {/* Right side */}
                 <div className="flex-1">
                     {selectedApplications && (
-                        <div className="mt-4">
-                            <div className="">
+                        <div className="mt-4 flex-1 flex">
+                            {/* Left Column: Candidate & Job Info */}
+                            <div className="flex-1 overflow-y-auto space-y-8 pr-4">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-4">
                                         <div className="flex items-center gap-4">
@@ -178,10 +187,10 @@ const JobCandidate = ({job}: Props) => {
                                                 <AvatarFallback>CN</AvatarFallback>
                                             </Avatar>
                                             <div>
-                                                <h2 className="text-2xl font-bold text-zinc-900">{selectedApplications.candidate.name.toUpperCase()}</h2>
+                                                <h2 className="text-2xl font-bold text-foreground">{selectedApplications.candidate.name.toUpperCase()}</h2>
                                                 <p className="text-sm text-zinc-500 font-medium">
                                                     Applying for <span
-                                                    className="text-blue-600 font-bold uppercase">{job.job_name}</span>
+                                                    className="text-primary font-bold uppercase">{job.job_name}</span>
                                                 </p>
                                             </div>
                                         </div>
@@ -193,105 +202,103 @@ const JobCandidate = ({job}: Props) => {
                                             Message
                                         </button>
                                         <Button
-                                            className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-all shadow-lg shadow-brand-500/20">
+                                            className="px-4 py-2 bg-foreground text-white rounded-lg text-sm font-medium hover:bg-primary transition-all shadow-lg shadow-brand-500/20">
                                             Advance Stage
                                         </Button>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-3 gap-4 mt-2">
-                                    {/* Left Column: Candidate & Job Info */}
-                                   <ApplicationSummary
-                                        applicationSummary={applicationSummary}
-                                        candidate_id={selectedApplications.candidate.id}
-                                        jobSkills={job.job_technologies as unknown as JobExperienceType[]}
-                                    />
+                                <ApplicationSummary
+                                    applicationSummary={applicationSummary}
+                                    candidate_id={selectedApplications.candidate.id}
+                                    jobSkills={job.job_technologies as unknown as JobExperienceType[]}
+                                />
+                            </div>
 
-                                    {/* Right Column: Sidebar Info */}
-                                    <div className="space-y-4">
-                                        {/* Application Details */}
-                                        <div
-                                            className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-4 space-y-4">
-                                            <h3 className="font-bold text-zinc-900 flex items-center gap-2">
-                                                <AlertCircle className="w-4 h-4 text-zinc-400"/>
-                                                Application Details
-                                            </h3>
+                            {/* Right Column: Sidebar Info */}
+                            <div className="space-y-4 w-80">
+                                {/* Application Details */}
+                                <div
+                                    className="bg-white p-6 rounded-3xl border border-brand-dark/5 shadow-sm space-y-8">
+                                    <div className="flex items-center gap-2">
+                                        <AlertCircle size={16} className="text-brand-dark/30"/>
+                                        <h3 className="text-[11px] font-bold text-brand-dark uppercase tracking-widest">Application
+                                            Details</h3>
+                                    </div>
 
-                                            <div className="space-y-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div
-                                                        className="w-8 h-8 bg-zinc-100 rounded-lg flex items-center justify-center">
-                                                        <Calendar className="w-4 h-4 text-zinc-500"/>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Applied
-                                                            On</p>
-                                                        <p className="text-sm font-semibold text-zinc-900">{new Date(selectedApplications.created_at).toLocaleDateString()}</p>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex items-center gap-3">
-                                                    <div
-                                                        className="w-8 h-8 bg-zinc-100 rounded-lg flex items-center justify-center">
-                                                        <Star className="w-4 h-4 text-zinc-500"/>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Internal
-                                                            Rating</p>
-                                                        <div className="flex items-center gap-1">
-                                                            <p className="text-sm font-semibold text-zinc-900">4.5</p>
-                                                            <Star className="w-3 h-3 text-amber-500 fill-current"/>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex items-center gap-3">
-                                                    <div
-                                                        className="w-8 h-8 bg-zinc-100 rounded-lg flex items-center justify-center">
-                                                        <History className="w-4 h-4 text-zinc-500"/>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Current
-                                                            Stage</p>
-                                                        <span
-                                                            className="px-2 py-0.5 bg-brand-50 text-brand-700 text-[10px] font-bold rounded-full border border-brand-100 uppercase tracking-wider">
-                    {selectedApplications.stage}
-                  </span>
-                                                    </div>
-                                                </div>
+                                    <div className="space-y-6">
+                                        <div className="flex items-center gap-4">
+                                            <div
+                                                className="w-8 h-8 rounded-lg bg-brand-light flex items-center justify-center text-brand-dark/30">
+                                                <Calendar size={16}/>
                                             </div>
+                                            <div>
+                                                <p className="text-[9px] font-bold text-brand-dark/30 uppercase tracking-widest">Applied
+                                                    on</p>
+                                                <p className="text-xs font-bold">{new Date(selectedApplications.created_at).toLocaleDateString()}</p>
+                                            </div>
+                                        </div>
 
-                                            <div className="pt-4 border-t border-zinc-100">
-                                                <h4 className="text-xs font-bold text-zinc-900 uppercase tracking-wider mb-3">Contact
-                                                    Info</h4>
-                                                <div className="space-y-3">
-                                                    <div className="flex items-center gap-2 text-sm text-zinc-600">
-                                                        <Mail className="w-4 h-4 text-zinc-400"/>
-                                                        {selectedApplications.candidate.email}
-                                                    </div>
-                                                    <div className="flex items-center gap-2 text-sm text-zinc-600">
-                                                        <ExternalLink className="w-4 h-4 text-zinc-400"/>
-                                                        LinkedIn Profile
-                                                    </div>
+                                        <div className="flex items-center gap-4">
+                                            <div
+                                                className="w-8 h-8 rounded-lg bg-brand-light flex items-center justify-center text-brand-dark/30">
+                                                <Star size={16}/>
+                                            </div>
+                                            <div>
+                                                <p className="text-[9px] font-bold text-brand-dark/30 uppercase tracking-widest">Internal
+                                                    Rating</p>
+                                                <div className="flex items-center gap-1">
+                                                    <p className="text-xs font-bold">4.5</p>
+                                                    <Star size={10} className="text-orange-400 fill-orange-400"/>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {/* Job Details Quick View */}
-                                        <JobQuickViewCard
-                                            name={job.job_name}
-                                            department={job.job_department}
-                                            location={job.job_location}
-                                            type={job.job_type}
-                                        />
+                                        <div className="flex items-center gap-4">
+                                            <div
+                                                className="w-8 h-8 rounded-lg bg-brand-light flex items-center justify-center text-brand-dark/30">
+                                                <Clock size={16}/>
+                                            </div>
+                                            <div>
+                                                <p className="text-[9px] font-bold text-brand-dark/30 uppercase tracking-widest">Current
+                                                    Stage</p>
+                                                <span
+                                                    className="bg-brand-dark/5 text-brand-dark/60 text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-widest">{selectedApplications.stage}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-6 border-t border-brand-dark/5 space-y-4">
+                                        <h4 className="text-[10px] font-bold text-brand-dark/40 uppercase tracking-widest">Contact
+                                            Info</h4>
+                                        <div className="space-y-3">
+                                            <div
+                                                className="flex items-center gap-2 text-xs font-bold text-brand-dark/60">
+                                                <Mail size={14} className="text-brand-dark/20"/>
+                                                {selectedApplications.candidate.email}
+                                            </div>
+                                            <div
+                                                className="flex items-center gap-2 text-xs font-bold text-brand-dark/60 cursor-pointer hover:text-brand-primary transition-colors">
+                                                <Linkedin size={14} className="text-brand-dark/20"/>
+                                                LinkedIn Profile
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
+
+                                {/* Job Details Quick View */}
+                                <JobQuickViewCard
+                                    name={job.job_name}
+                                    department={job.job_department}
+                                    location={job.job_location}
+                                    type={job.job_type}
+                                />
                             </div>
                         </div>
                     )}
                 </div>
             </div>
-        </div>
+        </>
     );
 };
 

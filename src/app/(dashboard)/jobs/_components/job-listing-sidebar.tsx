@@ -153,7 +153,7 @@ const JobListingSidebar = () => {
     ];
 
     return (
-        <aside className="flex flex-col bg-white flex-shrink-0 h-[calc(100vh-140px)]">
+        <aside className="flex flex-col bg-white flex-shrink-0 h-[calc(100vh-135px)]">
             <div className="flex-1 overflow-y-auto no-scrollbar px-6 py-4 space-y-6">
                 <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
@@ -168,7 +168,7 @@ const JobListingSidebar = () => {
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: 10 }}
                                 onClick={clearAll}
-                                className="text-[10px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 uppercase tracking-tighter"
+                                className="text-[10px] font-bold text-primary hover:text-accent flex items-center gap-1 uppercase tracking-tighter"
                             >
                                 <RotateCcw size={10} />
                                 Reset
@@ -180,7 +180,7 @@ const JobListingSidebar = () => {
                 <Accordion type="single">
                     {config.map((group) => (
                         <AccordionItem key={group.id} value={group.id}>
-                            <AccordionTrigger className="px-1 py-2">
+                            <AccordionTrigger className="px-1 py-2 underline-primary">
                                 <div className="flex items-center gap-2">
                                     <group.icon size={14} className="text-slate-400" />
                                     <span className="font-bold text-[10px] text-slate-400 uppercase tracking-[0.15em]">
@@ -215,7 +215,6 @@ const JobListingSidebar = () => {
                             <PopoverTrigger asChild>
                                 <button
                                     type="button"
-                                    role="combobox"
                                     aria-expanded={open}
                                     className={cn(
                                         "flex w-full justify-between items-center px-3 py-1.5 text-sm border border-zinc-200 rounded-lg bg-white shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-all",
@@ -248,12 +247,12 @@ const JobListingSidebar = () => {
                                                         setOpen(false);
 
                                                         // Apply filter immediately (or debounce if preferred)
-                                                        startTransition(() => {
-                                                            const newQuery = createQueryString({
-                                                                location: newValue || null,
-                                                            });
-                                                            router.push(`${pathname}?${newQuery}`, { scroll: false });
-                                                        });
+                                                        // startTransition(() => {
+                                                        //     const newQuery = createQueryString({
+                                                        //         location: newValue || null,
+                                                        //     });
+                                                        //     router.push(`${pathname}?${newQuery}`, { scroll: false });
+                                                        // });
                                                     }}
                                                 >
                                                     <Check

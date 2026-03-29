@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {motion} from "framer-motion";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {Button} from "@/components/ui/button";
+import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {
     Users,
     Briefcase,
@@ -13,20 +12,16 @@ import {
     CheckCircle,
     Target,
     Activity,
-    ArrowUpRight,
-    ArrowDownRight,
     MoreHorizontal,
     Calendar,
     LayoutGrid,
     List,
-    Zap, ChevronLeft, ChevronRight
+    Zap
 } from "lucide-react";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
+import {cn} from "@/lib/utils";
 import AnalyticsOverview from "./analytics-overview";
-import DashboardSummary from "./dashboard-summary";
 import StripCalendar from "@/components/strip-calenda";
-import {ScrollArea} from "@/components/ui/scroll-area";
 import MetricCard from "@/components/metric-card";
 import ApplicationBreakdown from './application-breakdown';
 
@@ -69,7 +64,7 @@ interface JobPipelineData {
     }[];
 };
 
-export interface RecrutmentFunnel {
+export interface RecruitmentFunnel {
     stage: "Applied" | "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | 'Hired' | "Drafted" | null;
     count: number;
     stageColor: string;
@@ -81,20 +76,20 @@ type Props = {
     recentActivity: RecentActivity[];
     upcomingInterviews: UpcomingInterview[];
     jobPipeline: JobPipelineData[];
-    recruitmentFunnel: RecrutmentFunnel[];
-    applicationTrend: {date: string, count: number}[]
+    recruitmentFunnel: RecruitmentFunnel[];
+    applicationTrend: { date: string, count: number }[]
     userName: string;
 };
 
 const Dashboard = ({
-    metrics,
-    recentActivity,
-    upcomingInterviews,
-    jobPipeline,
-    recruitmentFunnel,
-    applicationTrend,
-    userName
-}: Props) => {
+                       metrics,
+                       recentActivity,
+                       upcomingInterviews,
+                       // jobPipeline,
+                       recruitmentFunnel,
+                       applicationTrend,
+                       userName
+                   }: Props) => {
     const [timeOfDay, setTimeOfDay] = useState('');
     const [viewMode, setViewMode] = useState('grid');
 
@@ -102,20 +97,20 @@ const Dashboard = ({
     const analyticsData = {
         applications: applicationTrend,
         hires: [
-            { date: '2024-01-01', count: 3 },
-            { date: '2024-01-02', count: 5 },
-            { date: '2024-01-03', count: 2 },
-            { date: '2024-01-04', count: 4 },
-            { date: '2024-01-05', count: 6 },
-            { date: '2024-01-06', count: 3 },
-            { date: '2024-01-07', count: 4 }
+            {date: '2024-01-01', count: 3},
+            {date: '2024-01-02', count: 5},
+            {date: '2024-01-03', count: 2},
+            {date: '2024-01-04', count: 4},
+            {date: '2024-01-05', count: 6},
+            {date: '2024-01-06', count: 3},
+            {date: '2024-01-07', count: 4}
         ],
         sources: [
-            { name: 'LinkedIn', value: 145, color: '#0077B5' },
-            { name: 'Indeed', value: 98, color: '#2557A7' },
-            { name: 'Company Website', value: 76, color: '#00C49F' },
-            { name: 'Referrals', value: 54, color: '#FFBB28' },
-            { name: 'Other', value: 32, color: '#FF8042' }
+            {name: 'LinkedIn', value: 145, color: '#0077B5'},
+            {name: 'Indeed', value: 98, color: '#2557A7'},
+            {name: 'Company Website', value: 76, color: '#00C49F'},
+            {name: 'Referrals', value: 54, color: '#FFBB28'},
+            {name: 'Other', value: 32, color: '#FF8042'}
         ],
         stages: recruitmentFunnel
     };
@@ -129,21 +124,31 @@ const Dashboard = ({
 
     const getActivityIcon = (type: string) => {
         switch (type) {
-            case 'application': return <Users className="h-4 w-4" />;
-            case 'interview': return <Calendar className="h-4 w-4" />;
-            case 'hire': return <CheckCircle className="h-4 w-4" />;
-            case 'job_posted': return <Briefcase className="h-4 w-4" />;
-            default: return <Activity className="h-4 w-4" />;
+            case 'application':
+                return <Users className="h-4 w-4"/>;
+            case 'interview':
+                return <Calendar className="h-4 w-4"/>;
+            case 'hire':
+                return <CheckCircle className="h-4 w-4"/>;
+            case 'job_posted':
+                return <Briefcase className="h-4 w-4"/>;
+            default:
+                return <Activity className="h-4 w-4"/>;
         }
     };
 
     const getActivityColor = (type: string) => {
         switch (type) {
-            case 'application': return 'bg-blue-100 text-blue-600';
-            case 'interview': return 'bg-yellow-100 text-yellow-600';
-            case 'hire': return 'bg-green-100 text-green-600';
-            case 'job_posted': return 'bg-purple-100 text-purple-600';
-            default: return 'bg-gray-100 text-gray-600';
+            case 'application':
+                return 'bg-blue-100 text-blue-600';
+            case 'interview':
+                return 'bg-yellow-100 text-yellow-600';
+            case 'hire':
+                return 'bg-green-100 text-green-600';
+            case 'job_posted':
+                return 'bg-purple-100 text-purple-600';
+            default:
+                return 'bg-gray-100 text-gray-600';
         }
     };
 
@@ -154,26 +159,28 @@ const Dashboard = ({
                 {/* Header */}
                 <section className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 pt-4">
                     <div className="space-y-3">
-                        <div className="flex items-center gap-3 text-blue-600 font-black text-[10px] uppercase tracking-[0.3em]">
-                            <LayoutGrid size={12} />
+                        <div
+                            className="flex items-center gap-3 text-primary font-black text-[10px] uppercase tracking-[0.3em]">
+                            <LayoutGrid size={12}/>
                             Main Dashboard
                         </div>
                         <h2 className="text-4xl uppercase font-bold tracking-tight">Good {timeOfDay}, {userName}.</h2>
-                        <p className="text-muted-foreground">Here&apos;s what&apos;s happening with your recruitment today.</p>
+                        <p className="text-muted-foreground">Here&apos;s what&apos;s happening with your recruitment
+                            today.</p>
                     </div>
                     <div className="flex items-center gap-4">
                         <div className="flex bg-white border border-slate-200 p-1.5 rounded-[1.25rem] shadow-sm">
                             <button
                                 onClick={() => setViewMode('grid')}
-                                className={`p-2 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-slate-900 text-white shadow-lg shadow-slate-200' : 'text-slate-400 hover:text-slate-600'}`}
+                                className={`p-2 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-primary text-white shadow-lg shadow-slate-200' : 'text-slate-400 hover:text-slate-600'}`}
                             >
-                                <LayoutGrid size={14} />
+                                <LayoutGrid size={14}/>
                             </button>
                             <button
                                 onClick={() => setViewMode('list')}
-                                className={`p-2 rounded-xl transition-all ${viewMode === 'list' ? 'bg-slate-900 text-white shadow-lg shadow-slate-200' : 'text-slate-400 hover:text-slate-600'}`}
+                                className={`p-2 rounded-xl transition-all ${viewMode === 'list' ? 'bg-primary text-white shadow-lg shadow-slate-200' : 'text-slate-400 hover:text-slate-600'}`}
                             >
-                                <List size={14} />
+                                <List size={14}/>
                             </button>
                         </div>
                         {/* <button
@@ -219,15 +226,16 @@ const Dashboard = ({
                 </div>
 
                 {/* Analytics Overview */}
-                <AnalyticsOverview data={analyticsData} />
+                <AnalyticsOverview data={analyticsData}/>
 
                 {/* Recent Views */}
                 <div className="space-y-3">
                     <div className="flex flex-row items-center justify-between">
-                        <h2 className=' text-sm text-slate-900 tracking-tight uppercase'>Previously Viewed Applications</h2>
+                        <h2 className='text-xs font-bold text-brand-dark/40 uppercase tracking-widest'>Previously Viewed
+                            Applications</h2>
 
                         <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
+                            <MoreHorizontal className="h-4 w-4"/>
                         </Button>
                     </div>
 
@@ -235,40 +243,46 @@ const Dashboard = ({
                         <motion.div
                             layout
                             // layoutId={candidate.id}
-                            whileHover={{ y: -4 }}
+                            whileHover={{y: -4}}
                             className="group bg-white border border-slate-200 rounded-md p-4 shadow-sm hover:shadow-2xl hover:border-blue-100 transition-all duration-500 cursor-pointer"
                         >
                             <div className="flex gap-6 items-center">
                                 <div className="relative flex-shrink-0">
-                                    <div className="w-12 h-12 rounded-[1.25rem] overflow-hidden border-4 border-white shadow-xl ring-1 ring-slate-100 group-hover:rotate-3 transition-transform duration-500">
+                                    <div
+                                        className="w-12 h-12 rounded-[1.25rem] overflow-hidden border-4 border-white shadow-xl ring-1 ring-slate-100 group-hover:rotate-3 transition-transform duration-500">
                                         <Avatar>
                                             <AvatarImage alt=""/>
                                             <AvatarFallback></AvatarFallback>
                                         </Avatar>
                                     </div>
                                     {/* {hasActiveTrigger && ( */}
-                                        <div className="absolute -top-1 -right-2 bg-blue-600 text-white p-1.5 rounded-xl shadow-lg border-2 border-white animate-bounce">
-                                            <Zap size={12} fill="currentColor" />
-                                        </div>
+                                    <div
+                                        className="absolute -top-1 -right-2 bg-primary text-white p-1.5 rounded-xl shadow-lg border-2 border-white animate-bounce">
+                                        <Zap size={12} fill="currentColor"/>
+                                    </div>
                                     {/* )} */}
                                 </div>
 
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <h4 className="text-sm font-bold text-slate-900 truncate tracking-tight">John Doe</h4>
-                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Software Engineer</p>
+                                            <h4 className="text-sm font-bold text-slate-900 truncate tracking-tight">John
+                                                Doe</h4>
+                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Software
+                                                Engineer</p>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
                             <div className="mt-4 flex items-center justify-between">
-                                <div className={`px-4 py-1 rounded-xl border text-[10px] font-semibold uppercase tracking-[0.2em]`}>
+                                <div
+                                    className={`px-4 py-1 rounded-xl border text-[10px] font-semibold uppercase tracking-[0.2em]`}>
                                     Active
                                 </div>
-                                <div className="flex items-center gap-2 text-[11px] text-slate-500 font-bold bg-slate-50 px-4 py-1 rounded-xl">
-                                    <Calendar size={12} className="text-blue-500" />
+                                <div
+                                    className="flex items-center gap-2 text-[11px] text-slate-500 font-bold bg-slate-50 px-4 py-1 rounded-xl">
+                                    <Calendar size={12} className="text-blue-500"/>
                                     New Candidate
                                 </div>
                             </div>
@@ -277,31 +291,36 @@ const Dashboard = ({
                 </div>
             </div>
 
-            <div className="flex flex-col xl:col-span-4 gap-4 p-4 border bg-slate-100">
+            <div className="flex flex-col xl:col-span-4 gap-4 py-4">
                 {/*  Upcoming Interviews */}
-                <Card className="md:col-span-1">
+                <Card className="md:col-span-2">
                     <CardHeader className="flex flex-row items-center justify-between">
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-row items-center justify-between">
                             <div>
-                                <CardTitle className="text-sm text-slate-900 tracking-tight uppercase">Schedule</CardTitle>
+                                <CardTitle
+                                    className="text-xs font-bold text-foreground/40 uppercase tracking-widest">Schedule</CardTitle>
                                 {/*<CardDescription className="">Manage your upcoming candidate meetings</CardDescription>*/}
                             </div>
                         </div>
+                        <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4"/>
+                        </Button>
                     </CardHeader>
                     <CardContent className="w-full min-h-[290px]">
-                        <StripCalendar interviews={upcomingInterviews} />
+                        <StripCalendar interviews={upcomingInterviews}/>
                     </CardContent>
                 </Card>
 
                 {/* Activity */}
-                <Card className="md:col-span-1">
+                <Card className="md:col-span-2">
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div>
-                            <CardTitle className="text-sm text-slate-900 tracking-tight uppercase">Recent Activity</CardTitle>
+                            <CardTitle className="text-xs font-bold text-foreground/40 uppercase tracking-widest">Recent
+                                Activity</CardTitle>
                             {/*<CardDescription>Latest updates from your recruitment pipeline</CardDescription>*/}
                         </div>
                         <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
+                            <MoreHorizontal className="h-4 w-4"/>
                         </Button>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -324,14 +343,35 @@ const Dashboard = ({
                                     </p>
                                 </div>
                             </div>
+                            // <div key={activity.id} className="flex gap-4">
+                            //     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border-2 border-white shadow-sm">
+                            //         {/*<img src={activity.avatar} alt={activity.user} />*/}
+                            //     </div>
+                            //     <div className="flex-1">
+                            //         <p className="flex text-xs font-bold">
+                            //             <span className="text-primary">{activity.candidate}</span>
+                            //             <span className="text-foreground/60 font-medium">
+                            //                 {activity.type === 'application' && 'applied for'}
+                            //                 {activity.type === 'interview' && 'scheduled interview for'}
+                            //                 {activity.type === 'hire' && 'was hired for'}
+                            //                 {activity.type === 'job_posted' && 'New job posted:'}
+                            //                 {activity.job && ` ${activity.job}`}
+                            //             </span>
+                            //         </p>
+                            //         <p className="text-[10px] text-brand-dark/30 font-bold mt-1">{activity.timestamp.toLocaleDateString()}</p>
+                            //     </div>
+                            // </div>
                         ))}
-                        <Button variant="ghost" className="w-full" asChild>
-                            <Link href="/activity">View all activity</Link>
+                        <Button
+                            variant="ghost"
+                            className="w-full text-[10px] font-bold text-foreground/40 uppercase tracking-widest hover:text-primary hover:bg-transparent transition-colors border-t border-foreground/5 pt-6">
+                            View all activity
                         </Button>
                     </CardContent>
                 </Card>
 
-                <ApplicationBreakdown data={recruitmentFunnel} totalApplications={metrics.totalApplications} className="md:col-span-2" />
+                <ApplicationBreakdown data={recruitmentFunnel} totalApplications={metrics.totalApplications}
+                                      className="md:col-span-2"/>
 
                 {/*  Quick Actions */}
                 {/*<DashboardSummary className="lg:col-span-1" />*/}
