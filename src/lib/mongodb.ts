@@ -18,7 +18,7 @@ declare global {
     var mongoose: CachedMongoose | undefined;
 };
 
-let cached: CachedMongoose = global.mongoose ?? { conn: null, promise: null };
+const cached: CachedMongoose = global.mongoose ?? {conn: null, promise: null};
 
 if (!global.mongoose) {
     global.mongoose = cached;

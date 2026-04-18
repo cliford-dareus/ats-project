@@ -4,7 +4,7 @@ import Trigger from "@/models/trigger";
 import {applications, stages} from '@/drizzle/schema';
 import {db} from '@/drizzle/db';
 import {eq} from 'drizzle-orm';
-import { Server as SocketServer } from 'socket.io';
+import {Server as SocketServer} from 'socket.io';
 
 // Create a queue instance
 export const taskQueue = new Queue('taskQueue', {
@@ -22,7 +22,11 @@ export const setupWorker = (io: SocketServer) => {
                 case 'move':
                     if (job.data.config.condition.type && job.data.config.condition.type === 'location') {
                         console.log(job.data.config.condition.location);
-                        const result = await db.select().from(applications).where(eq(applications.id, job.data.application_id))
+
+                        const result = await db.select()
+                            .from(applications)
+                            .where(eq(applications.id, job.data.application_id))
+
                         const application = Array.isArray(result) ? result[0] : null;
                         if (!application) {
                             console.warn(`Application ${job.data.application_id} not found`);
@@ -31,7 +35,10 @@ export const setupWorker = (io: SocketServer) => {
 
                         //  Delete Later
                         // Get the application stage id from the stage name
-                        const stageResults = await db.select().from(stages).where(eq(stages.job_id, application.job_id!));
+                        const stageResults = await db.select()
+                            .from(stages)
+                            .where(eq(stages.job_id, application.job_id!));
+
                         const stage = stageResults.find((s) => s.stage_name === job.data.config.condition.target);
                         const stageId = stage?.id;
                         if (stageId !== job.data.newStageId) {
@@ -83,7 +90,7 @@ export const setupWorker = (io: SocketServer) => {
         },
         {connection: redis}
     );
-    // Log worker events for debugging
+
     taskWorker.on('completed', (job) => {
         // Emit to specific room (board:${application.job_id})
         io.emit('job-completed', {

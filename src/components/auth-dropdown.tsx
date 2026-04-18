@@ -14,8 +14,9 @@ import {
 import {Button, ButtonProps} from "./ui/button";
 import Link from "next/link";
 import {cn} from "@/lib/utils";
-import {User, auth} from "@clerk/nextjs/server";
+import {User} from "@clerk/nextjs/server";
 import {SignOutButton} from "@/components/sign_out";
+import React from "react";
 
 interface Props
     extends React.ComponentPropsWithRef<typeof DropdownMenuTrigger>,
@@ -24,11 +25,11 @@ interface Props
     orgId?: string | null;
 };
 
-const AuthDropdown = async ({user, orgId, className, ...props}: Props) => {
-    if (!user) {
+const AuthDropdown = ({user, orgId, className, ...props}: Props) => {
+    if (!user && !orgId) {
         return (
             <Button size="sm" className={cn(className)} {...props} asChild>
-                <Link href="/signin">
+                <Link href="http://app.localhost:3000/sign-in">
                     Sign In
                     <span className="sr-only">Sign In</span>
                 </Link>
@@ -36,8 +37,7 @@ const AuthDropdown = async ({user, orgId, className, ...props}: Props) => {
         );
     };
 
-    const org = orgId ? orgId : (await auth()).orgId;
-    const initials = `${user.firstName?.charAt(0) ?? ""} ${user.lastName?.charAt(0) ?? ""}`;
+    const initials = `${user?.firstName?.charAt(0) ?? ""} ${user?.lastName?.charAt(0) ?? ""}`;
 
     return (
         <DropdownMenu>
@@ -55,7 +55,7 @@ const AuthDropdown = async ({user, orgId, className, ...props}: Props) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent>
                 <DropdownMenuItem>
-                    <Link href={org ? `/dashboard` : "/onboarding"}>
+                    <Link href={orgId ? `http://app.localhost:3000/` : "/onboarding"}>
                         <LucideLayoutDashboard/>
                         <span>Dashboard</span>
                         <DropdownMenuShortcut>⌘D</DropdownMenuShortcut>
@@ -63,7 +63,7 @@ const AuthDropdown = async ({user, orgId, className, ...props}: Props) => {
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                     <LogOut/>
-                    <SignOutButton />
+                    <SignOutButton/>
                     <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
                 </DropdownMenuItem>
             </DropdownMenuContent>

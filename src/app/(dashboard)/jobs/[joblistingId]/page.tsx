@@ -23,10 +23,10 @@ import {lifecycle} from "@/lib/smart-trigger/lifecycle";
 import {get_job_all_applications_action} from "@/server/actions/application_actions";
 
 type Props = {
-    params: {
+    params: Promise<{
         joblistingId: string;
         organizationId: string;
-    };
+    }>;
 };
 
 const Page = async ({params}: Props) => {
@@ -62,8 +62,10 @@ const Page = async ({params}: Props) => {
     if (flags['smart-triggers']) {
         const context = {
             jobId: jobListingId,
-            setTriggers: () => {},
-            setJobStages: () => {}
+            setTriggers: () => {
+            },
+            setJobStages: () => {
+            }
         };
         const result = await lifecycle.activate(context);
         initialStages = result?.validStagesData || [];

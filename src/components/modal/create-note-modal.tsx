@@ -1,10 +1,11 @@
-import React  from 'react';
+"use client";
+
+import React from 'react';
 import {create_note} from "@/server/queries/mongo/note";
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Form, FormField, FormItem, FormControl, FormMessage } from '../ui/form';
-import { Input } from '../ui/input';
+import {zodResolver} from '@hookform/resolvers/zod';
+import {z} from 'zod';
+import {Form, FormField, FormItem, FormControl} from '../ui/form';
+import {Input} from '../ui/input';
 import {Command, Send} from "lucide-react";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import {
@@ -15,6 +16,7 @@ import {
     DialogTitle,
     DialogTrigger
 } from "@/components/ui/dialog";
+import {useForm} from "react-hook-form";
 
 export const NOTE_ENUM = ["NEUTRAL", "POSITIVE", "NEGATIVE"] as const;
 
@@ -80,8 +82,9 @@ const CreateNoteModal = ({parent_id, parent_type, isOpen, setIsOpen}: Props) => 
                                                 onValueChange={field.onChange}
                                                 defaultValue={NOTE_ENUM[0]}
                                             >
-                                                <SelectTrigger className="border-zinc-200 focus:outline-none rounded-xl">
-                                                    <SelectValue />
+                                                <SelectTrigger
+                                                    className="border-zinc-200 focus:outline-none rounded-xl">
+                                                    <SelectValue/>
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     {NOTE_ENUM.map(type => (

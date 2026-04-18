@@ -1,11 +1,6 @@
+import React from "react";
 import {SidebarInset, SidebarTrigger} from "@/components/ui/sidebar";
 import {AppSidebar} from "@/components/app-sidebar";
-import React from "react";
-import {
-    get_all_candidates_action,
-    get_candidates_stage_count_action,
-} from "@/server/actions/candidates-actions";
-import {CandidatesResponseType} from "@/types";
 import {Separator} from "@/components/ui/separator";
 import {Button} from "@/components/ui/button";
 import {Bell, Plus} from "lucide-react";

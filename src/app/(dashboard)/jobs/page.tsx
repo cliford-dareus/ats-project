@@ -4,22 +4,22 @@ import {auth} from "@clerk/nextjs/server";
 import {get_all_job_listings_action} from "@/server/actions/job-listings-actions";
 import ListPageTop from "@/components/list-page-top";
 import React from "react";
+import {JOB_STATUS} from "@/zod";
 
 type Props = {
-    searchParams: {
+    searchParams: Promise<{
         [key: string]: string | string[] | undefined;
-    };
+    }>;
 };
 
 const Page = async ({searchParams}: Props) => {
     const {orgId} = await auth();
-
-    const {location, salary, statuses, types, department, page, per_page} = (await searchParams) ?? {};
+    const {location, salary, status, type, department, page, per_page} = (await searchParams) ?? {};
 
     const limit = typeof per_page === "string" ? parseInt(per_page) : 8;
     const offset = typeof page === "string" ? (parseInt(page) - 1) * limit : 0;
-    const status = statuses ? (statuses as string).split(",") : undefined
-    const type = types ? (types as string).split(",") : undefined
+    const statuses = status ? (status as string).split(",") as (typeof JOB_STATUS._type)[] : undefined;
+    const types = type ? (type as string).split(",") : undefined
     const locations = location ? (location as string).split(",") : undefined;
     const departments = department ? (department as string).split(",") : undefined;
     const salaries = salary ? (salary as string).split(",") : undefined;
@@ -29,14 +29,15 @@ const Page = async ({searchParams}: Props) => {
         limit,
         location: locations,
         salary: salaries,
+        status: statuses,
+        type: types,
         department: departments,
         organization: orgId as string,
     });
 
     const len = Array.isArray(result) ? result[0] : 0;
     const jobs = Array.isArray(result) ? result[1] : [];
-    const error =
-        result && typeof result === "object" && "error" in result
+    const error = result && typeof result === "object" && "error" in result
             ? result.error
             : null;
 

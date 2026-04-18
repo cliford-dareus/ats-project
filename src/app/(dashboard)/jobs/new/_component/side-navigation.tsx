@@ -3,9 +3,8 @@
 import Link from 'next/link';
 import {usePathname} from 'next/navigation';
 import {useEffect, useState} from 'react';
-import {ArrowLeft, FileText, Users, Workflow, Eye, Check} from "lucide-react";
+import { FileText, Users, Workflow, Eye, Check} from "lucide-react";
 import {cn} from "@/lib/utils";
-import {Button} from "@/components/ui/button";
 import {useNewJobContext} from "@/providers/new-job-provider";
 
 const steps = [
@@ -60,7 +59,6 @@ const SideNavigation = () => {
             default:
                 return false;
         }
-        ;
     };
 
     return (
@@ -82,7 +80,7 @@ const SideNavigation = () => {
                             >
                                 <div className="flex items-center gap-3">
                                     <div className={cn(
-                                        "flex items-center justify-center w-6 h-6 rounded-full border-2 transition-colors",
+                                        "flex items-center justify-center w-10 h-10 rounded-full border transition-colors",
                                         isActive
                                             ? "bg-blue-500 border-blue-500 text-white"
                                             : isCompleted
@@ -91,12 +89,12 @@ const SideNavigation = () => {
                                                     ? "bg-white border-gray-300 text-gray-600"
                                                     : "bg-gray-100 border-gray-200 text-gray-400"
                                     )}>
-                                        {isCompleted ? <Check size={10}/> : step.icon}
+                                        {isCompleted ? <Check size={18}/> : step.icon}
                                     </div>
 
                                     <div className="flex-1 min-w-0">
                                         <h3 className={cn(
-                                            "font-medium text-sm leading-none",
+                                            "font-medium text-sm leading-none uppercase",
                                         )}>
                                             {step.title}
                                         </h3>
@@ -113,7 +111,7 @@ const SideNavigation = () => {
                 })}
             </div>
 
-            {/* Progress Bar */}
+            {/*Progress Bar */}
             {/*<div className="mt-2">*/}
             {/*    <div className="flex justify-between text-sm text-gray-600">*/}
             {/*        <span>Progress</span>*/}

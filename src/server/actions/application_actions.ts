@@ -1,86 +1,17 @@
 'use server';
 
 import {
-    create_application,
-    get_application_by_id,
-    get_applications_with_filter, get_job_all_applications,
+    create_application, get_all_applications,
+    get_application_by_id, get_job_all_applications,
     getTasks, move_application_and_reorder_db,
     update_application_stage
 } from "@/server/queries";
 import {auth} from "@clerk/nextjs/server";
 import {canCreateJob} from "@/server/permissions";
-import {
-    objectInputType,
-    objectOutputType,
-    Writeable,
-    z,
-    ZodDefault,
-    ZodEnum,
-    ZodNullable,
-    ZodNumber,
-    ZodObject,
-    ZodOptional, ZodString,
-    ZodType, ZodTypeAny,
-    ZodTypeDef
-} from "zod";
+import {z} from "zod";
 import {applicationFormSchema, filterApplicationsSchema} from "@/zod";
 
-export const create_application_action = async (unsafeData: {
-    job: ZodNumber["_output"];
-    candidate_info: null;
-    file?: ZodOptional<ZodNullable<ZodObject<{
-        file_: ZodType<InstanceType<File | {
-            prototype: File;
-            new(fileBits: BlobPart[], fileName: string, options?: FilePropertyBag): File
-        }>, ZodTypeDef, InstanceType<File | {
-            prototype: File;
-            new(fileBits: BlobPart[], fileName: string, options?: FilePropertyBag): File
-        }>>;
-        file_type: ZodDefault<ZodEnum<Writeable<readonly [string, string, string, string]>>>
-    }, "strip", ZodTypeAny, objectOutputType<{
-        file_: ZodType<InstanceType<File | {
-            prototype: File;
-            new(fileBits: BlobPart[], fileName: string, options?: FilePropertyBag): File
-        }>, ZodTypeDef, InstanceType<File | {
-            prototype: File;
-            new(fileBits: BlobPart[], fileName: string, options?: FilePropertyBag): File
-        }>>;
-        file_type: ZodDefault<ZodEnum<Writeable<readonly [string, string, string, string]>>>
-    }, ZodTypeAny, "strip">, objectInputType<{
-        file_: ZodType<InstanceType<File | {
-            prototype: File;
-            new(fileBits: BlobPart[], fileName: string, options?: FilePropertyBag): File
-        }>, ZodTypeDef, InstanceType<File | {
-            prototype: File;
-            new(fileBits: BlobPart[], fileName: string, options?: FilePropertyBag): File
-        }>>;
-        file_type: ZodDefault<ZodEnum<Writeable<readonly [string, string, string, string]>>>
-    }, ZodTypeAny, "strip">>>>["_output"];
-    candidate: string | null | undefined
-} | {
-    job: ZodNumber["_output"];
-    candidate_info?: ZodOptional<ZodNullable<ZodObject<{
-        first_name: ZodString;
-        last_name: ZodString;
-        email: ZodString;
-        phone: ZodOptional<ZodString>;
-        location: ZodOptional<ZodString>
-    }, "strip", ZodTypeAny, objectOutputType<{
-        first_name: ZodString;
-        last_name: ZodString;
-        email: ZodString;
-        phone: ZodOptional<ZodString>;
-        location: ZodOptional<ZodString>
-    }, ZodTypeAny, "strip">, objectInputType<{
-        first_name: ZodString;
-        last_name: ZodString;
-        email: ZodString;
-        phone: ZodOptional<ZodString>;
-        location: ZodOptional<ZodString>
-    }, ZodTypeAny, "strip">>>>["_output"];
-    file: { file_: File | null; file_type: string };
-    candidate: null
-}) => {
+export const create_application_action = async (unsafeData: z.infer<typeof applicationFormSchema>) => {
     const {userId} = await auth();
     const {success, data} = await applicationFormSchema.spa(unsafeData);
     const canCreate = await canCreateJob(userId);
@@ -100,7 +31,7 @@ export const get_all_applications_action = async (unsafeData: z.infer<typeof fil
         return {error: true, message: "There was an error retrieving applications"}
     }
 
-    return await get_applications_with_filter(data);
+    return await get_all_applications(data);
 };
 
 export const get_application_by_id_action = async (applicationId: number) => {

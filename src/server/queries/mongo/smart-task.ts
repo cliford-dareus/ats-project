@@ -20,7 +20,10 @@ export const addTaskToQueue = async (id: number, action: TriggerAction, stage_na
     const delayMs = milliseconds({[`${delayFormat}`]: delay});
 
     // Get the application stage id from the stage name
-    const stageResults = await db.select().from(stages).where(eq(stages.job_id, jobId!));
+    const stageResults = await db.select()
+        .from(stages)
+        .where(eq(stages.job_id, jobId!));
+
     const stage = stageResults.find((s) => s.stage_name === action.config.condition.target);
     const stageId = stage?.id;
 

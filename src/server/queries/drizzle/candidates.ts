@@ -1,12 +1,14 @@
 import {db} from "@/drizzle/db";
-import {applications, attachments, candidates, interviews, stages} from "@/drizzle/schema";
-import {and, eq, SQL} from "drizzle-orm";
+import {applications, attachments, candidates, interviews} from "@/drizzle/schema";
+import {and, eq, inArray, sql, SQL} from "drizzle-orm";
 import {CACHE_TAGS, dbCache, getGlobalTag, getIdTag, revalidateDbCache} from "@/lib/cache";
 import {z} from "zod";
 import {filterCandidateSchema, newCandidateFormSchema} from "@/zod";
 
 export const create_candidate = async (data: z.infer<typeof newCandidateFormSchema>) => {
-    const [candidate] = await db.insert(candidates).values({...data, cv_path: data.resume as string}).$returningId();
+    const [candidate] = await db.insert(candidates)
+        .values({...data, cv_path: data.resume as string, organization: ''})
+        .$returningId();
     revalidateDbCache({
         tag: CACHE_TAGS.candidates,
     });
@@ -51,14 +53,38 @@ export const get_candidate_by_id_db = async (unsafedata: number) => {
         application,
         attachment,
         interview,
-        scoreCard,
+        // scoreCard,
     };
 };
 
 const get_all_candidates_db = async (filter: z.infer<typeof filterCandidateSchema>) => {
     const filters: SQL[] = []
 
-    if (filter?.name) filters.push(eq(candidates.name, filter.name));
+    if (filter.keywords && filter.keywords.length > 0) {
+        const keywordFilters = filter.keywords.map(keyword =>
+            sql`${candidates.name} LIKE ${`%${keyword}%`}`
+        );
+        filters.push(sql`(${sql.join(keywordFilters, sql` OR `)})`);
+    }
+
+    if (filter.location) {
+        const locations = Array.isArray(filter.location) ? filter.location : [filter.location];
+        filters.push(inArray(candidates.location, locations));
+    }
+
+    // if (filter.experience) {
+    //     filters.push(inArray(candidates.experience, filter.experience));
+    // }
+
+    if (filter.status) {
+        const statuses = Array.isArray(filter.status) ? filter.status : [filter.status];
+        filters.push(inArray(candidates.status, statuses));
+    }
+
+    const [{count}] = await db
+        .select({count: sql<number>`count(*)`})
+        .from(candidates)
+        .where(and(...filters, eq(candidates.organization, filter.organization)));
 
     const candidate = await db.select({
         id: candidates.id,
@@ -80,12 +106,9 @@ const get_all_candidates_db = async (filter: z.infer<typeof filterCandidateSchem
         ),
     })
         .from(candidates)
-        .leftJoin(applications, eq(applications.candidate, candidates.id))
-        .leftJoin(attachments, eq(attachments.candidate_id, candidates.id))
-        .where(and(...filters))
+        .where(and(...filters, eq(candidates.organization, filter.organization)))
         .limit(filter.limit)
         .offset(filter.offset);
 
-    const len = candidate.length
-    return [len, candidate];
+    return [count, candidate];
 };

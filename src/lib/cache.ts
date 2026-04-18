@@ -1,5 +1,5 @@
-import { revalidateTag, unstable_cache } from "next/cache";
-import { cache } from "react";
+import {revalidateTag, unstable_cache} from "next/cache";
+import {cache} from "react";
 
 export type ValidTags =
     | ReturnType<typeof getGlobalTag>
@@ -8,13 +8,13 @@ export type ValidTags =
     | ReturnType<typeof getOrgTag>
 
 export const CACHE_TAGS = {
-  candidates: "candidates",
-  jobs: "jobs",
-  stages: "stages",
-  applications: "applications",
-  organizations: "organizations",
-  departments: "departments",
-  chartData: "chartData",
+    candidates: "candidates",
+    jobs: "jobs",
+    stages: "stages",
+    applications: "applications",
+    organizations: "organizations",
+    departments: "departments",
+    chartData: "chartData",
 } as const;
 
 export function getGlobalTag(tag: keyof typeof CACHE_TAGS) {
@@ -37,9 +37,9 @@ export function clearFullCache() {
     revalidateTag("*")
 };
 
-export function dbCache<T extends  (...args: any[]) => Promise<any>>(
+export function dbCache<T extends (...args: any[]) => Promise<any>>(
     cb: Parameters<typeof unstable_cache<T>>[0],
-    {tags}: {tags: ValidTags[]}
+    {tags}: { tags: ValidTags[] }
 ) {
     return cache(unstable_cache<T>(cb, undefined, {tags: [...tags, "*"]}))
 };
@@ -49,9 +49,9 @@ export function revalidateDbCache({tag, userId, id}: {
     userId?: string
     id?: string
 }) {
-  
+
     revalidateTag(getGlobalTag(tag));
-  
+
     if (userId != null) {
         revalidateTag(getUserTag(userId, tag));
     }

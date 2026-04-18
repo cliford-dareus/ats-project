@@ -23,8 +23,8 @@ import { filterJobSchema, jobFormSchema } from "@/zod";
 import { ApplicationType, CandidateType, JobListingType } from "@/types";
 
 type Technology = typeof technologies.$inferSelect;
-type Interview = typeof interviews.$inferSelect;
-type Attachment = typeof attachments.$inferSelect;
+// type Interview = typeof interviews.$inferSelect;
+// type Attachment = typeof attachments.$inferSelect;
 // type Stage = typeof stages.$inferSelect;
 
 interface FilterInterface extends z.infer<typeof filterJobSchema> {
@@ -39,6 +39,7 @@ export const create_job_listing = async (data: z.infer<typeof jobFormSchema>,) =
                 name: data.jobInfo.job_name,
                 location: data.jobInfo.job_location,
                 salary_up_to: data.jobInfo.salary_up_to,
+                // type: data.jobInfo.job_type,
                 description: data.jobInfo.job_description,
                 createdBy: data.userId!,
                 department: Number(data.jobInfo.department),
@@ -227,10 +228,31 @@ export const get_job_by_id_db = async (jobId: number): Promise<JobListingType[]>
 export const get_all_job_listings_db = async (filter: FilterInterface) => {
     const filters: SQL[] = [];
 
-    // if(filter.keywords) filters.push(inArray(job_listings.keywords, filter.keywords as string[]))
-    if (filter.location) filters.push(inArray(job_listings.location, filter.location as string[]));
-    if(filter.department) filters.push(inArray(departments.name, filter.department as string[]));
-    // if(filter.status) filters.push(eq(job_listings.status, filter.status))
+    if (filter.keywords && filter.keywords.length > 0) {
+        const keywordFilters = filter.keywords.map(keyword =>
+            sql`${job_listings.name} LIKE ${`%${keyword}%`}`
+        );
+        filters.push(sql`(${sql.join(keywordFilters, sql` OR `)})`);
+    }
+
+    if (filter.location) {
+        const locations = Array.isArray(filter.location) ? filter.location : [filter.location];
+        filters.push(inArray(job_listings.location, locations));
+    }
+
+    if (filter.department) {
+        filters.push(inArray(departments.name, filter.department));
+    }
+
+    if (filter.status) {
+        const statuses = Array.isArray(filter.status) ? filter.status : [filter.status];
+        filters.push(inArray(job_listings.status, statuses));
+    }
+
+    const [{count}] = await db
+        .select({count: sql<number>`count(*)`})
+        .from(job_listings)
+        .where(and(...filters, eq(job_listings.organization, filter.organization)));
 
     const jobListings = await db
         .select({
@@ -240,6 +262,7 @@ export const get_all_job_listings_db = async (filter: FilterInterface) => {
             status: job_listings.status,
             department: departments.name,
             organization: job_listings.organization,
+            type: job_listings.type,
             salary: job_listings.salary_up_to,
             description: job_listings.description,
             created_at: job_listings.created_at,
@@ -256,12 +279,11 @@ export const get_all_job_listings_db = async (filter: FilterInterface) => {
         .limit(filter.limit!)
         .offset(filter.offset!);
 
-    const len = jobListings.length;
-    return [len, jobListings];
+    return [count, jobListings];
 };
 
 export const get_job_listings_stages_db = async (jobId: number) => {
-    return await db
+    return db
         .select({
             id: stages.id,
             assign_to: stages.assign_to,
@@ -272,9 +294,15 @@ export const get_job_listings_stages_db = async (jobId: number) => {
             stage_order_id: stages.stage_order_id,
             trigger: sql<string>`COALESCE(JSON_ARRAYAGG(
                 JSON_OBJECT('id',
-                ${triggers.id},'action_type',
-                ${triggers.action_type},'config',
-                ${triggers.config})),'[]')`.as("trigger"),
+            ${triggers.id},
+            'action_type',
+            ${triggers.action_type},
+            'config',
+            ${triggers.config}
+            )
+            ),
+            '[]'
+            )`.as("trigger"),
         })
         .from(stages)
         .leftJoin(triggers, eq(triggers.stage_id, stages.id))

@@ -11,13 +11,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { get_candidate_by_id_action } from "@/server/actions/candidates-actions";
 import CandidateTabs from "@/app/(dashboard)/candidates/[candidateId]/_components/candidate_tabs";
-import {CandidateWithDetails} from "@/types";
-import AddCandidateAttachmentModal from "@/components/modal/upload_candidate_attachment_modal";
 
 type Props = {
-    params: {
+    params: Promise<{
         candidateId: string;
-    }
+    }>
 };
 
 const Page = async ({params}: Props) => {

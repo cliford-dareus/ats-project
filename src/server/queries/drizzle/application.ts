@@ -18,6 +18,21 @@ import {applicationFormSchema, filterApplicationsSchema} from "@/zod";
 import {z} from "zod";
 import {uploadResumeToR2} from "@/lib/upload-file-to-r2";
 
+interface MoveApplicationType  {
+    applicationId: number;
+    newStageId: number;
+    sourceStageId?: number;
+    targetOrders: any[];
+    sourceOrders?: any[];
+}
+
+interface InterviewType {
+    applicationId: number;
+    location: string;
+    start_at: Date;
+    end_at: Date;
+}
+
 // TODO: FIX LATER
 // ALso add the ORGANIZATION ID to the application
 export const create_application = async (data: z.infer<typeof applicationFormSchema>) => {
@@ -58,7 +73,6 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
 
     try {
         let candidateId: number;
-
         if (data.candidate) {
             // === EXISTING CANDIDATE ===
             candidateId = Number(data.candidate);
@@ -95,6 +109,7 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
             const [newCandidate] = await db
                 .insert(candidates)
                 .values({
+                    organization: "",
                     name: candidateFullName,
                     email: info.email,
                     phone: info.phone,
@@ -119,6 +134,7 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
         const [newApplication] = await db
             .insert(applications)
             .values({
+                organization: "",
                 job_id: jobId,
                 candidate: candidateId,
                 current_stage_id: appliedStage.id,
@@ -161,8 +177,8 @@ export const get_application_by_id = async (applicationId: number) => {
     return cacheFn(applicationId);
 };
 
-export const get_applications_with_filter = async (filter: z.infer<typeof filterApplicationsSchema>) => {
-    const cacheFn = dbCache(get_applications_with_filter_db, {
+export const get_all_applications = async (filter: z.infer<typeof filterApplicationsSchema>) => {
+    const cacheFn = dbCache(get_all_applications_db, {
         tags: [getGlobalTag(CACHE_TAGS.applications)],
     });
 
@@ -201,7 +217,7 @@ export const get_applications_stages_db = async () => {
 };
 
 export const get_application_by_id_db = async (applicationId: number) => {
-    return await db
+    return db
         .select({
             id: applications.id,
             current_stage: stages.stage_name,
@@ -234,14 +250,41 @@ export const get_application_by_id_db = async (applicationId: number) => {
 
 };
 
-export const get_applications_with_filter_db = async (filter: z.infer<typeof filterApplicationsSchema>) => {
+export const get_all_applications_db = async (filter: z.infer<typeof filterApplicationsSchema>) => {
     const filters: SQL[] = [];
 
-    if (filter.stages)
-        filters.push(eq(applications.current_stage_id, filter.stages));
-    // if(filter.department) filters.push(inArray(job_listings.department, filter.department as string[]))
-    // if(filter.keywords) filters.push(inArray(job_listings.keywords, filter.keywords as string[]))
-    // if(filter.status) filters.push(eq(job_listings.status, filter.status))
+    if (filter.keywords && filter.keywords.length > 0) {
+        const keywordFilters = filter.keywords.map(keyword =>
+            sql`${job_listings.name} LIKE ${`%${keyword}%`}`
+        );
+        filters.push(sql`(${sql.join(keywordFilters, sql` OR `)})`);
+    }
+
+    if (filter.location) {
+        const locations = Array.isArray(filter.location) ? filter.location : [filter.location];
+        filters.push(inArray(job_listings.location, locations));
+    }
+
+    if (filter.department) {
+        filters.push(inArray(departments.name, filter.department));
+    }
+
+    if (filter.stages) {
+        filters.push(eq(stages.stage_name, filter.stages));
+    }
+
+    // if (filter.status) {
+    //     const statuses = Array.isArray(filter.status) ? filter.status: [filter.status];
+    //     filters.push(inArray(applications.status, statuses));
+    // }
+
+    const [{count}] = await db
+        .select({count: sql<number>`count(*)`})
+        .from(applications)
+        .leftJoin(job_listings, eq(applications.job_id, job_listings.id))
+        .leftJoin(departments, eq(job_listings.department, departments.id))
+        .leftJoin(stages, eq(applications.current_stage_id, stages.id))
+        .where(and(...filters, eq(applications.organization, filter.organization)));
 
     const application = await db
         .select({
@@ -256,6 +299,7 @@ export const get_applications_with_filter_db = async (filter: z.infer<typeof fil
             job_id: applications.job_id,
             job_apply: job_listings.name,
             job_org: job_listings.organization,
+            job_department: job_listings.department,
             //  Candidate Info
             candidate_id: candidates.id,
             candidate_name: candidates.name,
@@ -265,14 +309,14 @@ export const get_applications_with_filter_db = async (filter: z.infer<typeof fil
         })
         .from(applications)
         .leftJoin(job_listings, eq(applications.job_id, job_listings.id))
+        .leftJoin(departments, eq(job_listings.department, departments.id))
         .leftJoin(candidates, eq(applications.candidate, candidates.id))
         .leftJoin(stages, eq(applications.current_stage_id, stages.id))
         .where(and(...filters, eq(job_listings.organization, filter.organization)))
         .limit(filter.limit!)
         .offset(filter.offset!);
 
-    const len = application.length;
-    return [len, application];
+    return [count, application];
 };
 
 export const get_job_all_applications_db = async (jobId: number) => {
@@ -328,19 +372,7 @@ export const get_job_all_applications_db = async (jobId: number) => {
     return Object.values(result);
 };
 
-export async function move_application_and_reorder_db({
-                                                          applicationId,
-                                                          newStageId,
-                                                          sourceStageId,
-                                                          targetOrders,
-                                                          sourceOrders,
-                                                      }: {
-    applicationId: number;
-    newStageId: number;
-    sourceStageId?: number;
-    targetOrders: any[];
-    sourceOrders?: any[];
-}) {
+export async function move_application_and_reorder_db({applicationId, newStageId, sourceStageId, targetOrders, sourceOrders,}: MoveApplicationType) {
     try {
         await db.transaction(async (tx) => {
             // 1. Update stage (only if moving)
@@ -416,21 +448,13 @@ export async function move_application_and_reorder_db({
 // ========================================================================
 // INTERVIEW
 // =======================================================================
-export const add_interview = async ({
-                                        applicationId,
-                                        location,
-                                        start_at,
-                                        end_at,
-                                    }: {
-    applicationId: number;
-    location: string;
-    start_at: Date;
-    end_at: Date;
-}) => {
-    return await db.insert(interviews).values({
-        applications_id: applicationId,
-        locations: location,
-        start_at: start_at,
-        end_at: end_at,
-    });
+export const add_interview = async ({applicationId, location, start_at, end_at}: InterviewType) => {
+    return db.insert(interviews)
+        .values({
+            organization: "",
+            applications_id: applicationId,
+            locations: location,
+            start_at: start_at,
+            end_at: end_at,
+        });
 };

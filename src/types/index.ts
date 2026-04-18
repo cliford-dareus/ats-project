@@ -1,4 +1,4 @@
-import {CANDIDATE_ENUM, JOB_ENUM} from "@/zod";
+import {CANDIDATE_STATUS, JOB_ENUM, JOB_STAGES, JOB_STATUS, JOB_TYPE} from "@/zod";
 
 export type JobResponseType = {
     id: number;
@@ -11,7 +11,7 @@ export type JobResponseType = {
     updated_at: Date;
     organization: string;
     department: string;
-    status: 'OPEN'|'CLOSED'|'DRAFT'|'ARCHIVED'|'PENDING';
+    status: typeof JOB_STATUS._type;
     candidatesCount: number;
 };
 
@@ -21,7 +21,7 @@ export type CandidatesResponseType = {
     email: string;
     phone: string;
     cv_path: string;
-    status: "Active" | "Rejected" | "Hired" | null;
+    status: typeof CANDIDATE_STATUS._type | null;
     created_at: Date;
     updated_at: Date;
     applicationsCount: number;
@@ -48,10 +48,10 @@ export type ApplicationResponseType = {
     updated_at: Date;
 };
 
-export  type StageResponseType = {
+export type StageResponseType = {
     id: number;
     job_id: number;
-    stage_name: "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | 'Applied' | "Drafted" | null
+    stage_name: typeof JOB_STAGES._type | null
     stage_order_id: number
     assign_to: string | null
     color: string | null;
@@ -85,7 +85,7 @@ export interface ApplicationType {
   created_at: Date;
   updated_at: Date;
   job_id: number;
-  stage: "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | 'Applied' | "Drafted" | null | undefined;
+  stage: typeof JOB_STAGES._type | null | undefined;
   current_stage_id?: number | null;
   stage_order_id?: number | null;
   position_in_stage?: number;
@@ -125,10 +125,10 @@ export interface CandidateType {
     cv_path: string;
     role?: string;
     location?: string;
-    status: CANDIDATE_ENUM | null;
+    status: typeof CANDIDATE_STATUS._type | null;
     created_at: Date;
     updated_at: Date;
-    interview?: any[];
+    interview?: InterviewType[];
     skills?: string[];
     experience?: CandidateExperience[];
     education?: string[];
@@ -155,11 +155,12 @@ export interface JobListingType {
     job_created_at: Date;
     job_description: string;
     job_department: string;
-    job_status: "OPEN" | "CLOSED" | "DRAFT" | "ARCHIVED" | "PENDING" | null;
-    job_type: "Full Time" | "Part Time" | "Contract" | "Internship" | "Remote";
+    job_status: typeof JOB_STATUS._type | null;
+    job_type: typeof JOB_TYPE._type | null;
     job_location: string;
     job_technologies: JobExperienceType[];
     applications: ApplicationType[];
+    job_updated_at: Date;
 };
 
 export interface CandidateWithDetails {

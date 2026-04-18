@@ -1,5 +1,5 @@
 import {Dialog,DialogContent} from '@/components/ui/dialog';
-import React, { useTransition } from 'react';
+import React from 'react';
 import { TriggerAction } from '@/lib/smart-trigger/types';
 import SmartLocationTriggerForm from './smart-location-trigger-form';
 import SmartExperienceTriggerForm from './smart-experience-trigger-form';
@@ -26,7 +26,5 @@ const SmartTriggerModal = ({ isModalOpen, closeModal, triggerType, onSubmit }: P
         </Dialog>
     )
 };
-
-
 
 export default SmartTriggerModal;

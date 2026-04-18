@@ -17,15 +17,13 @@ import {
     Users, Settings,
     FileText
 } from "lucide-react";
-import React, {useEffect} from "react";
+import React from "react";
 import {usePathname, useRouter} from "next/navigation";
 import SidebarSettings from "@/app/(dashboard)/settings/_components/sidebar-settings";
 import JobListingSidebar from "@/app/(dashboard)/jobs/_components/job-listing-sidebar";
 import CandidatesSidebar from "@/app/(dashboard)/candidates/_components/candidates-sidebar";
 import ReportsSidebar from "@/app/(dashboard)/reports/_components/reports-sidebar";
 import TrashSidebar from "@/app/(dashboard)/trash/_components/trash-sidebar";
-import {CandidatesResponseType} from "@/types";
-import {StageCountType} from "@/app/(dashboard)/layout";
 import StepNavigation from "@/app/(dashboard)/jobs/new/_component/side-navigation";
 import SidebarDashboard from "@/app/(dashboard)/dashboard/_components/sidebar-dashboard";
 import ApplicationsSidebar from "@/app/(dashboard)/applications/_components/application-sidebar";
@@ -166,7 +164,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
                             ) : activeItem.title === "Jobs" && !pathname.startsWith('/jobs/new/step') ? (
                                 <JobListingSidebar/>
                             ) : activeItem.title === "Applications" ? (
-                                <ApplicationsSidebar />
+                                <ApplicationsSidebar/>
                             ) : activeItem.title === "Candidates" ? (
                                 <CandidatesSidebar/>
                             ) : activeItem.title === "Reports" ? (

@@ -17,13 +17,16 @@ const CandidatesList = ({candidate, pageCount}: Props) => {
     const [selectedRow, setSelectedRow] = useState<CandidatesResponseType | null>(null);
 
     return (
-        <div>
-            <DataTable<CandidatesResponseType>
-                columns={columns} data={candidate}
-                status="candidates"
-                onRowClick={(rowData) => setSelectedRow(rowData)}
-            />
-            <PaginationElement pageCount={pageCount}/>
+        <>
+            <div className="rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
+                <DataTable<CandidatesResponseType>
+                    columns={columns} data={candidate}
+                    status="candidates"
+                    onRowClick={(rowData) => setSelectedRow(rowData)}
+                />
+                <PaginationElement pageCount={pageCount}/>
+            </div>
+
             <Sheet open={!!selectedRow} onOpenChange={() => setSelectedRow(null)}>
                 <SheetHeader>
                     <SheetTitle></SheetTitle>
@@ -35,7 +38,7 @@ const CandidatesList = ({candidate, pageCount}: Props) => {
                     }
                 </SheetContent>
             </Sheet>
-        </div>
+        </>
     );
 };
 

@@ -1,7 +1,6 @@
-// app/(dashboard)/kanban.tsx/[boardId]/KanbanContext.tsx
 'use client';
 
-import {createContext, useCallback, useContext, useState} from 'react';
+import React, {createContext, useCallback, useContext, useState} from 'react';
 import {StageTrigger, TriggerTask} from "@/lib/smart-trigger/types";
 import {get_all_tasks_action} from "@/server/actions/application_actions";
 
