@@ -68,7 +68,7 @@ const InternalNoteSection = ({parent_type, parent_id, selectedId}: Props) => {
                 </div>
             </div>
 
-            <CreateNoteModal parent_id={parent_id} parent_type={parent_type} isOpen={isOpen} setIsOpen={setIsOpen} />
+            <CreateNoteModal parent_id={parent_id as number} parent_type={parent_type} isOpen={isOpen} setIsOpen={setIsOpen} />
         </div>
     )
 };

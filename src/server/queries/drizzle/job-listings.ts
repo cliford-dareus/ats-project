@@ -19,19 +19,16 @@ import {
     revalidateDbCache,
 } from "@/lib/cache";
 import { z } from "zod";
-import { filterJobSchema, jobFormSchema } from "@/zod";
+import { filterJobSchema, jobFormSchema, updateJobListingSchema } from "@/zod";
 import { ApplicationType, CandidateType, JobListingType } from "@/types";
 
 type Technology = typeof technologies.$inferSelect;
-// type Interview = typeof interviews.$inferSelect;
-// type Attachment = typeof attachments.$inferSelect;
-// type Stage = typeof stages.$inferSelect;
 
 interface FilterInterface extends z.infer<typeof filterJobSchema> {
     organization: string;
 };
 
-export const create_job_listing = async (data: z.infer<typeof jobFormSchema>,) => {
+export const create_job_listing = async (data: z.infer<typeof jobFormSchema>) => {
     return await db.transaction(async (trx) => {
         const [inserted_job] = await trx
             .insert(job_listings)
@@ -107,6 +104,45 @@ export const create_job_listing = async (data: z.infer<typeof jobFormSchema>,) =
 
         return inserted_job;
     });
+};
+
+export const update_job_listing = async (data: z.infer<typeof updateJobListingSchema>) => {
+  let department_id = null;
+  
+  if(data.department) {
+    const department = await db
+      .select()
+      .from(departments)
+      .where(eq(departments.name, data.department))
+      .limit(1);
+    if(department.length > 0) {
+      department_id = department[0].id;
+    }
+  }
+  
+  await db
+    .update(job_listings)
+    .set({
+      ...(data.name && { name: data.name }),
+      ...(data.description && { description: data.description }),
+      ...(data.location && { location: data.location }),
+      ...(data.status && { status: data.status }),
+      ...(department_id !== null && { department_id: department_id }),
+      ...(data.organization && { organization: data.organization }),
+      ...(data.salary_up_to && { salary_up_to: data.salary_up_to }),
+      ...(data.type && { type: data.type }),
+    })
+    .where(eq(job_listings.id, data.jobId));
+
+  revalidateDbCache({ tag: CACHE_TAGS.jobs, id: String(data.jobId) });
+};
+
+export const delete_job_listing = async (jobId: number) => { 
+    await db
+        .delete(job_listings)
+        .where(eq(job_listings.id, jobId));
+    
+    revalidateDbCache({ tag: CACHE_TAGS.jobs, id: String(jobId) });
 };
 
 export const get_job_listings_stages = (jobId: number) => {
@@ -309,9 +345,3 @@ export const get_job_listings_stages_db = async (jobId: number) => {
         .where(eq(stages.job_id, jobId))
         .groupBy(stages.id);
 };
-
-export const update_job_listing = async (data: any) => {
-
-};
-
-// export const delete_job_listing = async (jobId: number) => {}

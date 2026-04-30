@@ -1,8 +1,7 @@
 import React from 'react';
-import {Briefcase} from "lucide-react";
 import { get_application_by_id_action } from "@/server/actions/application_actions";
 import { ApplicationResponseType } from "@/types";
-import { get_application_notes } from "@/server/queries/mongo/note";
+// import { get_application_notes } from "@/server/queries/mongo/note";
 import InternalNoteSection from "@/components/internal-note-section";
 import { get_job_listings_stages } from "@/server/queries";
 import { get_candidate_details } from '@/server/queries/mongo/candidate-details';
@@ -14,9 +13,9 @@ import ApplicationInterviewCard from './_components/application-interview-card';
 import JobQuickViewCard from '@/components/job-quick-view-card';
 
 type Props = {
-    params: {
+    params: Promise<{
         applicationId: string
-    }
+    }>
 };
 
 const Page = async ({ params }: Props) => {
@@ -26,11 +25,11 @@ const Page = async ({ params }: Props) => {
     const applicationResult = (response as unknown as ApplicationResponseType[])[0];
 
     const stages = await get_job_listings_stages(applicationResult?.job_id);
-    const internalNotes = await get_application_notes({
-        id: Number(applicationId),
-        limit: 10,
-        offset: 0
-    });
+    // const internalNotes = await get_application_notes({
+    //     id: Number(applicationId),
+    //     limit: 10,
+    //     offset: 0
+    // });
 
     const jobResponse = await get_job_by_id_action(applicationResult.job_id);
     const job = (Array.isArray(jobResponse) ? jobResponse : [])[0];
@@ -71,9 +70,9 @@ const Page = async ({ params }: Props) => {
 
                                 {/* Internal Notes Quick View */}
                                 <InternalNoteSection
-                                    data={JSON.parse(internalNotes)}
                                     parent_type='application'
                                     parent_id={applicationResult.id}
+                                    selectedId={applicationResult.id}
                                 />
                             </div>
                         </div>

@@ -1,10 +1,10 @@
 'use server'
 
 import {z} from "zod";
-import {create_job_listing, get_all_job_listings, get_job_by_id, get_job_listings_stages} from "@/server/queries";
+import {create_job_listing, delete_job_listing, get_all_job_listings, get_job_by_id, get_job_listings_stages, update_job_listing} from "@/server/queries";
 import {auth} from "@clerk/nextjs/server";
 import {redirect} from "next/navigation";
-import {jobFormSchema, filterJobSchema} from "@/zod";
+import {jobFormSchema, filterJobSchema, updateJobListingSchema} from "@/zod";
 import {canCreateJob} from "@/server/permissions";
 
 const jobIdSchema = z.number();
@@ -20,6 +20,30 @@ export const create_job_action = async (unsafeData: z.infer<typeof jobFormSchema
 
     const {id} = await create_job_listing(data);
     redirect(`/jobs/${id}`);
+};
+
+export const update_job_action = async (unsafeData: z.infer<typeof updateJobListingSchema>) => {
+    const {userId} = await auth();
+    const { success, data } = await updateJobListingSchema.spa(unsafeData);
+
+    if (!success || !userId) {
+        return {error: true, message: "There was an error updating your product"}
+    }
+
+  await update_job_listing(data);
+  return { success: true };
+};
+
+export const delete_job_action = async (unsafeData: z.infer<typeof jobIdSchema>) => {
+    const {userId} = await auth();
+    const jobId = jobIdSchema.parse(unsafeData);
+
+    if (!userId) {
+        return {error: true, message: "There was an error deleting your product"}
+    }
+
+    await delete_job_listing(jobId);
+    return { success: true };
 };
 
 export const get_all_job_listings_action = async (unsafeData: z.infer<typeof filterJobSchema>) => {

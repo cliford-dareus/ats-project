@@ -3,7 +3,7 @@
 import PaginationElement from "@/components/pagination";
 import {JobResponseType} from "@/types";
 import DataTable from "@/components/data-table";
-import {columns} from "@/app/(dashboard)/jobs/[joblistingId]/_components/column";
+import {columns} from "@/app/(dashboard)/jobs/_components/column";
 import React, {useState} from "react";
 import {Sheet, SheetContent, SheetHeader, SheetTitle} from "@/components/ui/sheet";
 import JobPreview from "@/app/(dashboard)/jobs/_components/job-preview";

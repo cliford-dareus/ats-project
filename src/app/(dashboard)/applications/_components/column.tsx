@@ -4,7 +4,7 @@ import {ColumnDef} from "@tanstack/react-table";
 import {ApplicationResponseType} from "@/types";
 import React from "react";
 import IndeterminateCheckbox from "@/components/indeterminate-checkbox";
-import {Ellipsis} from "lucide-react";
+import RowAction from "./row-action";
 
 
 export const columns: ColumnDef<ApplicationResponseType>[] = [
@@ -70,12 +70,8 @@ export const columns: ColumnDef<ApplicationResponseType>[] = [
     },
     {
         id: "action",
-        header: 'action',
-        cell: () => (
-            <div className="flex items-center">
-                <Ellipsis size={20}/>
-            </div>
-        )
+      header: 'action',
+      cell: RowAction
     },
 
 ]

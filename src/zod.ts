@@ -42,6 +42,18 @@ export const jobFormSchema = z.object({
     userId: z.string().nullish(),
 });
 
+export const updateJobListingSchema = z.object({
+    name: z.string().optional(),
+    description: z.string().optional(),
+    location: z.string().optional(),
+    department: z.string().optional(),
+    organization: z.string().optional(),
+    salary_up_to: z.string().optional(),
+    status: JOB_STATUS.optional(),
+    type: JOB_TYPE.optional(),
+    jobId: z.number(),
+});
+
 export const applicationFormSchema = z.object({
     candidate_info: z.object({
         first_name: z.string(),

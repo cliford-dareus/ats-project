@@ -4,8 +4,9 @@ import {ColumnDef, createColumnHelper} from "@tanstack/react-table";
 import {JobResponseType} from "@/types";
 import React from "react";
 import IndeterminateCheckbox from "@/components/indeterminate-checkbox";
-import RowAction from "@/app/(dashboard)/jobs/[joblistingId]/_components/row-action";
-import {Briefcase, Clock, MapPin, Users} from "lucide-react";
+import RowAction from "@/app/(dashboard)/jobs/_components/row-action";
+import {Briefcase, Clock, MapPin} from "lucide-react";
+import { cn, getStatusColor } from "@/lib/utils";
 
 const columnHelper = createColumnHelper<JobResponseType>();
 
@@ -88,7 +89,7 @@ export const columns: ColumnDef<JobResponseType>[] = [
         accessorKey: "status",
         header: "Status",
         cell: ({row}) => (
-            <div className="px-4 py-1 rounded-full w-min text-xs font-bold border uppercase tracking-wider">
+          <div className={cn("px-4 py-1 rounded-full w-min text-xs font-bold border uppercase tracking-wider", getStatusColor(row.original.status))}>
                 {row.original.status}
             </div>),
     },

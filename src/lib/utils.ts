@@ -223,7 +223,7 @@ export function getRangeOption(range?: string, from?: string, to?: string) {
     return RANGE_OPTIONS[range as keyof typeof RANGE_OPTIONS]
 };
 
- export const getApplicationMatch = (candidate_id: number, jobSkills: JobExperience[], experience: CandidateExperience[]) => {
+export const getApplicationMatch = (candidate_id: number, jobSkills: JobExperience[], experience: CandidateExperience[]) => {
         const candidateMap = new Map<string, number>();
         experience.forEach((item) => {
             const skill = item.role.trim();
@@ -278,10 +278,11 @@ export function getRangeOption(range?: string, from?: string, to?: string) {
 
 export const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Open': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
-      case 'On Hold': return 'bg-amber-50 text-amber-700 border-amber-100';
-      case 'Closed': return 'bg-zinc-100 text-zinc-600 border-zinc-200';
-      case 'Draft': return 'bg-blue-50 text-blue-700 border-blue-100';
+      case 'OPEN': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+      case 'ACHIEVED': return 'bg-amber-50 text-amber-700 border-amber-100';
+      case 'CLOSED': return 'bg-zinc-100 text-zinc-600 border-zinc-200';
+      case 'DRAFT': return 'bg-blue-50 text-blue-700 border-blue-100';
+      case 'PENDING': return 'bg-red-50 text-red-700 border-red-100';
       default: return 'bg-zinc-50 text-zinc-700 border-zinc-100';
     }
   };
