@@ -4,17 +4,15 @@ import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
 import {
     AlertCircle,
-    Briefcase,
-    Calendar, CheckCircle2, Clock, Download, ExternalLink, FileText, History, Linkedin,
+    Calendar, Clock, Linkedin,
     LucideEllipsis, LucideMail, Mail,
-    MessageSquare,
-    Sparkles, Star, TrendingUp
+    MessageSquare, Star
 } from "lucide-react";
 import {Checkbox} from "@/components/ui/checkbox";
 import {Label} from "@/components/ui/label";
 import {ApplicationType, JobExperienceType, JobListingType} from "@/types";
 import React, {useEffect, useState} from "react";
-import {cn, getApplicationMatch} from "@/lib/utils";
+import {cn} from "@/lib/utils";
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
 import {
     Select,
@@ -26,10 +24,7 @@ import {
 } from "@/components/ui/select";
 import {Button} from "@/components/ui/button";
 import {get_candidate_details} from "@/server/queries/mongo/candidate-details";
-import ApplicationSummary, {
-    ApplicationSummaryType,
-    MatchResult
-} from "@/app/(dashboard)/applications/[applicationId]/_components/application-summary";
+import ApplicationSummary, {ApplicationSummaryType} from "@/app/(dashboard)/applications/[applicationId]/_components/application-summary";
 import JobQuickViewCard from "@/components/job-quick-view-card";
 
 type Props = {

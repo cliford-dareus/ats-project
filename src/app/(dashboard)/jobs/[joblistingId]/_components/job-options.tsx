@@ -58,7 +58,7 @@ const JobOptions = ({data, stages, job_id}: Props) => {
                                     </SelectTrigger>
                                     <SelectContent>
                                         {
-                                            JOB_STATUS.map((status) => (
+                                            JOB_STATUS.options.map((status) => (
                                                 <SelectItem
                                                     key={status}
                                                     value={status}>{status.slice(0, 1) + status.slice(1).toLowerCase()}
@@ -138,7 +138,7 @@ export const CreateNewStage = () => {
                             <SelectValue placeholder="Select a stage name"/>
                         </SelectTrigger>
                         <SelectContent>
-                            {JOB_STAGES.map(stage => (
+                            {JOB_STAGES.options.map(stage => (
                                 <SelectItem key={stage} value={stage}>{stage}</SelectItem>
                             ))}
                         </SelectContent>

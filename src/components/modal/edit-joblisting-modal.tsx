@@ -10,18 +10,19 @@ import React from "react";
 import {cn} from "@/lib/utils";
 import {useForm} from "react-hook-form";
 import {z} from "zod";
-import {updateJobSchema} from "@/zod";
+import {JOB_STATUS, JOB_TYPE, updateJobSchema} from "@/zod";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Select, SelectContent, SelectItem, SelectTrigger} from "@/components/ui/select";
 import {Textarea} from "@/components/ui/textarea";
+import {JobResponseType } from "@/types";
 
 type EditJobModalProps = {
     isEditJobOpen: boolean;
     setIsEditJobOpen: React.Dispatch<React.SetStateAction<boolean>>;
-    data: any
+    data: JobResponseType
 };
 
 const EditJobListingModal = ({isEditJobOpen, setIsEditJobOpen, data}: EditJobModalProps) => {
@@ -198,7 +199,7 @@ const EditJobListingModal = ({isEditJobOpen, setIsEditJobOpen, data}: EditJobMod
                                                     Employment Type
                                                 </FormLabel>
                                                 <div className="flex bg-zinc-100 p-1 rounded-xl">
-                                                    {(['Full-time', 'Contract', 'Part-time']).map((type) => (
+                                              {JOB_TYPE.options.map((type) => (
                                                         <button
                                                             key={type}
                                                             type="button"
@@ -236,11 +237,10 @@ const EditJobListingModal = ({isEditJobOpen, setIsEditJobOpen, data}: EditJobMod
                                                     onValueChange={field.onChange}
                                                 >
                                                     <SelectTrigger></SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="Open">Open</SelectItem>
-                                                        <SelectItem value="Draft">Draft</SelectItem>
-                                                        <SelectItem value="On Hold">On Hold</SelectItem>
-                                                        <SelectItem value="Closed">Closed</SelectItem>
+                                                    <SelectContent>                                   
+                                                        {JOB_STATUS.options.map((status) => (
+                                                            <SelectItem key={status} value={status}>{status}</SelectItem>
+                                                        ))}
                                                     </SelectContent>
                                                 </Select>
                                             </FormItem>)}

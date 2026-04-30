@@ -1,6 +1,6 @@
 'use client';
 
-import React, {createContext, useCallback, useContext, useState} from 'react';
+import React, {createContext, useContext, useState} from 'react';
 import {StageTrigger, TriggerTask} from "@/lib/smart-trigger/types";
 import {get_all_tasks_action} from "@/server/actions/application_actions";
 
@@ -30,7 +30,6 @@ export function KanbanProvider({children, initialTriggers = [], initialStages = 
         const parsedTasks = JSON.parse(tasks as string) as { tasks: TriggerTask[] };
         setTasks(parsedTasks.tasks);
     };
-
 
     const contextValue: KanbanContextType = {
         tasks,

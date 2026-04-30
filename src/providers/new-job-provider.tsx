@@ -1,6 +1,6 @@
 'use client';
 
-import {
+import React, {
     createContext,
     useCallback,
     useContext,
@@ -140,4 +140,4 @@ export function useNewJobContext() {
         );
     }
     return context;
-}
+};

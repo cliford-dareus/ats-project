@@ -8,6 +8,7 @@ export type JobResponseType = {
     salary: string;
     createdBy: string;
     created_at: Date;
+    type: typeof JOB_TYPE._type;
     updated_at: Date;
     organization: string;
     department: string;
@@ -169,7 +170,7 @@ export interface CandidateWithDetails {
     stage: StageResponseType[] | null;
     job_listing: JobListingType[] | null;
     interview: InterviewType[] | null;
-    scoreCard: any[] | null;
+    scoreCard: string[] | null;
 };
 
 export interface FormErrors {

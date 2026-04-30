@@ -51,7 +51,7 @@ export const columns: ColumnDef<JobResponseType>[] = [
 
                     <div className="flex items-center gap-1 text-xs font-bold text-foreground/30 uppercase tracking-widest mt-1">
                         <Clock size={16}/>
-                        <span className="ml-1">Full-time</span>
+                        <span className="ml-1">{row.original.type}</span>
                         <span className="text-zinc-300 ml-2">•</span>
                         <span className="ml-2">{row.original.department}</span>
                     </div>

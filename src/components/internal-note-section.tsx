@@ -9,8 +9,8 @@ import {get_application_notes} from "@/server/queries/mongo/note";
 
 type Props = {
     parent_type: string;
-    parent_id: number;
-    selectedId: number
+    parent_id: number | undefined;
+    selectedId: number | undefined;
 }
 
 const InternalNoteSection = ({parent_type, parent_id, selectedId}: Props) => {
@@ -26,7 +26,7 @@ const InternalNoteSection = ({parent_type, parent_id, selectedId}: Props) => {
             }
         }
         fetchInternalNotes();
-    }, []);
+    }, [parent_id, selectedId]);
 
     return (
         <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6 space-y-4">

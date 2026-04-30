@@ -12,7 +12,7 @@ export interface ApplicationSummaryType {
     skills: string[];
     experience: CandidateExperience[];
     education: string[];
-}
+};
 
 type Props = {
     applicationSummary: ApplicationSummaryType;
@@ -25,7 +25,7 @@ export interface MatchResult {
     candidateYears: number;
     requiredYears: number;
     match: boolean;
-}
+};
 
 const ApplicationSummary = ({applicationSummary, candidate_id, jobSkills}: Props) => {
     const {resumeSummary, experience, education, skills} = applicationSummary as ApplicationSummaryType;
@@ -34,8 +34,7 @@ const ApplicationSummary = ({applicationSummary, candidate_id, jobSkills}: Props
         return (
             <EmptyApplicationSummary candidate_id={candidate_id}/>
         )
-    }
-    ;
+    };
 
     const experienceMatch = getApplicationMatch(candidate_id, jobSkills, experience);
 
@@ -104,8 +103,7 @@ const ApplicationSummary = ({applicationSummary, candidate_id, jobSkills}: Props
                     </button>
                 </div>
                 <div className="p-4">
-                    <div
-                        className="prose prose-zinc prose-sm max-w-none text-zinc-600 leading-relaxed">
+                    <div className="prose prose-zinc prose-sm max-w-none text-zinc-600 leading-relaxed">
                         <p>
                             {resumeSummary}
                         </p>
@@ -118,8 +116,7 @@ const ApplicationSummary = ({applicationSummary, candidate_id, jobSkills}: Props
                             <li>Implemented automated testing suite increasing coverage to
                                 85%.
                             </li>
-                            <li>Led a team of 5 developers in a complete system migration.
-                            </li>
+                            <li>Led a team of 5 developers in a complete system migration.</li>
                         </ul>
                     </div>
                 </div>

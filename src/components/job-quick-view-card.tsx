@@ -4,7 +4,7 @@ type Props = {
     name: string;
     department: string;
     location: string;
-    type: string;
+    type: string | null;
 };
 
 const JobQuickViewCard = ({name, department, location, type}: Props) => {
