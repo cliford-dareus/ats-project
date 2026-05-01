@@ -2,9 +2,18 @@
 
 import {auth} from "@clerk/nextjs/server";
 import {canCreateJob} from "@/server/permissions";
-import {add_trigger_to_stage} from "@/server/queries/drizzle/stages";
+import {add_trigger_to_stage, get_stage_by_name} from "@/server/queries/drizzle/stages";
 import {TriggerAction} from "@/lib/smart-trigger/types";
-import {addTaskToQueue} from "../queries";
+import { addTaskToQueue } from "../queries";
+
+export const get_stage_by_name_action = async (stageName: string) => {
+    const {userId} = await auth();
+    if (!userId) {
+        return {error: true, message: "There was an error creating your product"}
+    }
+
+    return await get_stage_by_name(stageName);
+};
 
 export const add_trigger_to_stage_action = async (stageId: number, action: TriggerAction) => {
     const {userId} = await auth();

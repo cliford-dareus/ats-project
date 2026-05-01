@@ -42,11 +42,16 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { JOB_STAGES } from "@/zod";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { update_application_stage_action } from "@/server/actions/application_actions";
+import { get_stage_by_name_action } from "@/server/actions/stage_actions";
 
 type Props = {
   data: ApplicationResponseType;
@@ -75,6 +80,21 @@ const ApplicationPreview = ({ data, applications }: Props) => {
     const currentIndex = applications.findIndex((app) => app.id === currentApplication?.id);
     if (currentIndex > 0) {
       setCurrentApplication(applications[currentIndex - 1]);
+    }
+  };
+
+  const moveToStage = async (stage_name: string) => {
+    try {
+      if (!currentApplication || !stage_name) return;
+      
+      const stage = await get_stage_by_name_action(stage_name);
+      if (!stage || !Array.isArray(stage)) {
+        alert("Stage not found");
+        return;
+      };
+      await update_application_stage_action({ applicationId: currentApplication?.id, new_stage_id: stage[0].id as number });
+    } catch (error) {
+      console.error(error);
     }
   };
 
@@ -202,22 +222,28 @@ const ApplicationPreview = ({ data, applications }: Props) => {
                       <ChevronDown size={14} />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    defaultValue={currentApplication?.current_stage}
-                    align="end"
-                  >
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuRadioGroup
+                      value={currentApplication?.current_stage as string}
+                      onValueChange={moveToStage}
+                    >
                     <DropdownMenuLabel>Advance Candidate</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     {JOB_STAGES.options.map((stage) => (
-                      <DropdownMenuItem
-                        defaultValue={
-                          stage === currentApplication?.current_stage ? currentApplication?.current_stage : ""
-                        }
+                      <DropdownMenuRadioItem
+                        value={stage}
                         key={stage}
+                        className={cn(
+                          "cursor-pointer",
+                          currentApplication?.current_stage === stage
+                            ? "bg-accent text-accent-foreground"
+                            : "",
+                        )}
                       >
                         {stage}
-                      </DropdownMenuItem>
+                      </DropdownMenuRadioItem>
                     ))}
+                    </DropdownMenuRadioGroup>
                   </DropdownMenuContent>
                 </DropdownMenu>
 

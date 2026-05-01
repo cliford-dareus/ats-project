@@ -18,7 +18,6 @@ import {
     List,
     Zap
 } from "lucide-react";
-import Link from "next/link";
 import {cn} from "@/lib/utils";
 import AnalyticsOverview from "./analytics-overview";
 import StripCalendar from "@/components/strip-calenda";
@@ -65,7 +64,7 @@ interface JobPipelineData {
 };
 
 export interface RecruitmentFunnel {
-    stage: "Applied" | "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | 'Hired' | "Drafted" | null;
+    stage: "Applied" | "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | 'Hired' | "Drafted" ;
     count: number;
     stageColor: string;
     conversion: number;

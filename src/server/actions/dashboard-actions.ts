@@ -19,6 +19,7 @@ import {
     and
 } from "drizzle-orm";
 import { subDays, subMonths, startOfMonth, endOfMonth } from "date-fns";
+import { JOB_STAGES } from "@/zod";
 
 const stageOrder = [
   "Applied",
@@ -494,8 +495,10 @@ export async function getRecruitmentFunnel() {
     ];
 
     return stageOrder
-        .map(stage => aggregated[stage] ?? { stage, count: 0, conversion: 0 })
-        .sort((a, b) => stageOrder.indexOf(a.stage) - stageOrder.indexOf(b.stage));
+      .map(stage => aggregated[stage] ?? {
+        stage: stage , count: 0, conversion: 0
+      })
+        .sort((a, b) => stageOrder.indexOf(a.stage) - stageOrder.indexOf(b.stage)) as { stage: JOB_STAGES; count: number; conversion: number }[]
 };
 
 export async function getTimeToHireMetrics() {

@@ -70,6 +70,11 @@ export const applicationFormSchema = z.object({
     job: z.number(),
 });
 
+export const updateApplicationStageSchema = z.object({
+    applicationId: z.number(),
+    new_stage_id: z.number(),
+});
+
 export const newCandidateFormSchema = z.object({
     name: z.string(),
     email: z.string().email({message: "Please enter a valid email address"}),

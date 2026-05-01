@@ -1,7 +1,7 @@
 "use client";
 
 import React, {useEffect, useCallback} from "react";
-import {BriefcaseBusiness, CircleUser, Edit3, Settings, Share, Share2} from "lucide-react";
+import {BriefcaseBusiness, CircleUser, Edit3, Settings, Share2} from "lucide-react";
 import {usePathname, useRouter, useSearchParams} from "next/navigation";
 import JobPipeline from "./job-pipeline";
 import JobOptions from "./job-options";
@@ -49,7 +49,7 @@ const JobTabs = ({applications, stages, jobs, jobListingId, singleJob}: Props) =
     }, [searchParams]);
 
     return (
-        <div>
+        <div className="h-full">
             <div className="flex px-4">
                 <Tabs className="px-0 h-full w-full" value={activeTab} onValueChange={handleTabChange}>
                     <div className="flex items-center justify-between border-b border-zinc-200 pb-4">
@@ -84,8 +84,8 @@ const JobTabs = ({applications, stages, jobs, jobListingId, singleJob}: Props) =
                         </div>
                     </div>
 
-                    <TabsContent value="candidates">
-                        <JobCandidate job={singleJob}/>
+                    <TabsContent value="candidates" >
+                        <JobCandidate job={singleJob} stages={stages}/>
                     </TabsContent>
                     <TabsContent value="pipelines">
                         <JobPipeline

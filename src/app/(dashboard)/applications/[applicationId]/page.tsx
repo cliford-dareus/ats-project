@@ -1,11 +1,11 @@
 import React from 'react';
 import { get_application_by_id_action } from "@/server/actions/application_actions";
-import { ApplicationResponseType } from "@/types";
+import { ApplicationResponseType, JobExperienceType } from "@/types";
 // import { get_application_notes } from "@/server/queries/mongo/note";
 import InternalNoteSection from "@/components/internal-note-section";
 import { get_job_listings_stages } from "@/server/queries";
 import { get_candidate_details } from '@/server/queries/mongo/candidate-details';
-import ApplicationSummary from './_components/application-summary';
+import { ApplicationSummary, ApplicationExperienceMatch, EmptyApplicationSummary, ApplicationExperience } from './_components/application-summary';
 import { get_job_by_id_action } from '@/server/actions/job-listings-actions';
 import ApplicationDetails from './_components/application-details';
 import AppicationHeader from './_components/application-header';
@@ -46,11 +46,29 @@ const Page = async ({ params }: Props) => {
 
                         <div className="grid grid-cols-3 gap-4 mt-2">
                             {/* Left Column: Application Summary And Candidate experience */}
-                            <ApplicationSummary
-                                applicationSummary={candidateDetails}
-                                candidate_id={applicationResult.candidate_id}
-                                jobSkills={job?.job_technologies}
-                            />
+                            {!candidateDetails.experience ||
+                            !candidateDetails.skills ||
+                            !candidateDetails.education ||
+                            !candidateDetails.resumeSummary ? (
+                              <div className="col-span-2 space-y-4">
+                                <EmptyApplicationSummary
+                                  candidate_id={applicationResult.candidate_id}
+                                />
+                              </div>
+                            ) : (
+                              <div className="col-span-2 space-y-4">
+                                <ApplicationExperienceMatch
+                                  candidate_id={applicationResult.candidate_id}
+                                  experience={candidateDetails.experience}
+                                  jobSkills={
+                                    job.job_technologies as unknown as JobExperienceType[]
+                                  }
+                                />
+
+                                <ApplicationSummary resumeSummary={candidateDetails.resumeSummary} />
+                                <ApplicationExperience experience={candidateDetails.experience} />
+                              </div>
+                            )}
 
                             {/* Right Column: Sidebar Info */}
                             <div className="space-y-4">

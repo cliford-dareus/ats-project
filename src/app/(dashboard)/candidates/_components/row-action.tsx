@@ -1,12 +1,5 @@
-import React from 'react';
-import {Ellipsis} from "lucide-react";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel, DropdownMenuSeparator,
-    DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
+import React, { useState } from 'react';
+import {DeleteIcon, EditIcon} from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {CandidatesResponseType} from "@/types";
 
@@ -16,29 +9,19 @@ const RowAction = ({ row, table }) => {
     const candidate = row.original as CandidatesResponseType;
     const meta = table.options.meta;
     const validRow = meta?.validRows[row.id];
-    const disableSubmit = validRow ? Object.values(validRow)?.some(value => !value): false;
+  const disableSubmit = validRow ? Object.values(validRow)?.some(value => !value) : false;
+  const [isEditJobOpen, setIsEditJobOpen] = useState(false);
+  const [isDeleteJobOpen, setIsDeleteJobOpen] = useState(false);
 
   return (
-      <>
-          <DropdownMenu>
-              <DropdownMenuTrigger asChild disabled={disableSubmit}>
-                  <Button variant="ghost" className="h-8 w-8 p-0">
-                      <span className="sr-only">Open menu</span>
-                      <Ellipsis size={18}/>
-                  </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                  <DropdownMenuItem
-                      onClick={() => navigator.clipboard.writeText(candidate.id.toString())}
-                  >
-                      Copy candidate ID
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem>Edit candidate</DropdownMenuItem>
-              </DropdownMenuContent>
-          </DropdownMenu>
-      </>
+    <div className="flex items-center gap-2">
+      <Button disabled={disableSubmit} variant="ghost" onClick={() => setIsEditJobOpen(true)}>
+        <EditIcon size={18} />
+      </Button>
+      <Button disabled={disableSubmit} variant="ghost" onClick={() => setIsDeleteJobOpen(true)}>
+        <DeleteIcon size={18} />
+      </Button>
+    </div>
   );
 };
 

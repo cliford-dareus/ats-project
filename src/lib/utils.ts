@@ -286,3 +286,23 @@ export const getStatusColor = (status: string) => {
       default: return 'bg-zinc-50 text-zinc-700 border-zinc-100';
     }
   };
+
+export const getCandidateStatusColor = (status: string) => {
+  switch (status) {
+    case 'ACTIVE': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+    case 'REJECTED': return 'bg-amber-50 text-amber-700 border-amber-100';
+    case 'HIRED': return 'bg-zinc-100 text-zinc-600 border-zinc-200';
+    case 'REVIEWED': return 'bg-blue-50 text-blue-700 border-blue-100';
+    default: return 'bg-zinc-50 text-zinc-700 border-zinc-100';
+  }
+};
+
+export const getStateIcon = (status: string) => {
+  switch (status) {
+    case 'ACTIVE': return ;
+    case 'REJECTED': return ;
+    case 'HIRED': return ;
+    case 'REVIEWED': return ;
+    default: return ;
+  }
+};

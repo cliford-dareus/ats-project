@@ -9,7 +9,7 @@ import {
 import {auth} from "@clerk/nextjs/server";
 import {canCreateJob} from "@/server/permissions";
 import {z} from "zod";
-import {applicationFormSchema, filterApplicationsSchema} from "@/zod";
+import {applicationFormSchema, filterApplicationsSchema, updateApplicationStageSchema} from "@/zod";
 
 export const create_application_action = async (unsafeData: z.infer<typeof applicationFormSchema>) => {
     const {userId} = await auth();
@@ -44,10 +44,11 @@ export const get_application_by_id_action = async (applicationId: number) => {
     return await get_application_by_id(applicationId);
 };
 
-export const update_application_stage_action = async (data: { applicationId: number, new_stage_id: number }) => {
+export const update_application_stage_action = async (unsafeData: z.infer<typeof updateApplicationStageSchema>) => {
     const {userId} = await auth();
+  const { success, data } = await updateApplicationStageSchema.spa(unsafeData);
 
-    if (!userId) {
+    if (!userId || !success) {
         return {error: true, message: "There was an error updating application stage"}
     }
 
