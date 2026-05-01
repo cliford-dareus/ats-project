@@ -1,26 +1,13 @@
 "use client";
 
-import React, {useCallback, useTransition} from "react";
+import React from "react";
 import {
-    Users,
-    MapPin,
-    Plus,
-    Filter,
+
     UserCheck,
     UserX,
-    Clock,
     Zap,
-    CheckCircle,
-    Eye,
-    XCircle,
-    Archive
 } from "lucide-react";
-import {usePathname, useRouter, useSearchParams} from "next/navigation";
-import {Button} from "@/components/ui/button";
-import {Badge} from "@/components/ui/badge";
-import {Separator} from "@/components/ui/separator";
-import {createNewSearchParam} from "@/lib/utils";
-import AppSidebarFilter from "@/components/app-sidebar-filter";
+import AppSidebarFilter from "@/components/sidebar/app-sidebar-filter";
 
 const CandidatesSidebar = () => {
     const config = [

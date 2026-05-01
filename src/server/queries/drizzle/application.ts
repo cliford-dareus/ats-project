@@ -15,7 +15,11 @@ import {
   getGlobalTag,
   revalidateDbCache,
 } from "@/lib/cache";
-import { applicationFormSchema, filterApplicationsSchema, updateApplicationStageSchema } from "@/zod";
+import {
+  applicationFormSchema,
+  filterApplicationsSchema,
+  updateApplicationStageSchema,
+} from "@/zod";
 import { z } from "zod";
 import { uploadResumeToR2 } from "@/lib/upload-file-to-r2";
 
@@ -200,18 +204,9 @@ export const update_application = async (data: {
   revalidateDbCache({ tag: CACHE_TAGS.applications });
 };
 
-export const update_application_stage = async (data: { applicationId: number; jobId: number; new_stage_id: number, stage_name: any }) => {
-  let new_stage_id = data.new_stage_id;
-  
-  if (!data.new_stage_id && data.jobId) {
-    const current_stage = await db
-      .select()
-      .from(stages)
-      .where(and(eq(stages.job_id, data.jobId), eq(stages.stage_name, data.stage_name)))
-    
-    new_stage_id = current_stage[0].id;
-  };
-  
+export const update_application_stage = async (
+  data: z.infer<typeof updateApplicationStageSchema>,
+) => {
   await db
     .update(applications)
     .set({ current_stage_id: data.new_stage_id })
@@ -230,7 +225,9 @@ export const get_application_by_id = async (applicationId: number) => {
   return cacheFn(applicationId);
 };
 
-export const get_all_applications = async (filter: z.infer<typeof filterApplicationsSchema>,) => {
+export const get_all_applications = async (
+  filter: z.infer<typeof filterApplicationsSchema>,
+) => {
   const cacheFn = dbCache(get_all_applications_db, {
     tags: [getGlobalTag(CACHE_TAGS.applications)],
   });
@@ -302,7 +299,9 @@ export const get_application_by_id_db = async (applicationId: number) => {
     .where(eq(applications.id, applicationId));
 };
 
-export const get_all_applications_db = async (filter: z.infer<typeof filterApplicationsSchema>,) => {
+export const get_all_applications_db = async (
+  filter: z.infer<typeof filterApplicationsSchema>,
+) => {
   const filters: SQL[] = [];
 
   if (filter.keywords && filter.keywords.length > 0) {

@@ -4,7 +4,7 @@ import {
     Sidebar,
     SidebarContent, SidebarFooter,
     SidebarGroup, SidebarGroupContent,
-    SidebarHeader, SidebarInput,
+    SidebarHeader,
     SidebarMenu, SidebarMenuButton,
     SidebarMenuItem, useSidebar
 } from "@/components/ui/sidebar"
@@ -27,6 +27,7 @@ import TrashSidebar from "@/app/(dashboard)/trash/_components/trash-sidebar";
 import StepNavigation from "@/app/(dashboard)/jobs/new/_component/side-navigation";
 import SidebarDashboard from "@/app/(dashboard)/dashboard/_components/sidebar-dashboard";
 import ApplicationsSidebar from "@/app/(dashboard)/applications/_components/application-sidebar";
+import AppSidebarSearch from "./app-sidebar-search";
 
 const data = {
     navMain: [
@@ -84,6 +85,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
         nav.url === "/" ? pathname === "/" : pathname.startsWith(nav.url)
     ) || data.navMain[0];
 
+    
 
     return (
         <Sidebar
@@ -153,7 +155,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
                             {activeItem.title}
                         </div>
                     </div>
-                    {activeItem.title !== "Settings" && <SidebarInput placeholder="Type to search..."/>}
+                    {activeItem.title !== "Settings" && <AppSidebarSearch />}
                 </SidebarHeader>
 
                 <SidebarContent className="">

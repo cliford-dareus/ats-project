@@ -9,7 +9,7 @@ import {
     Zap,
 } from "lucide-react";
 import { DEPARTMENTS } from "@/lib/constant";
-import AppSidebarFilter from "@/components/app-sidebar-filter";
+import AppSidebarFilter from "@/components/sidebar/app-sidebar-filter";
 
 const JobListingSidebar = () => {
     const config = [

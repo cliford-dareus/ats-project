@@ -3,14 +3,11 @@
 import React, {useState} from 'react';
 import {
     Calendar,
-    TrendingUp,
     Users,
     BriefcaseBusiness,
     Clock,
     Target,
     Activity,
-    Bell,
-    Filter,
     RefreshCw
 } from 'lucide-react';
 import {Button} from '@/components/ui/button';

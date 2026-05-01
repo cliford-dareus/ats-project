@@ -1,7 +1,8 @@
 import React from "react";
-import AppSidebarFilter from "@/components/app-sidebar-filter";
+
 import {Archive, Building2, CheckCircle, Clock, Eye, XCircle, Zap} from "lucide-react";
 import {DEPARTMENTS} from "@/lib/constant";
+import AppSidebarFilter from "@/components/sidebar/app-sidebar-filter";
 
 const ApplicationsSidebar = () => {
     const config = [

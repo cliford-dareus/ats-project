@@ -70,14 +70,18 @@ const ApplicationPreview = ({ data, applications }: Props) => {
   }, [applications, data]);
 
   const nextApplication = () => {
-    const currentIndex = applications.findIndex((app) => app.id === currentApplication?.id);
+    const currentIndex = applications.findIndex(
+      (app) => app.id === currentApplication?.id,
+    );
     if (currentIndex < applications.length - 1) {
       setCurrentApplication(applications[currentIndex + 1]);
     }
   };
 
   const prevApplication = () => {
-    const currentIndex = applications.findIndex((app) => app.id === currentApplication?.id);
+    const currentIndex = applications.findIndex(
+      (app) => app.id === currentApplication?.id,
+    );
     if (currentIndex > 0) {
       setCurrentApplication(applications[currentIndex - 1]);
     }
@@ -86,13 +90,16 @@ const ApplicationPreview = ({ data, applications }: Props) => {
   const moveToStage = async (stage_name: string) => {
     try {
       if (!currentApplication || !stage_name) return;
-      
+
       const stage = await get_stage_by_name_action(stage_name);
       if (!stage || !Array.isArray(stage)) {
         alert("Stage not found");
         return;
-      };
-      await update_application_stage_action({ applicationId: currentApplication?.id, new_stage_id: stage[0].id as number });
+      }
+      await update_application_stage_action({
+        applicationId: currentApplication?.id,
+        new_stage_id: stage[0].id as number,
+      });
     } catch (error) {
       console.error(error);
     }
@@ -123,12 +130,20 @@ const ApplicationPreview = ({ data, applications }: Props) => {
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        
+
         <div className="flex gap-2 items-center ml-auto">
-          <Button onClick={() => prevApplication()} className="" variant="ghost">
+          <Button
+            onClick={() => prevApplication()}
+            className=""
+            variant="ghost"
+          >
             <ChevronLeft />
           </Button>
-          <Button onClick={() => nextApplication()} className="" variant="ghost">
+          <Button
+            onClick={() => nextApplication()}
+            className=""
+            variant="ghost"
+          >
             <ChevronRight />
           </Button>
         </div>
@@ -189,7 +204,9 @@ const ApplicationPreview = ({ data, applications }: Props) => {
                   <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">
                     Location
                   </p>
-                  <p className="text-sm font-bold">{currentApplication?.location}</p>
+                  <p className="text-sm font-bold">
+                    {currentApplication?.location}
+                  </p>
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">
@@ -227,22 +244,22 @@ const ApplicationPreview = ({ data, applications }: Props) => {
                       value={currentApplication?.current_stage as string}
                       onValueChange={moveToStage}
                     >
-                    <DropdownMenuLabel>Advance Candidate</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {JOB_STAGES.options.map((stage) => (
-                      <DropdownMenuRadioItem
-                        value={stage}
-                        key={stage}
-                        className={cn(
-                          "cursor-pointer",
-                          currentApplication?.current_stage === stage
-                            ? "bg-accent text-accent-foreground"
-                            : "",
-                        )}
-                      >
-                        {stage}
-                      </DropdownMenuRadioItem>
-                    ))}
+                      <DropdownMenuLabel>Advance Candidate</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {JOB_STAGES.options.map((stage) => (
+                        <DropdownMenuRadioItem
+                          value={stage}
+                          key={stage}
+                          className={cn(
+                            "cursor-pointer",
+                            currentApplication?.current_stage === stage
+                              ? "bg-accent text-accent-foreground"
+                              : "",
+                          )}
+                        >
+                          {stage}
+                        </DropdownMenuRadioItem>
+                      ))}
                     </DropdownMenuRadioGroup>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -289,7 +306,9 @@ const ApplicationPreview = ({ data, applications }: Props) => {
                   Current Stage
                 </span>
               </div>
-              <p className="text-xl font-bold">{currentApplication?.current_stage}</p>
+              <p className="text-xl font-bold">
+                {currentApplication?.current_stage}
+              </p>
             </div>
             <div className="bg-zinc-50 p-4 rounded-2xl border border-zinc-100">
               <div className="flex items-center gap-2 text-zinc-400 mb-1">
@@ -299,7 +318,9 @@ const ApplicationPreview = ({ data, applications }: Props) => {
                 </span>
               </div>
               <p className="text-xl font-bold">
-                {new Date(currentApplication?.apply_date as Date).toDateString()}
+                {new Date(
+                  currentApplication?.apply_date as Date,
+                ).toDateString()}
               </p>
             </div>
           </div>
@@ -314,7 +335,9 @@ const ApplicationPreview = ({ data, applications }: Props) => {
                 <p className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest">
                   EMAIL
                 </p>
-                <p className="text-xs font-bold">{currentApplication?.candidate_email}</p>
+                <p className="text-xs font-bold">
+                  {currentApplication?.candidate_email}
+                </p>
               </div>
             </div>
 
@@ -326,7 +349,9 @@ const ApplicationPreview = ({ data, applications }: Props) => {
                 <p className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest">
                   PHONE NUMBER
                 </p>
-                <p className="text-xs font-bold">{currentApplication?.candidate_phone}</p>
+                <p className="text-xs font-bold">
+                  {currentApplication?.candidate_phone}
+                </p>
               </div>
             </div>
 

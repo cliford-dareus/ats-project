@@ -38,12 +38,12 @@ export const columns: ColumnDef<ApplicationResponseType>[] = [
         accessorKey: "Name",
         header: 'Name',
         cell: ({row}) => (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 group">
                 <div className="w-10 h-10 rounded-full bg-background overflow-hidden border-2 border-white shadow-lg">
                     {/*<img src={app.avatar} alt={app.name} />*/}
                 </div>
                 <div>
-                    <h4 className="text-sm text-foreground font-bold group-hover:text-primary transition-colors">{row.original.candidate_name}</h4>
+                    <h4 className="text-sm text-foreground font-bold group-hover:text-primary truncate tracking-tight transition-colors">{row.original.candidate_name}</h4>
                     <p className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest mt-1">{row.original.candidate_email}</p>
                 </div>
             </div>
