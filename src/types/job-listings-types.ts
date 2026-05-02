@@ -19,13 +19,15 @@ export type JobResponseType = {
     candidatesCount: number;
 }
 
-export type candidatesResponseType = {
+export type CandidatesResponseType = {
     id: number
     name: string
     email: string
     phone: string
     cv_path: string
     status: "Active" | "Rejected" | "Hired" | null
+    created_at: Date
+    updated_at: Date
 };
 
 export type JobListingWithCandidatesType = {
@@ -53,6 +55,8 @@ export type ApplicationResponseType = {
     location: string;
     current_stage: JOB_ENUM;
     assign_to: string;
+    created_at: Date;
+    updated_at: Date;
 }
 
 export  type StageResponseType = {
@@ -65,6 +69,20 @@ export  type StageResponseType = {
     need_schedule: boolean
 }
 
+export type ExtractResponseType = {
+    Name: string,
+    "Contact Information": {
+        Email: string,
+        Phone: string,
+        Location: string
+    }
+    Skills: string[],
+    "Work Experience": string[],
+    Education: string[]
+};
+
 export interface FormErrors {
     [key: string]: string | undefined;
 }
+
+

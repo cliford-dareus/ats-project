@@ -4,7 +4,7 @@ import Link from 'next/link';
 import {usePathname} from 'next/navigation';
 import path from 'path';
 import {useEffect, useState} from 'react';
-import {ArrowLeft, FileArchive} from "lucide-react";
+import {ArrowLeft, FileArchive, FlaskConical, ReceiptText, Workflow} from "lucide-react";
 import {cn} from "@/lib/utils";
 // import { newJobRoutes } from '@/types';
 
@@ -12,22 +12,22 @@ const steps = [
     {
         title: 'Job Information',
         route: 'step-one',
-        icon: <FileArchive size={20}/>,
+        icon: <FileArchive size={18}/>,
         link: '/jobs/new/step-one',
     },
     {
         title: "Experience",
         route: 'step-two',
-        icon: <FileArchive size={20}/>,
+        icon: <FlaskConical size={18}/>,
         link: '/jobs/new/step-two',
     },
     {
         title: 'Workflow ',
         route: 'step-three',
-        icon: <FileArchive size={20}/>,
+        icon: <Workflow size={18}/>,
         link: '/jobs/new/step-three',
     },
-    {title: 'Review', route: 'review', icon: <FileArchive size={20}/>, link: '/jobs/new/step-review'},
+    {title: 'Review', route: 'review', icon: <ReceiptText size={18}/>, link: '/jobs/new/step-review'},
 ];
 
 export default function StepNavigation() {

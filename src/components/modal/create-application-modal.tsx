@@ -11,12 +11,12 @@ import {zodResolver} from "@hookform/resolvers/zod";
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
 import {Badge} from "@/components/ui/badge";
 import {motion} from "motion/react";
-import {checkFormStatus, cn} from "@/lib/utils";
+import {checkFormStatus} from "@/lib/utils";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
 import {Switch} from "@/components/ui/switch";
 import {Select, SelectContent, SelectItem, SelectTrigger} from "@/components/ui/select";
-import {candidatesResponseType, JobResponseType} from "@/types/job-listings-types";
+import {CandidatesResponseType, JobResponseType} from "@/types/job-listings-types";
 import {create_application_action} from "@/server/actions/application_actions";
 import {candidateForm} from "@/schema";
 
@@ -25,10 +25,10 @@ const STEPS = [
     {step: 2, status: 'In-Complete', open: false},
 ];
 
-const CreateApplicationModal = ({job, candidates}: { job: JobResponseType[], candidates: candidatesResponseType[] }) => {
+const CreateApplicationModal = ({job, candidates}: { job: JobResponseType[], candidates: CandidatesResponseType[] }) => {
     const [isOpen, setIsOpen] = useState<{ step: number, status: string, open: boolean }[]>(STEPS);
-    const [selectedCandidate, setCandidateSelected] = useState<candidatesResponseType | null>(null);
-    const [files, setFiles] = useState<File[]>([]);
+    const [selectedCandidate, setCandidateSelected] = useState<CandidatesResponseType | null>(null);
+    // const [files, setFiles] = useState<File[]>([]);
     const [searchTerm, setSearchTerm] = useState<string>("");
     const [isInDataBase, setIsInDataBase] = useState(false);
     const form = useForm<z.infer<typeof candidateForm>>({

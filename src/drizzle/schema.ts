@@ -115,7 +115,7 @@ export const stagesRelations = relations(stages, ({one}) => ({
         fields: [stages.job_id],
         references: [job_listings.id],
     }),
-    // candidates_order_id: many(candidates)
+    // candidates_order_id: many(applications)
     assign_to: one(usersTable, {
         fields: [stages.assign_to],
         references: [usersTable.id]

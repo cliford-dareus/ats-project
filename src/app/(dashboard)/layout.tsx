@@ -2,7 +2,7 @@ import {SidebarInset, SidebarProvider, SidebarTrigger} from "@/components/ui/sid
 import {AppSidebar} from "@/components/app-sidebar";
 import React from "react";
 import {get_all_candidates_action, get_candidates_stage_count_action} from "@/server/actions/candidates-actions";
-import {candidatesResponseType} from "@/types/job-listings-types";
+import {CandidatesResponseType} from "@/types/job-listings-types";
 import {Separator} from "@/components/ui/separator";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {Button} from "@/components/ui/button";
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {NewJobContextProvider} from "@/providers/new-job-provider";
 import OrganizationSwitcher from "@/components/organization_switcher";
+import { redirect } from "next/navigation";
 
 type Props = {
     children: React.ReactNode
@@ -32,7 +33,13 @@ export type StageCountType = {
 
 const Layout = async ({children}: Props) => {
     const user = await currentUser()
-    const candidate = await get_all_candidates_action();
+    
+    if (!user) {
+        return redirect("/sign-in");
+    };
+    
+    const result = await get_all_candidates_action({limit: 0,offset: 0});
+    const candidate = Array.isArray(result) ? result[1] : [];
     const stagesCount = await get_candidates_stage_count_action();
 
     return (
@@ -42,7 +49,7 @@ const Layout = async ({children}: Props) => {
                     "--sidebar-width": "350px",
                 } as React.CSSProperties
             }>
-            <AppSidebar candidate={candidate as candidatesResponseType[]}
+            <AppSidebar candidate={candidate as CandidatesResponseType[]}
                         stagescount={stagesCount as StageCountType[]}/>
             <SidebarInset>
                 <header className="sticky top-0 flex shrink-0 items-center gap-2 border-b bg-background p-4">

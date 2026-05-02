@@ -43,7 +43,7 @@ const Card = ({data, handleDragStart, stage}: Props) => {
                                 :
                                 (<Link
                                     className="text-xs text-blue-500 leading-4"
-                                    href={`/candidates/${data.candidate_id}`}
+                                    href={`/applications/${data.candidate_id}`}
                                 >
                                     View Profile
                                 </Link>)

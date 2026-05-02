@@ -2,6 +2,9 @@ import JobListingsList from "@/app/(dashboard)/jobs/_components/job-listings-lis
 import {JobResponseType} from "@/types/job-listings-types";
 import {auth} from "@clerk/nextjs/server";
 import {get_all_job_listings_action} from "@/server/actions/job-listings-actions";
+import ExtractFileButton from "@/components/extract-file-button";
+import {Plus} from "lucide-react";
+import React from "react";
 
 type Props = {
     searchParams: {
@@ -23,15 +26,9 @@ const Page = async ({searchParams}: Props) => {
         organization: orgId as string,
     });
 
-    let len: number | undefined;
-    let jobs: JobResponseType[] | undefined;
-    let error: boolean | undefined;
-
-    if (Array.isArray(result)) {
-        [len, jobs] = result as [number, JobResponseType[]];
-    } else if (result && typeof result === "object" && 'error' in result) {
-        error = result.error;
-    }
+    const  len  = Array.isArray(result) ? result[0] : 0;
+    const  jobs = Array.isArray(result) ? result[1] : [];
+    const  error = result && typeof result === "object" && 'error' in result ? result.error : null;
 
     if (error) {
         console.error("Error fetching job listings:", error);
@@ -46,6 +43,13 @@ const Page = async ({searchParams}: Props) => {
                 <div className="items-center flex gap-2">
                     <h1 className="text-2xl font-bold text-gray-900">JOBS</h1>
                     <span className="px-2 bg-slate-300 flex items-center justify-center rounded">{len as number}</span>
+                </div>
+
+                <div className="flex items-center gap-4">
+                    <ExtractFileButton status="jobs"/>
+                    <div className="p-1 bg-blue-300 rounded cursor-pointer hover:bg-blue-400">
+                        <Plus size={18}/>
+                    </div>
                 </div>
             </div>
             <JobListingsList jobs={jobs as JobResponseType[]} pageCount={pageCount}/>

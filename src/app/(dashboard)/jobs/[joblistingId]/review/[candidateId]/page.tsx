@@ -21,15 +21,16 @@ type Props = {
 
 const Page = async ({params}: Props) => {
     const {candidateId} = await params;
+    
     const applications = await get_user_applications(Number(candidateId));
     const [candidate] = await get_candidate_with_details(Number(candidateId));
 
     if (!candidate || !applications) return;
-
+        
     return (
         <div className="p-4">
             <div className="mb-4 ">
-                <h1 className="font-bold text-xl">Review {candidate?.candidateName} Application</h1>
+              <h1 className="font-bold text-xl">Review <br/> {candidate?.candidateName} <br/> Application</h1>
             </div>
             <div className="flex justify-between border items-center py-1.5 px-4 rounded">
                 <div className="flex items-center gap-4">
@@ -39,7 +40,7 @@ const Page = async ({params}: Props) => {
                     </Avatar>
                     <div className="flex flex-col">
                         <p className=" text-blue-500 leading-3">{candidate?.candidateName}</p>
-                        <p className="text-xs text-slate-500">Source: </p>
+              <p className="text-xs text-slate-500">Source: { candidate.stageName}</p>
                     </div>
                 </div>
 
@@ -55,7 +56,7 @@ const Page = async ({params}: Props) => {
                         <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuItem
-                                // onClick={() => navigator.clipboard.writeText(payment.id)}
+                                onClick={() => navigator.clipboard.writeText('.hello')}
                             >
                                 Copy payment ID
                             </DropdownMenuItem>
@@ -107,7 +108,7 @@ const Page = async ({params}: Props) => {
                         Resume
                     </TabsContent>
                     <TabsContent value="application">
-                        {applications.length}
+                        {JSON.stringify(applications)}
                     </TabsContent>
                 </Tabs>
             </div>

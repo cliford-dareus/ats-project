@@ -1,13 +1,13 @@
 'use client'
 
 import {ColumnDef} from "@tanstack/react-table";
-import {CandidatesResponseType} from "@/types/job-listings-types";
+import {ApplicationResponseType} from "@/types/job-listings-types";
 import React from "react";
 import IndeterminateCheckbox from "@/components/indeterminate-checkbox";
 import {Ellipsis} from "lucide-react";
 
 
-export const columns: ColumnDef<CandidatesResponseType>[] = [
+export const columns: ColumnDef<ApplicationResponseType>[] = [
     {
         id: 'select',
         header: ({ table }) => (
@@ -35,22 +35,22 @@ export const columns: ColumnDef<CandidatesResponseType>[] = [
     {
         accessorKey: "Name",
         header: 'Name',
-        cell: ({ row }) => row.original.name
+        cell: ({ row }) => row.original.candidate_name
     },
     {
-        accessorKey: "Email",
-        header: 'Email',
-        cell: ({ row }) => row.original.email
+        accessorKey: "Job",
+        header: 'Job',
+        cell: ({ row }) => row.original.job_apply
     },
     {
-        accessorKey: "Phone",
-        header: 'Phone',
-        cell: ({ row }) => row.original.phone
+        accessorKey: "location",
+        header: 'Location',
+        cell: ({ row }) => row.original.location
     },
     {
-        accessorKey: "Status",
-        header: 'Status',
-        cell: ({ row }) => row.original.status
+        accessorKey: "stage",
+        header: 'Stage',
+        cell: ({ row }) => row.original.current_stage
     },
     {
         id: "action",

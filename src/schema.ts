@@ -70,6 +70,14 @@ export const candidateForm = z.object({
     job: z.string().nullish(),
 });
 
+export const newCandidateForm = z.object({
+    name: z.string(),
+    email: z.string().email({message: "Please enter a valid email address"}),
+    phone: z.string(),
+    location: z.string(),
+    resume: z.string(),
+});
+
 export const filterJobType = z.object({
     location: z.string().or(z.array(z.string())).optional(),
     keywords: z.array(z.string()).optional(),
@@ -86,6 +94,12 @@ export const filterApplicationsType = z.object({
     limit: z.number().optional(),
     offset: z.number().optional(),
     organization: z.string(),
+});
+
+export const filterCandidateType = z.object({
+    name: z.string().optional(),
+    limit: z.number(),
+    offset: z.number(),
 });
 
 export const stepOneSchema = z.object({

@@ -11,7 +11,6 @@ export const create_application = async (data: z.infer<typeof candidateForm>) =>
         .from(stages)
         .where(and(eq(stages.job_id, Number(data.job!)), eq(stages.stage_order_id, 0)));
 
-
     if (!data.candidate) {
         try {
             const info = data.candidate_info as {
@@ -73,8 +72,18 @@ export const update_application_stage = async (data: { candidateId: number, curr
     })
 }
 
-export const get_all_applications = async (filter: z.infer<typeof filterApplicationsType>) => {
+export const get_all_applications = async (filter: {organization: string}) => {
     const cacheFn = dbCache(get_all_applications_db, {
+        tags: [
+            getGlobalTag(CACHE_TAGS.applications)
+        ]
+    });
+
+    return cacheFn(filter);
+}
+
+export const get_applications_with_filter = async (filter: z.infer<typeof filterApplicationsType>) => {
+    const cacheFn = dbCache(get_applications_with_filter_db, {
         tags: [
             getGlobalTag(CACHE_TAGS.applications)
         ]
@@ -104,7 +113,7 @@ export const get_applications_with_stages_db = async () => {
         .leftJoin(applications, eq(applications.current_stage_id, stages.id));
 };
 
-export const get_all_applications_db = async (filter: z.infer<typeof filterApplicationsType>) => {
+export const get_applications_with_filter_db = async (filter: z.infer<typeof filterApplicationsType>) => {
     const filters: SQL[] = []
 
     if (filter.stages) filters.push(eq(applications.current_stage_id, filter.stages))
@@ -137,6 +146,21 @@ export const get_all_applications_db = async (filter: z.infer<typeof filterAppli
     return [len, application];
 }
 
+export const get_all_applications_db = async (filter: {organization : string}) => {
+    return db.select({
+        can_contact: applications.can_contact,
+        candidate: applications.candidate,
+        created_at: applications.created_at,
+        current_stage_id: applications.current_stage_id,
+        id: applications.id,
+        job_id: applications.job_id,
+        updated_at: applications.updated_at
+    })
+        .from(applications)
+        .leftJoin(job_listings, eq(applications.job_id, job_listings.id))
+        .where(eq(job_listings.organization, filter.organization))
+}
+
 export const get_user_applications = async (candidateId: number) => {
     return db.select()
         .from(applications)
@@ -144,6 +168,7 @@ export const get_user_applications = async (candidateId: number) => {
         .leftJoin(scoreCards, eq(scoreCards.applications_id, applications.id))
         .leftJoin(interviews, eq(interviews.applications_id, applications.id))
 }
+
 
 export const add_interview = async ({applicationId, location, start_at, end_at}: {
     applicationId: number,

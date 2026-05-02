@@ -1,6 +1,16 @@
 import {clsx, type ClassValue} from "clsx"
 import {twMerge} from "tailwind-merge"
 import {UseFormReturn} from "react-hook-form";
+import {ApplicationResponseType, CandidatesResponseType} from "@/types/job-listings-types";
+import {chartData} from "@/app/(dashboard)/dashboard/_components/charts/circle-chart";
+import {
+    differenceInDays, differenceInMonths,
+    differenceInWeeks,
+    eachDayOfInterval, eachMonthOfInterval, eachWeekOfInterval, eachYearOfInterval, endOfWeek,
+    interval, isValid, max, min,
+    startOfDay, startOfWeek,
+    subDays
+} from "date-fns";
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs))
@@ -22,12 +32,12 @@ export const checkFormStatus = <U, T extends UseFormReturn<any>>(args: U, form: 
     }
 };
 
-export const aggregateByKey = <T extends Record<string, any>>(
+export const aggregateByKey = <T extends Record<string, unknown>>(
     data: T[],
     key: keyof T,
     countKey: keyof T,
     color?: keyof T,
-): { [key: string]: number }[] => {
+): { [key: string]: number | string }[] => {
     return data?.reduce((acc, cur) => {
         if (cur[key] === null) {
             return acc; // Skip if the key is null
@@ -35,13 +45,17 @@ export const aggregateByKey = <T extends Record<string, any>>(
 
         const existingItem = acc.find(item => item[key as string] === cur[key]);
         if (existingItem) {
-            existingItem[countKey as string] += cur[countKey];
+            existingItem[countKey as string] = (existingItem[countKey as string] as number) + (cur[countKey] as number);
         } else {
-            acc.push({[key]: cur[key], [countKey]: cur[countKey], [color as string]: cur[color as string]});
+            acc.push({
+                [key]: cur[key] as string | number,
+                [countKey]: cur[countKey] as number,
+                ...(color ? { [color]: cur[color] as string | number } : {})
+            });
         }
 
         return acc;
-    }, [] as { [key: string]: any }[]);
+    }, [] as { [key: string]: number | string }[]);
 };
 
 export const getTimeElapsed = (date: Date) => {
@@ -68,9 +82,149 @@ export const createNewSearchParam = (params: Record<string, string[] | number | 
     return newSearchParams.toString();
 };
 
-export const getCalendaAvailability = () => {
+export const groupedByMonths = (data: CandidatesResponseType [] | ApplicationResponseType[], interval: number) => {
+    let index = 0;
+
+    const monthYearFormatter = new Intl.DateTimeFormat("en-US", {month: "long", year: "numeric"});
+    const now = new Date();
+    const intervalAgo = new Date();
+    intervalAgo.setMonth(now.getMonth() - interval);
+
+    return data.reduce((acc, curr) => {
+        const createdAt = new Date(curr.created_at);
+        const date = monthYearFormatter.format(createdAt);
+
+        if (createdAt >= intervalAgo) {
+            if (!acc[date]) {
+                acc[date] = {
+                    date,
+                    count: 1,
+                    fill: chartData[index].fill,
+                };
+                index++;
+            } else {
+                acc[date].count++;
+            }
+        } else {
+            if (!acc["Older"]) {
+                acc["Older"] = {
+                    date: "older",
+                    count: 1,
+                    fill: chartData[4].fill,
+                };
+            } else {
+                acc["Older"].count++;
+            }
+        }
+        return acc;
+    }, {} as Record<string, { date: string; count: number; fill: string }>);
 };
 
+export const groupByDay = (data: CandidatesResponseType [] | ApplicationResponseType[]) => {
+    return data.reduce((acc, curr) => {
+        const createdAt = new Date(curr.created_at);
+        const date = createdAt.toISOString().split("T")[0];
 
+        if (!acc[date]) {
+            acc[date] = {
+                date,
+                count: 1,
+                fill: "red",
+            };
+        } else {
+            acc[date].count++;
+        }
+        return acc;
+    }, {} as Record<string, { date: string; count: number, fill: string }>);
+};
 
+export const RANGE_OPTIONS = {
+    last_7_days: {
+        label: "Last 7 Days",
+        startDate: startOfDay(subDays(new Date(), 6)),
+        endDate: null,
+    },
+    last_30_days: {
+        label: "Last 30 Days",
+        startDate: startOfDay(subDays(new Date(), 29)),
+        endDate: null,
+    },
+    last_90_days: {
+        label: "Last 90 Days",
+        startDate: startOfDay(subDays(new Date(), 89)),
+        endDate: null,
+    },
+    last_365_days: {
+        label: "Last 365 Days",
+        startDate: startOfDay(subDays(new Date(), 364)),
+        endDate: null,
+    },
+    all_time: {
+        label: "All Time",
+        startDate: null,
+        endDate: null,
+    },
+};
 
+export const getChartDateArray = (startDate: Date, endDate: Date = new Date()) => {
+    const days = differenceInDays(endDate, startDate);
+    if (days < 30) {
+        return {
+            array: eachDayOfInterval(interval(startDate, endDate)),
+            format: formatDate,
+        }
+    }
+
+    const weeks = differenceInWeeks(endDate, startDate);
+    if (weeks < 30) {
+        return {
+            array: eachWeekOfInterval(interval(startDate, endDate)),
+            format: (date: Date) => {
+                const start = max([startOfWeek(date), startDate])
+                const end = min([endOfWeek(date), endDate])
+
+                return `${formatDate(start)} - ${formatDate(end)}`
+            },
+        }
+    }
+
+    const months = differenceInMonths(endDate, startDate);
+    if (months < 30) {
+        return {
+            array: eachMonthOfInterval(interval(startDate, endDate)),
+            format: new Intl.DateTimeFormat("en", {month: "long", year: "numeric"})
+                .format,
+        }
+    }
+
+    return {
+        array: eachYearOfInterval(interval(startDate, endDate)),
+        format: new Intl.DateTimeFormat("en", {year: "numeric"}).format,
+    }
+};
+
+export const DATE_FORMATTER = new Intl.DateTimeFormat("en", {
+    dateStyle: "medium",
+});
+
+export const formatDate = (date: Date) => {
+    return DATE_FORMATTER.format(date)
+};
+
+export function getRangeOption(range?: string, from?: string, to?: string) {
+    if (range == null) {
+        const startDate = new Date(from || "")
+        const endDate = new Date(to || "")
+        if (!isValid(startDate) || !isValid(endDate)) return
+
+        return {
+            label: `${formatDate(startDate)} - ${formatDate(endDate)}`,
+            startDate,
+            endDate,
+        }
+    }
+    return RANGE_OPTIONS[range as keyof typeof RANGE_OPTIONS]
+};
+
+export const getCalendaAvailability = () => {
+};
