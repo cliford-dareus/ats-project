@@ -1,7 +1,7 @@
 'use server';
 
-import {stepTwoSchema} from '@/schema';
-import {FormErrors} from "@/types/job-listings-types";
+import {stepTwoSchema} from '@/zod';
+import {FormErrors} from "@/types";
 import {redirect} from 'next/navigation';
 
 export const stepTwoFormAction = async (

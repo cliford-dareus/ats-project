@@ -2,66 +2,132 @@
 
 import Link from 'next/link';
 import {usePathname} from 'next/navigation';
-import path from 'path';
 import {useEffect, useState} from 'react';
-import {ArrowLeft, FileArchive, FlaskConical, ReceiptText, Workflow} from "lucide-react";
+import {ArrowLeft, FileText, Users, Workflow, Eye, Check} from "lucide-react";
 import {cn} from "@/lib/utils";
-// import { newJobRoutes } from '@/types';
+import {Button} from "@/components/ui/button";
+import {useNewJobContext} from "@/providers/new-job-provider";
 
 const steps = [
     {
-        title: 'Job Information',
+        title: 'Job Details',
         route: 'step-one',
-        icon: <FileArchive size={18}/>,
+        icon: <FileText size={14}/>,
         link: '/jobs/new/step-one',
+        description: 'Basic job information'
     },
     {
-        title: "Experience",
+        title: "Requirements",
         route: 'step-two',
-        icon: <FlaskConical size={18}/>,
+        icon: <Users size={14}/>,
         link: '/jobs/new/step-two',
+        description: 'Skills and experience'
     },
     {
-        title: 'Workflow ',
+        title: 'Workflow',
         route: 'step-three',
-        icon: <Workflow size={18}/>,
+        icon: <Workflow size={14}/>,
         link: '/jobs/new/step-three',
+        description: 'Hiring pipeline'
     },
-    {title: 'Review', route: 'review', icon: <ReceiptText size={18}/>, link: '/jobs/new/step-review'},
+    {
+        title: 'Review',
+        route: 'step-review',
+        icon: <Eye size={14}/>,
+        link: '/jobs/new/step-review',
+        description: 'Final review'
+    },
 ];
 
-export default function StepNavigation() {
+const SideNavigation = () => {
     const pathname = usePathname();
-    const currentPath = path.basename(pathname);
-    const [currentStep, setCurrentStep] = useState(1);
+    const [currentStep, setCurrentStep] = useState(0);
+    const {newJobData} = useNewJobContext();
 
     useEffect(() => {
-        setCurrentStep(steps.findIndex((step) => step.route === currentPath));
-    }, [currentPath]);
+        const step = steps.findIndex(step => pathname.includes(step.route));
+        setCurrentStep(step !== -1 ? step : 0);
+    }, [pathname]);
+
+    const isStepCompleted = (stepIndex: number) => {
+        switch (stepIndex) {
+            case 0:
+                return newJobData.jobInfo.job_name && newJobData.jobInfo.job_description;
+            case 1:
+                return newJobData.jobTechnology.length > 0;
+            case 2:
+                return newJobData.jobStages.length > 0;
+            default:
+                return false;
+        }
+        ;
+    };
 
     return (
-        <div className="flex flex-col justify-center h-full">
-            <div className="p-4">
-                <Link href="" className="text-slate-500 flex items-center gap-4">
-                    <ArrowLeft size={20}/>
-                    Back to Dashboard
-                </Link>
-            </div>
-            <div className="my-36">
-                {steps.map((step) => (
-                    <Link
-                        className={cn("flex items-center justify-between px-4 py-2 hover:bg-muted cursor-pointer",
-                            currentPath == step.route ? "bg-blue-200" : "")}
-                        key={step.link}
-                        href={step.link}
-                    >
-                        <div className="flex items-center gap-4">
-                            {step.icon}
-                            <span>{step.title}</span>
+        <div className=" px-4">
+            {/* Progress Steps */}
+            <div className="space-y-4">
+                {steps.map((step, index) => {
+                    const isActive = currentStep === index;
+                    const isCompleted = isStepCompleted(index);
+                    const isAccessible = index <= currentStep || isCompleted;
+
+                    return (
+                        <div key={step.route} className="relative my-4">
+                            <Link
+                                href={isAccessible ? step.link : '#'}
+                                className={cn(
+                                    "block transition-all duration-200",
+                                )}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className={cn(
+                                        "flex items-center justify-center w-6 h-6 rounded-full border-2 transition-colors",
+                                        isActive
+                                            ? "bg-blue-500 border-blue-500 text-white"
+                                            : isCompleted
+                                                ? "bg-green-500 border-green-500 text-white"
+                                                : isAccessible
+                                                    ? "bg-white border-gray-300 text-gray-600"
+                                                    : "bg-gray-100 border-gray-200 text-gray-400"
+                                    )}>
+                                        {isCompleted ? <Check size={10}/> : step.icon}
+                                    </div>
+
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className={cn(
+                                            "font-medium text-sm leading-none",
+                                        )}>
+                                            {step.title}
+                                        </h3>
+                                        <p className={cn(
+                                            "text-xs mt-1 text-zinc-400",
+                                        )}>
+                                            {step.description}
+                                        </p>
+                                    </div>
+                                </div>
+                            </Link>
                         </div>
-                    </Link>
-                ))}
+                    );
+                })}
             </div>
+
+            {/* Progress Bar */}
+            {/*<div className="mt-2">*/}
+            {/*    <div className="flex justify-between text-sm text-gray-600">*/}
+            {/*        <span>Progress</span>*/}
+            {/*        <span>{Math.round(((currentStep + 1) / steps.length) * 100)}%</span>*/}
+            {/*    </div>*/}
+            {/*    <div className="w-full bg-gray-200 rounded-full h-2">*/}
+            {/*        <div*/}
+            {/*            className="bg-blue-500 h-2 rounded-full transition-all duration-300"*/}
+            {/*            style={{width: `${((currentStep + 1) / steps.length) * 100}%`}}*/}
+            {/*        />*/}
+            {/*    </div>*/}
+            {/*</div>*/}
         </div>
     );
 };
+
+export default SideNavigation;

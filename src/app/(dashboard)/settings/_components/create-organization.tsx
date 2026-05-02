@@ -18,6 +18,9 @@ const CreateOrganization = () => {
             if (createOrganization) {
                 const new_org = await createOrganization({name: orgName});
                 await setActive({organization: new_org.id})
+                // Add organization to database
+                // Add organization to user's list of organizations
+                // await user.update({organizations: [...user.organizations, new_org.id]})
             }
         } catch (err) {
             console.log(err)

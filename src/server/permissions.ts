@@ -1,5 +1,3 @@
-
-
 export const canCreateJob = async (userId: string | null) => {
     // check if user id is valid
     if (userId == null) return false

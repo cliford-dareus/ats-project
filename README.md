@@ -1,6 +1,6 @@
 ## App Name
 
-App Name is an advanced Applicant Tracking System (ATS) designed to streamline recruitment processes for small to mid-sized 
+App Name is an advanced Applicant Tracking System (ATS) designed to streamline recruitment processes for small to mid-sized
 organizations, offering an intuitive platform for job posting, candidate management, automated communication, and interview coordination.
 
 ## Getting Started
@@ -41,10 +41,8 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
 ## TODO
-
-- [] 
-- [] Automate email and mass email
-- [] Tutorial for new user
+- [x] Automate email and mass email
+- [] Job Posting Insight(Analytic) plugin
 - [] Job settings to change stage behavior
 - [] Add activity(Task) to track user responsibility
 - [] Job posting on other platform(indeed, linkedin ...)

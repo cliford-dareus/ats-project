@@ -15,7 +15,8 @@ function Calendar({
   showOutsideDays = true,
   ...props
 }: CalendarProps) {
-  return (
+  // @ts-ignore
+    return (
     <DayPicker
       showOutsideDays={showOutsideDays}
       className={cn("p-3", className)}

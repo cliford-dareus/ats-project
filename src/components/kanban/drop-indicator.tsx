@@ -1,14 +1,14 @@
 import React from 'react';
-import {JOB_ENUM} from "@/schema";
+import {JOB_ENUM} from "@/zod";
 import {cn} from "@/lib/utils";
-import {StageResponseType} from "@/types/job-listings-types";
+import {StageResponseType} from "@/types";
 
 type Props = {
     stage: StageResponseType
     beforeId: number | null;
-    column: JOB_ENUM
+    column: JOB_ENUM | null | undefined;
     active: boolean;
-}
+};
 
 const DropIndicator = ({stage, beforeId, column, active}: Props) => {
     return (

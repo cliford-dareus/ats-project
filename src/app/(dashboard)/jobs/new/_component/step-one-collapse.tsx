@@ -2,24 +2,29 @@ import React from 'react';
 import {useNewJobContext} from "@/providers/new-job-provider";
 import {Briefcase, Gem, MapPin} from "lucide-react";
 
-const StepOneCollapse = ({}) => {
+const  StepOneCollapse = ({}) => {
     const {newJobData} = useNewJobContext();
 
     return (
-        <div className="border rounded flex flex-col w-full p-4 gap-2">
-            <h2 className="font-semibold text-xl">{newJobData.jobInfo.job_name !== "" ? newJobData.jobInfo.job_name :"Job Name"}</h2>
-            <div className="flex justify-between gap-4 w-full text-slate-500">
-                <div className="flex gap-2 items-center">
-                    <MapPin size={16}/>
-                    <p>{newJobData.jobInfo.job_location !== "" ? newJobData.jobInfo.job_location :"Location"}</p>
+        <div className="max-w-[450px] flex-1">
+            <div className="bg-zinc-900 rounded-2xl p-6 text-white space-y-4">
+                <div className="flex items-center gap-2">
+                    <Briefcase className="w-4 h-4 text-brand-400" />
+                    <h3 className="font-bold text-sm uppercase tracking-wider">Job Overview</h3>
                 </div>
-                <div className="flex gap-2 items-center">
-                    <Gem size={16}/>
-                    <p>{newJobData.jobInfo.salary_up_to !== "" ? newJobData.jobInfo.salary_up_to :"0000"}</p>
+                <div>
+                    <p className="text-lg font-bold leading-tight">{newJobData.jobInfo.job_name !== "" ? newJobData.jobInfo.job_name :"Job Name"}</p>
+                    <p className="text-zinc-400 text-sm">Department</p>
                 </div>
-                <div className="flex gap-2 items-center">
-                    <Briefcase size={16}/>
-                    <p>Department</p>
+                <div className="space-y-2 pt-2">
+                    <div className="flex items-center justify-between text-xs">
+                        <span className="text-zinc-500">Location</span>
+                        <span className="font-medium">{newJobData.jobInfo.job_location !== "" ? newJobData.jobInfo.job_location :"Location"}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                        <span className="text-zinc-500">Type</span>
+                        <span className="font-medium">{newJobData.jobInfo.salary_up_to !== "" ? newJobData.jobInfo.salary_up_to :"0000"}</span>
+                    </div>
                 </div>
             </div>
         </div>

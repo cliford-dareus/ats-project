@@ -1,439 +1,224 @@
-'use client'
+'use client';
 
-import React, {useEffect, useMemo, useState} from 'react';
-import {DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
-import {BriefcaseBusiness, ChevronDownCircle, Command} from "lucide-react";
-import {Separator} from "@/components/ui/separator";
-import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
-import {useForm} from "react-hook-form";
-import {z} from "zod";
-import {zodResolver} from "@hookform/resolvers/zod";
-import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
-import {Badge} from "@/components/ui/badge";
-import {motion} from "motion/react";
-import {checkFormStatus} from "@/lib/utils";
-import {Input} from "@/components/ui/input";
-import {Button} from "@/components/ui/button";
-import {Switch} from "@/components/ui/switch";
-import {Select, SelectContent, SelectItem, SelectTrigger} from "@/components/ui/select";
-import {CandidatesResponseType, JobResponseType} from "@/types/job-listings-types";
-import {create_application_action} from "@/server/actions/application_actions";
-import {candidateForm} from "@/schema";
+import React, {useMemo, useState} from 'react';
+import {DialogDescription, DialogHeader, DialogTitle} from '@/components/ui/dialog';
+import {BriefcaseBusiness} from 'lucide-react';
+import {Separator} from '@/components/ui/separator';
+import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
+import {useForm} from 'react-hook-form';
+import {zodResolver} from '@hookform/resolvers/zod';
+import {Input} from '@/components/ui/input';
+import {Button} from '@/components/ui/button';
+import {Switch} from '@/components/ui/switch';
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
+import {Badge} from '@/components/ui/badge';
+import {CandidatesResponseType, JobResponseType} from '@/types';
+import {create_application_action} from '@/server/actions/application_actions';
+import {candidateForm} from '@/zod';
+import type {z} from 'zod';
 
-const STEPS = [
-    {step: 1, status: 'In-Complete', open: true},
-    {step: 2, status: 'In-Complete', open: false},
-];
+type FormData = z.infer<typeof candidateForm>;
 
-const CreateApplicationModal = ({job, candidates}: { job: JobResponseType[], candidates: CandidatesResponseType[] }) => {
-    const [isOpen, setIsOpen] = useState<{ step: number, status: string, open: boolean }[]>(STEPS);
-    const [selectedCandidate, setCandidateSelected] = useState<CandidatesResponseType | null>(null);
-    // const [files, setFiles] = useState<File[]>([]);
-    const [searchTerm, setSearchTerm] = useState<string>("");
-    const [isInDataBase, setIsInDataBase] = useState(false);
-    const form = useForm<z.infer<typeof candidateForm>>({
-        resolver: zodResolver(candidateForm)
+const CreateApplicationModal = ({
+                                    job,
+                                    candidates,
+                                }: {
+    job: JobResponseType[];
+    candidates: CandidatesResponseType[];
+}) => {
+    const [isExistingCandidate, setIsExistingCandidate] = useState(false);
+    const [selectedCandidate, setSelectedCandidate] = useState<CandidatesResponseType | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const form = useForm<FormData>({
+        resolver: zodResolver(candidateForm),
     });
 
-    const onsubmit = async (data: z.infer<typeof candidateForm>) => {
-        if (isInDataBase) {
-            const response = await create_application_action({...data, candidate: data.candidate})
-            console.log(response);
-        } else {
-            const response = await create_application_action({...data, candidate: null});
-            console.log(response);
-        }
-    };
-
-    useEffect(() => {
-        form.setValue("candidate", String(selectedCandidate?.id));
-        setSearchTerm('')
-    }, [selectedCandidate, form.setValue]);
-
-    const filterData = useMemo(() => {
-        if (candidates && searchTerm) {
-            return candidates.filter((candidate) => candidate.name.toLocaleLowerCase().includes(searchTerm.toLocaleLowerCase()));
-        }
-        return candidates;
+    const filteredCandidates = useMemo(() => {
+        if (!searchTerm) return candidates;
+        return candidates.filter((c) =>
+            c.name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
     }, [candidates, searchTerm]);
 
-    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>): void => {
-        setSearchTerm(e.target.value);
+    const onSubmit = async (data: FormData) => {
+        const payload = isExistingCandidate
+            ? {...data, candidate: data.candidate, candidate_info: undefined}
+            : {...data, candidate: null};
+
+        const response = await create_application_action(payload);
+        console.log(response);
     };
 
-    const changeForm = (index: number) => {
-        console.log(index);
-        setIsOpen((prevIsOpen) =>
-            prevIsOpen.map((s) => {
-                if (s.step === index) {
-                    return {...s, open: true};
-                }
-                if (s.step === index - 1) {
-                    const trigger = index - 1 === 0 || index - 1 === 1 ? "candidate_info" : 'candidate_file'
-                    const status = checkFormStatus(trigger, form, trigger)
-                    return {
-                        ...s,
-                        open: false,
-                        status: !status ? "In-Complete" : "Complete",
-                    };
-                }
-                return {...s, open: false};
-            })
-        );
+    const handleCandidateSelect = (candidate: CandidatesResponseType) => {
+        setSelectedCandidate(candidate);
+        form.setValue('candidate', String(candidate.id));
+        setSearchTerm(''); // clear search after selection
     };
 
     return (
         <>
             <DialogHeader className="flex flex-row gap-4 items-center">
                 <div
-                    className="flex aspect-square w-[52px] items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                    <Command/>
+                    className="flex aspect-square w-12 h-12 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                    <BriefcaseBusiness size={24}/>
                 </div>
-                <div className="">
-                    <DialogTitle className="text-2xl">Create Candidate</DialogTitle>
-                    <DialogDescription>Complete each step to create a candidate!</DialogDescription>
+                <div>
+                    <DialogTitle className="text-2xl uppercase">Create Application</DialogTitle>
+                    <DialogDescription>Quickly add a candidate to a job</DialogDescription>
                 </div>
             </DialogHeader>
+
             <Separator/>
-            <div>
-                <Form {...form}>
-                    <form
-                        onSubmit={form.handleSubmit(onsubmit)}
-                        className="w-full flex flex-col gap-4 items-center"
-                    >
-                        <div className="flex items-center gap-4 w-full">
-                            <FormLabel htmlFor="candidate_info">Candidate Exist</FormLabel>
-                            <Switch
-                                checked={isInDataBase}
-                                onCheckedChange={() => setIsInDataBase(!isInDataBase)}
-                            />
+
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                    {/* === Toggle: Existing or New Candidate === */}
+                    <div className="flex items-center justify-between">
+                        <FormLabel className="text-base">Candidate already exists in database?</FormLabel>
+                        <Switch
+                            checked={isExistingCandidate}
+                            onCheckedChange={setIsExistingCandidate}
+                        />
+                    </div>
+
+                    {/* ====================== EXISTING CANDIDATE ====================== */}
+                    {isExistingCandidate ? (
+                        <div className="space-y-4">
+                            <div className="relative">
+                                <Input
+                                    placeholder="Search candidate..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+
+                                {searchTerm && (
+                                    <div
+                                        className="absolute z-10 mt-1 w-full bg-white border rounded-md shadow-lg max-h-80 overflow-auto">
+                                        {filteredCandidates.length === 0 ? (
+                                            <div className="p-4 text-muted-foreground">No candidates found</div>
+                                        ) : (
+                                            filteredCandidates.map((candidate) => (
+                                                <div
+                                                    key={candidate.id}
+                                                    className="flex items-center justify-between px-4 py-3 hover:bg-muted cursor-pointer border-b last:border-none"
+                                                    onClick={() => handleCandidateSelect(candidate)}
+                                                >
+                                                    <span className="font-medium">{candidate.name}</span>
+                                                    <Badge variant="secondary">{candidate.status}</Badge>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {selectedCandidate && (
+                                <div className="bg-muted/50 p-4 rounded-lg flex items-center gap-3">
+                                    <div className="text-sm font-medium">Selected:</div>
+                                    <div className="font-semibold">{selectedCandidate.name}</div>
+                                    <Badge>{selectedCandidate.status}</Badge>
+                                </div>
+                            )}
                         </div>
-                        {!isInDataBase && (
-                            <>
-                                {/* CANDIDATE INFO */}
-                                <div className="flex gap-4 w-full">
-                                    <div
-                                        className="w-[60px] h-[50px] border rounded-full flex items-center justify-center ">
-                                        <BriefcaseBusiness size={24}/>
-                                    </div>
-                                    <Collapsible
-                                        className="w-full flex gap-4 flex-col"
-                                        open={isOpen[0].open}
-                                        onOpenChange={() => {
-                                            if (!isOpen[0].open) changeForm(1)
-                                        }}
-
-                                    >
-                                        <CollapsibleTrigger>
-                                            <div className="flex items-center justify-between h-[50px]">
-                                                <div className="flex flex-col items-start">
-                                                    <h2 className="text-lg font-semibold leading-none tracking-tight">Candidate
-                                                        Information</h2>
-                                                    <p className="text-sm text-muted-foreground">Provided required
-                                                        info</p>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <ChevronDownCircle size={24}/>
-                                                </div>
-                                            </div>
-                                        </CollapsibleTrigger>
-                                        <CollapsibleContent>
-                                            <div
-                                                className="p-4 border flex flex-col gap-2 rounded-lg"
-                                            >
-                                                <FormField
-                                                    disabled={isInDataBase}
-                                                    control={form.control}
-                                                    name="candidate_info.first_name"
-                                                    render={({field}) => (
-                                                        <FormItem
-                                                            className="flex items-center gap-4 justify-between">
-                                                            <FormLabel>First Name</FormLabel>
-                                                            <FormControl>
-                                                                <Input className="w-[260px]"
-                                                                       placeholder="shadcn" {...field} />
-                                                            </FormControl>
-                                                            <FormMessage/>
-                                                        </FormItem>
-                                                    )}
-                                                />
-
-                                                <FormField
-                                                    disabled={isInDataBase}
-                                                    control={form.control}
-                                                    name="candidate_info.last_name"
-                                                    render={({field}) => (
-                                                        <FormItem
-                                                            className="flex items-center gap-4 justify-between">
-                                                            <FormLabel>Last Name</FormLabel>
-                                                            <FormControl>
-                                                                <Input className="w-[260px]"
-                                                                       placeholder="Acme" {...field} />
-                                                            </FormControl>
-                                                            <FormMessage/>
-                                                        </FormItem>
-                                                    )}
-                                                />
-
-                                                <FormField
-                                                    disabled={isInDataBase}
-                                                    control={form.control}
-                                                    name="candidate_info.email"
-                                                    render={({field}) => (
-                                                        <FormItem
-                                                            className="flex items-center gap-4 justify-between">
-                                                            <FormLabel>Email</FormLabel>
-                                                            <FormControl>
-                                                                <Input className="w-[260px]"
-                                                                       placeholder="Acme" {...field} />
-                                                            </FormControl>
-                                                            <FormMessage/>
-                                                        </FormItem>
-                                                    )}
-                                                />
-
-                                                <FormField
-                                                    disabled={isInDataBase}
-                                                    control={form.control}
-                                                    name="candidate_info.phone"
-                                                    render={({field}) => (
-                                                        <FormItem
-                                                            className="flex items-center gap-4 justify-between">
-                                                            <FormLabel>Phone</FormLabel>
-                                                            <FormControl>
-                                                                <Input className="w-[260px]"
-                                                                       placeholder="Acme" {...field} />
-                                                            </FormControl>
-                                                            <FormMessage/>
-                                                        </FormItem>
-                                                    )}
-                                                />
-
-                                                <FormField
-                                                    disabled={isInDataBase}
-                                                    control={form.control}
-                                                    name="candidate_info.location"
-                                                    render={({field}) => (
-                                                        <FormItem
-                                                            className="flex items-center gap-4 justify-between">
-                                                            <FormLabel>Address</FormLabel>
-                                                            <FormControl>
-                                                                <Input className="w-[260px]"
-                                                                       placeholder="Acme" {...field} />
-                                                            </FormControl>
-                                                            <FormMessage/>
-                                                        </FormItem>
-                                                    )}
-                                                />
-
-                                                <Button onClick={() => changeForm(2)} className="self-end px-16">
-                                                    Next
-                                                </Button>
-                                            </div>
-                                        </CollapsibleContent>
-                                    </Collapsible>
-                                </div>
-                                {/* CANDIDATE FILE */}
-                                {/*<div className="flex gap-4 w-full">*/}
-                                {/*    <div*/}
-                                {/*        className="w-[60px] h-[50px] border rounded-full flex items-center justify-center ">*/}
-                                {/*        <BriefcaseBusiness size={24}/>*/}
-                                {/*    </div>*/}
-                                {/*    <Collapsible*/}
-                                {/*        className="w-full flex gap-4 flex-col"*/}
-                                {/*        open={isOpen[1].open}*/}
-                                {/*        onOpenChange={() => {*/}
-                                {/*            if (!isOpen[1].open) changeForm(2)*/}
-                                {/*        }}*/}
-
-                                {/*    >*/}
-                                {/*        <CollapsibleTrigger>*/}
-                                {/*            <div className="flex items-center justify-between h-[50px]">*/}
-                                {/*                <div className="flex flex-col items-start">*/}
-                                {/*                    <h2 className="text-lg font-semibold leading-none tracking-tight">Candidate*/}
-                                {/*                        File</h2>*/}
-                                {/*                    <p className="text-sm text-muted-foreground">Provided required*/}
-                                {/*                        info</p>*/}
-                                {/*                </div>*/}
-                                {/*                <div className="flex items-center gap-2">*/}
-                                {/*                    <ChevronDownCircle size={24}/>*/}
-                                {/*                </div>*/}
-                                {/*            </div>*/}
-                                {/*        </CollapsibleTrigger>*/}
-                                {/*        <CollapsibleContent>*/}
-                                {/*            <div className="p-4 border flex flex-col gap-2 rounded-lg">*/}
-                                {/*                <FormField*/}
-                                {/*                    disabled={!isInDataBase}*/}
-                                {/*                    // control={form.control}*/}
-                                {/*                    name="candidate_file.resume"*/}
-                                {/*                    render={() => (*/}
-                                {/*                        <FormItem*/}
-                                {/*                            className="flex items-center gap-4 justify-between">*/}
-                                {/*                            <FormLabel>Resume</FormLabel>*/}
-                                {/*                            <FormControl>*/}
-                                {/*                                <Input*/}
-                                {/*                                    type="file"*/}
-                                {/*                                    className="w-[260px]"*/}
-                                {/*                                    placeholder="shadcn"*/}
-                                {/*                                />*/}
-                                {/*                            </FormControl>*/}
-                                {/*                            <FormMessage/>*/}
-                                {/*                        </FormItem>*/}
-                                {/*                    )}*/}
-                                {/*                />*/}
-
-                                {/*                <FormField*/}
-                                {/*                    disabled={!isInDataBase}*/}
-                                {/*                    control={form.control}*/}
-                                {/*                    name="candidate_file.cover_letter"*/}
-                                {/*                    render={() => (*/}
-                                {/*                        <FormItem*/}
-                                {/*                            className="flex items-center gap-4 justify-between">*/}
-                                {/*                            <FormLabel>Cover Letter</FormLabel>*/}
-                                {/*                            <FormControl>*/}
-                                {/*                                <Input*/}
-                                {/*                                    type="file"*/}
-                                {/*                                    className="w-[260px]"*/}
-                                {/*                                    placeholder="Acme"*/}
-                                {/*                                />*/}
-                                {/*                            </FormControl>*/}
-                                {/*                            <FormMessage/>*/}
-                                {/*                        </FormItem>*/}
-                                {/*                    )}*/}
-                                {/*                />*/}
-
-                                {/*                <Button onClick={() => changeForm(2)} className="self-end px-16">*/}
-                                {/*                    Next*/}
-                                {/*                </Button>*/}
-                                {/*            </div>*/}
-                                {/*        </CollapsibleContent>*/}
-                                {/*    </Collapsible>*/}
-                                {/*</div>*/}
-                            </>)
-                        }
-                        {isInDataBase &&
-                            <>
-                                {/* CANDIDATE SELECT */}
-                                <div className="flex gap-4 w-full">
-                                    <div
-                                        className="w-[60px] h-[50px] border rounded-full flex items-center justify-center ">
-                                        <BriefcaseBusiness size={24}/>
-                                    </div>
-                                    <Collapsible
-                                        open={isInDataBase}
-                                        className="w-full flex gap-4 flex-col"
-                                    >
-                                        <CollapsibleTrigger>
-                                            <div className="flex items-center justify-between h-[50px]">
-                                                <div className="flex flex-col items-start">
-                                                    <h2 className="text-lg font-semibold leading-none tracking-tight">Choose
-                                                        a Candidate</h2>
-                                                    <p className="text-sm text-muted-foreground">Provided required
-                                                        info</p>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <ChevronDownCircle size={24}/>
-                                                </div>
-                                            </div>
-                                        </CollapsibleTrigger>
-                                        <CollapsibleContent>
-                                            <motion.div
-                                                initial={{height: 0, opacity: 0}}
-                                                animate={{height: "auto", opacity: 1}}
-                                                exit={{height: 0, opacity: 0}}
-                                                transition={{duration: 0.2, ease: "easeInOut"}}
-                                                className="p-4 border flex flex-col gap-2 rounded-lg"
-                                            >
-                                                {selectedCandidate ? (
-                                                    <div
-                                                        className="flex items-center gap-2 overflow-hidden w-[90%]">
-                                                        <div
-                                                            className="cursor-pointer rounded-md bg-slate-200 px-2 text-sm py-0.5">
-                                                            {selectedCandidate.name}
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <div>Select or Search a Candidate</div>
-                                                )}
-
-                                                <>
-                                                    <div className="relative">
-                                                        <FormField
-                                                            name="candidate"
-                                                            render={({}) => (
-                                                                <FormItem
-                                                                    className="flex items-center gap-4 justify-between">
-                                                                    <FormLabel>Search Candidate</FormLabel>
-                                                                    <FormControl>
-                                                                        <Input
-                                                                            value={searchTerm}
-                                                                            onChange={handleSearch}
-                                                                            className="w-[260px]"
-                                                                            placeholder="shadcn"/>
-                                                                    </FormControl>
-                                                                    <FormMessage/>
-                                                                </FormItem>
-                                                            )}
-                                                        />
-                                                        {searchTerm &&
-                                                            <div className="absolute bg-white w-full p-4 border top-12 rounded">
-                                                                <>
-                                                                    {candidates && filterData?.map((candidate) => (
-                                                                        <div
-                                                                            className="flex justify-between cursor-pointer items-center rounded border px-4 text-sm py-2 hover:bg-muted mt-1"
-                                                                            key={candidate.id}
-                                                                            onClick={() => {
-                                                                                setCandidateSelected(candidate)
-                                                                                form.setValue('candidate', String(selectedCandidate?.id))
-                                                                            }}
-                                                                        >
-                                                                            <h3>{candidate.name}</h3>
-                                                                            <Badge
-                                                                                className="mr-4">{candidate.status}</Badge>
-                                                                        </div>
-                                                                    ))}
-                                                                </>
-                                                            </div>}
-                                                    </div>
-                                                </>
-                                                <Button className="self-end px-16">Next</Button>
-                                            </motion.div>
-                                        </CollapsibleContent>
-                                    </Collapsible>
-                                </div>
-                            </>
-                        }
-
-                        {/* JOB   */}
-                        <div className="flex gap-4 w-full">
+                    ) : (
+                        /* ====================== NEW CANDIDATE ====================== */
+                        <div className="grid grid-cols-2 gap-4">
                             <FormField
                                 control={form.control}
-                                name="job"
+                                name="candidate_info.first_name"
                                 render={({field}) => (
-                                    <FormItem
-                                        className="w-full flex items-center gap-4 justify-between">
-                                        <FormLabel>Job Name apply to</FormLabel>
-                                        <Select onValueChange={field.onChange}
-                                                defaultValue={field.value as string}>
-                                            <SelectTrigger></SelectTrigger>
-                                            <SelectContent>
-                                                {job && job?.map((job, i) => (
-                                                    <SelectItem key={i} value={String(job.id)}>{job.name}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                    <FormItem className="flex items-center gap-4 justify-between">
+                                        <FormLabel>First Name</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                className="w-[260px]"
+                                                placeholder="John"
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage/>
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="candidate_info.last_name"
+                                render={({field}) => (
+                                    <FormItem className="flex items-center gap-4 justify-between">
+                                        <FormLabel>Last Name</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                className="w-[260px]"
+                                                placeholder="Doe"
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage/>
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="candidate_info.email"
+                                render={({field}) => (
+                                    <FormItem className="flex items-center gap-4 justify-between">
+                                        <FormLabel>Email</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                className="w-[260px]"
+                                                placeholder="john@example.com"
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage/>
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="candidate_info.phone"
+                                render={({field}) => (
+                                    <FormItem className="flex items-center gap-4 justify-between">
+                                        <FormLabel>Phone</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                className="w-[260px]"
+                                                placeholder="+1 555 555 5555"
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage/>
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="candidate_info.location"
+                                render={({field}) => (
+                                    <FormItem className="flex items-center gap-4 justify-between">
+                                        <FormLabel>Address</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                className="w-[260px]"
+                                                placeholder="City, State"
+                                                {...field}
+                                            />
+                                        </FormControl>
                                         <FormMessage/>
                                     </FormItem>
                                 )}
                             />
                         </div>
-
-                        <Button type="submit">Create</Button>
-                    </form>
-                </Form>
-            </div>
+                    )}
+                </form>
+            </Form>
         </>
-    );
+    )
 };
 
 export default CreateApplicationModal;

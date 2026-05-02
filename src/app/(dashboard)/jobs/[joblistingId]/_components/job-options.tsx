@@ -1,8 +1,8 @@
 'use client'
 
 import React, {useActionState, useState} from 'react';
-import {FormErrors, JobResponseType, StageResponseType} from "@/types/job-listings-types";
-import {JOB_ENUM, JOB_STAGES, JOB_STATUS} from "@/schema";
+import {FormErrors, JobResponseType, StageResponseType, TriggerResponseType} from "@/types";
+import {JOB_ENUM, JOB_STAGES, JOB_STATUS} from "@/zod";
 import {cn} from "@/lib/utils";
 import {Plus} from "lucide-react";
 import {Label} from "@/components/ui/label";
@@ -24,8 +24,11 @@ const initialState: FormErrors = {};
 const JobOptions = ({data, stages, job_id}: Props) => {
     const [serverErrors, formAction] = useActionState(update_job_listing, initialState);
     const [openStage, setOpenStage] = useState<JOB_ENUM>();
-    console.log(data.filter((job) => job.id === job_id));
-    const currentJob = data.filter((job) => job.id === job_id)
+    // console.log(data.filter((job) => job.id === job_id));
+    const currentJob = data.filter((job) => job.id === job_id);
+
+    // TODO : Check if smart trigger is activated for the organization
+    // TODO : add a guard to prevent trigger use when trigger is not activated
 
     return (
         <div className="p-4 overflow-hidden h-[calc(100vh-200px)] flex gap-4">
@@ -79,22 +82,19 @@ const JobOptions = ({data, stages, job_id}: Props) => {
                         <p className="text-slate-500 text-sm">Customize this job listing workflow</p>
                     </div>
                     {stages?.map((stage) => (
-                        <div key={stage.id}>
-                            <div
-                                className="relative flex bg-muted justify-between items-center w-full p-2 min-h-8 rounded border"
-                                onClick={() => {
-                                    setOpenStage(stage.stage_name as JOB_ENUM)
-                                }}
-                            >
-                                <div className="flex items-center gap-4">
-                                    <span className={cn(stage.color, "w-4 h-4 rounded")}></span>
-                                    <p className="w-[150px]">{stage.stage_name}</p>
-                                </div>
+                        <div key={stage.id} onClick={() => setOpenStage(stage.stage_name as JOB_ENUM)}>
+                            <div className="flex items-center gap-4">
+                                <span className={cn(stage.color, "w-4 h-4 rounded")}></span>
+                                <p className="w-[150px]">{stage.stage_name}</p>
                             </div>
 
                             {openStage === stage.stage_name &&
-                                <div className="w-full border p-4 flex flex-col gap-4 h-10">
-
+                                <div className="w-full border p-4 flex flex-col gap-4">
+                                    <div className='flex'>
+                                        {JSON.parse(stage.trigger).map((trigger: TriggerResponseType) => (
+                                            <div key={trigger.id}>{trigger.action_type}</div>
+                                        ))}
+                                    </div>
                                 </div>
                             }
                         </div>
@@ -115,7 +115,6 @@ const JobOptions = ({data, stages, job_id}: Props) => {
                             </DialogContent>
                         </Dialog>
                     </div>
-
                 </div>
             </div>
             <div className="w-[40%] h-full border rounded"></div>

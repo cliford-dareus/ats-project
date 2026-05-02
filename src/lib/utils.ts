@@ -1,15 +1,14 @@
 import {clsx, type ClassValue} from "clsx"
 import {twMerge} from "tailwind-merge"
 import {UseFormReturn} from "react-hook-form";
-import {ApplicationResponseType, CandidatesResponseType} from "@/types/job-listings-types";
-import {chartData} from "@/app/(dashboard)/dashboard/_components/charts/circle-chart";
+import {ApplicationResponseType, CandidatesResponseType} from "@/types";
 import {
     differenceInDays, differenceInMonths,
     differenceInWeeks,
     eachDayOfInterval, eachMonthOfInterval, eachWeekOfInterval, eachYearOfInterval, endOfWeek,
     interval, isValid, max, min,
     startOfDay, startOfWeek,
-    subDays
+    subDays,
 } from "date-fns";
 
 export function cn(...inputs: ClassValue[]) {
@@ -82,43 +81,43 @@ export const createNewSearchParam = (params: Record<string, string[] | number | 
     return newSearchParams.toString();
 };
 
-export const groupedByMonths = (data: CandidatesResponseType [] | ApplicationResponseType[], interval: number) => {
-    let index = 0;
+// export const groupedByMonths = (data: CandidatesResponseType [] | ApplicationResponseType[], interval: number) => {
+//     let index = 0;
 
-    const monthYearFormatter = new Intl.DateTimeFormat("en-US", {month: "long", year: "numeric"});
-    const now = new Date();
-    const intervalAgo = new Date();
-    intervalAgo.setMonth(now.getMonth() - interval);
+//     const monthYearFormatter = new Intl.DateTimeFormat("en-US", {month: "long", year: "numeric"});
+//     const now = new Date();
+//     const intervalAgo = new Date();
+//     intervalAgo.setMonth(now.getMonth() - interval);
 
-    return data.reduce((acc, curr) => {
-        const createdAt = new Date(curr.created_at);
-        const date = monthYearFormatter.format(createdAt);
+//     return data.reduce((acc, curr) => {
+//         const createdAt = new Date(curr.created_at);
+//         const date = monthYearFormatter.format(createdAt);
 
-        if (createdAt >= intervalAgo) {
-            if (!acc[date]) {
-                acc[date] = {
-                    date,
-                    count: 1,
-                    fill: chartData[index].fill,
-                };
-                index++;
-            } else {
-                acc[date].count++;
-            }
-        } else {
-            if (!acc["Older"]) {
-                acc["Older"] = {
-                    date: "older",
-                    count: 1,
-                    fill: chartData[4].fill,
-                };
-            } else {
-                acc["Older"].count++;
-            }
-        }
-        return acc;
-    }, {} as Record<string, { date: string; count: number; fill: string }>);
-};
+//         if (createdAt >= intervalAgo) {
+//             if (!acc[date]) {
+//                 acc[date] = {
+//                     date,
+//                     count: 1,
+//                     fill: chartData[index].fill,
+//                 };
+//                 index++;
+//             } else {
+//                 acc[date].count++;
+//             }
+//         } else {
+//             if (!acc["Older"]) {
+//                 acc["Older"] = {
+//                     date: "older",
+//                     count: 1,
+//                     fill: chartData[4].fill,
+//                 };
+//             } else {
+//                 acc["Older"].count++;
+//             }
+//         }
+//         return acc;
+//     }, {} as Record<string, { date: string; count: number; fill: string }>);
+// };
 
 export const groupByDay = (data: CandidatesResponseType [] | ApplicationResponseType[]) => {
     return data.reduce((acc, curr) => {
@@ -225,6 +224,25 @@ export function getRangeOption(range?: string, from?: string, to?: string) {
     }
     return RANGE_OPTIONS[range as keyof typeof RANGE_OPTIONS]
 };
+
+export const DEPARTMENTS = [
+    "Finance",
+    "IT",
+    "Legal",
+    "Marketing",
+    "Customer Service",
+    "Sales",
+    "Recruiting",
+    "Training and Development",
+    "Compensation and Benefits",
+    "Health and Safety",
+    "HR Administration",
+    "Performance Management",
+    "Compensation and Benefits",
+    "Employee Relations"
+];
+
+export const CITIES = ["New York", "San Francisco", "Los Angeles", "Chicago", "Houston", "Philadelphia", "Phoenix", "San Antonio", "Dallas", "Austin", "Jacksonville", "San Jose", "Columbus", "Indianapolis", "Fort Worth", "Charlotte", "Detroit", "El Paso", "Memphis", "Seattle", "Denver", "Washington", "Boston", "Nashville", "Baltimore", "Oklahoma City", "Louisville", "Portland", "Las Vegas", "Milwaukee", "Albuquerque", "Tucson", "Fresno", "Sacramento", "Kansas City", "Mesa", "Atlanta", "Colorado Springs", "Miami", "Omaha", "Raleigh", "Long Beach", "Virginia Beach", "Oakland", "Minneapolis", "Tulsa", "Arlington", "New Orleans", "Wichita", "Honolulu", "Cleveland", "Aurora", "Santa Ana", "Riverside", "Corpus Christi", "St. Louis", "Lexington", "Anchorage", "Pittsburgh", "Newark", "Plano", "Bakersfield", "Buffalo", "Fort Wayne", "Henderson", "Chandler", "Greensboro", "Lincoln", "St. Petersburg", "Glendale", "Chula Vista", "Orlando", "Jersey City", "Fort Lauderdale", "Norfolk", "Durham", "Madison", "Laredo", "Winston-Salem", "Garland", "Reno", "Richmond", "San Bernardino", "Boise", "Chesapeake", "Gilbert", "Scottsdale", "North Las Vegas", "Fremont", "Baton Rouge", "San Diego", "Spokane", "Modesto", "Tacoma", "Oxnard", "Irvine", "Hialeah"]
 
 export const getCalendaAvailability = () => {
 };

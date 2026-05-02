@@ -1,15 +1,15 @@
-"use client"
+"use client";
 
 import React, {createContext, useEffect} from 'react';
 import {useUser} from "@clerk/nextjs";
 import {useRouter} from "next/navigation";
 import CreateOrganization from "@/app/(dashboard)/settings/_components/create-organization";
 
-type  Props = {
-    children: React.ReactNode,
-}
+type Props = {
+  children: React.ReactNode,
+};
 
-const OrgContext = createContext(null)
+const OrgContext = createContext(null);
 
 const AuthOrgProvider = ({children}: Props) => {
     const router = useRouter()

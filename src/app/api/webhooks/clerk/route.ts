@@ -2,6 +2,8 @@ import {Webhook} from "svix";
 import {headers} from "next/headers";
 import { WebhookEvent} from "@clerk/nextjs/server";
 import {assignAdminRoleToFirstUser} from "@/lib/assignAdminRole";
+import { usersTable } from "@/drizzle/schema";
+import { db } from "@/drizzle/db";
 
 export async function POST(req: Request) {
     const SIGNING_SECRET = process.env.CLERK_WEBHOOK_SECRET;
@@ -42,7 +44,15 @@ export async function POST(req: Request) {
 
     switch (evt.type) {
         case "user.created": {
-            await assignAdminRoleToFirstUser(evt.data.id)
+            await assignAdminRoleToFirstUser(evt.data.id);
+
+            await db.insert(usersTable).values({
+                id: evt.data.id,
+                name: evt.data.username ?? "",
+                age: 0,
+                email: evt.data.email_addresses[0]?.email_address ?? "",
+            });
+
             break
         }
         case "user.deleted": {

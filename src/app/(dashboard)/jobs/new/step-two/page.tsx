@@ -1,115 +1,171 @@
 'use client';
 
 import {Input} from "@/components/ui/input";
-import {FormErrors} from "@/types/job-listings-types";
+import {FormErrors} from "@/types";
 import CustomButton from "@/components/custom-button";
 import React, {useActionState, useEffect, useState} from "react";
 import {stepTwoFormAction} from "@/app/(dashboard)/jobs/new/step-two/_actions";
 import MultiSelect from "@/components/multi-select";
-import {techSchema} from "@/schema";
+import {techSchema} from "@/zod";
 import {FormControl, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
 import {useForm} from "react-hook-form";
 import {DropdownMenu, DropdownMenuContent, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
 import {Button} from "@/components/ui/button";
 import {z} from "zod";
-import {Plus, X} from "lucide-react";
+import {Plus, X, Code, Award} from "lucide-react";
 import StepOneCollapse from "@/app/(dashboard)/jobs/new/_component/step-one-collapse";
 import {useNewJobContext} from "@/providers/new-job-provider";
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {Badge} from "@/components/ui/badge";
+import StepTwoCollapse from "@/app/(dashboard)/jobs/new/_component/step-two-collapse";
+import {ScrollArea} from "@/components/ui/scroll-area";
+import SidePreview from "@/app/(dashboard)/jobs/new/_component/side-preview";
 
 const initialState: FormErrors = {};
 
-export default function StepOneForm() {
+export default function StepTwoForm() {
     const [currentStages, setCurrentStages] = useState<z.infer<typeof techSchema>[]>([]);
     const [serverErrors, formAction] = useActionState(stepTwoFormAction, initialState);
-    const form = useForm();
     const {updateNewJobDetails, newJobData, removeJob} = useNewJobContext();
+    const form = useForm();
 
     useEffect(() => {
         setCurrentStages(newJobData.jobTechnology);
     }, [newJobData]);
 
     return (
-        <>
-        <div className="flex flex-col items-center mb-8 mt-4">
-            <h1 className="text-slate-500">Job Experience</h1>
-            <p className="text-2xl font-semibold leading-7">Create job experience</p>
-        </div>
-
-        <StepOneCollapse/>
-
-        <form action={formData => {
-            formData.append("jobTechnology", JSON.stringify(currentStages))
-            formAction(formData)
-        }}
-            className="flex flex-1 flex-col items-center mt-8">
-            <div className="w-full flex flex-col mb-2">
-            <h2>Experience</h2>
-            <p className="text-slate-500 text-sm">Manage candidates by setting a hiring workflow</p>
+        <div className="py-8">
+            {/* Header */}
+            <div className="my-2">
+                <h1 className="text-3xl font-bold text-gray-900 uppercase leading-none">Requirements</h1>
+                <p className="text-zinc-500">Define the skills and experience needed for this role</p>
             </div>
 
-        {currentStages.length > 0 &&
-            <div className="w-full my-4">
-            <div className="flex flex-col gap-2 w-full">
-        {currentStages.map((item, index) => (
-            <div key={index} className="flex bg-muted p-2 min-h-8 rounded border">
-            {item.technology} - {item.year_of_experience}
-            <div
-                className="flex flex-col gap-2 w-full"
-                onClick={() => removeJob(item, "jobTechnology")}
-            >
-                <X className="cursor-pointer" size={20}/>
-            </div>
-        </div>
-        ))}
-        </div>
-</div>
-}
+            <>
+                <form action={formData => {
+                    formData.append("jobTechnology", JSON.stringify(currentStages))
+                    formAction(formData)
+                }} className="w-full flex gap-4 h-[calc(100vh_-_200px)]">
+                    <ScrollArea className="flex-1">
+                        {/* Requirements Card */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Code size={20} className="text-blue-500"/>
+                                    Technical Requirements
+                                </CardTitle>
+                                <p className="text-sm text-gray-600">Add the technologies and experience levels required</p>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                {/* Current Requirements */}
+                                {currentStages.length > 0 && (
+                                    <div className="space-y-3">
+                                        <h3 className="font-medium text-gray-900">Added Requirements</h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            {currentStages.map((item, index) => (
+                                                <div key={index}
+                                                     className="flex items-center justify-between p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                                    <div className="flex items-center gap-3">
+                                                        <Award size={16} className="text-blue-600"/>
+                                                        <div>
+                                                            <p className="font-medium text-gray-900">{item.technology}</p>
+                                                            <p className="text-sm text-gray-600">{item.year_of_experience} years
+                                                                experience</p>
+                                                        </div>
+                                                    </div>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => removeJob(item, "jobTechnology")}
+                                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                    >
+                                                        <X size={16}/>
+                                                    </Button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
-    <MultiSelect
-        className="w-full flex flex-col gap-2"
-        schema={techSchema}
-        fieldName={"jobTechnology"}
-        setValue={form.setValue}
-        getValues={form.getValues}
-        renderForm={(onSubmit, forms) => (
-            <DropdownMenu>
-                <DropdownMenuTrigger
-                    className="w-full py-1 flex items-center justify-center gap-2 text-blue-500">
-                    <Plus size={18}/>
-                    Add experience
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                    <FormItem
-                        className="flex flex-col justify-between">
-                        <FormLabel>Job Name</FormLabel>
-                        <FormControl>
-                            <Input {...forms.register("technology")}
-                                   className="w-full" placeholder="Acme"/>
-                        </FormControl>
-                        <FormMessage/>
-                    </FormItem>
+                                {/* Add New Requirement */}
+                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                                    <MultiSelect
+                                        className="w-full"
+                                        schema={techSchema}
+                                        fieldName={"jobTechnology"}
+                                        setValue={form.setValue}
+                                        getValues={form.getValues}
+                                        renderForm={(onSubmit, forms) => (
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="outline" className="w-full h-12 border-dashed">
+                                                        <Plus size={18} className="mr-2"/>
+                                                        Add Technical Requirement
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent className="w-80 p-4">
+                                                    <div className="space-y-4">
+                                                        <FormItem>
+                                                            <FormLabel>Technology/Skill</FormLabel>
+                                                            <FormControl>
+                                                                <Input
+                                                                    {...forms.register("technology")}
+                                                                    placeholder="e.g. React, Python, AWS"
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage/>
+                                                        </FormItem>
 
-                    <FormItem
-                        className="flex flex-col justify-between">
-                        <FormLabel>Job Name</FormLabel>
-                        <FormControl>
-                            <Input {...forms.register("year_of_experience")}
-                                   className="w-full" placeholder="Acme"/>
-                        </FormControl>
-                        <FormMessage/>
-                    </FormItem>
-                    <Button onClick={() => {
-                        form.setValue('jobTechnology', currentStages);
-                        onSubmit(forms.watch() as z.infer<typeof techSchema>)
-                        updateNewJobDetails(forms.watch() as z.infer<typeof techSchema>, "jobTechnology")
-                    }}>Add</Button>
-                </DropdownMenuContent>
-            </DropdownMenu>
-        )}
-    />
-    <CustomButton className="" text="Continue"/>
-</form>
-</>
-)
-    ;
+                                                        <FormItem>
+                                                            <FormLabel>Years of Experience</FormLabel>
+                                                            <FormControl>
+                                                                <Input
+                                                                    {...forms.register("year_of_experience")}
+                                                                    type="number"
+                                                                    placeholder="e.g. 3"
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage/>
+                                                        </FormItem>
+
+                                                        <Button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                form.setValue('jobTechnology', currentStages);
+                                                                onSubmit(forms.watch() as z.infer<typeof techSchema>)
+                                                                updateNewJobDetails(forms.watch() as z.infer<typeof techSchema>, "jobTechnology")
+                                                            }}
+                                                            className="w-full"
+                                                        >
+                                                            Add Requirement
+                                                        </Button>
+                                                    </div>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        )}
+                                    />
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </ScrollArea>
+
+                    {/* Previous Steps Summary */}
+                    <div className="flex flex-col relative">
+                        <SidePreview />
+                        {/* Action Buttons */}
+                        <div className="w-full flex items-center justify-between absolute bottom-4">
+                            <Button variant="outline" type="button" onClick={() => window.history.back()}>
+                                Back
+                            </Button>
+                            <CustomButton
+                                text="Continue to Workflow"
+                                className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                            />
+                        </div>
+                    </div>
+                </form>
+            </>
+        </div>
+    );
 }

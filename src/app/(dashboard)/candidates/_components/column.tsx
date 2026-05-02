@@ -1,11 +1,12 @@
 'use client'
 
-import {ColumnDef} from "@tanstack/react-table";
-import {CandidatesResponseType} from "@/types/job-listings-types";
+import {ColumnDef, createColumnHelper} from "@tanstack/react-table";
+import {CandidatesResponseType} from "@/types";
 import React from "react";
 import IndeterminateCheckbox from "@/components/indeterminate-checkbox";
-import {Ellipsis} from "lucide-react";
+import RowAction from "@/app/(dashboard)/candidates/_components/row-action";
 
+const columnHelper  = createColumnHelper<CandidatesResponseType>()
 
 export const columns: ColumnDef<CandidatesResponseType>[] = [
     {
@@ -20,7 +21,7 @@ export const columns: ColumnDef<CandidatesResponseType>[] = [
             />
         ),
         cell: ({ row }) => (
-            <div className="px-1">
+            <div onClick={(e) => e.stopPropagation()} className="px-1">
                 <IndeterminateCheckbox
                     {...{
                         checked: row.getIsSelected(),
@@ -51,15 +52,8 @@ export const columns: ColumnDef<CandidatesResponseType>[] = [
         accessorKey: "Status",
         header: 'Status',
         cell: ({ row }) => row.original.status
-    },
-    {
+    }, columnHelper.display({
         id: "action",
-        header: '',
-        cell: () => (
-            <div className="flex items-center">
-                <Ellipsis size={20}/>
-            </div>
-        )
-    },
-
-]
+        cell: RowAction
+    }),
+];

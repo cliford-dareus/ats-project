@@ -1,16 +1,17 @@
 'use client'
 
 import React, {useEffect, useState} from 'react';
-import {JobListingWithCandidatesType, StageResponseType} from "@/types/job-listings-types";
+import {ApplicationType, StageResponseType} from "@/types";
 import Column from "@/components/kanban/column";
 
 type Props = {
-    data: JobListingWithCandidatesType[];
-    stages: StageResponseType[]
+    data: ApplicationType[];
+    stages: StageResponseType[];
 };
 
 const JobPipeline = ({data, stages}: Props) => {
-    const [jobs, setJobs] = useState<JobListingWithCandidatesType[]>();
+    const [jobs, setJobs] = useState<ApplicationType[]>();
+    const [showTriggers, setShowTriggers] = useState(false);
 
     useEffect(() => {
         setJobs(data)
@@ -28,6 +29,8 @@ const JobPipeline = ({data, stages}: Props) => {
                         cards={jobs!}
                         color={stage.color}
                         setCards={setJobs}
+                        showTriggers={showTriggers}
+                        setShowTriggers={setShowTriggers}
                     />
                 ))}
             </div>
