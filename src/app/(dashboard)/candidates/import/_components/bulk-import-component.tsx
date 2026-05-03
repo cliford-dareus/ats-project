@@ -1,12 +1,12 @@
 "use client";
 
-import React, {useState, useCallback} from 'react';
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Button} from "@/components/ui/button";
-import {Badge} from "@/components/ui/badge";
-import {Progress} from "@/components/ui/progress";
-import {Alert, AlertDescription} from "@/components/ui/alert";
-import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
+import React, { useState, useCallback } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
     Upload,
     Download,
@@ -17,9 +17,9 @@ import {
     Loader2,
     X
 } from "lucide-react";
-import {useDropzone} from 'react-dropzone';
+import { useDropzone } from 'react-dropzone';
 import Papa from 'papaparse';
-import {cn} from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import ImportGuidelines from './import-guidelines';
 
 interface CandidateRow {
@@ -121,7 +121,7 @@ const BulkImportComponent = () => {
         }
     }, []);
 
-    const {getRootProps, getInputProps, isDragActive} = useDropzone({
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
         accept: {
             'text/csv': ['.csv']
@@ -142,7 +142,7 @@ const BulkImportComponent = () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({candidates: parsedData}),
+                body: JSON.stringify({ candidates: parsedData }),
             });
 
             const result = await response.json();
@@ -159,7 +159,7 @@ const BulkImportComponent = () => {
                     success: false,
                     imported: 0,
                     failed: parsedData.length,
-                    errors: [{row: 0, field: 'general', message: result.error || 'Import failed'}]
+                    errors: [{ row: 0, field: 'general', message: result.error || 'Import failed' }]
                 });
             }
 
@@ -170,7 +170,7 @@ const BulkImportComponent = () => {
                 success: false,
                 imported: 0,
                 failed: parsedData.length,
-                errors: [{row: 0, field: 'general', message: 'Network error occurred'}]
+                errors: [{ row: 0, field: 'general', message: 'Network error occurred' }]
             });
             setCurrentStep('result');
         } finally {
@@ -184,7 +184,7 @@ const BulkImportComponent = () => {
             'John Doe,john.doe@example.com,+1234567890,New York,5 years,JavaScript React Node.js,Computer Science,Great candidate\n' +
             'Jane Smith,jane.smith@example.com,+0987654321,San Francisco,3 years,Python Django,Engineering,Experienced developer';
 
-        const blob = new Blob([csvContent], {type: 'text/csv'});
+        const blob = new Blob([csvContent], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -215,7 +215,7 @@ const BulkImportComponent = () => {
                         <div className="flex items-center justify-between">
                             <div>
                                 <CardTitle className="flex items-center gap-2">
-                                    <Users className="h-5 w-5"/>
+                                    <Users className="h-5 w-5" />
                                     Bulk Import Candidates
                                 </CardTitle>
                                 <CardDescription>
@@ -223,7 +223,7 @@ const BulkImportComponent = () => {
                                 </CardDescription>
                             </div>
                             <Button variant="outline" onClick={downloadTemplate}>
-                                <Download className="mr-2 h-4 w-4"/>
+                                <Download className="mr-2 h-4 w-4" />
                                 Download Template
                             </Button>
                         </div>
@@ -291,7 +291,7 @@ const BulkImportComponent = () => {
                                 )}
                             >
                                 <input {...getInputProps()} />
-                                <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4"/>
+                                <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                                 {isDragActive ? (
                                     <p className="text-blue-600">Drop the CSV file here...</p>
                                 ) : (
@@ -309,7 +309,7 @@ const BulkImportComponent = () => {
                             {file && (
                                 <div className="mt-4 p-3 bg-gray-50 rounded-lg flex items-center justify-between">
                                     <div className="flex items-center space-x-2">
-                                        <FileText className="h-4 w-4 text-gray-500"/>
+                                        <FileText className="h-4 w-4 text-gray-500" />
                                         <span className="text-sm font-medium">{file.name}</span>
                                         <Badge variant="secondary">{(file.size / 1024).toFixed(1)} KB</Badge>
                                     </div>
@@ -318,7 +318,7 @@ const BulkImportComponent = () => {
                                         size="sm"
                                         onClick={() => setFile(null)}
                                     >
-                                        <X className="h-4 w-4"/>
+                                        <X className="h-4 w-4" />
                                     </Button>
                                 </div>
                             )}
@@ -348,12 +348,12 @@ const BulkImportComponent = () => {
                                         >
                                             {isProcessing ? (
                                                 <>
-                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
+                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                                     Importing...
                                                 </>
                                             ) : (
                                                 <>
-                                                    <Upload className="mr-2 h-4 w-4"/>
+                                                    <Upload className="mr-2 h-4 w-4" />
                                                     Import {parsedData.length} Candidates
                                                 </>
                                             )}
@@ -364,17 +364,17 @@ const BulkImportComponent = () => {
                             <CardContent>
                                 <div className="flex items-center space-x-4 mb-4">
                                     <Badge variant="outline" className="flex items-center space-x-1">
-                                        <Users className="h-3 w-3"/>
+                                        <Users className="h-3 w-3" />
                                         <span>{parsedData.length} candidates</span>
                                     </Badge>
                                     {validationErrors.length > 0 ? (
                                         <Badge variant="destructive" className="flex items-center space-x-1">
-                                            <AlertCircle className="h-3 w-3"/>
+                                            <AlertCircle className="h-3 w-3" />
                                             <span>{validationErrors.length} errors</span>
                                         </Badge>
                                     ) : (
                                         <Badge variant="default" className="flex items-center space-x-1">
-                                            <CheckCircle className="h-3 w-3"/>
+                                            <CheckCircle className="h-3 w-3" />
                                             <span>All valid</span>
                                         </Badge>
                                     )}
@@ -382,7 +382,7 @@ const BulkImportComponent = () => {
 
                                 {validationErrors.length > 0 && (
                                     <Alert className="mb-4">
-                                        <AlertCircle className="h-4 w-4"/>
+                                        <AlertCircle className="h-4 w-4" />
                                         <AlertDescription>
                                             Please fix the validation errors below before importing.
                                         </AlertDescription>
@@ -402,42 +402,42 @@ const BulkImportComponent = () => {
                                             <div className="overflow-x-auto">
                                                 <table className="w-full text-sm">
                                                     <thead className="bg-gray-50">
-                                                    <tr>
-                                                        <th className="px-4 py-2 text-left font-medium text-gray-900">Row</th>
-                                                        <th className="px-4 py-2 text-left font-medium text-gray-900">Name</th>
-                                                        <th className="px-4 py-2 text-left font-medium text-gray-900">Email</th>
-                                                        <th className="px-4 py-2 text-left font-medium text-gray-900">Phone</th>
-                                                        <th className="px-4 py-2 text-left font-medium text-gray-900">Location</th>
-                                                        <th className="px-4 py-2 text-left font-medium text-gray-900">Status</th>
-                                                    </tr>
+                                                        <tr>
+                                                            <th className="px-4 py-2 text-left font-medium text-gray-900">Row</th>
+                                                            <th className="px-4 py-2 text-left font-medium text-gray-900">Name</th>
+                                                            <th className="px-4 py-2 text-left font-medium text-gray-900">Email</th>
+                                                            <th className="px-4 py-2 text-left font-medium text-gray-900">Phone</th>
+                                                            <th className="px-4 py-2 text-left font-medium text-gray-900">Location</th>
+                                                            <th className="px-4 py-2 text-left font-medium text-gray-900">Status</th>
+                                                        </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-gray-200">
-                                                    {parsedData.slice(0, 10).map((row, index) => {
-                                                        const rowErrors = validationErrors.filter(error => error.row === index + 1);
-                                                        const hasErrors = rowErrors.length > 0;
+                                                        {parsedData.slice(0, 10).map((row, index) => {
+                                                            const rowErrors = validationErrors.filter(error => error.row === index + 1);
+                                                            const hasErrors = rowErrors.length > 0;
 
-                                                        return (
-                                                            <tr key={index} className={hasErrors ? "bg-red-50" : ""}>
-                                                                <td className="px-4 py-2 text-gray-500">{index + 1}</td>
-                                                                <td className="px-4 py-2">{row.name}</td>
-                                                                <td className="px-4 py-2">{row.email}</td>
-                                                                <td className="px-4 py-2">{row.phone}</td>
-                                                                <td className="px-4 py-2">{row.location || '-'}</td>
-                                                                <td className="px-4 py-2">
-                                                                    {hasErrors ? (
-                                                                        <Badge variant="destructive"
-                                                                               className="text-xs">
-                                                                            Error
-                                                                        </Badge>
-                                                                    ) : (
-                                                                        <Badge variant="default" className="text-xs">
-                                                                            Valid
-                                                                        </Badge>
-                                                                    )}
-                                                                </td>
-                                                            </tr>
-                                                        );
-                                                    })}
+                                                            return (
+                                                                <tr key={index} className={hasErrors ? "bg-red-50" : ""}>
+                                                                    <td className="px-4 py-2 text-gray-500">{index + 1}</td>
+                                                                    <td className="px-4 py-2">{row.name}</td>
+                                                                    <td className="px-4 py-2">{row.email}</td>
+                                                                    <td className="px-4 py-2">{row.phone}</td>
+                                                                    <td className="px-4 py-2">{row.location || '-'}</td>
+                                                                    <td className="px-4 py-2">
+                                                                        {hasErrors ? (
+                                                                            <Badge variant="destructive"
+                                                                                className="text-xs">
+                                                                                Error
+                                                                            </Badge>
+                                                                        ) : (
+                                                                            <Badge variant="default" className="text-xs">
+                                                                                Valid
+                                                                            </Badge>
+                                                                        )}
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })}
                                                     </tbody>
                                                 </table>
                                             </div>
@@ -454,11 +454,11 @@ const BulkImportComponent = () => {
                                             <div className="space-y-2">
                                                 {validationErrors.map((error, index) => (
                                                     <div key={index}
-                                                         className="flex items-center space-x-2 p-2 bg-red-50 rounded border border-red-200">
-                                                        <AlertCircle className="h-4 w-4 text-red-500"/>
+                                                        className="flex items-center space-x-2 p-2 bg-red-50 rounded border border-red-200">
+                                                        <AlertCircle className="h-4 w-4 text-red-500" />
                                                         <span className="text-sm">
-                            <strong>Row {error.row}:</strong> {error.message} ({error.field})
-                          </span>
+                                                            <strong>Row {error.row}:</strong> {error.message} ({error.field})
+                                                        </span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -476,9 +476,9 @@ const BulkImportComponent = () => {
                         <CardHeader>
                             <CardTitle className="flex items-center space-x-2">
                                 {importResult.success ? (
-                                    <CheckCircle className="h-5 w-5 text-green-600"/>
+                                    <CheckCircle className="h-5 w-5 text-green-600" />
                                 ) : (
-                                    <AlertCircle className="h-5 w-5 text-red-600"/>
+                                    <AlertCircle className="h-5 w-5 text-red-600" />
                                 )}
                                 <span>Import {importResult.success ? 'Completed' : 'Failed'}</span>
                             </CardTitle>
@@ -501,7 +501,7 @@ const BulkImportComponent = () => {
                                         <h4 className="font-medium text-gray-900">Import Errors:</h4>
                                         {importResult.errors.map((error, index) => (
                                             <div key={index}
-                                                 className="p-2 bg-red-50 rounded border border-red-200 text-sm">
+                                                className="p-2 bg-red-50 rounded border border-red-200 text-sm">
                                                 {error.row > 0 ? `Row ${error.row}: ` : ''}{error.message}
                                             </div>
                                         ))}
@@ -523,7 +523,7 @@ const BulkImportComponent = () => {
             </TabsContent>
 
             <TabsContent value="guidelines" className="mt-6">
-                <ImportGuidelines/>
+                <ImportGuidelines />
             </TabsContent>
         </Tabs>
     );

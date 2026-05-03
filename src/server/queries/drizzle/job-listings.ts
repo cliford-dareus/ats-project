@@ -107,41 +107,41 @@ export const create_job_listing = async (data: z.infer<typeof jobFormSchema>) =>
 };
 
 export const update_job_listing = async (data: z.infer<typeof updateJobListingSchema>) => {
-  let department_id = null;
-  
-  if(data.department) {
-    const department = await db
-      .select()
-      .from(departments)
-      .where(eq(departments.name, data.department))
-      .limit(1);
-    if(department.length > 0) {
-      department_id = department[0].id;
-    }
-  }
-  
-  await db
-    .update(job_listings)
-    .set({
-      ...(data.name && { name: data.name }),
-      ...(data.description && { description: data.description }),
-      ...(data.location && { location: data.location }),
-      ...(data.status && { status: data.status }),
-      ...(department_id !== null && { department_id: department_id }),
-      ...(data.organization && { organization: data.organization }),
-      ...(data.salary_up_to && { salary_up_to: data.salary_up_to }),
-      ...(data.type && { type: data.type }),
-    })
-    .where(eq(job_listings.id, data.jobId));
+    let department_id = null;
 
-  revalidateDbCache({ tag: CACHE_TAGS.jobs, id: String(data.jobId) });
+    if (data.department) {
+        const department = await db
+            .select()
+            .from(departments)
+            .where(eq(departments.name, data.department))
+            .limit(1);
+        if (department.length > 0) {
+            department_id = department[0].id;
+        }
+    }
+
+    await db
+        .update(job_listings)
+        .set({
+            ...(data.name && { name: data.name }),
+            ...(data.description && { description: data.description }),
+            ...(data.location && { location: data.location }),
+            ...(data.status && { status: data.status }),
+            ...(department_id !== null && { department_id: department_id }),
+            ...(data.organization && { organization: data.organization }),
+            ...(data.salary_up_to && { salary_up_to: data.salary_up_to }),
+            ...(data.type && { type: data.type }),
+        })
+        .where(eq(job_listings.id, data.jobId));
+
+    revalidateDbCache({ tag: CACHE_TAGS.jobs, id: String(data.jobId) });
 };
 
-export const delete_job_listing = async (jobId: number) => { 
+export const delete_job_listing = async (jobId: number) => {
     await db
         .delete(job_listings)
         .where(eq(job_listings.id, jobId));
-    
+
     revalidateDbCache({ tag: CACHE_TAGS.jobs, id: String(jobId) });
 };
 
@@ -285,8 +285,8 @@ export const get_all_job_listings_db = async (filter: FilterInterface) => {
         filters.push(inArray(job_listings.status, statuses));
     }
 
-    const [{count}] = await db
-        .select({count: sql<number>`count(*)`})
+    const [{ count }] = await db
+        .select({ count: sql<number>`count(*)` })
         .from(job_listings)
         .where(and(...filters, eq(job_listings.organization, filter.organization)));
 

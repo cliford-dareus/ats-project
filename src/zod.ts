@@ -70,9 +70,28 @@ export const applicationFormSchema = z.object({
     job: z.number(),
 });
 
+export const updateApplicationSchema = z.object({
+    applicationId: z.number(),
+    job_id: z.number().optional(),
+    current_stage_id: z.number().optional(),
+    candidate: z.number().optional(),
+    can_contact: z.boolean().optional(),
+    position_in_stage: z.number().optional(),
+    organization: z.string().optional(),
+    subdomain: z.string().optional(),
+});
+
 export const updateApplicationStageSchema = z.object({
     applicationId: z.number(),
     new_stage_id: z.number(),
+});
+
+export const moveAndReorderApplicationSchema = z.object({
+    applicationId: z.number(),
+    newStageId: z.number(),
+    sourceStageId: z.number().optional(),
+    targetOrders: z.array(z.object({ id: z.number(), position: z.number() })),
+    sourceOrders: z.array(z.object({ id: z.number(), position: z.number() })).optional(),
 });
 
 export const newCandidateFormSchema = z.object({
@@ -81,6 +100,20 @@ export const newCandidateFormSchema = z.object({
     phone: z.string(),
     location: z.string(),
     resume: z.string().optional(),
+    organization: z.string(),
+    subdomain: z.string(),
+});
+
+export const updateCandidateSchema = z.object({
+    id: z.number(),
+    name: z.string().optional(),
+    email: z.string().email({message: "Please enter a valid email address"}).optional(),
+    phone: z.string().optional(),
+    location: z.string().optional(),
+    cv_path: z.string().optional(),
+    status: CANDIDATE_STATUS.optional(),
+    profession: z.string().optional(),
+    subdomain: z.string().optional(),
 });
 
 export const departmentSchema = z.object({

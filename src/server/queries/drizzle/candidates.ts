@@ -1,18 +1,46 @@
-import {db} from "@/drizzle/db";
-import {applications, attachments, candidates, interviews} from "@/drizzle/schema";
-import {and, eq, inArray, sql, SQL} from "drizzle-orm";
-import {CACHE_TAGS, dbCache, getGlobalTag, getIdTag, revalidateDbCache} from "@/lib/cache";
-import {z} from "zod";
-import {filterCandidateSchema, newCandidateFormSchema} from "@/zod";
+import { db } from "@/drizzle/db";
+import { applications, attachments, candidates, interviews } from "@/drizzle/schema";
+import { and, eq, inArray, sql, SQL } from "drizzle-orm";
+import { CACHE_TAGS, dbCache, getGlobalTag, getIdTag, revalidateDbCache } from "@/lib/cache";
+import { z } from "zod";
+import { filterCandidateSchema, newCandidateFormSchema, updateCandidateSchema } from "@/zod";
 
 export const create_candidate = async (data: z.infer<typeof newCandidateFormSchema>) => {
     const [candidate] = await db.insert(candidates)
-        .values({...data, cv_path: data.resume as string, organization: ''})
+        .values({ ...data, cv_path: data.resume as string, organization: data.organization, subdomain: data.subdomain })
         .$returningId();
     revalidateDbCache({
         tag: CACHE_TAGS.candidates,
     });
     return candidate;
+};
+
+export const update_candidate = async (data: z.infer<typeof updateCandidateSchema>) => {
+    await db.update(candidates)
+        .set({
+            ...(data.name && { name: data.name }),
+            ...(data.email && { email: data.email }),
+            ...(data.phone && { phone: data.phone }),
+            ...(data.location && { location: data.location }),
+            ...(data.cv_path && { cv_path: data.cv_path as string }),
+            ...(data.status && { status: data.status }),
+            // ...(data.profession && { profession: data.profession }),
+            ...(data.subdomain && { subdomain: data.subdomain }),
+        })
+        .where(eq(candidates.id, id))
+
+    revalidateDbCache({
+        tag: CACHE_TAGS.candidates,
+    });
+};
+
+export const delete_candidate = async (id: number) => {
+    await db.delete(candidates)
+        .where(eq(candidates.id, id))
+
+    revalidateDbCache({
+        tag: CACHE_TAGS.candidates,
+    });
 };
 
 export const get_all_candidates = async (filter: z.infer<typeof filterCandidateSchema>) => {
@@ -34,7 +62,7 @@ export const get_candidate_by_id = async (unsafedata: number) => {
 };
 
 export const get_candidate_by_id_db = async (unsafedata: number) => {
-   const [
+    const [
         candidate,
         application,
         attachment,
@@ -81,8 +109,8 @@ const get_all_candidates_db = async (filter: z.infer<typeof filterCandidateSchem
         filters.push(inArray(candidates.status, statuses));
     }
 
-    const [{count}] = await db
-        .select({count: sql<number>`count(*)`})
+    const [{ count }] = await db
+        .select({ count: sql<number>`count(*)` })
         .from(candidates)
         .where(and(...filters, eq(candidates.organization, filter.organization)));
 

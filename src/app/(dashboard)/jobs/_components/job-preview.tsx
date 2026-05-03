@@ -2,18 +2,17 @@
 
 import React, {useState} from 'react';
 import {useRouter} from "next/navigation";
-import {JobResponseType, NoteResponseType} from "@/types";
+import {JobResponseType} from "@/types";
 import {Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbSeparator} from "@/components/ui/breadcrumb";
 import {SheetClose} from "@/components/ui/sheet";
 import {
     Briefcase,
-    Building2, Calendar, Clock, Edit3,
-    Expand, MapPin,
+    Calendar, Edit3,
+    Expand,
     Share, Share2,
     Tally1, Users,
     X
 } from "lucide-react";
-import {Button} from "@/components/ui/button";
 import EditJobListingModal from '@/components/modal/edit-joblisting-modal';
 
 type Props = {
@@ -23,7 +22,6 @@ type Props = {
 
 const JobPreview = ({data, jobs}: Props) => {
     const router = useRouter();
-    const [notes, setNotes] = useState<NoteResponseType>({notes: [], total: 0});
     const [isEditJobOpen, setIsEditJobOpen] = useState(false);
 
     return (
