@@ -1,9 +1,9 @@
-import {db} from "@/drizzle/db";
-import {departments, org_to_department, organization} from "@/drizzle/schema";
-import {eq, sql} from "drizzle-orm";
-import {CACHE_TAGS, dbCache, getGlobalTag, getIdTag, revalidateDbCache} from "@/lib/cache";
-import {departmentSchema, organizationSchema} from "@/zod";
-import {z} from "zod";
+import { db } from "@/drizzle/db";
+import { departments, org_to_department, organization } from "@/drizzle/schema";
+import { eq, sql } from "drizzle-orm";
+import { CACHE_TAGS, dbCache, getGlobalTag, getIdTag, revalidateDbCache } from "@/lib/cache";
+import { departmentSchema, organizationSchema } from "@/zod";
+import { z } from "zod";
 
 export const create_organization = async (data: z.infer<typeof organizationSchema>) => {
     return db.insert(organization).values({
@@ -13,36 +13,36 @@ export const create_organization = async (data: z.infer<typeof organizationSchem
 };
 
 export const update_organization_plugins = async (orgId: string, enabled: boolean, pluginId: string) => {
-     try {
+    try {
         const result = await db
-          .select({ plugins: organization.plugins })
-          .from(organization)
-          .where(eq(organization.clerk_id, orgId));
+            .select({ plugins: organization.plugins })
+            .from(organization)
+            .where(eq(organization.clerk_id, orgId));
 
         if (!result.length) {
-          return {error: "Organization not found"};
+            return { error: "Organization not found" };
         };
 
         const pluginsData = result[0].plugins as { enabled: string[]; settings?: object };
         const updatedEnabled = enabled
-          ? [...new Set([...pluginsData.enabled, pluginId])] // Add pluginId
-          : pluginsData.enabled.filter((id: string) => id !== pluginId); // Remove pluginId
+            ? [...new Set([...pluginsData.enabled, pluginId])] // Add pluginId
+            : pluginsData.enabled.filter((id: string) => id !== pluginId); // Remove pluginId
 
         const updatedPlugins = {
-          ...pluginsData,
-          enabled: updatedEnabled,
+            ...pluginsData,
+            enabled: updatedEnabled,
         };
 
         await db
-          .update(organization)
-          .set({ plugins: updatedPlugins })
-          .where(eq(organization.clerk_id, orgId));
+            .update(organization)
+            .set({ plugins: updatedPlugins })
+            .where(eq(organization.clerk_id, orgId));
 
-        return {message: "Success"};
-      } catch (error) {
+        return { message: "Success" };
+    } catch (error) {
         console.error('Error toggling plugin:', error);
-        return {error: "Internal server error"};
-      }
+        return { error: "Internal server error" };
+    }
 };
 
 export const add_department_in_organization = async (data: z.infer<typeof departmentSchema>) => {
@@ -64,7 +64,7 @@ export const add_department_in_organization = async (data: z.infer<typeof depart
                     .values({
                         department_id: department.id,
                         organization_id: org[0].clerk_id,
-                    }).onDuplicateKeyUpdate({set: {department_id: sql`department_id`}});
+                    }).onDuplicateKeyUpdate({ set: { department_id: sql`department_id` } });
             } else {
                 const [department] = await trx.insert(departments).values({
                     name: item,
@@ -77,8 +77,29 @@ export const add_department_in_organization = async (data: z.infer<typeof depart
             };
         };
 
-        revalidateDbCache({tag: CACHE_TAGS.departments});
+        revalidateDbCache({ tag: CACHE_TAGS.departments });
     });
+};
+
+export const get_organization_by_subdomain = async (subdomain: string) => {
+    const cacheFn = dbCache(get_organization_by_subdomain_db, {
+        tags: [getGlobalTag(CACHE_TAGS.organizations)]
+    });
+    return cacheFn(subdomain);
+};
+
+export const get_organization_by_subdomain_db = async (subdomain: string) => {
+    return await db.select({
+        name: organization.name,
+        locations: organization.locations,
+        phone: organization.phone,
+        email: organization.email,
+        primary_color: organization.primary_color,
+        font_family: organization.font_family,
+        subdomain: organization.subdomain,
+    })
+        .from(organization)
+        .where(eq(organization.subdomain, subdomain))
 };
 
 export const get_organization_by_id = async (org_id: string) => {
@@ -88,12 +109,8 @@ export const get_organization_by_id = async (org_id: string) => {
     return cacheFn(org_id);
 };
 
-export const get_org_departments = async (org_id: string) => {
-    const cacheFn = dbCache(get_org_departments_db, {
-        tags: [getIdTag(org_id, CACHE_TAGS.departments)]
-    });
-
-    return cacheFn(org_id);
+export const get_organization_by_id_db = async (org_id: string) => {
+    return db.select().from(organization).where(eq(organization.clerk_id, org_id));
 };
 
 export const get_all_departments = async () => {
@@ -104,12 +121,16 @@ export const get_all_departments = async () => {
     return cacheFn()
 };
 
-export const get_organization_by_id_db = async (org_id: string) => {
-    return db.select().from(organization).where(eq(organization.clerk_id, org_id));
-};
-
 export const get_all_departments_db = async () => {
     return await db.select().from(departments);
+};
+
+export const get_org_departments = async (org_id: string) => {
+    const cacheFn = dbCache(get_org_departments_db, {
+        tags: [getIdTag(org_id, CACHE_TAGS.departments)]
+    });
+
+    return cacheFn(org_id);
 };
 
 export const get_org_departments_db = async (org_id: string) => {
