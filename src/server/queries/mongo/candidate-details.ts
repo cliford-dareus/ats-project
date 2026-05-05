@@ -24,13 +24,37 @@ export const get_candidate_details = async (candidate_id: number) => {
         const candidate = await db.select().from(candidates).where(eq(candidates.id, candidate_id))
         if (!candidate) throw new Error("Candidate not found");
 
-        const details = await CandidateDetails.find({candidate_id: candidate_id});
+        const details = await CandidateDetails.find({ candidate_id: candidate_id });
         return JSON.stringify({
             resumeSummary: details[0]?.resumeSummary,
             skills: details[0]?.skills,
             experience: details[0]?.experience,
             education: details[0]?.education,
         });
+    } catch (error) {
+        console.log(error);
+        return JSON.stringify([]);
+    }
+};
+
+export const update_candidate_details = async (candidate_id: number, data: any) => {
+    try {
+        await mongodb();
+
+        const updated = await CandidateDetails.updateOne({ candidate_id: candidate_id }, data);
+        return JSON.stringify(updated);
+    } catch (error) {
+        console.log(error);
+        return JSON.stringify([]);
+    }
+};
+
+export const delete_candidate_details = async (candidate_id: number) => {
+    try {
+        await mongodb();
+
+        const deleted = await CandidateDetails.deleteOne({ candidate_id: candidate_id });
+        return JSON.stringify(deleted);
     } catch (error) {
         console.log(error);
         return JSON.stringify([]);

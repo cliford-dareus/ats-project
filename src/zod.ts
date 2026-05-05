@@ -1,12 +1,12 @@
-import {z} from "zod";
+import { z } from "zod";
 
-export const JOB_STAGES = z.enum(['New Candidate', 'Screening', 'Phone Interview', 'Interview', 'Offer', 'Applied' , 'Drafted'] as const);
+export const JOB_STAGES = z.enum(['New Candidate', 'Screening', 'Phone Interview', 'Interview', 'Offer', 'Applied', 'Drafted'] as const);
 export const FILE_TYPES = ['RESUME', 'COVER_LETTER', 'OFFER_LETTER', "OTHER"] as const;
 
 export const CANDIDATE_STATUS = z.enum(['ACTIVE', 'REJECTED', 'HIRED'] as const);
 export const JOB_STATUS = z.enum(["OPEN", "CLOSED", "DRAFT", "ARCHIVED", "PENDING"] as const);
 export const JOB_TYPE = z.enum(['FULL_TIME', 'PART_TIME', 'REMOTE', 'INTERNSHIP', 'CONTRACT'] as const);
-export const APPLICATION_STATUS = z.enum(['UNREAD','REVIEWING', 'INTERVIEWING', 'CLOSED'] as const);
+export const APPLICATION_STATUS = z.enum(['UNREAD', 'REVIEWING', 'INTERVIEWING', 'CLOSED'] as const);
 
 
 export type JOB_ENUM = 'New Candidate' | 'Screening' | 'Phone Interview' | 'Interview' | 'Offer' | 'Applied' | 'Drafted';
@@ -54,20 +54,74 @@ export const updateJobListingSchema = z.object({
     jobId: z.number(),
 });
 
+const personalInfoSchema = z.object({
+    firstName: z.string().min(2, "First name is required"),
+    lastName: z.string().min(2, "Last name is required"),
+    email: z.string().email("Invalid email address"),
+    phone: z.string().min(10, "Phone number must be at least 10 digits"),
+    address: z.string().min(5, "Address is required"),
+    city: z.string().min(2, "City is required"),
+    state: z.string().min(2, "State is required"),
+    zipCode: z.string().min(5, "Zip code is required"),
+    portfolioUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+    linkedinUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+});
+
+const experienceSchema = z.object({
+    company: z.string().min(2, "Company name is required"),
+    position: z.string().min(2, "Position is required"),
+    startDate: z.string().min(1, "Start date is required"),
+    endDate: z.string().optional(),
+    current: z.boolean(),
+    description: z.string().min(10, "Description should be more detailed"),
+});
+
+const educationSchema = z.object({
+    school: z.string().min(2, "School name is required"),
+    degree: z.string().min(2, "Degree is required"),
+    fieldOfStudy: z.string().min(2, "Field of study is required"),
+    graduationDate: z.string().min(1, "Graduation date is required"),
+});
+
+const referenceSchema = z.object({
+    name: z.string().min(2, "Name is required"),
+    relationship: z.string().min(2, "Relationship is required"),
+    company: z.string().min(2, "Company is required"),
+    email: z.string().email("Invalid email address"),
+    phone: z.string().min(10, "Phone number is required"),
+});
+
+export const applicationSchema = z.object({
+    personalInfo: personalInfoSchema,
+    workExperience: z.array(experienceSchema).min(1, "At least one experience item is required"),
+    education: z.array(educationSchema).min(1, "At least one education item is required"),
+    references: z.array(referenceSchema).min(2, "At least two references are required").optional(),
+    additionalInfo: z.object({
+        coverLetter: z.string().optional(),
+        referralSource: z.string().optional(),
+        expectedSalary: z.string().optional(),
+        earliestStartDate: z.string().optional(),
+    }),
+});
+
 export const applicationFormSchema = z.object({
-    candidate_info: z.object({
-        first_name: z.string(),
-        last_name: z.string(),
-        email: z.string(),
-        phone: z.string().optional(),
-        location: z.string().optional(),
-    }).nullish(),
+    personalInfo: personalInfoSchema,
+    workExperience: z.array(experienceSchema).min(1, "At least one experience item is required"),
+    education: z.array(educationSchema).min(1, "At least one education item is required"),
+    references: z.array(referenceSchema).min(2, "At least two references are required").optional(),
+    additionalInfo: z.object({
+        coverLetter: z.string().optional(),
+        referralSource: z.string().optional(),
+        expectedSalary: z.string().optional(),
+        earliestStartDate: z.string().optional(),
+    }),
     file: z.object({
         file_: z.instanceof(File),
         file_type: z.enum(FILE_TYPES).default("RESUME")
     }).nullish(),
     candidate: z.string().nullish(),
-    job: z.number(),
+    jobId: z.number(),
+    subdomain: z.string(),
 });
 
 export const updateApplicationSchema = z.object({
@@ -96,7 +150,7 @@ export const moveAndReorderApplicationSchema = z.object({
 
 export const newCandidateFormSchema = z.object({
     name: z.string(),
-    email: z.string().email({message: "Please enter a valid email address"}),
+    email: z.string().email({ message: "Please enter a valid email address" }),
     phone: z.string(),
     location: z.string(),
     resume: z.string().optional(),
@@ -107,7 +161,7 @@ export const newCandidateFormSchema = z.object({
 export const updateCandidateSchema = z.object({
     id: z.number(),
     name: z.string().optional(),
-    email: z.string().email({message: "Please enter a valid email address"}).optional(),
+    email: z.string().email({ message: "Please enter a valid email address" }).optional(),
     phone: z.string().optional(),
     location: z.string().optional(),
     cv_path: z.string().optional(),
@@ -232,9 +286,9 @@ export const organizationSchema = z.object({
 });
 
 export const inviteMemberSchema = z.object({
-  organizationId: z.string(),
-  inviterUserId: z.string(),
-  emailAddress: z.string(),
-  role: z.string(),
-  redirectUrl: z.string()
+    organizationId: z.string(),
+    inviterUserId: z.string(),
+    emailAddress: z.string(),
+    role: z.string(),
+    redirectUrl: z.string()
 });

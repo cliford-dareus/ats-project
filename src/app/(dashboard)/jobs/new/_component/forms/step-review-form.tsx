@@ -1,12 +1,12 @@
 'use client';
 
-import React, {useActionState, useTransition} from "react";
-import {FormErrors} from "@/types";
-import {stepReviewFormAction, saveDraftAction} from "@/app/(dashboard)/jobs/new/step-review/_actions";
-import {useNewJobContext} from "@/providers/new-job-provider";
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {Button} from "@/components/ui/button";
-import {Badge} from "@/components/ui/badge";
+import React, { useActionState, useTransition } from "react";
+import { FormErrors } from "@/types";
+import { stepReviewFormAction, saveDraftAction } from "@/app/(dashboard)/jobs/new/step-review/_actions";
+import { useNewJobContext } from "@/providers/new-job-provider";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
     FileText,
     MapPin,
@@ -17,12 +17,11 @@ import {
     Users,
     CheckCircle,
     Edit,
+    Save,
     // Save
 } from "lucide-react";
 import Link from "next/link";
-import StepOneCollapse from "@/app/(dashboard)/jobs/new/_component/step-one-collapse";
-import StepTwoCollapse from "@/app/(dashboard)/jobs/new/_component/step-two-collapse";
-import {ScrollArea} from "@/components/ui/scroll-area";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import SidePreview from "@/app/(dashboard)/jobs/new/_component/side-preview";
 
 const initialState: FormErrors = {};
@@ -30,8 +29,8 @@ const initialState: FormErrors = {};
 export default function StepReviewForm() {
     const [publishErrors, publishAction] = useActionState(stepReviewFormAction, initialState);
     const [draftErrors, draftAction] = useActionState(saveDraftAction, initialState);
-    const [isPending, starTransition] = useTransition();
-    const {newJobData} = useNewJobContext();
+    const [, starTransition] = useTransition();
+    const { newJobData } = useNewJobContext();
 
     const createFormDataWithJobData = () => {
         const formData = new FormData();
@@ -214,7 +213,7 @@ export default function StepReviewForm() {
                                     ) : (
                                         <div className="text-center py-6 text-gray-500">
                                             <Workflow size={24} className="mx-auto mb-2 opacity-50" />
-                                            <p>Only default "Applied" stage will be used</p>
+                                            <p>Only default &quot;Applied&quot; stage will be used</p>
                                         </div>
                                     )}
 
@@ -244,21 +243,21 @@ export default function StepReviewForm() {
 
                 {/* Previous Steps Summary */}
                 <div className="flex flex-col relative h-[calc(100vh_-_200px)]">
-                    <SidePreview/>
+                    <SidePreview />
                     {/* Publish Confirmation */}
-                    {/*<Card className="border-green-200 bg-green-50 absolute">*/}
-                    {/*    <CardContent className="p-6">*/}
-                    {/*        <div className="flex items-center gap-3">*/}
-                    {/*            <CheckCircle size={24} className="text-green-600" />*/}
-                    {/*            <div>*/}
-                    {/*                <h3 className="font-medium text-green-900">Ready to Publish</h3>*/}
-                    {/*                <p className="text-sm text-green-700 mt-1">*/}
-                    {/*                    Your job listing is complete and ready to be published. Candidates will be able to apply once published.*/}
-                    {/*                </p>*/}
-                    {/*            </div>*/}
-                    {/*        </div>*/}
-                    {/*    </CardContent>*/}
-                    {/*</Card>*/}
+                    {/*<Card className="border-green-200 bg-green-50 w-full">
+                        <CardContent className="p-6">
+                            <div className="flex items-center gap-3">
+                                <CheckCircle size={24} className="text-green-600" />
+                                <div>
+                                    <h3 className="font-medium text-green-900">Ready to Publish</h3>
+                                    <p className="text-sm text-green-700 mt-1">
+                                        Your job listing is complete and ready to be published. Candidates will be able to apply once published.
+                                    </p>
+                               </div>
+                            </div>
+                        </CardContent>
+                    </Card>*/}
 
                     {/* Action Buttons */}
                     <div className="w-full flex items-center justify-between absolute bottom-2">
@@ -267,13 +266,23 @@ export default function StepReviewForm() {
                                 Back
                             </Button>
 
-                            <Button
-                                onClick={handlePublish}
-                                className="ml-auto bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
-                            >
-                                <CheckCircle size={16} />
-                                Publish Job Listing
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button
+                                    onClick={handlePublish}
+                                    className="ml-auto bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                                >
+                                    <CheckCircle size={16} />
+                                    Publish
+                                </Button>
+
+                                <Button
+                                    onClick={handleSaveDraft}
+                                    className="ml-auto bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                                >
+                                    <Save size={16} />
+                                    Draft
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </div>

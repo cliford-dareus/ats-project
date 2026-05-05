@@ -13,11 +13,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/compon
 import { Button } from "@/components/ui/button";
 import { z } from "zod";
 import { Plus, X, Code, Award } from "lucide-react";
-import StepOneCollapse from "@/app/(dashboard)/jobs/new/_component/step-one-collapse";
 import { useNewJobContext } from "@/providers/new-job-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import StepTwoCollapse from "@/app/(dashboard)/jobs/new/_component/step-two-collapse";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import SidePreview from "@/app/(dashboard)/jobs/new/_component/side-preview";
 
@@ -25,7 +22,7 @@ const initialState: FormErrors = {};
 
 const StepTwoForm = () => {
     const [currentStages, setCurrentStages] = useState<z.infer<typeof jobTechSchema>[]>([]);
-    const [serverErrors, formAction] = useActionState(stepTwoFormAction, initialState);
+    const [, formAction] = useActionState(stepTwoFormAction, initialState);
     const { updateNewJobDetails, newJobData, removeJob } = useNewJobContext();
     const form = useForm();
 
@@ -99,7 +96,7 @@ const StepTwoForm = () => {
                                         <DropdownMenuContent className="w-80 p-4">
                                             <div className="space-y-4">
                                                 <FormItem>
-                                                    <FormLabel>Technology/Skill</FormLabel>
+                                                    <FormLabel className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Technology/Skill</FormLabel>
                                                     <FormControl>
                                                         <Input
                                                             {...forms.register("technology")}
@@ -110,7 +107,7 @@ const StepTwoForm = () => {
                                                 </FormItem>
 
                                                 <FormItem>
-                                                    <FormLabel>Years of Experience</FormLabel>
+                                                    <FormLabel className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Years of Experience</FormLabel>
                                                     <FormControl>
                                                         <Input
                                                             {...forms.register("year_of_experience")}

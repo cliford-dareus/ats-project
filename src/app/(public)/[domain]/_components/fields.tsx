@@ -40,6 +40,8 @@ export const FormButton = forwardRef<HTMLButtonElement, ButtonProps>(
     }
 );
 
+FormButton.displayName = 'FormButton';  
+
 /**
  * Input Component
  */
@@ -74,7 +76,9 @@ export const FormInput = forwardRef<HTMLInputElement, InputProps>(
             </div>
         );
     }
-);
+); 
+
+FormInput.displayName = 'FormInput';
 
 /**
  * Textarea Component
@@ -112,6 +116,8 @@ export const FormTextarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     }
 );
 
+FormTextarea.displayName = 'FormTextarea';
+
 /**
  * Checkbox Component
  */
@@ -141,3 +147,6 @@ export const FormCheckbox = forwardRef<HTMLInputElement, CheckboxProps>(
         );
     }
 );
+
+FormCheckbox.displayName = 'FormCheckbox';
+

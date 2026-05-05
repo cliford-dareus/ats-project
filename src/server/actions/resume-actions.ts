@@ -20,7 +20,7 @@ export const summarizeResume = async (resumeKey: string) => {
         });
 
         const response = await r2Client.send(command);
-        const arrayBuffer = await response.Body?.transformToByteArray?.() 
+        const arrayBuffer = await response.Body?.transformToByteArray?.()
 
         if (!arrayBuffer) throw new Error('Failed to download file');
 
@@ -39,7 +39,7 @@ export const summarizeResume = async (resumeKey: string) => {
                     }
                 },
                 {
-                    text: "Extract information from this resume. Return the data in JSON format with the following structure: { name: string, email: string, role: string, resumeSummary: string, skills: string[], key_accomplishments: string[], experience: { company: string, role: string, period: string, description: string, totalExperience: number }[], education: string[] }. If a field is not found, leave it empty or null."
+                    text: "Extract information from this resume. Return the data in JSON format with the following structure: { name: string, email: string, role: string, resumeSummary: string, skills: string[], key_accomplishments: string[], experience: { company: string, role: string, period: string, startDate: string, endDate: string, current: boolean, description: string, totalExperience: number }[], education: { school: string, degree: string, fieldOfStudy: string, graduationDate: string }[], references: { name: string, email: string, company: string, relationship: string, phone: string }[] }. If a field is not found, leave it empty or null."
                 }
             ],
             config: {
@@ -61,12 +61,39 @@ export const summarizeResume = async (resumeKey: string) => {
                                     company: { type: Type.STRING },
                                     role: { type: Type.STRING },
                                     period: { type: Type.STRING },
+                                    startDate: { type: Type.STRING },
+                                    endDate: { type: Type.STRING },
+                                    current: { type: Type.BOOLEAN },
                                     description: { type: Type.STRING },
                                     totalExperience: { type: Type.NUMBER }
                                 }
                             }
                         },
-                        education: { type: Type.ARRAY, items: { type: Type.STRING } }
+                        education: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    school: { type: Type.STRING },
+                                    degree: { type: Type.STRING },
+                                    fieldOfStudy: { type: Type.STRING },
+                                    graduationDate: { type: Type.STRING }
+                                }
+                            }
+                        },
+                        references: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    name: { type: Type.STRING },
+                                    email: { type: Type.STRING },
+                                    company: { type: Type.STRING },
+                                    relationship: { type: Type.STRING },
+                                    phone: { type: Type.STRING }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -124,6 +151,7 @@ export const create_application_summary = async (candidate_id: number) => {
             skills: data.skills,
             experience: data.experience,
             education: data.education,
+            references: data.references,
         });
 
         // Update basic candidate info
@@ -146,6 +174,7 @@ export const create_application_summary = async (candidate_id: number) => {
                 skills: data.skills,
                 experience: data.experience,
                 education: data.education,
+                references: data.references,
             },
         };
     } catch (err: any) {

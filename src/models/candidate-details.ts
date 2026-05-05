@@ -1,12 +1,13 @@
 import mongoose from 'mongoose';
-import {CandidateExperience} from "@/types";
+import {CandidateEducation, CandidateExperience, CandidateReference} from "@/types";
 
 interface CandidateDetailsInterface extends mongoose.Document {
     candidate_id: number;
     resumeSummary: string;
     skills: string[];
     experience: CandidateExperience[];
-    education: string[];
+    education: CandidateEducation[];
+    references: CandidateReference[];
 };
 
 const CandidateDetailsSchema = new mongoose.Schema<CandidateDetailsInterface>({
@@ -15,6 +16,7 @@ const CandidateDetailsSchema = new mongoose.Schema<CandidateDetailsInterface>({
     skills: { type: []},
     experience: { type: []},
     education: { type: [] },
+    references: { type: [] },
 });
 
 const CandidateDetails = mongoose.models.CandidateDetails || mongoose.model('CandidateDetails', CandidateDetailsSchema);

@@ -13,8 +13,6 @@ const OpenJobList = ({ openJobs, activeTheme }: { openJobs: any[]; activeTheme: 
     const [, startTransition] = useTransition();
     const router = useRouter();
 
-    // const fileInputRef = useRef<HTMLInputElement>(null);
-
     const filteredJobs = openJobs.filter(job => {
         const matchesSearch = job.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             job.department.toLowerCase().includes(searchQuery.toLowerCase());

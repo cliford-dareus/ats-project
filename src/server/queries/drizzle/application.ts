@@ -24,6 +24,8 @@ import {
 } from "@/zod";
 import { z } from "zod";
 import { uploadResumeToR2 } from "@/lib/upload-file-to-r2";
+import { create_candidate_details } from "../mongo/candidate-details";
+import { check_organization_subdomain } from "./organization";
 
 interface InterviewType {
     applicationId: number;
@@ -41,7 +43,7 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
         .from(stages)
         .where(
             and(
-                eq(stages.job_id, data.job),
+                eq(stages.job_id, data.jobId),
                 eq(stages.stage_order_id, 0),
                 eq(stages.stage_name, "Applied"),
             ),
@@ -51,7 +53,8 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
         throw new Error("Applied stage not found for this job");
     }
 
-    const jobId = data.job;
+    const jobId = data.jobId;
+    const subdomain = data.subdomain;
 
     // 2. Check for duplicate application
     if (data.candidate) {
@@ -73,6 +76,15 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
         }
     }
 
+    // 3. check if an organization has this subdomain
+    const existingSubdomain = await check_organization_subdomain(subdomain);
+    if (existingSubdomain.length == 0) {
+        return {
+            success: false,
+            message: "No organization found with this subdomain",
+        };
+    }
+
     try {
         let candidateId: number;
         if (data.candidate) {
@@ -80,12 +92,17 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
             candidateId = Number(data.candidate);
         } else {
             // === NEW CANDIDATE ===
-            const info = data.candidate_info as {
-                first_name: string;
-                last_name: string;
+            const info = data.personalInfo as {
+                firstName: string;
+                lastName: string;
                 email: string;
                 phone: string;
-                location: string;
+                address: string;
+                city: string;
+                state: string;
+                zipCode: string;
+                portfolioUrl: string | undefined;
+                linkedinUrl: string | undefined;
             };
 
             // Better uniqueness check: email (not name)
@@ -101,11 +118,10 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
                 };
             }
 
-            const resumeFile = data?.file?.file_ as File | undefined; // ← from your Zod schema
+            const resumeFile = data?.file?.file_ as File | undefined;
+            let cvKey = `no-resume-${info.firstName}-${Date.now()}`;
 
-            let cvKey = `no-resume-${info.first_name}-${Date.now()}`;
-
-            const candidateFullName = `${info.first_name} ${info.last_name}`;
+            const candidateFullName = `${info.firstName} ${info.lastName}`;
             if (resumeFile && resumeFile.size > 0) {
                 cvKey = await uploadResumeToR2(resumeFile, candidateFullName);
             }
@@ -114,13 +130,17 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
             const [newCandidate] = await db
                 .insert(candidates)
                 .values({
-                    organization: "",
+                    organization: existingSubdomain[0].id,
                     name: candidateFullName,
                     email: info.email,
                     phone: info.phone,
-                    location: info.location,
+                    location: info.city,
+                    address: info.address,
+                    city: info.city,
+                    state: info.state,
+                    zipCode: info.zipCode,
                     cv_path: cvKey,
-                    subdomain: "bridge",
+                    subdomain: subdomain,
                 })
                 .$returningId();
 
@@ -128,10 +148,20 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
 
             // Create attachment record
             await db.insert(attachments).values({
-                file_name: `${info.first_name}'s Resume`,
+                file_name: `${info.firstName}'s Resume`,
                 file_url: cvKey, // we store the R2 key
                 candidate_id: candidateId,
                 attachment_type: "RESUME",
+            });
+
+            // Create candidate details record
+            await create_candidate_details({
+                candidate_id: candidateId,
+                resumeSummary: "No resume summary provided",
+                skills: [],
+                experience: data.workExperience,
+                education: data.education,
+                references: data.references ?? [],
             });
         }
 
@@ -139,11 +169,11 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
         const [newApplication] = await db
             .insert(applications)
             .values({
-                organization: "",
+                organization: existingSubdomain[0].id,
                 job_id: jobId,
                 candidate: candidateId,
                 current_stage_id: appliedStage.id,
-                subdomain: "",
+                subdomain: subdomain, // make subdomain unique in the database
             })
             .$returningId();
 

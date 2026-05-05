@@ -7,8 +7,6 @@ import {stepThreeFormAction} from "@/app/(dashboard)/jobs/new/step-three/_action
 import {JOB_ENUM, jobStageSchema} from "@/zod";
 import {z} from "zod";
 import {Plus, X, Users, Settings, Workflow, GripVertical} from "lucide-react";
-import StepOneCollapse from "@/app/(dashboard)/jobs/new/_component/step-one-collapse";
-import StepTwoCollapse from "@/app/(dashboard)/jobs/new/_component/step-two-collapse";
 import {useNewJobContext} from "@/providers/new-job-provider";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
@@ -51,7 +49,7 @@ const JOB_STAGES = [
 
 const StepThreeForm = () => {
     const [currentStages, setCurrentStages] = useState<z.infer<typeof jobStageSchema>[]>([]);
-    const [serverErrors, formAction] = useActionState(stepThreeFormAction, initialState);
+    const [, formAction] = useActionState(stepThreeFormAction, initialState);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [newStage, setNewStage] = useState<z.infer<typeof jobStageSchema>>({
         stage_name: 'New Candidate',
@@ -194,7 +192,7 @@ const StepThreeForm = () => {
                                 </DialogHeader>
                                 <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="stage_name">Stage Name</Label>
+                                        <Label htmlFor="stage_name" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Stage Name</Label>
                                         <Select
                                             name="stage_name"
                                             onValueChange={(value) => setNewStage({
@@ -214,7 +212,7 @@ const StepThreeForm = () => {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="stage_assign_to">Assign To</Label>
+                                        <Label htmlFor="stage_assign_to" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Assign To</Label>
                                         <Input
                                             id="stage_assign_to"
                                             placeholder="e.g. HR Manager, Engineering Team"
@@ -227,7 +225,7 @@ const StepThreeForm = () => {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label>Stage Color</Label>
+                                        <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Stage Color</Label>
                                         <div className="flex gap-2 flex-wrap">
                                             {STAGE_COLORS.map((color) => (
                                                 <button
@@ -253,7 +251,7 @@ const StepThreeForm = () => {
                                                 need_schedule: checked
                                             })}
                                         />
-                                        <Label htmlFor="need_schedule" className="text-sm">
+                                        <Label htmlFor="need_schedule" className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
                                             Requires scheduling (interviews, assessments)
                                         </Label>
                                     </div>

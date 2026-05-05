@@ -1,4 +1,4 @@
-import {CANDIDATE_STATUS, JOB_ENUM, JOB_STAGES, JOB_STATUS, JOB_TYPE} from "@/zod";
+import { CANDIDATE_STATUS, JOB_ENUM, JOB_STAGES, JOB_STATUS, JOB_TYPE } from "@/zod";
 
 export type JobResponseType = {
     id: number;
@@ -82,23 +82,23 @@ export type InterviewType = {
 };
 
 export interface ApplicationType {
-  id: number;
-  created_at: Date;
-  updated_at: Date;
-  job_id: number;
-  stage: typeof JOB_STAGES._type | null | undefined;
-  current_stage_id?: number | null;
-  stage_order_id?: number | null;
-  position_in_stage?: number;
-  candidate: CandidateType;
-  interview: InterviewType[];
+    id: number;
+    created_at: Date;
+    updated_at: Date;
+    job_id: number;
+    stage: typeof JOB_STAGES._type | null | undefined;
+    current_stage_id?: number | null;
+    stage_order_id?: number | null;
+    position_in_stage?: number;
+    candidate: CandidateType;
+    interview: InterviewType[];
 };
 
 export type JobListingWithCandidatesType = {
     job_id: number
     job_name: string
     job_location: string
-    job_status: 'OPEN'|'CLOSED'|'DRAFT'|'ARCHIVED'|'PENDING'
+    job_status: 'OPEN' | 'CLOSED' | 'DRAFT' | 'ARCHIVED' | 'PENDING'
     job_created_at: Date
     job_updated_at: Date
     job_createdBy: string
@@ -114,8 +114,26 @@ export interface CandidateExperience {
     company: string;
     role: string;
     period: string;
+    startDate: string;
+    endDate: string;
+    current: boolean;
     description: string;
     totalExperience: number;
+}
+
+export interface CandidateEducation {
+    school: string;
+    degree: string;
+    field_of_study: string;
+    graduation_date: string;
+}
+
+export interface CandidateReference {
+    name: string;
+    email: string;
+    company: string;
+    relationship: string;
+    phone: string;
 }
 
 export interface CandidateType {

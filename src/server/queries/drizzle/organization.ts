@@ -142,3 +142,13 @@ export const get_org_departments_db = async (org_id: string) => {
         .where(eq(org_to_department.organization_id, org_id))
         .leftJoin(departments, eq(departments.id, org_to_department.department_id));
 };
+
+// Helper functions
+export const check_organization_subdomain = async (subdomain: string) => {
+    const existingSubdomain = await db
+        .select({ id: organization.clerk_id })
+        .from(organization)
+        .where(eq(organization.subdomain, subdomain));
+
+    return existingSubdomain;
+};

@@ -20,6 +20,7 @@ import { Building2, MapPin, DollarSign, FileText } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import SidePreview from "@/app/(dashboard)/jobs/new/_component/side-preview";
 import { get_dept, stepOneFormAction } from "../../step-one/_actions";
+import { JOB_TYPE } from "@/zod";
 
 const initialState: FormErrors = {};
 
@@ -28,7 +29,7 @@ type Props = {
     departments: { id: number, organization_id: string, name: string | null }[]
 }
 
-const StepOneForm = ({orgId, departments}: Props) => {
+const StepOneForm = ({ orgId, departments }: Props) => {
     const [serverErrors, formAction] = useActionState(stepOneFormAction, initialState);
     const { updateNewJobDetails, newJobData } = useNewJobContext();
 
@@ -50,7 +51,7 @@ const StepOneForm = ({orgId, departments}: Props) => {
                 {/* Job Information Card */}
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
+                        <CardTitle className="flex items-center gap-2 text-xl font-bold">
                             <FileText size={20} className="text-blue-500" />
                             Basic Information
                         </CardTitle>
@@ -58,7 +59,7 @@ const StepOneForm = ({orgId, departments}: Props) => {
                     <CardContent className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <Label htmlFor="job_name" className="text-sm font-medium text-gray-700">
+                                <Label htmlFor="job_name" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                                     Job Title *
                                 </Label>
                                 <Input
@@ -76,7 +77,7 @@ const StepOneForm = ({orgId, departments}: Props) => {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="job_location" className="text-sm font-medium text-gray-700">
+                                <Label htmlFor="job_location" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                                     <MapPin size={16} className="inline mr-1" />
                                     Location *
                                 </Label>
@@ -97,7 +98,7 @@ const StepOneForm = ({orgId, departments}: Props) => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <Label htmlFor="department" className="text-sm font-medium text-gray-700">
+                                <Label htmlFor="department" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                                     <Building2 size={16} className="inline mr-1" />
                                     Department
                                 </Label>
@@ -117,7 +118,7 @@ const StepOneForm = ({orgId, departments}: Props) => {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="salary_up_to" className="text-sm font-medium text-gray-700">
+                                <Label htmlFor="salary_up_to" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                                     <DollarSign size={16} className="inline mr-1" />
                                     Salary (Annual)
                                 </Label>
@@ -133,8 +134,30 @@ const StepOneForm = ({orgId, departments}: Props) => {
                             </div>
                         </div>
 
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <Label htmlFor="department" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                                    <Building2 size={16} className="inline mr-1" />
+                                    Type
+                                </Label>
+                                <Select onValueChange={handleSelectChange}
+                                    defaultValue={newJobData.jobInfo["department"]}>
+                                    <SelectTrigger className="h-11">
+                                        <SelectValue placeholder="Select department" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {JOB_TYPE.options.map((dept) => (
+                                            <SelectItem key={dept} value={String(dept) || ''}>
+                                                {dept}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+
                         <div className="space-y-2">
-                            <Label htmlFor="job_description" className="text-sm font-medium text-gray-700">
+                            <Label htmlFor="job_description" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                                 Job Description *
                             </Label>
                             <Textarea

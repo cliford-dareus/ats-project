@@ -1,13 +1,13 @@
 "use server";
 
-import {taskQueue} from "@/lib/queue";
+import { taskQueue } from "@/lib/queue";
 import mongodb from "@/lib/mongodb";
 import Trigger from "@/models/trigger";
-import {TriggerAction} from "@/lib/smart-trigger/types";
-import {milliseconds} from "date-fns";
-import {db} from "@/drizzle/db";
-import {stages} from "@/drizzle/schema";
-import {eq} from "drizzle-orm";
+import { TriggerAction } from "@/lib/smart-trigger/types";
+import { milliseconds } from "date-fns";
+import { db } from "@/drizzle/db";
+import { stages } from "@/drizzle/schema";
+import { eq } from "drizzle-orm";
 
 
 export const addTaskToQueue = async (id: number, action: TriggerAction, stage_name: string, jobId: number) => {
@@ -17,7 +17,7 @@ export const addTaskToQueue = async (id: number, action: TriggerAction, stage_na
     const name = `Task-${action.action_type}-${Date.now()}`;
     const delay = action.config.delay;
     const delayFormat = action.config.delayFormat as 'minutes' | 'hours' | 'days';
-    const delayMs = milliseconds({[`${delayFormat}`]: delay});
+    const delayMs = milliseconds({ [`${delayFormat}`]: delay });
 
     // Get the application stage id from the stage name
     const stageResults = await db.select()
@@ -42,13 +42,13 @@ export const addTaskToQueue = async (id: number, action: TriggerAction, stage_na
         jobId: jobId,
         newStageId: stageId,
         config: action.config
-    }, {delay: delayMs});
+    }, { delay: delayMs });
 };
 
 export const getTasks = async () => {
     await mongodb();
     const tasks = await Trigger.find({});
-    return JSON.stringify({tasks});
+    return JSON.stringify({ tasks });
 };
 
 // export const cancelTask = async (id: number) => {
