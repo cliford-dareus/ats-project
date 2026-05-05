@@ -6,13 +6,13 @@ import { auth } from '@clerk/nextjs/server';
 import { candidates } from '@/drizzle/schema';
 import { and, eq } from 'drizzle-orm';
 import { db } from '@/drizzle/db';
-import { create_candidate_details } from '../queries/mongo/candidate-details';
+import { create_candidate_details, get_candidate_details, update_candidate_details } from '../queries/mongo/candidate-details';
 import { CACHE_TAGS, revalidateDbCache } from '@/lib/cache';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 
 const genAI = new GoogleGenAI({ apiKey: process.env.GOOGLE_GEMINI_API_KEY! });
 
-export const summarizeResume = async (resumeKey: string) => {
+export const summarizeFromResume = async (resumeKey: string) => {
     try {
         const command = new GetObjectCommand({
             Bucket: process.env.R2_BUCKET_NAME!,
@@ -39,7 +39,7 @@ export const summarizeResume = async (resumeKey: string) => {
                     }
                 },
                 {
-                    text: "Extract information from this resume. Return the data in JSON format with the following structure: { name: string, email: string, role: string, resumeSummary: string, skills: string[], key_accomplishments: string[], experience: { company: string, role: string, period: string, startDate: string, endDate: string, current: boolean, description: string, totalExperience: number }[], education: { school: string, degree: string, fieldOfStudy: string, graduationDate: string }[], references: { name: string, email: string, company: string, relationship: string, phone: string }[] }. If a field is not found, leave it empty or null."
+                    text: "Extract information from this resume. Return the data in JSON format with the following structure: { name: string, email: string, role: string, resumeSummary: string, skills: string[], key_accomplishments: string[], experience: { company: string, position: string, period: string, startDate: string, endDate: string, current: boolean, description: string, totalExperience: number }[], education: { school: string, degree: string, fieldOfStudy: string, graduationDate: string }[], references: { name: string, email: string, company: string, relationship: string, phone: string }[] }. If a field is not found, leave it empty or null."
                 }
             ],
             config: {
@@ -59,7 +59,7 @@ export const summarizeResume = async (resumeKey: string) => {
                                 type: Type.OBJECT,
                                 properties: {
                                     company: { type: Type.STRING },
-                                    role: { type: Type.STRING },
+                                    position: { type: Type.STRING },
                                     period: { type: Type.STRING },
                                     startDate: { type: Type.STRING },
                                     endDate: { type: Type.STRING },
@@ -101,9 +101,54 @@ export const summarizeResume = async (resumeKey: string) => {
 
         const data = JSON.parse(summarize.text || "{}");
         return { success: true, data };
-    } catch (err: any) {
+    } catch (err) {
         // console.error(err);
-        return { success: false, error: err.message || 'Failed to summarize resume' };
+        return { success: false, error: err?.message || 'Failed to summarize resume' };
+    }
+};
+
+export const generate = async (candidate_id: number, candidateDetails: Record<string, any>, missing_fields: string[]) => {
+    try {
+        const result = await genAI.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: [
+                {
+                    inlineData: {
+                        mimeType: 'text/plain',
+                        data: Buffer.from(JSON.stringify(candidateDetails, null, 2)).toString('base64')
+                    }
+                },
+                {
+                    text: `You are an expert HR professional and technical recruiter.
+                        Based on the candidate information provided, generate high-quality, professional content to complete or enhance the candidate profile.
+
+                        Focus on filling these missing fields: ${missing_fields.join(', ')}.
+
+                        Return ONLY a valid JSON object with the following structure (do not include any extra text, explanations, or markdown and do not include any fields that are not requested/in the missing_fields list):
+
+                        {
+                            name: string,
+                            email: string,
+                            role: string,
+                            resumeSummary: string,
+                            skills: string[],
+                            key_accomplishments: string[],
+                            experience: { company: string, position: string, period: string, startDate: string, endDate: string, current: boolean, description: string, totalExperience: number }[],
+                            education: { school: string, degree: string, fieldOfStudy: string, graduationDate: string }[],
+                            references: { name: string, email: string, company: string, relationship: string, phone: string }[]
+                        }
+
+                        Make the content realistic, achievement-oriented, and professional. Use the existing information as ground truth — never fabricate contradictions.` }
+            ],
+            config: {
+                responseMimeType: "application/json",
+            },
+        });
+
+        const data = JSON.parse(result.text || "{}");
+        return { success: true, data };
+    } catch (err) {
+        return { success: false, error: err?.message || 'Failed to summarize text' };
     }
 };
 
@@ -134,7 +179,7 @@ export const create_application_summary = async (candidate_id: number) => {
     }
 
     // Summarize the resume
-    const summaryResult = await summarizeResume(candidate.cv_path);
+    const summaryResult = await summarizeFromResume(candidate.cv_path);
 
     if (!summaryResult.success) {
         return { success: false, error: summaryResult.error };
@@ -180,5 +225,54 @@ export const create_application_summary = async (candidate_id: number) => {
     } catch (err: any) {
         console.error(err);
         return { success: false, error: 'Failed to save summary to database' };
+    }
+};
+
+export const generate_missing_fields = async (candidate_id: number, missing_fields: string[]) => {
+    // Get the candidate ID from the session
+    const { orgId, userId } = await auth();
+    if (!orgId || !userId) {
+        return { success: false, error: 'Unauthorized' };
+    }
+
+    const [candidate] = await db.select({
+        id: candidates.id
+    })
+        .from(candidates)
+        .where(and(
+            eq(candidates.id, candidate_id),
+            eq(candidates.organization, orgId)
+        ));
+
+    if (!candidate) {
+        return { success: false, error: 'Candidate not found' };
+    }
+
+    // get candidate details from the database mongodb
+    const candidateDetails = await get_candidate_details(candidate_id);
+    if (!candidateDetails) {
+        return { success: false, error: 'Candidate details not found' };
+    }
+
+    // generate the missing fields
+    const generatedFields = await generate(candidate_id, JSON.parse(candidateDetails), missing_fields);
+
+    if (!generatedFields.success) {
+        return { success: false, error: generatedFields.error };
+    }
+
+    const { data } = generatedFields;
+
+    try {
+        // update candidate details in the database mongodb
+        const updatedCandidateDetails = await update_candidate_details(candidate_id, data);
+        if (!updatedCandidateDetails) {
+            return { success: false, error: 'Failed to update candidate details' };
+        }
+        revalidateDbCache({ tag: CACHE_TAGS.candidates });
+
+        return { success: true, data: updatedCandidateDetails };
+    } catch (err) {
+        return { success: false, error: err?.message || 'Failed to update candidate details' };
     }
 };

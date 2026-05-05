@@ -23,8 +23,8 @@ const Page = async ({ params }: Props) => {
 
     const response = await get_application_by_id_action(Number(applicationId));
     const applicationResult = (response as unknown as ApplicationResponseType[])[0];
-
-    const stages = await get_job_listings_stages(applicationResult?.job_id);
+    
+    const stages = await get_job_listings_stages(applicationResult.job_id);
     // const internalNotes = await get_application_notes({
     //     id: Number(applicationId),
     //     limit: 10,
@@ -65,7 +65,7 @@ const Page = async ({ params }: Props) => {
                                   }
                                 />
 
-                                <ApplicationSummary resumeSummary={candidateDetails.resumeSummary} />
+                                <ApplicationSummary candidate_id={applicationResult.candidate_id} resumeSummary={candidateDetails.resumeSummary} />
                                 <ApplicationExperience experience={candidateDetails.experience} />
                               </div>
                             )}

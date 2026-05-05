@@ -36,6 +36,13 @@
       "when": 1776467152361,
       "tag": "0004_freezing_ultron",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1777992751077,
+      "tag": "0005_curious_mandroid",
+      "breakpoints": true
     }
   ]
 }

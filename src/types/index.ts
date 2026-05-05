@@ -1,5 +1,6 @@
 import { CANDIDATE_STATUS, JOB_ENUM, JOB_STAGES, JOB_STATUS, JOB_TYPE } from "@/zod";
 
+// RESPONSE TYPES
 export type JobResponseType = {
     id: number;
     name: string;
@@ -69,6 +70,11 @@ export type TriggerResponseType = {
     updated_at: Date;
 };
 
+export type NoteResponseType = {
+    notes: NoteType[];
+    total: number;
+};
+
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 export type InterviewType = {
     id: number,
@@ -112,7 +118,7 @@ export type JobListingWithCandidatesType = {
 
 export interface CandidateExperience {
     company: string;
-    role: string;
+    position: string;
     period: string;
     startDate: string;
     endDate: string;
@@ -211,9 +217,4 @@ export type NoteType = {
     created_at: Date;
     updated_at: Date;
     author: string;
-};
-
-export type NoteResponseType = {
-    notes: NoteType[];
-    total: number;
 };

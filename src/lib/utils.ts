@@ -226,7 +226,7 @@ export function getRangeOption(range?: string, from?: string, to?: string) {
 export const getApplicationMatch = (candidate_id: number, jobSkills: JobExperience[], experience: CandidateExperience[]) => {
         const candidateMap = new Map<string, number>();
         experience.forEach((item) => {
-            const skill = item.role.trim();
+            const skill = item.position.trim();
             const years = Number(item.totalExperience) || 0;
             candidateMap.set(skill, Math.max(years, candidateMap.get(skill) ?? 0));
         });

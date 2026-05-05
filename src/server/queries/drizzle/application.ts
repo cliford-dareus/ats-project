@@ -55,6 +55,7 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
 
     const jobId = data.jobId;
     const subdomain = data.subdomain;
+    console.log("create_application", { jobId, subdomain });
 
     // 2. Check for duplicate application
     if (data.candidate) {
@@ -84,6 +85,8 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
             message: "No organization found with this subdomain",
         };
     }
+    
+    console.log("create_application", { existingSubdomain });
 
     try {
         let candidateId: number;
@@ -138,7 +141,7 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
                     address: info.address,
                     city: info.city,
                     state: info.state,
-                    zipCode: info.zipCode,
+                    zip_code: info.zipCode,
                     cv_path: cvKey,
                     subdomain: subdomain,
                 })
@@ -163,6 +166,8 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
                 education: data.education,
                 references: data.references ?? [],
             });
+            
+            revalidateDbCache({ tag: CACHE_TAGS.candidates });
         }
 
         // 3. Create application (shared for both paths)

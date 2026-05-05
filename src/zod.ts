@@ -95,7 +95,7 @@ export const applicationSchema = z.object({
     personalInfo: personalInfoSchema,
     workExperience: z.array(experienceSchema).min(1, "At least one experience item is required"),
     education: z.array(educationSchema).min(1, "At least one education item is required"),
-    references: z.array(referenceSchema).min(2, "At least two references are required").optional(),
+    references: z.array(referenceSchema).optional(),
     additionalInfo: z.object({
         coverLetter: z.string().optional(),
         referralSource: z.string().optional(),
@@ -108,7 +108,7 @@ export const applicationFormSchema = z.object({
     personalInfo: personalInfoSchema,
     workExperience: z.array(experienceSchema).min(1, "At least one experience item is required"),
     education: z.array(educationSchema).min(1, "At least one education item is required"),
-    references: z.array(referenceSchema).min(2, "At least two references are required").optional(),
+    references: z.array(referenceSchema).optional(),
     additionalInfo: z.object({
         coverLetter: z.string().optional(),
         referralSource: z.string().optional(),
@@ -117,7 +117,7 @@ export const applicationFormSchema = z.object({
     }),
     file: z.object({
         file_: z.instanceof(File),
-        file_type: z.enum(FILE_TYPES).default("RESUME")
+        // file_type: z.enum(FILE_TYPES).default("RESUME")
     }).nullish(),
     candidate: z.string().nullish(),
     jobId: z.number(),

@@ -83,7 +83,7 @@ const CandidatePreview = ({ data, candidates }: Props) => {
                         <BreadcrumbItem>
                             <span
                                 onClick={() => {
-                                    router.push(`/applications/${currentCandidate?.id}`);
+                                    router.push(`/candidates/${currentCandidate?.id}`);
                                 }}
                                 className="flex items-center justify-center cursor-pointer"
                             >

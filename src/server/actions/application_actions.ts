@@ -13,15 +13,15 @@ import { z } from "zod";
 import { applicationFormSchema, filterApplicationsSchema, updateApplicationSchema, updateApplicationStageSchema } from "@/zod";
 
 export const create_application_action = async (unsafeData: z.infer<typeof applicationFormSchema>) => {
-    const { userId } = await auth();
-    const { success, data } = await applicationFormSchema.spa(unsafeData);
-    const canCreate = await canCreateJob(userId);
+    // const { userId } = await auth();
+    // const { success, data } = await applicationFormSchema.spa(unsafeData);
+    // const canCreate = await canCreateJob(userId);
 
-    if (!success || !userId || !canCreate) {
-        return { error: true, message: "There was an error creating your product" }
-    }
+    // if (!success || !userId || !canCreate) {
+    //     return { error: true, message: "There was an error creating your product" }
+    // }
 
-    return await create_application(data);
+    return await create_application(unsafeData);
 };
 
 export const update_application_action = async (unsafeData: z.infer<typeof updateApplicationSchema>) => {

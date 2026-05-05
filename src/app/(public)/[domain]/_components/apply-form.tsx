@@ -109,9 +109,16 @@ const ApplyForm = ({ jobId, subdomain }: { jobId: number; subdomain: string }) =
 
     const onSubmit = async (data: z.infer<typeof applicationSchema>) => {
         console.log("Form Submitted:", data);
-        const payload = { ...data, file: { file_: file as File, file_type: "RESUME" }, jobId, subdomain };
-        await create_application_action(payload);
-        setComplete(true);
+        const payload = {
+            ...data, file: { file_: file as File }, jobId, subdomain
+        };
+        try {
+            await create_application_action(payload);
+            setComplete(true);
+        } catch (error) {
+            console.error("Error submitting application:", error);
+            alert("There was an error submitting your application. Please try again.");
+        }
     };
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import {CandidateEducation, CandidateExperience, CandidateReference} from "@/types";
+import { CandidateEducation, CandidateExperience, CandidateReference } from "@/types";
 
 interface CandidateDetailsInterface extends mongoose.Document {
     candidate_id: number;
@@ -12,9 +12,9 @@ interface CandidateDetailsInterface extends mongoose.Document {
 
 const CandidateDetailsSchema = new mongoose.Schema<CandidateDetailsInterface>({
     candidate_id: { type: Number, required: true },
-    resumeSummary: { type: String},
-    skills: { type: []},
-    experience: { type: []},
+    resumeSummary: { type: String },
+    skills: { type: [] },
+    experience: { type: [] },
     education: { type: [] },
     references: { type: [] },
 });

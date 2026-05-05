@@ -1,5 +1,5 @@
 import { Textarea } from "@/components/ui/textarea";
-import { Briefcase, FileText, GraduationCap, Users } from "lucide-react";
+import { Briefcase, FileText, GraduationCap, User, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 
