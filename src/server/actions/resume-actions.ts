@@ -39,7 +39,7 @@ export const summarizeFromResume = async (resumeKey: string) => {
                     }
                 },
                 {
-                    text: "Extract information from this resume. Return the data in JSON format with the following structure: { name: string, email: string, role: string, resumeSummary: string, skills: string[], key_accomplishments: string[], experience: { company: string, position: string, period: string, startDate: string, endDate: string, current: boolean, description: string, totalExperience: number }[], education: { school: string, degree: string, fieldOfStudy: string, graduationDate: string }[], references: { name: string, email: string, company: string, relationship: string, phone: string }[] }. If a field is not found, leave it empty or null."
+                    text: "Extract information from this resume. Return the data in JSON format with the following structure: { name: string, email: string, role: string, resumeSummary: string, skills: string[], key_accomplishments: string[] *key_accomplishments is the list of key accomplishments in the work experience,make them 10 to 15 words length sentence or shorter, experience: { company: string, position: string, period: string, startDate: string, endDate: string, current: boolean, description: string, totalExperience: number }[], education: { school: string, degree: string, fieldOfStudy: string, graduationDate: string }[], references: { name: string, email: string, company: string, relationship: string, phone: string }[] }. If a field is not found, leave it empty or null."
                 }
             ],
             config: {
@@ -132,7 +132,7 @@ export const generate = async (candidate_id: number, candidateDetails: Record<st
                             role: string,
                             resumeSummary: string,
                             skills: string[],
-                            key_accomplishments: string[],
+                            key_accomplishments: string[] *key_accomplishments is the list of key accomplishments in the work experience,make them 10 to 15 words length sentence or shorter,
                             experience: { company: string, position: string, period: string, startDate: string, endDate: string, current: boolean, description: string, totalExperience: number }[],
                             education: { school: string, degree: string, fieldOfStudy: string, graduationDate: string }[],
                             references: { name: string, email: string, company: string, relationship: string, phone: string }[]
@@ -194,6 +194,7 @@ export const create_application_summary = async (candidate_id: number) => {
             candidate_id,
             resumeSummary: data.resumeSummary,
             skills: data.skills,
+            key_accomplishments: data.key_accomplishments,
             experience: data.experience,
             education: data.education,
             references: data.references,
@@ -215,6 +216,7 @@ export const create_application_summary = async (candidate_id: number) => {
             data: {
                 name: data.name,
                 email: data.email,
+                key_accomplishments: data.key_accomplishments,
                 resumeSummary: data.resumeSummary,
                 skills: data.skills,
                 experience: data.experience,
@@ -262,7 +264,6 @@ export const generate_missing_fields = async (candidate_id: number, missing_fiel
     }
 
     const { data } = generatedFields;
-
     try {
         // update candidate details in the database mongodb
         const updatedCandidateDetails = await update_candidate_details(candidate_id, data);

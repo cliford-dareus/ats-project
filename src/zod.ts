@@ -8,7 +8,6 @@ export const JOB_STATUS = z.enum(["OPEN", "CLOSED", "DRAFT", "ARCHIVED", "PENDIN
 export const JOB_TYPE = z.enum(['FULL_TIME', 'PART_TIME', 'REMOTE', 'INTERNSHIP', 'CONTRACT'] as const);
 export const APPLICATION_STATUS = z.enum(['UNREAD', 'REVIEWING', 'INTERVIEWING', 'CLOSED'] as const);
 
-
 export type JOB_ENUM = 'New Candidate' | 'Screening' | 'Phone Interview' | 'Interview' | 'Offer' | 'Applied' | 'Drafted';
 export type CANDIDATE_ENUM = 'Active' | 'Rejected' | 'Hired';
 

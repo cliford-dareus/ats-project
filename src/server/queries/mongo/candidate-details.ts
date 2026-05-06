@@ -30,6 +30,7 @@ export const get_candidate_details = async (candidate_id: number) => {
             skills: details[0]?.skills,
             experience: details[0]?.experience,
             education: details[0]?.education,
+            key_accomplishments: details[0]?.key_accomplishments,
         });
     } catch (error) {
         console.log(error);

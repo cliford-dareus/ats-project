@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { getApplicationMatch } from "@/lib/utils";
+import { cn, getApplicationMatch } from "@/lib/utils";
 import { create_application_summary, generate_missing_fields } from "@/server/actions/resume-actions";
 import { CandidateEducation, CandidateExperience, JobExperienceType } from "@/types";
 import {
@@ -9,10 +9,10 @@ import {
     CheckCircle2,
     Download,
     FileText,
-    MagnetIcon,
     Sparkles,
     TrendingUp,
 } from "lucide-react";
+import { useState } from "react";
 
 export interface ApplicationSummaryType {
     candidate_id: number;
@@ -29,7 +29,13 @@ export interface MatchResult {
     match: boolean;
 }
 
-export const ApplicationSummary = ({ candidate_id, resumeSummary, }: { candidate_id: number; resumeSummary: string }) => { 
+type ApplicationSummaryProps = {
+    candidate_id: number;
+    resumeSummary: string;
+    key_accomplishments: string[];
+};
+
+export const ApplicationSummary = ({ candidate_id, resumeSummary, key_accomplishments }: ApplicationSummaryProps) => {
     return (
         <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
             <div className="p-4 border-b border-zinc-100 bg-zinc-50/50 flex items-center justify-between">
@@ -46,23 +52,23 @@ export const ApplicationSummary = ({ candidate_id, resumeSummary, }: { candidate
             </div>
             <div className="p-4">
                 <div className="prose prose-zinc prose-sm max-w-none text-zinc-600 leading-relaxed">
-                    <div className="flex gap-2 group ">
-                        <GenerateFieldButton field_name="resumeSummary" candidate_id={candidate_id} />
+                    <div className="flex gap-2 group">
+                        <div className="min-w-4 h-full pt-1">
+                            <GenerateFieldButton field_name="resumeSummary" candidate_id={candidate_id} />
+                        </div>
                         <p>{resumeSummary}</p>
                     </div>
                     <h4 className="text-zinc-900 font-bold mt-4 mb-2">
                         Key Accomplishments:
                     </h4>
                     <div className="flex gap-2 group">
-                        <GenerateFieldButton field_name="keyAccomplishments" candidate_id={candidate_id} />
+                        <div className="min-w-4 h-full pt-2">
+                            <GenerateFieldButton field_name="key_accomplishments" candidate_id={candidate_id} />
+                        </div>
                         <ul className="list-disc pl-5 space-y-1">
-                            <li>
-                                Reduced application load time by 40% through code optimization.
-                            </li>
-                            <li>
-                                Implemented automated testing suite increasing coverage to 85%.
-                            </li>
-                            <li>Led a team of 5 developers in a complete system migration.</li>
+                            {key_accomplishments.map((accomplishment, index) => (
+                                <li key={index} className="truncate-ellipsis ">{accomplishment}</li>
+                            ))}
                         </ul>
                     </div>
                 </div>
@@ -112,11 +118,13 @@ export const ApplicationEducation = ({ education }: { education: CandidateEducat
     );
 };
 
-export const ApplicationExperienceMatch = ({ candidate_id, experience, jobSkills}: {
+type ApplicationExperienceMatchProps = {
     candidate_id: number;
     experience: CandidateExperience[];
     jobSkills: JobExperienceType[];
-}) => {
+};
+
+export const ApplicationExperienceMatch = ({ candidate_id, experience, jobSkills }: ApplicationExperienceMatchProps) => {
     const experienceMatch = getApplicationMatch(candidate_id, jobSkills, experience);
 
     return (
@@ -168,8 +176,11 @@ export const ApplicationExperienceMatch = ({ candidate_id, experience, jobSkills
 };
 
 export const EmptyApplicationSummary = ({ candidate_id }: { candidate_id: number }) => {
+    const [loading, setLoading] = useState(false);
+    
     const analyzeCandidate = async (candidate_id: number) => {
         try {
+            setLoading(true);
             const summary = await create_application_summary(candidate_id);
             if (!summary.success) {
                 console.log(summary.error);
@@ -177,6 +188,8 @@ export const EmptyApplicationSummary = ({ candidate_id }: { candidate_id: number
         } catch (error) {
             console.log(error);
             return JSON.stringify([]);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -218,7 +231,7 @@ export const EmptyApplicationSummary = ({ candidate_id }: { candidate_id: number
 
                                 <div className="text-center py-8">
                                     <p className="text-zinc-600 mb-4">
-                                        Get a deep dive into your candidate's profile using Gemini
+                                        Get a deep dive into your candidate&rsquo;s profile using Gemini
                                         AI.
                                     </p>
                                     <Button
@@ -239,20 +252,27 @@ export const EmptyApplicationSummary = ({ candidate_id }: { candidate_id: number
 };
 
 export const GenerateFieldButton = ({ candidate_id, field_name }: { candidate_id: number; field_name: string }) => {
-    const handleClick = async() => {
+    const [loading, setLoading] = useState(false);
+    
+    const handleClick = async () => {
         try {
+            setLoading(true);
             await generate_missing_fields(candidate_id, [field_name]);
         } catch (error) {
             alert(error?.message || 'Failed to generate field');
+        } finally {
+            setLoading(false);
         }
     };
+
     return (
         <Button
             variant="ghost"
             onClick={() => handleClick()}
-            className="hidden p-0.5 rounded-xl font-semibold hover:text-primary hover:bg-transparent group-hover:flex transition-all"
+            className={cn("hidden px-0.5 !py-0 font-semibold hover:text-primary hover:bg-transparent group-hover:flex items-start transition-all", loading && "flex")}
+            disabled={loading}
         >
-            <Sparkles className="w-4 h-4" />
+            {loading ? <Sparkles className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
         </Button>
     );
 };
