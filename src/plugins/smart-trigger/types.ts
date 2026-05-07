@@ -1,4 +1,4 @@
-import {StageResponseType} from '@/types';
+import { StageResponseType } from '@/types';
 
 export type ConfigType = {
     condition: {

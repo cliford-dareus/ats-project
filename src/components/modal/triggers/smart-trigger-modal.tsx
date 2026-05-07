@@ -1,6 +1,6 @@
 import {Dialog,DialogContent} from '@/components/ui/dialog';
 import React from 'react';
-import { TriggerAction } from '@/lib/smart-trigger/types';
+import { TriggerAction } from '@/plugins/smart-trigger/types';
 import SmartLocationTriggerForm from './smart-location-trigger-form';
 import SmartExperienceTriggerForm from './smart-experience-trigger-form';
 import SmartEmailTriggerForm from './smart-email-trigger-form';

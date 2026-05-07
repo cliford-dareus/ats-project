@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { canCreateJob } from "../permissions";
-import { create_organization, add_department_in_organization as add_department_query, get_organization_by_id, update_organization_plugins, get_organization_by_subdomain } from "../queries";
+import { create_organization, add_department_in_organization as add_department_query, get_organization_by_id, update_organization_plugins, get_organization_by_subdomain, toggle_organization_plugin } from "../queries";
 import { departmentSchema, inviteMemberSchema, organizationSchema } from "@/zod";
 
 export const create_organization_invite = async (unsafeData: z.infer<typeof inviteMemberSchema>) => {
@@ -71,10 +71,10 @@ export const get_organization_plugins = async (orgId: string) => {
     };
 
     const org = await get_organization_by_id(orgId);
-    return org[0].plugins || { enabled: [], settings: {} };
+    return org[0]?.plugins || { enabled: [], settings: {} };
 };
 
-export const update_organization_plugins_action = async (orgId: string, enabled: boolean, pluginId: string) => {
+export const update_organization_plugins_action = async (orgId: string, settings: object, pluginId: string) => {
     const { userId } = await auth();
     const canCreate = await canCreateJob(userId);
 
@@ -82,5 +82,16 @@ export const update_organization_plugins_action = async (orgId: string, enabled:
         throw new Error("You are not authorized to create an organization");
     };
 
-    return await update_organization_plugins(orgId, enabled, pluginId);
+    return await update_organization_plugins(orgId, pluginId, settings);
+};
+
+export const toggle_organization_plugin_action = async (orgId: string, enabled: boolean, pluginId: string) => {
+    const { userId } = await auth();
+    const canCreate = await canCreateJob(userId);
+
+    if (!userId || !canCreate) {
+        throw new Error("You are not authorized to create an organization");
+    };
+
+    return await toggle_organization_plugin(orgId, enabled, pluginId);
 };

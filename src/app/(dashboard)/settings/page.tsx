@@ -1,15 +1,22 @@
-import ManagePlugins from "@/components/manage-plugins";
-import {auth} from "@clerk/nextjs/server";
-import {Separator} from "@/components/ui/separator";
+import { auth } from "@clerk/nextjs/server";
+
+import { AVAILABLE_PLUGINS } from "@/plugins/registry";
+import { get_extensions_installed } from "@/lib/plugins-registry";
+import InstalledExtensions from "./_components/installed-extentions";
+import AvailableExtensions from "./_components/available-extentions";
+
 
 const Page = async () => {
-    const {orgId} = await auth();
+    const { orgId } = await auth();
+    if (!orgId) return null;
+
+    const installed = await get_extensions_installed(orgId);
+    const available = AVAILABLE_PLUGINS.filter((plugin) => !installed?.some((p) => p.id === plugin.id));
 
     return (
-        <div className="p-4">
-            <h1>Settings</h1>
-            <Separator />
-            <ManagePlugins orgId={orgId as string}/>
+        <div className="space-y-12">
+            <InstalledExtensions installed={installed!} orgId={orgId} />
+            <AvailableExtensions available={available} />
         </div>
     );
 };

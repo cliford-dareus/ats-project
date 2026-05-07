@@ -1,7 +1,7 @@
 'use client';
 
 import React, {createContext, useContext, useState} from 'react';
-import {StageTrigger, TriggerTask} from "@/lib/smart-trigger/types";
+import {StageTrigger, TriggerTask} from "@/plugins/smart-trigger/types";
 import {get_all_tasks_action} from "@/server/actions/application_actions";
 
 type KanbanContextType = {

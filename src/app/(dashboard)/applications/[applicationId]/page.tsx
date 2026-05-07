@@ -4,7 +4,7 @@ import { ApplicationResponseType, JobExperienceType } from "@/types";
 import InternalNoteSection from "@/components/internal-note-section";
 import { get_job_listings_stages } from "@/server/queries";
 import { get_candidate_details } from '@/server/queries/mongo/candidate-details';
-import { ApplicationSummary, ApplicationExperienceMatch, EmptyApplicationSummary, ApplicationExperience } from './_components/application-summary';
+import { ApplicationSummary, ApplicationExperienceMatch, EmptyApplicationSummary, ApplicationExperience, ApplicationSoftSkills } from './_components/application-summary';
 import { get_job_by_id_action } from '@/server/actions/job-listings-actions';
 import ApplicationDetails from './_components/application-details';
 import AppicationHeader from './_components/application-header';
@@ -57,6 +57,10 @@ const Page = async ({ params }: Props) => {
                                         jobSkills={
                                             job.job_technologies as unknown as JobExperienceType[]
                                         }
+                                    />
+
+                                    <ApplicationSoftSkills
+                                        softSkills={candidateDetails.skills}
                                     />
 
                                     <ApplicationSummary

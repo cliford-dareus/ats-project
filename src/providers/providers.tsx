@@ -11,7 +11,8 @@ type Props = {
 
 const Provider = async ({children, orgId}: Props) => {
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const initialPlugins = await useServerFlags(orgId);
+    const flags = await useServerFlags(orgId);
+    const initialPlugins = Object.keys(flags);
     return (
         <SocketProvider>
             <NewJobContextProvider>

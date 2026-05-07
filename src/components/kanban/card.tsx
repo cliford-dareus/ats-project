@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { getTimeElapsed } from "@/lib/utils";
 import { Calendar, Clock, ExternalLink, GripVertical } from "lucide-react";
-import { TriggerTask } from "@/lib/smart-trigger/types";
+import { TriggerTask } from "@/plugins/smart-trigger/types";
 import { useKanbanContext } from "@/providers/kanban-provider";
 import ScheduleInterviewModal from "@/components/modal/schedule-interview-modal";
 

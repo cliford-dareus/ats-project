@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { TriggerAction } from "@/lib/smart-trigger/types";
+import { TriggerAction } from "@/plugins/smart-trigger/types";
 import { Form, FormField, FormLabel } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";

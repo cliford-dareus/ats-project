@@ -1,14 +1,14 @@
 import Column from "@/components/kanban/column";
-import {useEffect, useState} from "react";
-import {ApplicationType, StageResponseType} from "@/types";
+import { useEffect, useState } from "react";
+import { ApplicationType, StageResponseType } from "@/types";
 
 type Props = {
     data: ApplicationType[];
     stages: StageResponseType[];
-    jobDetails: {jobName: string, department: string}
+    jobDetails: { jobName: string, department: string }
 };
 
-const Kanban = ({data, stages, jobDetails}: Props) => {
+const Kanban = ({ data, stages, jobDetails }: Props) => {
     const [jobs, setJobs] = useState<ApplicationType[]>();
     const [showTriggers, setShowTriggers] = useState(false);
 
@@ -16,7 +16,7 @@ const Kanban = ({data, stages, jobDetails}: Props) => {
         setJobs(data)
     }, []);
 
-    return(
+    return (
         <div className="flex h-full gap-4 overflow-y-hidden overflow-x-scroll">
             {stages?.map((stage) => (
                 <Column
@@ -31,6 +31,7 @@ const Kanban = ({data, stages, jobDetails}: Props) => {
                     setCards={setJobs}
                     showTriggers={showTriggers}
                     setShowTriggers={setShowTriggers}
+                    orgId={data[0].organization}
                 />
             ))}
         </div>

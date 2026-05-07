@@ -1,21 +1,20 @@
 "use client";
 
-import React, {DragEvent, Dispatch, useEffect, useState, SetStateAction} from "react";
+import React, { DragEvent, Dispatch, useEffect, useState, SetStateAction } from "react";
 import Card from "@/components/kanban/card";
 import { ApplicationType, StageResponseType } from "@/types";
 import DropIndicator from "@/components/kanban/drop-indicator";
-import {moveApplicationAndReorder} from "@/server/actions/application_actions";
+import { moveApplicationAndReorder } from "@/server/actions/application_actions";
 import { JOB_ENUM } from "@/zod";
 import { cn } from "@/lib/utils";
 import { useModalDialog } from "@/hooks/use-modal-dialog";
 import TriggerCard from "../trigger-card";
 import { useKanbanContext } from "@/providers/kanban-provider";
-import { usePlugin } from "@/providers/plugin-provider";
-import { lifecycle } from "@/lib/smart-trigger/lifecycle";
 import { useSocket } from "@/providers/socket-provider";
 import SmartTriggerModal from "@/components/modal/triggers/smart-trigger-modal";
 import ColumnHeader from "./column-header";
 import { add_trigger_to_stage_action } from "@/server/actions/stage_actions";
+import { useSmartTriggers } from "@/hooks/use-smart-trigger";
 
 type Props = {
     title: string;
@@ -27,32 +26,31 @@ type Props = {
     showTriggers: boolean;
     setShowTriggers: Dispatch<SetStateAction<boolean>>;
     jobId: number;
-    jobDetails: {jobName: string, department: string}
+    orgId: string;
+    jobDetails: { jobName: string, department: string }
 };
 
 export default function Column({
-                                   title,
-                                   stage,
-                                   cards,
-                                   color,
-                                   column,
-                                   setCards,
-                                   showTriggers,
-                                   setShowTriggers,
-                                   jobId,
-                                    jobDetails
-                               }: Props) {
+    title,
+    stage,
+    cards,
+    color,
+    column,
+    setCards,
+    showTriggers,
+    setShowTriggers,
+    jobId,
+    orgId,
+    jobDetails
+}: Props) {
     const { socket } = useSocket();
     const [active, setActive] = useState(false);
-    const [openSmartMove, setOpenSmartMove] = useState({
-        type: "",
-        stage: "",
-        action_type: "",
-    });
+    const [openSmartMove, setOpenSmartMove] = useState({ type: "", stage: "", action_type: "" });
     const { isModalOpen, openModal, closeModal } = useModalDialog();
-    const { triggers, jobStages, fetchApplicationTasks } = useKanbanContext();
-    const hasSmartTrigger = usePlugin("smart-triggers");
-    const smartTriggers = lifecycle;
+    const {  fetchApplicationTasks } = useKanbanContext();
+    // const hasSmartTrigger = usePlugin("smart-triggers");
+    // const smartTriggers = lifecycle;
+    const { isEnabled, triggerAction, stages } = useSmartTriggers(jobId, orgId);
 
     // ────────────────────────────────────────────────
     // Drag & Drop Logic
@@ -125,12 +123,12 @@ export default function Column({
         let payload: any = {
             applicationId: movedCard.id,
             newStageId: dropStageId,
-            targetOrders:targetUpdates,
+            targetOrders: targetUpdates,
         };
 
         // If move, reassign orders to source stage
         if (isMove) {
-            const sourceStage = jobStages.find((s) => s.stage_name === originalStageName);
+            const sourceStage = stages.find((s) => s.stage_name === originalStageName);
             if (sourceStage) {
                 const sourceCards = newCards
                     .filter((c) => c.stage === originalStageName)
@@ -144,7 +142,7 @@ export default function Column({
                 payload = {
                     ...payload,
                     sourceStageId: sourceStage.id,
-                    sourceOrders:sourceUpdates,
+                    sourceOrders: sourceUpdates,
                 };
             }
         }
@@ -161,14 +159,12 @@ export default function Column({
             }
 
             // Trigger smart actions if enabled
-            if (smartTriggers?.triggerAction && hasSmartTrigger) {
-                await smartTriggers.triggerAction(triggers, {
-                    applicationId: cardId,
-                    stageId: dropStageId,
-                    stageName: stage.stage_name!,
-                    jobId,
-                });
-            }
+            await triggerAction({
+                applicationId: cardId,
+                stageId: dropStageId,
+                stageName: stage.stage_name!
+            });
+
 
             await fetchApplicationTasks();
         }
@@ -237,7 +233,7 @@ export default function Column({
             if (!appId || !newStageId) return;
 
             // 1. Find the target stage object to get the name
-            const targetStage = jobStages.find(s => s.id === newStageId);
+            const targetStage = stages.find(s => s.id === newStageId);
             if (!targetStage) return;
 
             let actionPayload: any = null;
@@ -283,7 +279,7 @@ export default function Column({
                         id: c.id,
                         position: c.position_in_stage
                     })),
-                    sourceStageId: isMove ? jobStages.find(s => s.stage_name === originalStageName)?.id : undefined,
+                    sourceStageId: isMove ? stages.find(s => s.stage_name === originalStageName)?.id : undefined,
                     sourceOrders: isMove ? finalSourceCards.map(c => ({
                         id: c.id,
                         position: c.position_in_stage
@@ -314,7 +310,7 @@ export default function Column({
         return () => {
             socket.off("job-completed", onJobCompleted);
         };
-    }, [socket, jobId, column, setCards, jobStages, stage]);
+    }, [socket, jobId, column, setCards, stages, stage]);
 
     // ────────────────────────────────────────────────
     // Render
@@ -324,7 +320,7 @@ export default function Column({
         .filter((c) => c.stage === column)
         .sort((a, b) => (a.position_in_stage ?? 0) - (b.position_in_stage ?? 0));
 
-    const stageTriggers = jobStages.filter((s) => s.stage_name === stage.stage_name);
+    const stageTriggers = stages.filter((s) => s.stage_name === stage.stage_name);
 
     const onSubmitTrigger = async (data: any) => {
         try {
@@ -338,7 +334,7 @@ export default function Column({
         <div className="min-w-[230px] w-[230px]">
             {/* Smart Triggers Row */}
             <span className="sr-only">Smart Triggers</span>
-            {hasSmartTrigger && showTriggers && (
+            {isEnabled && showTriggers && (
                 <div className="mb-3 space-y-2">
                     {stageTriggers.map((st) => (
                         <TriggerCard key={st.id} stage={st} />
@@ -353,7 +349,7 @@ export default function Column({
                 stage={stage.stage_name}
                 openModal={openModal}
                 filteredCards={filteredCards}
-                hasSmartTrigger={hasSmartTrigger}
+                hasSmartTrigger={isEnabled}
                 setShowTriggers={setShowTriggers}
                 setOpenSmartMove={setOpenSmartMove}
             />

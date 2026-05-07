@@ -2,7 +2,7 @@
 import {db} from "@/drizzle/db";
 import {stages, triggers} from "@/drizzle/schema";
 import { CACHE_TAGS, dbCache, getGlobalTag } from "@/lib/cache";
-import { TriggerAction } from "@/lib/smart-trigger/types";
+import { TriggerAction } from "@/plugins/smart-trigger/types";
 import { eq } from "drizzle-orm";
 
 export const get_stage_by_name = async (stageName: string) => {

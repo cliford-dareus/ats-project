@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import React from "react";
 import {usePathname, useRouter} from "next/navigation";
-import SidebarSettings from "@/app/(dashboard)/settings/_components/sidebar-settings";
+import SidebarSettings from "@/app/(dashboard)/settings/_components/settings-sidebar";
 import JobListingSidebar from "@/app/(dashboard)/jobs/_components/job-listing-sidebar";
 import CandidatesSidebar from "@/app/(dashboard)/candidates/_components/candidates-sidebar";
 import ReportsSidebar from "@/app/(dashboard)/reports/_components/reports-sidebar";
@@ -84,9 +84,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
     const activeItem = data.navMain.find(nav =>
         nav.url === "/" ? pathname === "/" : pathname.startsWith(nav.url)
     ) || data.navMain[0];
-
-    
-
+   
     return (
         <Sidebar
             variant="floating"

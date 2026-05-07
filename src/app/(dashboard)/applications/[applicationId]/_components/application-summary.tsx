@@ -77,6 +77,26 @@ export const ApplicationSummary = ({ candidate_id, resumeSummary, key_accomplish
     );
 };
 
+export const ApplicationSoftSkills = ({ softSkills }: { softSkills: string[] }) => {
+    return (
+        <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-zinc-100 bg-zinc-50/50 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-zinc-400" />
+                    <h3 className="text-[11px] font-bold text-brand-dark uppercase tracking-widest">
+                        Soft Skills
+                    </h3>
+                </div>
+            </div>
+            <div className="flex flex-wrap gap-2 p-4">
+                {softSkills.map((skill, index) => (
+                    <div key={index} className="px-4 py-2 bg-accent/10 text-accent break-keep rounded-lg">{skill}</div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
 export const ApplicationExperience = ({ experience, }: { experience: CandidateExperience[] }) => {
     return (
         <div>
@@ -235,6 +255,7 @@ export const EmptyApplicationSummary = ({ candidate_id }: { candidate_id: number
                                         AI.
                                     </p>
                                     <Button
+                                        disabled={loading}
                                         onClick={() => analyzeCandidate(candidate_id)}
                                         className="inline-flex items-center gap-2 bg-black text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-brand-700 transition-all shadow-lg shadow-brand-500/20"
                                     >

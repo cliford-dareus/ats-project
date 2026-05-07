@@ -4,7 +4,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { StageResponseType, TriggerResponseType } from "@/types";
 import { ArrowRight, GitCompareArrows, Network, Send, Zap } from "lucide-react"
-import { ConfigType } from "@/lib/smart-trigger/types";
+import { ConfigType } from "@/plugins/smart-trigger/types";
 
 type Props = {
     stage: StageResponseType;

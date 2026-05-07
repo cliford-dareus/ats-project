@@ -3,7 +3,7 @@ import { locationTriggerSchema } from '@/zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { JOB_STAGES } from '@/zod';
-import { TriggerAction } from "@/lib/smart-trigger/types";
+import { TriggerAction } from "@/plugins/smart-trigger/types";
 import { z } from "zod";
 import { Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";

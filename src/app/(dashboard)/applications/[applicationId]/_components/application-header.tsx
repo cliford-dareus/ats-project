@@ -5,11 +5,14 @@ import {
     DropdownMenu,
     DropdownMenuContent, DropdownMenuItem,
     DropdownMenuLabel,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 import { ApplicationResponseType, StageResponseType } from "@/types";
-import { AlertCircle, CheckCircle, ChevronDown, Clock, Eye, MessageSquare, Star, XCircle } from "lucide-react";
+import { AlertCircle, CheckCircle, ChevronDown, Clock, Eye, MessageSquare, Star, UserCheck, UserX, XCircle } from "lucide-react";
 
 type Props = {
     applicationResult: ApplicationResponseType;
@@ -48,59 +51,75 @@ const AppicationHeader = ({ applicationResult, stages }: Props) => {
 
             <div className="flex items-center gap-3">
                 <button
-                    className="px-4 py-2 border border-zinc-200 rounded-lg text-sm font-medium text-zinc-600 hover:bg-zinc-50 transition-all flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4" />
+                    className="px-4 !py-2 border border-zinc-200 rounded-lg text-[10px] uppercase tracking-widest font-bold text-zinc-600 hover:bg-zinc-50 transition-all flex items-center gap-2">
+                    <MessageSquare size={14} />
                     Message
                 </button>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button className="gap-2">
-                            <CheckCircle size={16} />
-                            <span>Advance</span>
-                            <ChevronDown size={16} />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Advance Candidate</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {stages.map(stage => (
-                            <DropdownMenuItem key={stage.id}>
-                                <Eye size={16} className="mr-2" />
-                                {stage.stage_name}
-                            </DropdownMenuItem>
-                        ))}
-                    </DropdownMenuContent>
-                </DropdownMenu>
 
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="destructive" className="gap-2">
-                            <XCircle size={16} />
-                            <span>Reject</span>
-                            <ChevronDown size={16} />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Rejection Reasons</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem>
-                            <AlertCircle size={16} className="mr-2" />
-                            Not qualified
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                            <CheckCircle size={16} className="mr-2" />
-                            Position filled
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                            <Clock size={16} className="mr-2" />
-                            No response
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                            <XCircle size={16} className="mr-2" />
-                            Other
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                <div className="flex">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <button className="px-4 py-2 bg-primary text-white text-[10px] font-bold rounded-l-lg uppercase tracking-widest flex items-center gap-2 hover:bg-brand-primary/90 transition-colors">
+                                <UserCheck size={14} />
+                                Advance
+                                <ChevronDown size={14} />
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuRadioGroup
+                                value={applicationResult?.current_stage as string}
+                                // onValueChange={moveToStage}
+                            >
+                                <DropdownMenuLabel>Advance Candidate</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                {stages.map((stage) => (
+                                    <DropdownMenuRadioItem
+                                        value={stage.stage_name as string}
+                                        key={stage.id}
+                                        className={cn(
+                                            "cursor-pointer",
+                                            applicationResult.current_stage === stage.stage_name
+                                                ? "bg-accent text-accent-foreground"
+                                                : "",
+                                        )}
+                                    >
+                                        {stage.stage_name}
+                                    </DropdownMenuRadioItem>
+                                ))}
+                            </DropdownMenuRadioGroup>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <button className="px-4 py-2 bg-red-500 text-white text-[10px] font-bold rounded-r-lg uppercase tracking-widest flex items-center gap-2 hover:bg-red-600 transition-colors">
+                                <UserX size={14} />
+                                Reject
+                                <ChevronDown size={14} />
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Rejection Reasons</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem>
+                                <AlertCircle size={16} className="mr-2" />
+                                Not qualified
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                                <CheckCircle size={16} className="mr-2" />
+                                Position filled
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                                <Clock size={16} className="mr-2" />
+                                No response
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                                <XCircle size={16} className="mr-2" />
+                                Other
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
             </div>
         </div>
     );

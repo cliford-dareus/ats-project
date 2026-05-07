@@ -1,11 +1,11 @@
 "use client"
 
-import {MessageSquare} from "lucide-react";
-import React, {useState, useEffect} from "react";
-import {Button} from "@/components/ui/button";
+import { MessageSquare } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import CreateNoteModal from "@/components/modal/create-note-modal";
-import {NoteType} from "@/types";
-import {get_application_notes} from "@/server/queries/mongo/note";
+import { NoteType } from "@/types";
+import { get_application_notes } from "@/server/queries/mongo/note";
 
 type Props = {
     parent_type: string;
@@ -13,15 +13,15 @@ type Props = {
     selectedId: number | undefined;
 }
 
-const InternalNoteSection = ({parent_type, parent_id, selectedId}: Props) => {
-    const [internalNotes, setInternalNotes] = useState<{notes: NoteType[]}>({notes: []});
+const InternalNoteSection = ({ parent_type, parent_id, selectedId }: Props) => {
+    const [internalNotes, setInternalNotes] = useState<{ notes: NoteType[] }>({ notes: [] });
     const [isOpen, setIsOpen] = useState(false);
 
 
     useEffect(() => {
         const fetchInternalNotes = async () => {
-            if(selectedId){
-                const internalNotes = await get_application_notes({id: selectedId, limit: 10, offset: 0})
+            if (selectedId) {
+                const internalNotes = await get_application_notes({ id: selectedId, limit: 10, offset: 0 })
                 setInternalNotes(JSON.parse(internalNotes))
             }
         }
@@ -32,7 +32,7 @@ const InternalNoteSection = ({parent_type, parent_id, selectedId}: Props) => {
         <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6 space-y-4">
             <div className="flex items-center gap-4">
                 <h3 className="font-bold flex items-center gap-2 text-foreground uppercase tracking-widest">
-                    <MessageSquare className="w-4 h-4 text-foreground/30"/>
+                    <MessageSquare className="w-4 h-4 text-foreground/30" />
                     Job Notes
                 </h3>
                 <span

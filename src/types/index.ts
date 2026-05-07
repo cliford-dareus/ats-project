@@ -92,6 +92,7 @@ export interface ApplicationType {
     created_at: Date;
     updated_at: Date;
     job_id: number;
+    organization: string;
     stage: typeof JOB_STAGES._type | null | undefined;
     current_stage_id?: number | null;
     stage_order_id?: number | null;

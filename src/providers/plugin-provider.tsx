@@ -2,20 +2,18 @@
 
 import React, { createContext, useContext, useState } from 'react';
 
-type Plugins = Record<string, boolean>;
+type Plugins = string[];
 
-const PluginContext = createContext<Plugins>({});
+const PluginContext = createContext<Plugins>([]);
 
 export function PluginProvider({ children, initialPlugins }: {
     children: React.ReactNode;
     initialPlugins: Plugins
 }) {
-    const [plugins, setPlugins] = useState(initialPlugins);
-
-    // Optional: live updates via WebSocket / polling in real SaaS
+    const [plugins] = useState(initialPlugins);
     return <PluginContext.Provider value={plugins}>{children}</PluginContext.Provider>;
 };
 
 export function usePlugin(key: string) {
-    return useContext(PluginContext)[key] ?? false;
+    return useContext(PluginContext).includes(key);
 };

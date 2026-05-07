@@ -3,7 +3,7 @@
 import {auth} from "@clerk/nextjs/server";
 import {canCreateJob} from "@/server/permissions";
 import {add_trigger_to_stage, get_stage_by_name} from "@/server/queries/drizzle/stages";
-import {TriggerAction} from "@/lib/smart-trigger/types";
+import {TriggerAction} from "@/plugins/smart-trigger/types";
 import { addTaskToQueue } from "../queries";
 
 export const get_stage_by_name_action = async (stageName: string) => {

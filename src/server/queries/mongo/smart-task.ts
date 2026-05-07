@@ -3,7 +3,7 @@
 import { taskQueue } from "@/lib/queue";
 import mongodb from "@/lib/mongodb";
 import Trigger from "@/models/trigger";
-import { TriggerAction } from "@/lib/smart-trigger/types";
+import { TriggerAction } from "@/plugins/smart-trigger/types";
 import { milliseconds } from "date-fns";
 import { db } from "@/drizzle/db";
 import { stages } from "@/drizzle/schema";

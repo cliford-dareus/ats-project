@@ -9,7 +9,7 @@ import { experienceTriggerSchema } from "@/zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useTransition } from "react";
-import { TriggerAction } from "@/lib/smart-trigger/types";
+import { TriggerAction } from "@/plugins/smart-trigger/types";
 
 const SmartExperienceTriggerForm = ({ onSubmit }: { onSubmit: (data: TriggerAction) => void }) => {
     const [isPendind, startTransition] = useTransition();

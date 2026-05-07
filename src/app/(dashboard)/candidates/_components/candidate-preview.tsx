@@ -287,7 +287,7 @@ const CandidatePreview = ({ data, candidates }: Props) => {
 
                     {/* Internal Notes & Comments */}
                     <InternalNoteSection
-                        parent_type="canditate"
+                        parent_type="canditates"
                         parent_id={currentCandidate?.id}
                         selectedId={currentCandidate?.id}
                     />

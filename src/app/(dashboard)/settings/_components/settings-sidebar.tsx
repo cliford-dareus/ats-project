@@ -3,20 +3,20 @@ import Link from "next/link";
 
 const settingsData = [
     {
-        title: "Settings",
+        title: "Plugins",
         url: "/"
     },
     {
-        title: "Organization",
+        title: "Organization Profile",
         url: "/organization"
     },
     {
-        title: "Profile",
-        url: "/create-organization",
+        title: "General Settings",
+        url: "/general-settings",
     }
 ]
 
-const SidebarSettings = () => {
+const SettingsSidebar = () => {
     return (
         <>
             {settingsData.map((setting) => (
@@ -33,4 +33,4 @@ const SidebarSettings = () => {
     );
 };
 
-export default SidebarSettings;
+export default SettingsSidebar;

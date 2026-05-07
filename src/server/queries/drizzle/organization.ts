@@ -12,7 +12,7 @@ export const create_organization = async (data: z.infer<typeof organizationSchem
     }).$returningId();
 };
 
-export const update_organization_plugins = async (orgId: string, enabled: boolean, pluginId: string) => {
+export const update_organization_plugins = async (orgId: string, pluginId: string, settings?: object) => {
     try {
         const result = await db
             .select({ plugins: organization.plugins })
@@ -24,15 +24,48 @@ export const update_organization_plugins = async (orgId: string, enabled: boolea
         };
 
         const pluginsData = result[0].plugins as { enabled: string[]; settings?: object };
+        const updatedSettings = settings ? settings : pluginsData.settings;
+
+        const updatedPlugins = {
+            ...pluginsData,
+            settings: {
+                ...pluginsData.settings,
+                [pluginId]: updatedSettings,
+            },
+        };
+
+        await db
+            .update(organization)
+            .set({ plugins: updatedPlugins })
+            .where(eq(organization.clerk_id, orgId));
+
+        return { message: "Success" };
+    } catch (error) {
+        console.error('Error toggling plugin:', error);
+        return { error: "Internal server error" };
+    }
+};
+
+export const toggle_organization_plugin = async (orgId: string, enabled: boolean, pluginId: string) => {
+    try {
+        const org = await db.select()
+            .from(organization)
+            .where(eq(organization.clerk_id, orgId));
+
+        if (org.length === 0) {
+            return { error: "Organization not found" };
+        }
+
+        const pluginsData = org[0].plugins as { enabled: string[]; settings?: object };
         const updatedEnabled = enabled
             ? [...new Set([...pluginsData.enabled, pluginId])] // Add pluginId
             : pluginsData.enabled.filter((id: string) => id !== pluginId); // Remove pluginId
-
+        
         const updatedPlugins = {
             ...pluginsData,
             enabled: updatedEnabled,
         };
-
+        
         await db
             .update(organization)
             .set({ plugins: updatedPlugins })
