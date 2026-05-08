@@ -35,7 +35,7 @@ export const addTaskToQueue = async (id: number, action: TriggerAction, stage_na
         application_id: id
     });
 
-    await taskQueue.add('executeTask', {
+    await taskQueue.add('smart_trigger', {
         application_id: id,
         trigger_id: trigger._id,
         type: action.action_type,

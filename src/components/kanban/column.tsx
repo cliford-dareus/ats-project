@@ -47,7 +47,7 @@ export default function Column({
     const [active, setActive] = useState(false);
     const [openSmartMove, setOpenSmartMove] = useState({ type: "", stage: "", action_type: "" });
     const { isModalOpen, openModal, closeModal } = useModalDialog();
-    const {  fetchApplicationTasks } = useKanbanContext();
+    const { fetchApplicationTasks } = useKanbanContext();
     // const hasSmartTrigger = usePlugin("smart-triggers");
     // const smartTriggers = lifecycle;
     const { isEnabled, triggerAction, stages } = useSmartTriggers(jobId, orgId);
@@ -165,11 +165,8 @@ export default function Column({
                 stageName: stage.stage_name!
             });
 
-
             await fetchApplicationTasks();
         }
-
-
     };
 
     const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
@@ -221,7 +218,6 @@ export default function Column({
     // ────────────────────────────────────────────────
     // Socket – handle external job completion
     // ────────────────────────────────────────────────
-
     useEffect(() => {
         if (!socket || !jobId) return;
 
@@ -315,7 +311,6 @@ export default function Column({
     // ────────────────────────────────────────────────
     // Render
     // ────────────────────────────────────────────────
-
     const filteredCards = cards
         .filter((c) => c.stage === column)
         .sort((a, b) => (a.position_in_stage ?? 0) - (b.position_in_stage ?? 0));
@@ -353,7 +348,6 @@ export default function Column({
                 setShowTriggers={setShowTriggers}
                 setOpenSmartMove={setOpenSmartMove}
             />
-
 
             {/* Cards + Drop Zone */}
             <div

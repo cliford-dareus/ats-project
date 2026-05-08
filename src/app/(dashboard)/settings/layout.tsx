@@ -1,13 +1,13 @@
-import {auth} from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 
 type Props = {
     children: React.ReactNode
 }
 
-const SettingLayout = async ({children}: Props) =>{
+const SettingLayout = async ({ children }: Props) => {
     const { orgId } = await auth();
-    if(!orgId) return null;
-    
+    if (!orgId) return null;
+
     return (
         <div className="">
             <div className="flex flex-col gap-1 p-4">

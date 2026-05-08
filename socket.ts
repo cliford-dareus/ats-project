@@ -24,20 +24,16 @@ app.prepare().then(() => {
     });
 
     // --- Initialize BullMQ Worker and pass IO ---
-    setupWorker(io);
+    const worker = setupWorker(io);
     // --------------------------------------------
 
     io.on('connection', (socket) => {
         console.log('Client socket connected:', socket.id);
+        
         // Join board-specific room
         socket.on('join-board', (boardId: string) => {
             socket.join(`board:${boardId}`);
             console.log(`Socket ${socket.id} joined board:${boardId}`);
-        });
-
-        // Handle emits from worker (for job-completed)
-        socket.on('internal-job-completed', ({ room, payload }) => {
-            io.to(room).emit('job-completed', payload);  // Broadcast to room
         });
 
         socket.on('disconnect', () => {
@@ -58,18 +54,17 @@ app.prepare().then(() => {
     const shutdown = async () => {
         console.log("\nStopping server gracefully...");
 
-        // 1. Stop accepting new socket connections
+        // 1. Close BullMQ connections (recommended)
+        if (worker) await worker.close();
+
+        // 2. Stop accepting new socket connections
         io.close();
 
-        // 2. Close the HTTP server
+        // 3. Close the HTTP server
         server.close(() => {
             console.log("HTTP server closed.");
+            process.exit(0);
         });
-
-        // 3. Close BullMQ connections (optional but recommended)
-        // if (worker) await worker.close();
-
-        process.exit(0);
     };
 
     // Listen for Ctrl+C (SIGINT) and System Stop (SIGTERM)

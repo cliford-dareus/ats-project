@@ -1,47 +1,45 @@
 "use client";
 
+import { PluginIcon } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import { PluginInterface, PluginSettings } from "@/plugins/registry";
-import { toggle_organization_plugin_action } from "@/server/actions/organization_actions";
-import { CheckCircle2, Power } from "lucide-react";
-import { ComponentProps, useTransition } from "react";
-import dynamicIconImports from "lucide-react/dynamicIconImports";
-import dynamic from "next/dynamic";
+import { ICON_MAP, PluginInterface, PluginSettings } from "@/plugins/registry";
+import { toggle_organization_plugin_action, update_organization_plugins_action } from "@/server/actions/organization_actions";
+import { CheckCircle2, Loader2, Power } from "lucide-react";
+import { useTransition } from "react";
 
 type InstalledExtensionsProps = {
     orgId: string;
     installed: (PluginInterface & { settings: PluginSettings })[];
 };
 
-type LucideIconName = keyof typeof dynamicIconImports;
-
-type DynamicLucideIconProps = ComponentProps<"svg"> & {
-    name: string;
-};
-
-const DynamicLucideIcon = ({ name, ...props }: DynamicLucideIconProps) => {
-    const iconName = name as LucideIconName;
-
-    if (!dynamicIconImports[iconName]) {
-        return null;
-    }
-
-    const Icon = dynamic(dynamicIconImports[iconName]);
-
-    return <Icon {...props} />;
-};
-
 const InstalledExtensions = ({ installed, orgId }: InstalledExtensionsProps) => {
-    const [, startTransition] = useTransition();
+    const [isPending, startTransition] = useTransition();
 
-    const onToggle = async (pluginId: string, enabled: boolean) => {
+    const onToggleActive = async (pluginId: string, currentStatus: boolean) => {
         startTransition(async () => {
-            await toggle_organization_plugin_action(orgId, enabled, pluginId)
+            try {
+                await update_organization_plugins_action(orgId, !currentStatus, pluginId);
+            } catch (error) {
+                console.error("Failed to toggle plugin status", error);
+            }
+        });
+    };
+
+    const onUninstall = async (pluginId: string) => {
+        if (!confirm("Are you sure you want to uninstall this extension?")) return;
+
+        startTransition(async () => {
+            try {
+                // Assuming false removes it or deactivates it based on your backend logic
+                await toggle_organization_plugin_action(orgId, false, pluginId);
+            } catch (error) {
+                console.error("Failed to uninstall plugin", error);
+            }
         });
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 px-4">
             <div className="flex items-center justify-between">
                 <div className="space-y-1">
                     <h3 className="font-bold text-zinc-900">Active Extensions</h3>
@@ -49,7 +47,7 @@ const InstalledExtensions = ({ installed, orgId }: InstalledExtensionsProps) => 
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {installed.map((plugin) => (
                     <div key={plugin.id} className={cn(
                         "bg-white p-6 rounded-2xl border transition-all group relative",
@@ -57,21 +55,25 @@ const InstalledExtensions = ({ installed, orgId }: InstalledExtensionsProps) => 
                     )}>
                         <div className="flex justify-between items-start mb-4">
                             <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center relative", plugin.bg)}>
-                                <DynamicLucideIcon name={plugin.icon.toLowerCase()} className={cn("w-6 h-6", plugin.color)} />
+                                <PluginIcon name={plugin.id} className={cn("w-6 h-6", plugin.color)} />
                                 {plugin.settings.active && (
                                     <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white shadow-sm" />
                                 )}
                             </div>
                             <div className="flex items-center gap-2">
                                 <button
-                                    onClick={() => onToggle(plugin.id, !plugin.settings.active)}
+                                    onClick={() => onToggleActive(plugin.id, !plugin.settings.active)}
                                     className={cn(
                                         "p-2 rounded-lg transition-all",
                                         plugin.settings.active ? "bg-zinc-100 text-zinc-600 hover:bg-zinc-200" : "bg-brand-50 text-brand-600 hover:bg-brand-100"
                                     )}
                                     title={plugin.settings.active ? "Deactivate" : "Activate"}
                                 >
-                                    <Power className="w-4 h-4" />
+                                    {isPending ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <Power className="w-4 h-4" />
+                                    )}
                                 </button>
                             </div>
                         </div>
@@ -93,7 +95,7 @@ const InstalledExtensions = ({ installed, orgId }: InstalledExtensionsProps) => 
                                 </button>
                                 <div className="w-1 h-1 bg-zinc-200 rounded-full" />
                                 <button
-                                    // onClick={() => onUninstall(plugin.id)}
+                                    onClick={() => onUninstall(plugin.id)}
                                     className="text-xs font-bold text-red-400 hover:text-red-600 transition-colors"
                                 >
                                     Uninstall

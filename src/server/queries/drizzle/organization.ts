@@ -46,7 +46,7 @@ export const update_organization_plugins = async (orgId: string, pluginId: strin
     }
 };
 
-export const toggle_organization_plugin = async (orgId: string, enabled: boolean, pluginId: string) => {
+export const toggle_organization_plugin = async (orgId: string, enabled: boolean, pluginId: string, config?: any) => {
     try {
         const org = await db.select()
             .from(organization)
@@ -56,14 +56,19 @@ export const toggle_organization_plugin = async (orgId: string, enabled: boolean
             return { error: "Organization not found" };
         }
 
-        const pluginsData = org[0].plugins as { enabled: string[]; settings?: object };
+        const pluginsData = org[0].plugins as { enabled: string[]; settings: any };
         const updatedEnabled = enabled
-            ? [...new Set([...pluginsData.enabled, pluginId])] // Add pluginId
-            : pluginsData.enabled.filter((id: string) => id !== pluginId); // Remove pluginId
+            ? [...new Set([...pluginsData.enabled, pluginId])] // install extension
+            : pluginsData.enabled.filter((id: string) => id !== pluginId); // uninstall extension
+        
+        const updatedSettings = enabled
+            ? { ...pluginsData.settings, [pluginId]: { ...pluginsData.settings[pluginId], ...config, active: true } }
+            : { ...pluginsData.settings, [pluginId]: { ...pluginsData.settings[pluginId], active: false } };
         
         const updatedPlugins = {
             ...pluginsData,
             enabled: updatedEnabled,
+            settings: updatedSettings,
         };
         
         await db
@@ -71,6 +76,7 @@ export const toggle_organization_plugin = async (orgId: string, enabled: boolean
             .set({ plugins: updatedPlugins })
             .where(eq(organization.clerk_id, orgId));
 
+        revalidateDbCache({ tag: CACHE_TAGS.organizations });
         return { message: "Success" };
     } catch (error) {
         console.error('Error toggling plugin:', error);

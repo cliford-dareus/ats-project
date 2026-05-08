@@ -7,6 +7,7 @@ import { getEnabledPlugins } from "@/lib/plugins-registry";
 export const smartTriggerLifecycle = {
     isEnabled: async (orgId: string): Promise<boolean> => {
         const plugins = await getEnabledPlugins(orgId);
+        console.log(plugins);
         return plugins.smart_triggers === true;
     },
 

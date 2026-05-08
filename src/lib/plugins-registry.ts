@@ -5,10 +5,12 @@ import { AVAILABLE_PLUGINS } from "@/plugins/registry";
 
 export const getEnabledPlugins = async (orgId: string) => {
     const plugins = await get_organization_plugins(orgId) as { enabled: string[], settings: any };
+    
     const flags: Record<string, boolean> = {};
 
     AVAILABLE_PLUGINS.forEach((plugin) => {
-        flags[plugin.id] = plugins.enabled?.includes(plugin.id);
+        // flags[plugin.id] = plugins.enabled?.includes(plugin.id);
+        flags[plugin.id] = plugins.enabled?.includes(plugin.id) && plugins.settings?.[plugin.id]?.active === true;
     });
 
     return flags;
@@ -21,7 +23,7 @@ export const get_extensions_installed = async (orgId: string) => {
     return plugins.enabled?.map((pluginId) => {
         const plugin = AVAILABLE_PLUGINS.find((p) => p.id === pluginId);
         return { ...plugin, id: pluginId, settings: plugins.settings[pluginId] || {} };
-    });
+    }).filter((plugin) => plugin.settings.active === true);
 
 };
 

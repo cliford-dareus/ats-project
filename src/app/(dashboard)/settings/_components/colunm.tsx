@@ -1,10 +1,10 @@
 "use client"
 
-import {ColumnDef} from "@tanstack/react-table"
-import {Organization, OrganizationMembership} from "@clerk/backend";
-import {OrganizationCustomRoleKey, PublicUserData, UpdateOrganizationMembershipParams} from "@clerk/types";
-import {Button} from "@/components/ui/button";
-import {SelectRole} from "@/app/(dashboard)/settings/_components/selectRole";
+import { ColumnDef } from "@tanstack/react-table"
+import { Organization, OrganizationMembership } from "@clerk/backend";
+import { OrganizationCustomRoleKey, PublicUserData, UpdateOrganizationMembershipParams } from "@clerk/types";
+import { Button } from "@/components/ui/button";
+import { SelectRole } from "@/app/(dashboard)/settings/_components/selectRole";
 
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
@@ -33,7 +33,7 @@ export const columns: ColumnDef<OrganizationMember>[] = [
     {
         id: "select",
         header: "Update Role",
-        cell: ({row}) => {
+        cell: ({ row }) => {
             const org = row.original
             return (
                 <SelectRole
@@ -50,13 +50,13 @@ export const columns: ColumnDef<OrganizationMember>[] = [
     {
         id: "revoke",
         header: "Revoke",
-        cell: ({row}) => {
+        cell: ({ row }) => {
             const org = row.original
             return (
                 <Button
                     onClick={async () => {
-                    await org.destroy()
-                }}>
+                        await org.destroy()
+                    }}>
                     Remove
                 </Button>
             )

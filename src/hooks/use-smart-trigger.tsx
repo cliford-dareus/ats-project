@@ -32,7 +32,7 @@ export function useSmartTriggers(jobId: number, orgId: string) {
             ...data,
             jobId
         });
-    }, [isEnabled, triggers, jobId]);
+    }, [isEnabled, triggers, jobId, orgId]);
 
     useEffect(() => {
         activate();

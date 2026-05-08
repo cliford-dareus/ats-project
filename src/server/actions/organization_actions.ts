@@ -85,7 +85,7 @@ export const update_organization_plugins_action = async (orgId: string, settings
     return await update_organization_plugins(orgId, pluginId, settings);
 };
 
-export const toggle_organization_plugin_action = async (orgId: string, enabled: boolean, pluginId: string) => {
+export const toggle_organization_plugin_action = async (orgId: string, enabled: boolean, pluginId: string, config?: any) => {
     const { userId } = await auth();
     const canCreate = await canCreateJob(userId);
 
@@ -93,5 +93,5 @@ export const toggle_organization_plugin_action = async (orgId: string, enabled: 
         throw new Error("You are not authorized to create an organization");
     };
 
-    return await toggle_organization_plugin(orgId, enabled, pluginId);
+    return await toggle_organization_plugin(orgId, enabled, pluginId, config);
 };
