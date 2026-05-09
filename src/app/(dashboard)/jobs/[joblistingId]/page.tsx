@@ -19,11 +19,8 @@ import {
 import { get_all_candidates_action } from "@/server/actions/candidates-actions";
 import JobTabs from "@/app/(dashboard)/jobs/[joblistingId]/_components/Job-tabs";
 import { KanbanProvider } from "@/providers/kanban-provider";
-// import { useServerFlags } from "@/lib/plugins-registry";
-
 import { get_job_all_applications_action } from "@/server/actions/application_actions";
 import { cn, getStatusColor } from "@/lib/utils";
-// import { smartTriggerLifecycle } from "@/plugins/smart-trigger/lifecycle";
 
 type Props = {
     params: Promise<{
@@ -36,11 +33,6 @@ const Page = async ({ params }: Props) => {
     const { joblistingId: jobListingId } = await params;
     const { orgId } = await auth();
     if (!orgId) return;
-
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    // const flags = await useServerFlags(orgId);
-    const initialTriggers: any[] = [];
-    const initialStages: any[] = [];
 
     const [
         jobsResponse,
@@ -62,22 +54,8 @@ const Page = async ({ params }: Props) => {
     const singleJob = (Array.isArray(singleJobResponse) ? singleJobResponse : [])[0];
     const stages = Array.isArray(stagesResponse) ? stagesResponse : [];
 
-    // if (flags["smart-triggers"]) {
-    //     const context = {
-    //         jobId: jobListingId,
-    //         setTriggers: () => { },
-    //         setJobStages: () => { },
-    //     };
-    //     const result = await smartTriggerLifecycle.activate(context);
-    //     initialStages = result?.validStagesData || [];
-    //     initialTriggers = result?.parsedTriggers || [];
-    // }
-
     return (
-        <KanbanProvider
-            initialStages={initialStages}
-            initialTriggers={initialTriggers}
-        >
+        <KanbanProvider>
             <div className="">
                 <div className="flex flex-col md:flex-row items-center justify-between w-full p-4 overflow-hidden">
                     <div>
@@ -91,8 +69,8 @@ const Page = async ({ params }: Props) => {
                                 >
                                     {singleJob.job_status}
                                 </Badge>
-                                <h1 className="text-2xl font-bold text-zinc-900 leading-tight">
-                                    {singleJob.job_name.toUpperCase()}
+                                <h1 className="text-2xl font-bold text-zinc-900 leading-tight uppercase">
+                                    {singleJob.job_name}
                                 </h1>
                             </div>
 

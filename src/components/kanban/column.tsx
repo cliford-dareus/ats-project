@@ -1,6 +1,6 @@
 "use client";
 
-import React, { DragEvent, Dispatch, useEffect, useState, SetStateAction } from "react";
+import React, { DragEvent, Dispatch, useEffect, useState, SetStateAction, useCallback } from "react";
 import Card from "@/components/kanban/card";
 import { ApplicationType, StageResponseType } from "@/types";
 import DropIndicator from "@/components/kanban/drop-indicator";
@@ -48,9 +48,18 @@ export default function Column({
     const [openSmartMove, setOpenSmartMove] = useState({ type: "", stage: "", action_type: "" });
     const { isModalOpen, openModal, closeModal } = useModalDialog();
     const { fetchApplicationTasks } = useKanbanContext();
-    // const hasSmartTrigger = usePlugin("smart-triggers");
-    // const smartTriggers = lifecycle;
     const { isEnabled, triggerAction, stages } = useSmartTriggers(jobId, orgId);
+
+    const triggerActionFn = useCallback(async (cardId: number, dropStageId: number, stage: StageResponseType) => {
+        // Trigger smart actions if enabled
+        if (!isEnabled) return;
+
+        await triggerAction({
+            applicationId: cardId,
+            stageId: dropStageId,
+            stageName: stage.stage_name!
+        });
+    }, [isEnabled, triggerAction]);
 
     // ────────────────────────────────────────────────
     // Drag & Drop Logic
@@ -159,12 +168,7 @@ export default function Column({
             }
 
             // Trigger smart actions if enabled
-            await triggerAction({
-                applicationId: cardId,
-                stageId: dropStageId,
-                stageName: stage.stage_name!
-            });
-
+            await triggerActionFn(cardId, dropStageId, stage);
             await fetchApplicationTasks();
         }
     };
@@ -298,6 +302,9 @@ export default function Column({
                     console.error("Failed to sync move to database");
                     // Optional: Fetch fresh data from server to rollback UI
                 }
+
+                await triggerActionFn(appId, newStageId, stage);
+                await fetchApplicationTasks();
             }
         };
 
@@ -306,7 +313,7 @@ export default function Column({
         return () => {
             socket.off("job-completed", onJobCompleted);
         };
-    }, [socket, jobId, column, setCards, stages, stage]);
+    }, [socket, jobId, column, setCards, stages, stage, triggerActionFn, fetchApplicationTasks]);
 
     // ────────────────────────────────────────────────
     // Render

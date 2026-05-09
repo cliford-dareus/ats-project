@@ -7,7 +7,6 @@ import {
     Hr,
     Html,
     Img,
-    Link,
     Preview,
     Section,
     Text,
@@ -15,32 +14,32 @@ import {
 import { Tailwind } from "@react-email/tailwind";
 import * as React from "react";
 
-interface InterviewInvitationProps {
+interface ApplicationSubmittedProps {
     candidateName: string;
     jobTitle: string;
-    interviewerNames: string;
-    schedulingLink: string;
     companyName?: string;
     companyLogoUrl?: string;
+    applicationId?: string;           // Optional reference number
+    expectedResponseTime?: string;    // e.g. "within 7-10 business days"
     senderName?: string;
     senderTitle?: string;
 }
 
-export const InterviewInvitationTemplate = ({
+export const ApplicationSubmittedTemplate = ({
     candidateName,
     jobTitle,
-    interviewerNames,
-    schedulingLink,
     companyName = "Acme Corp",
-    companyLogoUrl = "https://via.placeholder.com/150x50/111827/ffffff?text=LOGO",
+    companyLogoUrl = "https://via.placeholder.com/160x50/111827/ffffff?text=LOGO",
+    applicationId,
+    expectedResponseTime = "within 7-10 business days",
     senderName = "Sarah Chen",
     senderTitle = "Talent Acquisition Lead",
-}: InterviewInvitationProps) => {
+}: ApplicationSubmittedProps) => {
     return (
         <Html>
             <Head />
             <Preview>
-                You're invited! Let's schedule your interview for the {jobTitle} role.
+                Thank you for applying to the {jobTitle} position at {companyName}
             </Preview>
 
             <Tailwind>
@@ -58,50 +57,53 @@ export const InterviewInvitationTemplate = ({
                         </Section>
 
                         <Heading className="text-3xl font-bold text-zinc-900 text-center mb-6">
-                            You're Invited to Interview 🎉
+                            Application Received ✅
                         </Heading>
 
                         <Text className="text-xl text-zinc-800 mb-6">Hi {candidateName},</Text>
 
                         <Text className="text-zinc-700 text-[17px] leading-relaxed mb-6">
-                            We're excited to invite you to the next stage of our interview process for the{" "}
-                            <strong className="text-zinc-900">{jobTitle}</strong> position.
+                            Thank you for applying to the <strong className="text-zinc-900">{jobTitle}</strong>{" "}
+                            position at {companyName}. We truly appreciate the time you took to submit your application.
                         </Text>
+
+                        {applicationId && (
+                            <Text className="text-zinc-700 text-[17px] mb-6">
+                                Your application reference: <strong>#{applicationId}</strong>
+                            </Text>
+                        )}
+
+                        <Section className="bg-zinc-50 border border-zinc-200 rounded-lg p-6 mb-8">
+                            <Text className="text-zinc-900 font-semibold mb-3">What happens next?</Text>
+                            <Text className="text-zinc-700 text-[17px] leading-relaxed">
+                                Our team is currently reviewing all applications. We will get back to you{" "}
+                                <strong>{expectedResponseTime}</strong> with an update on the status of your application.
+                            </Text>
+                        </Section>
 
                         <Text className="text-zinc-700 text-[17px] leading-relaxed mb-8">
-                            You'll be meeting with <span className="font-medium">{interviewerNames}</span>.
-                            We were really impressed with your background and can't wait to learn more about
-                            your experience.
+                            In the meantime, feel free to explore more about our company, culture, and
+                            other open roles on our careers page.
                         </Text>
 
-                        {/* CTA Button */}
                         <Section className="text-center my-8">
                             <Button
-                                href={schedulingLink}
-                                className="bg-blue-600 hover:bg-blue-700 transition-colors text-white text-[17px] font-semibold px-8 py-4 rounded-lg text-center no-underline inline-block"
+                                href="https://careers.example.com"
+                                className="bg-zinc-800 hover:bg-black transition-colors text-white text-[17px] font-semibold px-8 py-4 rounded-lg inline-block"
                             >
-                                Schedule Your Interview
+                                Visit Our Careers Page
                             </Button>
                         </Section>
 
-                        <Text className="text-zinc-700 text-[17px] leading-relaxed mb-6">
-                            The link above will let you choose a time that works best for you. Most interviews
-                            last between 45–60 minutes.
+                        <Text className="text-zinc-700 text-[17px] leading-relaxed">
+                            If you have any questions, don't hesitate to reply to this email.
                         </Text>
 
-                        <Hr className="border-zinc-200 my-8" />
-
-                        <Text className="text-zinc-700 text-[17px] leading-relaxed mb-6">
-                            If you have any questions or need to reschedule, feel free to reply to this email.
-                        </Text>
-
-                        <Text className="text-zinc-800 font-semibold text-lg mb-1">
-                            We look forward to speaking with you soon!
+                        <Text className="text-zinc-800 font-semibold mt-8 mb-1">
+                            Best regards,
                         </Text>
 
                         <Text className="text-zinc-600">
-                            Best regards,
-                            <br />
                             {senderName}
                             <br />
                             {senderTitle}
@@ -114,14 +116,6 @@ export const InterviewInvitationTemplate = ({
                         {/* Footer */}
                         <Text className="text-center text-zinc-500 text-sm">
                             © {new Date().getFullYear()} {companyName}. All rights reserved.
-                            <br />
-                            <Link href="https://example.com" className="text-zinc-500 underline">
-                                Unsubscribe
-                            </Link>{" "}
-                            •{" "}
-                            <Link href="https://example.com/privacy" className="text-zinc-500 underline">
-                                Privacy Policy
-                            </Link>
                         </Text>
                     </Container>
                 </Body>
@@ -130,4 +124,4 @@ export const InterviewInvitationTemplate = ({
     );
 };
 
-export default InterviewInvitationTemplate;
+export default ApplicationSubmittedTemplate;

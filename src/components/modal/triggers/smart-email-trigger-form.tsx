@@ -1,5 +1,5 @@
 import { z } from "zod";
-import React, { useState, useTransition } from "react";
+import React, { useEffect, useState, useTransition } from "react";
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -7,37 +7,105 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { TriggerAction } from "@/plugins/smart-trigger/types";
 import { Form, FormField, FormLabel } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SmartEmailTriggerSchema } from "@/zod";
+import { EMAIL_TEMPLATES } from "@/lib/templates";
+import { Textarea } from "@/components/ui/textarea";
+import { DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { getEmailTemplates, saveEmailTemplate } from "@/server/queries/mongo/email-templates";
+
+type EmailTemplate = {
+    id: string;
+    name: string;
+    subject: string;
+    body: string;
+};
 
 type Props = {
     onSubmit: (data: TriggerAction) => void;
 };
 
 const SmartEmailTriggerForm = ({ onSubmit }: Props) => {
-    const [templates, setTemplates] = useState<EmailTemplate[]>(emailTemplates);
+    const [savedTemplates, setSavedTemplates] = useState<EmailTemplate[]>([]);
+    const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | undefined>(undefined);
     const [isPending, startTransition] = useTransition();
+    const [showSaveAs, setShowSaveAs] = useState(false);
+    const [newTemplateName, setNewTemplateName] = useState("");
+
     const form = useForm<z.infer<typeof SmartEmailTriggerSchema>>({
         resolver: zodResolver(SmartEmailTriggerSchema),
         defaultValues: {
-            email: '',
-            template: '',
+            subject: '',
+            template: selectedTemplate?.id ?? '',
+            body: '',
             delay: 0,
             delayFormat: "minutes",
         },
     });
 
+    useEffect(() => {
+        const fetchTemplates = async () => {
+            const templates = await getEmailTemplates();
+            setSavedTemplates(templates);
+        };
+        fetchTemplates();
+    }, []);
+
+    const handleTemplateChange = (value: string) => {
+        // Check saved templates first
+        let template = savedTemplates.find(t => t.id === value);
+
+        // Fallback to static templates
+        if (!template) {
+            const temp = EMAIL_TEMPLATES.find(t => t.id === value);
+
+            if (temp) template = {
+                id: temp.id,
+                name: temp.name,
+                subject: temp.defaultProps.subject,
+                body: temp.defaultProps.body,
+            };
+        }
+
+        if (template) {
+            setSelectedTemplate(template);
+            form.setValue('template', value);
+            form.setValue('subject', template.subject || '');
+            form.setValue('body', template.body || '');
+        }
+    };
+
+    const handleSaveAsTemplate = async () => {
+        if (!newTemplateName.trim()) return alert("Please enter a template name");
+
+        const values = form.getValues();
+
+        const result = await saveEmailTemplate({
+            name: newTemplateName.trim(),
+            subject: values.subject,
+            body: values.body,
+        });
+
+        if (result.success) {
+            alert("Template saved successfully!");
+            setShowSaveAs(false);
+            setNewTemplateName("");
+
+            // Refresh saved templates
+            const updated = await getEmailTemplates();
+            setSavedTemplates(updated);
+        }
+    };
+
     const handleSubmit = (data: z.infer<typeof SmartEmailTriggerSchema>) => {
         startTransition(async () => {
             onSubmit({
                 id: 0,
-                action_type: "email",
+                action_type: "EMAIL",
                 config: {
-                    condition: {
-                        type: "email",
-                        target: data.email,
+                    email: {
+                        subject: data.subject,
                         template: data.template,
+                        body: data.body,
                     },
                     delay: data.delay,
                     delayFormat: data.delayFormat,
@@ -46,8 +114,12 @@ const SmartEmailTriggerForm = ({ onSubmit }: Props) => {
         });
     };
 
-    return (
+    const allTemplates = [
+        ...EMAIL_TEMPLATES.map(t => ({ ...t, isSaved: false })),
+        ...savedTemplates.map(t => ({ ...t, isSaved: true }))
+    ];
 
+    return (
         <div>
             <DialogHeader>
                 <DialogTitle>Smart Trigger</DialogTitle>
@@ -57,20 +129,15 @@ const SmartEmailTriggerForm = ({ onSubmit }: Props) => {
             </DialogHeader>
 
             <div className='border p-4 bg-muted rounded-md'>
-                <div className="flex flex-col">
-                    <span>Smart Email</span>
-                    <span className='text-sm text-muted-foreground'>Add Trigger based on candidates Email</span>
-                </div>
-
                 <Form {...form}>
                     <form id="form" onSubmit={form.handleSubmit(handleSubmit)}>
                         <div className="flex gap-4 mt-4">
                             <FormField
                                 control={form.control}
-                                name="email"
+                                name="subject"
                                 render={({ field }) => (
                                     <div className='flex-1 gap-2'>
-                                        <FormLabel>if candidate has email</FormLabel>
+                                        <FormLabel>Subject</FormLabel>
                                         <Input type="text" {...field} />
                                     </div>
                                 )}
@@ -81,37 +148,36 @@ const SmartEmailTriggerForm = ({ onSubmit }: Props) => {
                                 name="template"
                                 render={({ field }) => (
                                     <div className='flex-1 gap-2'>
-                                        <FormLabel>Send Email</FormLabel>
-                                        <Select name="template" onValueChange={field.onChange}
-                                            defaultValue={field.value}>
+                                        <FormLabel>Template</FormLabel>
+                                        <Select
+                                            name="template"
+                                            defaultValue={field.value}
+                                            onValueChange={handleTemplateChange}
+                                        >
                                             <SelectTrigger className="">
                                                 <SelectValue placeholder="Select a template" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {templates.map((template) => (
-                                                    <Tooltip key={template.id} delayDuration={1000}>
-                                                        <TooltipTrigger asChild>
-                                                            <SelectItem value={template.id}>
-                                                                {template.name}
-                                                            </SelectItem>
-                                                        </TooltipTrigger>
-
-                                                        <TooltipContent
-                                                            className="bg-white border rounded-md p-4 max-w-xs shadow-lg"
-                                                            sideOffset={5}
-                                                        >
-                                                            <h3 className="font-bold">{template.name}</h3>
-                                                            <p className="text-sm text-gray-600">
-                                                                Subject: {template.subject}
-                                                            </p>
-                                                            <p className="text-sm text-gray-600">
-                                                                {template.previewText}
-                                                            </p>
-                                                        </TooltipContent>
-                                                    </Tooltip>
+                                                {allTemplates.map((template) => (
+                                                    <SelectItem key={template.id} value={template.id}>
+                                                        {template.name} {template.isSaved && "(Saved)"}
+                                                    </SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
+                                    </div>
+                                )}
+                            />
+                        </div>
+
+                        <div className=''>
+                            <FormField
+                                control={form.control}
+                                name="body"
+                                render={({ field }) => (
+                                    <div className='w-full'>
+                                        <FormLabel>Body <span className='text-zinc-400 text-[10px]'>(This will be used as the email body)</span></FormLabel>
+                                        <Textarea {...field} />
                                     </div>
                                 )}
                             />
@@ -143,12 +209,44 @@ const SmartEmailTriggerForm = ({ onSubmit }: Props) => {
                                                     {unit}
                                                 </Button>
                                             ))}
-                                        </div>)}
+                                        </div>
+                                    )}
                                 />
                             </div>
                         </div>
                     </form>
                 </Form>
+
+                <div className="">
+                    {selectedTemplate && <iframe
+                        src={`/api/templates/preview?id=${selectedTemplate.id}`}
+                        className="w-full h-[400px] bg-white"
+                    />}
+                </div>
+            </div>
+
+            {/* Save as Template Section */}
+            <div className="pt-4 border-t">
+                <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowSaveAs(!showSaveAs)}
+                >
+                    💾 Save as New Reusable Template
+                </Button>
+
+                {showSaveAs && (
+                    <div className="mt-3 flex gap-2">
+                        <Input
+                            placeholder="Template Name (e.g. Final Interview Invite)"
+                            value={newTemplateName}
+                            onChange={(e) => setNewTemplateName(e.target.value)}
+                        />
+                        <Button onClick={handleSaveAsTemplate}>
+                            Save
+                        </Button>
+                    </div>
+                )}
             </div>
             <div className='flex justify-end mt-4'>
                 <Button disabled={isPending} type="submit" form="form">Add Trigger</Button>
@@ -156,37 +254,5 @@ const SmartEmailTriggerForm = ({ onSubmit }: Props) => {
         </div>
     );
 };
-
-export type EmailTemplate = {
-    id: string;
-    name: string;
-    subject: string;
-    content: string; // HTML or plain text content
-    previewText: string; // Short text for hover preview
-};
-
-export const emailTemplates: EmailTemplate[] = [
-    {
-        id: "template1",
-        name: "Welcome Email",
-        subject: "Welcome to Our Platform!",
-        content: "<h1>Welcome!</h1><p>Thank you for joining us...</p>",
-        previewText: "A warm welcome email for new users.",
-    },
-    {
-        id: "template2",
-        name: "Follow-Up Email",
-        subject: "Let's Catch Up",
-        content: "<h1>Follow Up</h1><p>We noticed you haven't completed...</p>",
-        previewText: "A follow-up email to re-engage users.",
-    },
-    {
-        id: "template3",
-        name: "Reminder Email",
-        subject: "Don't Forget!",
-        content: "<h1>Reminder</h1><p>Your subscription is about to expire...</p>",
-        previewText: "A reminder for upcoming deadlines.",
-    },
-];
 
 export default SmartEmailTriggerForm;

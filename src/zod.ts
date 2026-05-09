@@ -225,8 +225,9 @@ export const experienceTriggerSchema = z.object({
 });
 
 export const SmartEmailTriggerSchema = z.object({
-    email: z.string(),
+    subject: z.string(),
     template: z.string(),
+    body: z.string(),
     delay: z.number(),
     delayFormat: z.enum(['minutes', 'hours', 'days'], { message: 'Select a delay unit' })
 });

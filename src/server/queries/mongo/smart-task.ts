@@ -5,27 +5,15 @@ import mongodb from "@/lib/mongodb";
 import Trigger from "@/models/trigger";
 import { TriggerAction } from "@/plugins/smart-trigger/types";
 import { milliseconds } from "date-fns";
-import { db } from "@/drizzle/db";
-import { stages } from "@/drizzle/schema";
-import { eq } from "drizzle-orm";
 
-
-export const addTaskToQueue = async (id: number, action: TriggerAction, stage_name: string, jobId: number) => {
+export const addTaskToQueue = async (id: number, action: TriggerAction, jobId: number, stage_name?: string) => {
     await mongodb();
-    console.log("Adding task to queue", id, action, stage_name);
+    console.log("Adding task to queue", id, action);
 
     const name = `Task-${action.action_type}-${Date.now()}`;
     const delay = action.config.delay;
     const delayFormat = action.config.delayFormat as 'minutes' | 'hours' | 'days';
     const delayMs = milliseconds({ [`${delayFormat}`]: delay });
-
-    // Get the application stage id from the stage name
-    const stageResults = await db.select()
-        .from(stages)
-        .where(eq(stages.job_id, jobId!));
-
-    const stage = stageResults.find((s) => s.stage_name === action.config.condition.target);
-    const stageId = stage?.id;
 
     const trigger = await Trigger.create({
         stages: stage_name,
@@ -38,9 +26,9 @@ export const addTaskToQueue = async (id: number, action: TriggerAction, stage_na
     await taskQueue.add('smart_trigger', {
         application_id: id,
         trigger_id: trigger._id,
-        type: action.action_type,
         jobId: jobId,
-        newStageId: stageId,
+        type: action.action_type,
+        new_stage_name: stage_name,
         config: action.config
     }, { delay: delayMs });
 };

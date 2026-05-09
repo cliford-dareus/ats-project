@@ -46,10 +46,10 @@ const Layout = async ({children}: Props) => {
                     <Separator orientation="vertical" className="mr-2 h-4"/>
                     <div className="ml-auto flex items-center gap-4">
                         <Bell size={18}/>
-                        <Button className="p-0">
+                        <Button className="!p-0 border rounded-lg text-[10px] uppercase tracking-widest font-bold text-white transition-all flex items-center gap-2">
                             <Link
                                 href="/jobs/new"
-                                className="flex items-center gap-2 w-full h-full px-4 py-1.5"
+                                className="flex items-center gap-2 px-4 !py-2 "
                             >
                                 <Plus size={20}/>
                                 <p>Create New Job</p>

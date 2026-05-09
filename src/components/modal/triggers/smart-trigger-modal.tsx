@@ -18,7 +18,7 @@ const SmartTriggerModal = ({ isModalOpen, closeModal, triggerType, onSubmit }: P
             open={isModalOpen}
             onOpenChange={(isOpen) => !isOpen && closeModal()}
         >
-            <DialogContent className="max-w-xl">
+            <DialogContent className="">
                 {triggerType == "location" && <SmartLocationTriggerForm onSubmit={onSubmit} />}
                 {triggerType == "experience" && <SmartExperienceTriggerForm onSubmit={onSubmit} />}
                 {triggerType == "email" && <SmartEmailTriggerForm onSubmit={onSubmit} />}

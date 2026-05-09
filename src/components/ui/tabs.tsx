@@ -44,12 +44,14 @@ const CustomTabsTrigger = React.forwardRef<
     <TabsPrimitive.Trigger
         ref={ref}
         className={cn(
-            "bg-transparent outline-none shadow-none px-3 py-2 text-sm font-medium data-[state=active]:bg-primary rounded-md data-[state=active]:text-white data-[state=active]:shadow-md  data-[state=active]:shadow-primary/20",
+            "bg-transparent outline-none shadow-none px-3 py-2 text-sm font-medium  data-[state=active]:bg-primary rounded-md data-[state=active]:text-white data-[state=active]:shadow-md  data-[state=active]:shadow-primary/20",
             className
         )}
         {...props}
     />
 ))
+
+CustomTabsTrigger.displayName = TabsPrimitive.Trigger.displayName
 
 TabsTrigger.displayName = TabsPrimitive.Trigger.displayName
 

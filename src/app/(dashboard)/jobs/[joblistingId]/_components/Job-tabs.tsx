@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useCallback } from "react";
-import { BriefcaseBusiness, CircleUser, Edit3, Settings, Share2 } from "lucide-react";
+import { BriefcaseBusiness, CircleUser, Edit3, Settings, Share2, Table2 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import JobPipeline from "./job-pipeline";
 import JobOptions from "./job-options";
@@ -57,10 +57,10 @@ const JobTabs = ({ applications, stages, jobs, jobListingId, singleJob }: Props)
                             {['candidates', 'pipelines', 'options'].map((tab) => (
                                 <CustomTabsTrigger
                                     key={tab}
-                                    className="px-4 flex items-center gap-4 py-2 rounded-lg text-xs font-bold transition-all"
+                                    className="px-4 flex items-center gap-4 py-2 rounded-lg text-xs font-bold transition-all text-[10px] uppercase tracking-widest"
                                     value={tab}
                                 >
-                                    {tab === 'options' ? <BriefcaseBusiness size={20} /> : <CircleUser size={20} />}
+                                    {tab == 'pipelines' ? <Table2 size={18} /> : tab == 'options' ? <BriefcaseBusiness size={18} /> : <CircleUser size={18} />}
                                     <p>{tab.charAt(0).toUpperCase() + tab.slice(1)}</p>
                                 </CustomTabsTrigger>
                             ))}

@@ -44,7 +44,7 @@ const Page = async ({ params }: Props) => {
                                 <AvatarFallback>CN</AvatarFallback>
                             </Avatar>
                             <div className="">
-                                <h1 className="text-xl font-bold">{candidate.candidate?.name}</h1>
+                                <h1 className="text-2xl font-bold text-zinc-900 leading-tight uppercase">{candidate.candidate?.name}</h1>
                                 <p className="text-sm/5 flex items-center gap-2 text-slate-500">
                                     <FileChartColumnIncreasing size={16} />
                                     <span>Software Developer</span>
@@ -61,9 +61,9 @@ const Page = async ({ params }: Props) => {
                 <div className="flex gap-4">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button className="gap-2">
+                            <Button className="px-4 !py-2 border rounded-lg text-[10px] uppercase tracking-widest font-bold text-white transition-all flex items-center gap-2">
                                 <CheckCircle size={16} />
-                                <span>Advance</span>
+                                <span>Contact</span>
                                 <ChevronDown size={16} />
                             </Button>
                         </DropdownMenuTrigger>
@@ -78,7 +78,7 @@ const Page = async ({ params }: Props) => {
 
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button>
+                            <Button className="px-4 !py-2 border rounded-lg text-[10px] uppercase tracking-widest font-bold text-white transition-all flex items-center gap-2">
                                 <SettingsIcon size={16} />
                                 Settings
                             </Button>

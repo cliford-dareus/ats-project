@@ -28,18 +28,18 @@ const baseUrl = process.env.VERCEL_URL
     : '';
 
 export const VercelInviteUserEmail = ({
-                                          inviteeUsername,
-                                          inviterEmail,
-                                          organizationName,
-                                          organizationId,
-                                          department,
-                                          inviterUsername
-                                      }: OrganizationInviteEmailProps) => {
+    inviteeUsername,
+    inviterEmail,
+    organizationName,
+    organizationId,
+    department,
+    inviterUsername
+}: OrganizationInviteEmailProps) => {
     const previewText = `Join ${inviterUsername} on ${organizationName}`;
 
     return (
         <Html>
-            <Head/>
+            <Head />
             <Tailwind>
                 <Body className="mx-auto my-auto bg-white px-2 font-sans">
                     <Preview>{previewText}</Preview>
@@ -115,7 +115,7 @@ export const VercelInviteUserEmail = ({
                             </Button>
                         </Text>
 
-                        <Hr className="mx-0 my-[26px] w-full border border-[#eaeaea] border-solid"/>
+                        <Hr className="mx-0 my-[26px] w-full border border-[#eaeaea] border-solid" />
 
                         <Text className="text-[#666666] text-[12px] leading-[24px]">
                             This invitation was intended for{' '}

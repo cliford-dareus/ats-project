@@ -13,6 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { ApplicationResponseType, StageResponseType } from "@/types";
 import { AlertCircle, CheckCircle, ChevronDown, Clock, Eye, MessageSquare, Star, UserCheck, UserX, XCircle } from "lucide-react";
+import { useTransition } from "react";
 
 type Props = {
     applicationResult: ApplicationResponseType;
@@ -20,6 +21,17 @@ type Props = {
 }
 
 const AppicationHeader = ({ applicationResult, stages }: Props) => {
+    const [, startTransition] = useTransition();
+
+    const moveToStage = async (stage: string) => {
+        startTransition(async () => {
+            try {
+
+            } catch (error) {
+
+            }
+        });
+    };
     return (
         <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -29,23 +41,12 @@ const AppicationHeader = ({ applicationResult, stages }: Props) => {
                         <AvatarFallback>CN</AvatarFallback>
                     </Avatar>
                     <div>
-                        <h2 className="text-2xl font-bold text-zinc-900">{applicationResult.candidate_name}</h2>
+                        <h2 className="text-2xl font-bold text-zinc-900 leading-tight uppercase">{applicationResult.candidate_name}</h2>
                         <p className="text-sm text-zinc-500 font-medium">
                             Applying for <span
                                 className="text-primary font-bold uppercase">{applicationResult.job_apply}</span>
                         </p>
                     </div>
-                    {/*<div className="flex items-center gap-3">*/}
-                    {/*    <Badge*/}
-                    {/*        variant={applicationResult?.status === 'PENDING' ? 'default' : applicationResult?.status === 'OPEN' ? 'secondary' : 'destructive'}*/}
-                    {/*        className="w-fit"*/}
-                    {/*    >*/}
-                    {/*        {applicationResult?.status === 'Active' && <CheckCircle size={14} className="mr-1" />}*/}
-                    {/*        {applicationResult?.status === 'Rejected' && <XCircle size={14} className="mr-1" />}*/}
-                    {/*        {applicationResult?.status === 'Hired' && <Star size={14} className="mr-1" />}*/}
-                    {/*        {applicationResult?.status || 'Active'}*/}
-                    {/*    </Badge>*/}
-                    {/*</div>*/}
                 </div>
             </div>
 
@@ -68,7 +69,7 @@ const AppicationHeader = ({ applicationResult, stages }: Props) => {
                         <DropdownMenuContent align="end">
                             <DropdownMenuRadioGroup
                                 value={applicationResult?.current_stage as string}
-                                // onValueChange={moveToStage}
+                                onValueChange={moveToStage}
                             >
                                 <DropdownMenuLabel>Advance Candidate</DropdownMenuLabel>
                                 <DropdownMenuSeparator />

@@ -1,18 +1,31 @@
 import { Resend } from "resend";
-// import OrganizationInviteTemplate from "@/components/emails/organization_invite_template";
+import { render } from "@react-email/components";
+
+interface EmailPayload {
+    to: string;
+    subject: string;
+    template: React.ReactElement;
+    from?: string;
+};
 
 export const resend = new Resend(process.env.RESEND_API_KEY);
 
-// const send = async () => {
-//     try{
-//         await resend.emails.send({
-//             from: 'onboarding@resend.dev',
-//             to: 'cliforddareus@hotmail.com',
-//             replyTo: 'you@example.com',
-//             subject: 'hello world',
-//             react: OrganizationInviteTemplate()
-//         });
-//     }catch (e) {
-//         return {error: e};
-//     };
-// };
+export const sendEmail = async ({ to, subject, template, from = 'HR Team <notifications@yourdomain.com>' }: EmailPayload) => {
+    try {
+        // 1. Convert React component to HTML string
+        const html = await render(template);
+
+        // 2. Send via Resend
+        const data = await resend.emails.send({
+            from: from,
+            to: [to],
+            subject: subject,
+            html: html,
+        });
+
+        return { success: true, data };
+    } catch (error) {
+        console.error("Email Error:", error);
+        return { success: false, error };
+    }
+};
