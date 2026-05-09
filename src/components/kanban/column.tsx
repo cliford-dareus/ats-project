@@ -8,13 +8,13 @@ import { moveApplicationAndReorder } from "@/server/actions/application_actions"
 import { JOB_ENUM } from "@/zod";
 import { cn } from "@/lib/utils";
 import { useModalDialog } from "@/hooks/use-modal-dialog";
-import TriggerCard from "../trigger-card";
 import { useKanbanContext } from "@/providers/kanban-provider";
 import { useSocket } from "@/providers/socket-provider";
 import SmartTriggerModal from "@/components/modal/triggers/smart-trigger-modal";
 import ColumnHeader from "./column-header";
 import { add_trigger_to_stage_action } from "@/server/actions/stage_actions";
 import { useSmartTriggers } from "@/hooks/use-smart-trigger";
+import SmartTriggerCard from "../smart-trigger/smart-trigger-card";
 
 type Props = {
     title: string;
@@ -339,7 +339,7 @@ export default function Column({
             {isEnabled && showTriggers && (
                 <div className="mb-3 space-y-2">
                     {stageTriggers.map((st) => (
-                        <TriggerCard key={st.id} stage={st} />
+                        <SmartTriggerCard key={st.id} stage={st} />
                     ))}
                 </div>
             )}

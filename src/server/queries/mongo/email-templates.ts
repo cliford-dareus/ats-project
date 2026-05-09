@@ -8,20 +8,33 @@ export async function getEmailTemplates() {
     await mongodb();
 
     const {orgId} = await auth();
-    if (!orgId) return [];
+    if (!orgId) return JSON.stringify([]);
 
     const templates = await EmailTemplate.find({
         organizationId: orgId,
     }).sort({ createdAt: -1 });
 
-    return templates;
-}
+    return JSON.stringify(templates);
+};
+
+export async function getEmailTemplateById(templateId: string) {
+    await mongodb();
+
+    const template = await EmailTemplate.findOne({
+        templateId: templateId,
+    });
+    
+    if (!template) return null;
+
+    return JSON.stringify(template);
+};
 
 export async function saveEmailTemplate(data: {
     id?: string;
     name: string;
     subject: string;
     body: string;
+    templateId?: string;
 }) {
     await mongodb();
 
@@ -46,9 +59,10 @@ export async function saveEmailTemplate(data: {
             name: data.name,
             subject: data.subject,
             body: data.body,
+            templateId: data.templateId,
         });
     }
-    return { success: true };
+    return JSON.stringify({ success: true });
 }
 
 export async function deleteEmailTemplate(id: string) {
@@ -60,5 +74,5 @@ export async function deleteEmailTemplate(id: string) {
         organizationId: orgId,
     });
 
-    return { success: true };
+    return JSON.stringify({ success: true });
 }

@@ -5,21 +5,20 @@ import { useForm } from 'react-hook-form';
 import { JOB_STAGES } from '@/zod';
 import { TriggerAction } from "@/plugins/smart-trigger/types";
 import { z } from "zod";
-import { Plus } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Form, FormField, FormLabel } from '@/components/ui/form';
-import { DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {CITIES} from "@/lib/constant";
+import { CITIES } from "@/lib/constant";
+import { ArrowRight } from 'lucide-react';
+import SmartTriggerLayout from '@/components/smart-trigger/smart-trigger-layout';
+import SmartTriggerDelayForm from '@/components/smart-trigger/smart-trigger-delay-form';
 
 const SmartLocationTriggerForm = ({ onSubmit }: { onSubmit: (data: TriggerAction) => void }) => {
-    const [isPendind, startTransition] = useTransition();
+    const [isPending, startTransition] = useTransition();
     const form = useForm<z.infer<typeof locationTriggerSchema>>({
         resolver: zodResolver(locationTriggerSchema),
         defaultValues: {
             location: "",
-            stage: JOB_STAGES[0],
+            stage: JOB_STAGES.options[0],
             delay: 1,
             delayFormat: 'minutes',
         },
@@ -28,8 +27,8 @@ const SmartLocationTriggerForm = ({ onSubmit }: { onSubmit: (data: TriggerAction
     const handleSubmit = async (data: z.infer<typeof locationTriggerSchema>) => {
         startTransition(async () => {
             onSubmit({
-                id: 0,
-                action_type: "move",
+                id: Date.now(),
+                action_type: "MOVE",
                 config: {
                     condition: {
                         type: "location",
@@ -44,108 +43,81 @@ const SmartLocationTriggerForm = ({ onSubmit }: { onSubmit: (data: TriggerAction
     };
 
     return (
-        <div>
-            <DialogHeader>
-                <DialogTitle>Smart Trigger</DialogTitle>
-                <DialogDescription>
-                    Configure the smart trigger
-                </DialogDescription>
-            </DialogHeader>
-
-            <div className='border p-4 bg-muted rounded-md mt-4'>
-                <div className="flex flex-col">
-                    <span>Smart Move</span>
-                    <span className='text-sm text-muted-foreground'>Add Trigger based on candidates Location</span>
-                </div>
-                <Form {...form}>
-                    <form id="form" onSubmit={form.handleSubmit(handleSubmit)}>
-                        <div className="flex gap-4 mt-4">
-                            <FormField
-                                control={form.control}
-                                name="location"
-                                render={({ field }) => (
-                                    <div className='flex-1 gap-2'>
-                                        <FormLabel>if candidate is in</FormLabel>
-                                        <Select name="location" onValueChange={field.onChange}
-                                            defaultValue={field.value}>
-                                            <SelectTrigger className="">
-                                                <SelectValue placeholder="Select a stage name" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {CITIES.map(city => (
-                                                    <SelectItem key={city} value={city}>{city}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="stage"
-                                render={({ field }) => (
-                                    <div className='flex-1 gap-2'>
-                                        <FormLabel>Move candidate to</FormLabel>
-                                        <Select name="stage" onValueChange={field.onChange} defaultValue={field.value}>
-                                            <SelectTrigger className="">
-                                                <SelectValue placeholder="Select a stage name" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {JOB_STAGES.map(stage => (
-                                                    <SelectItem key={stage} value={stage}>{stage}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                )}
-                            />
-                        </div>
-
-                        <div className='flex items-center gap-2 mt-4'>
-                            <FormLabel>Delay Trigger for</FormLabel>
-                            <div className='flex gap-2'>
-                                <FormField
-                                    control={form.control}
-                                    name="delay"
-                                    render={({ field }) => (
-                                        <div className='w-[100px]'>
-                                            <Input type="number" {...field} min={1} />
-                                        </div>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="delayFormat"
-                                    render={({ field }) => (
-                                        <div className='flex gap-2 text-sm'>
-                                            {["minutes", "hours", "days"].map((unit) => (
-                                                <Button
-                                                    key={unit}
-                                                    variant={field.value === unit ? 'default' : 'outline'}
-                                                    onClick={() => field.onChange(unit)}
-                                                >
-                                                    {unit}
-                                                </Button>
-                                            ))}
-                                        </div>)}
-                                />
+        <SmartTriggerLayout
+            SubmitLabel="Add Trigger"
+            icon={<ArrowRight />}
+            title="Smart Location Trigger"
+            description="Automatically move candidates to another stage based on their location"
+            isPending={isPending}
+        >
+            <Form {...form}>
+                <form id="form" onSubmit={form.handleSubmit(handleSubmit)}>
+                    <div className='border rounded-xl bg-card p-6 mt-4'>
+                        <div className="space-y-8">
+                            <div>
+                                <FormLabel className="text-base font-medium mb-3 block">
+                                    Trigger Condition
+                                </FormLabel>
+                                <div className="flex items-center gap-4 bg-muted/50 p-4 rounded-lg border">
+                                    <div className="text-sm font-medium text-muted-foreground w-28">If candidate located in</div>
+                                    <FormField
+                                        control={form.control}
+                                        name="location"
+                                        render={({ field }) => (
+                                            <div className='flex-1 gap-2'>
+                                                <Select name="location" onValueChange={field.onChange}
+                                                    defaultValue={field.value}>
+                                                    <SelectTrigger className="">
+                                                        <SelectValue placeholder="Select a stage name" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {CITIES.map(city => (
+                                                            <SelectItem key={city} value={city}>{city}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        )}
+                                    />
+                                </div>
                             </div>
+
+                            {/* Action Row */}
+                            <div>
+                                <FormLabel className="text-base font-medium mb-3 block">
+                                    Action
+                                </FormLabel>
+                                <div className="flex items-center gap-3 bg-muted/50 p-4 rounded-lg border">
+                                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground w-28">
+                                        Move to <ArrowRight className="w-4 h-4" />
+                                    </div>
+                                    <FormField
+                                        control={form.control}
+                                        name="stage"
+                                        render={({ field }) => (
+                                            <div className='flex-1 gap-2'>
+                                                <Select name="stage" onValueChange={field.onChange} defaultValue={field.value}>
+                                                    <SelectTrigger className="">
+                                                        <SelectValue placeholder="Select a stage name" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {JOB_STAGES.options.map(stage => (
+                                                            <SelectItem key={stage} value={stage}>{stage}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        )}
+                                    />
+                                </div>
+                            </div>
+                            
+                            <SmartTriggerDelayForm form={form} />
                         </div>
-                    </form>
-                </Form>
-            </div>
-
-            <div className='text-sm flex items-center gap-2 mt-4'>
-                <span>Add another condition</span>
-                <Button className='ml-2' variant="ghost">
-                    <Plus size={18} />
-                </Button>
-            </div>
-
-            <div className='flex justify-end mt-4'>
-                <Button disabled={isPendind} type="submit" form="form">Add Trigger</Button>
-            </div>
-        </div>
+                    </div>
+                </form>
+            </Form>
+        </SmartTriggerLayout>
     );
 };
 

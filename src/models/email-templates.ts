@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 interface EmailTemplateInterface extends mongoose.Document {
+    templateId: string;
     name: string;
     subject: string;
     body: string;
@@ -12,6 +13,7 @@ interface EmailTemplateInterface extends mongoose.Document {
 };
 
 const EmailTemplateSchema = new mongoose.Schema<EmailTemplateInterface>({
+    templateId: { type: String, required: true },
     name: { type: String, required: true },
     subject: { type: String, required: true },
     body: { type: String, required: true },

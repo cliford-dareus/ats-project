@@ -1,3 +1,4 @@
+import { ConfigType } from "@/plugins/smart-trigger/types";
 import { CANDIDATE_STATUS, JOB_ENUM, JOB_STAGES, JOB_STATUS, JOB_TYPE } from "@/zod";
 
 // RESPONSE TYPES
@@ -65,7 +66,7 @@ export type TriggerResponseType = {
     id: number;
     action_type: string;
     stage_id: number;
-    config: Record<string, never>;
+    config: ConfigType;
     created_at: Date;
     updated_at: Date;
 };

@@ -73,7 +73,7 @@ const ColumnHeader = ({ stage, color, title, filteredCards, openModal, hasSmartT
                                     <DropdownMenuItem
                                         onClick={() => {
                                             openModal();
-                                            setOpenSmartMove({ type: "email", stage: stage.stage_name!, action_type: "email" });
+                                            setOpenSmartMove({ type: "email", stage: stage.stage_name!, action_type: "EMAIL" });
                                         }}
                                     >
                                         Smart Email
@@ -91,7 +91,7 @@ const ColumnHeader = ({ stage, color, title, filteredCards, openModal, hasSmartT
                                                             setOpenSmartMove({
                                                                 type,
                                                                 stage: stage.stage_name!,
-                                                                action_type: "move",
+                                                                action_type: "MOVE",
                                                             });
                                                         }}
                                                     >
@@ -103,8 +103,12 @@ const ColumnHeader = ({ stage, color, title, filteredCards, openModal, hasSmartT
                                             </DropdownMenuSubContent>
                                         </DropdownMenuPortal>
                                     </DropdownMenuSub>
-
-                                    <DropdownMenuItem>Smart Schedule</DropdownMenuItem>
+                                    
+                                    <DropdownMenuItem onClick={() => {
+                                        openModal()
+                                        setOpenSmartMove({ type: "note", stage: stage.stage_name!, action_type: "NOTE" })
+                                    }}>Smart Note</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => {}}>Smart Schedule</DropdownMenuItem>
                                 </DropdownMenuSubContent>
                             </DropdownMenuPortal>
                         </DropdownMenuSub>

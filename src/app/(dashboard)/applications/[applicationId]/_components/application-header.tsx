@@ -1,6 +1,6 @@
+"use client";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
     DropdownMenuContent, DropdownMenuItem,
@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { ApplicationResponseType, StageResponseType } from "@/types";
-import { AlertCircle, CheckCircle, ChevronDown, Clock, Eye, MessageSquare, Star, UserCheck, UserX, XCircle } from "lucide-react";
+import { AlertCircle, CheckCircle, ChevronDown, Clock, MessageSquare, UserCheck, UserX, XCircle } from "lucide-react";
 import { useTransition } from "react";
 
 type Props = {
