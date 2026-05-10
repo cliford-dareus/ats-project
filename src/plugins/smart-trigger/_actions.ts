@@ -6,8 +6,11 @@ import Trigger from "@/models/trigger";
 import { JOB_STAGES } from "@/zod";
 import { z } from "zod";
 import { sendEmail } from "@/lib/resend";
-import ApplicationSubmittedTemplate from "@/emails/application_submitted_template";
+import { render } from "@react-email/components";
 import React from "react";
+import mongodb from "@/lib/mongodb";
+import EmailTemplate from "@/models/email-templates";
+import { getTemplateById } from "@/lib/templates";
 
 interface SmartTriggerJobData {
     application_id: number;
@@ -64,32 +67,39 @@ export const executeSmartMoveAction = async (jobData: SmartTriggerJobData) => {
 };
 
 export const executeSmartEmailAction = async (jobData: SmartTriggerJobData) => {
-    const { application_id: candidateId, trigger_id, config, props } = jobData;
+    await mongodb();
+    const { application_id: candidateId, trigger_id, config } = jobData;
+    
+    const [application] = await db.select()
+        .from(applications)
+        .where(eq(applications.id, candidateId))
+        .limit(1);
+    if (!application) throw new Error(`Application ${candidateId} not found`);
 
-    // 1. Fetch candidate details (to get the email address)
+    // Fetch candidate details (to get the email address)
     const [candidate] = await db.select()
         .from(candidates)
-        .where(eq(candidates.id, candidateId))
+        .where(eq(candidates.id, application.candidate!))
         .limit(1);
     if (!candidate) throw new Error(`Candidate ${candidateId} not found`);
 
     const { email } = candidate;
 
-    // 1. Get email template
-    const template = await getEmailTemplate(config?.email?.template as string, props);
+    const savedProps = await EmailTemplate.findOne({ _id: config?.email?.template });
+    if (!savedProps) return new Response('Not Found', { status: 404 });
+    
+    const template = getTemplateById( savedProps.templateId || '');
+    if (!template) return new Response('Not Found', { status: 404 });
 
-    // 2. Send email
-    const result = await sendEmail({ to: email, subject: config?.email?.subject as string, template, from: config?.email?.from });
+    // Convert React component to HTML string
+    const html = await render(React.createElement(template?.component, savedProps || {}));
+
+    // Send email
+    const result = await sendEmail({
+        to: email.toLowerCase(),
+        subject: config?.email?.subject as string,
+        html,
+        from: config?.email?.from,
+    });
     if (!result) throw new Error(`Failed to send email to ${email}`);
-};
-
-const getEmailTemplate = async (type: string, props: any): Promise<React.ReactElement> => {
-    switch (type) {
-        case 'application-submitted':
-            return React.createElement(ApplicationSubmittedTemplate, { ...props });
-        case '':
-            return
-        default:
-            throw new Error(`Unknown email template type: ${type}`);
-    }
 };

@@ -1,14 +1,14 @@
 import { createServer } from 'node:http';
 import next from 'next';
 import { Server } from 'socket.io';
-import {parse} from "node:url";
-import {setupWorker} from "@/lib/queue";
+import { parse } from "node:url";
+import { setupWorker } from "@/lib/queue";
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
 const port = 3000;
 // When using middleware, hostname and port must be provided below
-const app = next({ dev, hostname, port,  dir: process.cwd() });
+const app = next({ dev, hostname, port, dir: process.cwd() });
 const handler = app.getRequestHandler();
 
 app.prepare().then(() => {
@@ -29,7 +29,7 @@ app.prepare().then(() => {
 
     io.on('connection', (socket) => {
         console.log('Client socket connected:', socket.id);
-        
+
         // Join board-specific room
         socket.on('join-board', (boardId: string) => {
             socket.join(`board:${boardId}`);
@@ -63,12 +63,11 @@ app.prepare().then(() => {
         // 3. Close the HTTP server
         server.close(() => {
             console.log("HTTP server closed.");
-            process.exit(0);
         });
+        process.exit(0);
     };
 
     // Listen for Ctrl+C (SIGINT) and System Stop (SIGTERM)
     process.on("SIGINT", shutdown);
     process.on("SIGTERM", shutdown);
 });
-

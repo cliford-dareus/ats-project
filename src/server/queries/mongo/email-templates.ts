@@ -7,7 +7,7 @@ import { auth } from "@clerk/nextjs/server";
 export async function getEmailTemplates() {
     await mongodb();
 
-    const {orgId} = await auth();
+    const { orgId } = await auth();
     if (!orgId) return JSON.stringify([]);
 
     const templates = await EmailTemplate.find({
@@ -17,13 +17,33 @@ export async function getEmailTemplates() {
     return JSON.stringify(templates);
 };
 
-export async function getEmailTemplateById(templateId: string) {
+export async function getEmailTemplateByTemplateId(templateId: string) {
     await mongodb();
+    
+    const { orgId } = await auth();
+    if (!orgId) return JSON.stringify([]);
 
     const template = await EmailTemplate.findOne({
         templateId: templateId,
+        organizationId: orgId,
     });
+
+    if (!template) return null;
+
+    return JSON.stringify(template);
+};
+
+export async function getEmailTemplateById(templateId: string) {
+    await mongodb();
     
+    const { orgId } = await auth();
+    if (!orgId) return JSON.stringify([]);
+
+    const template = await EmailTemplate.findOne({
+        _id: templateId,
+        // organizationId: orgId,
+    });
+
     if (!template) return null;
 
     return JSON.stringify(template);
@@ -38,7 +58,7 @@ export async function saveEmailTemplate(data: {
 }) {
     await mongodb();
 
-    const {orgId} = await auth();
+    const { orgId } = await auth();
     if (!orgId) throw new Error("Unauthorized");
 
     if (data.id) {
@@ -56,6 +76,7 @@ export async function saveEmailTemplate(data: {
         // Create
         await EmailTemplate.create({
             organizationId: orgId,
+            // organizationName: subdomain,
             name: data.name,
             subject: data.subject,
             body: data.body,
@@ -66,7 +87,7 @@ export async function saveEmailTemplate(data: {
 }
 
 export async function deleteEmailTemplate(id: string) {
-    const {orgId} = await auth();
+    const { orgId } = await auth();
     if (!orgId) throw new Error("Unauthorized");
 
     await EmailTemplate.deleteOne({
