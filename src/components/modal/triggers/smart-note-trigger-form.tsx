@@ -2,9 +2,8 @@ import SmartTriggerDelayForm from "@/components/smart-trigger/smart-trigger-dela
 import SmartTriggerLayout from "@/components/smart-trigger/smart-trigger-layout";
 import { Form, FormField, FormLabel } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { TriggerAction } from "@/plugins/smart-trigger/types";
-import { JOB_STAGES } from "@/zod";
 import { ArrowRight, Notebook } from "lucide-react";
 import { useTransition } from "react";
 import { useForm } from "react-hook-form";
@@ -14,8 +13,8 @@ const SmartNoteTriggerForm = ({ onSubmit }: { onSubmit: (data: TriggerAction) =>
 
     const form = useForm({
         defaultValues: {
-            experience: 0,
-            stage: JOB_STAGES.options[0],
+            target: "",
+            notes: "",
             delay: 0,
             delayFormat: "minutes",
         },
@@ -23,7 +22,22 @@ const SmartNoteTriggerForm = ({ onSubmit }: { onSubmit: (data: TriggerAction) =>
 
     const handleSubmit = (data) => {
         startTransition(() => {
-            onSubmit(data);
+            onSubmit({
+                id: Date.now(),
+                action_type: "NOTE",
+                config: {
+                    condition: {
+                        type: "note",
+                        target: "Applied",
+                    },
+                    note: {
+                        content: data.notes,
+                        adddress_to: data.target,
+                    },
+                    delay: data.delay,
+                    delayFormat: data.delayFormat,
+                },
+            });
         });
     };
 
@@ -39,16 +53,16 @@ const SmartNoteTriggerForm = ({ onSubmit }: { onSubmit: (data: TriggerAction) =>
                 <form onSubmit={form.handleSubmit(handleSubmit)}>
                     <div className='border rounded-xl bg-card p-6 mt-4'>
                         <div className="space-y-8">
-                              {/* Condition Row */}
+                            {/* Condition Row */}
                             <div>
                                 <FormLabel className="text-base font-medium mb-3 block">
                                     Trigger Condition
                                 </FormLabel>
                                 <div className="flex items-center gap-4 bg-muted/50 p-4 rounded-lg border">
-                                    <div className="text-sm font-medium text-muted-foreground w-28">If candidate has</div>
-                                    <FormField                                       
+                                    <div className="text-sm font-medium text-muted-foreground w-28">@</div>
+                                    <FormField
                                         control={form.control}
-                                        name="experience"
+                                        name="target"
                                         render={({ field }) => (
                                             <Input
                                                 type="number"
@@ -69,24 +83,18 @@ const SmartNoteTriggerForm = ({ onSubmit }: { onSubmit: (data: TriggerAction) =>
                                 </FormLabel>
                                 <div className="flex items-center gap-3 bg-muted/50 p-4 rounded-lg border">
                                     <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground w-28">
-                                        Move to <ArrowRight className="w-4 h-4" />
+                                        Write this note
+                                        <ArrowRight className="w-4 h-4" />
                                     </div>
                                     <FormField
                                         control={form.control}
-                                        name="stage"
+                                        name="notes"
                                         render={({ field }) => (
-                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                <SelectTrigger className="flex-1">
-                                                    <SelectValue placeholder="Select destination stage" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {JOB_STAGES.options.map((stage) => (
-                                                        <SelectItem key={stage} value={stage}>
-                                                            {stage}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                            <Textarea
+                                                placeholder="Enter note content"
+                                                className="flex-1"
+                                                {...field}
+                                            />
                                         )}
                                     />
                                 </div>

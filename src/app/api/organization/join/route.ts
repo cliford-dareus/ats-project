@@ -1,4 +1,3 @@
-import {db} from "@/drizzle/db";
 import {NextRequest, NextResponse} from "next/server";
 import {auth} from "@clerk/nextjs/server";
 
@@ -6,6 +5,7 @@ export async function POST(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams;
     const orgId = searchParams.get('orgId');
     const role = searchParams.get('role');
+    
     const {userId} = await auth();
 
     console.log(userId, orgId);

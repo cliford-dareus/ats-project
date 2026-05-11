@@ -1,11 +1,11 @@
 import React from "react";
-import {auth} from "@clerk/nextjs/server";
-import {redirect} from "next/navigation";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 import Onboarding from "./_components/onboarding";
-import {BackgroundBeams} from "@/components/ui/background-beams";
+import { BackgroundBeams } from "@/components/ui/background-beams";
 
 const Page = async () => {
-    const {userId} = await auth();
+    const { userId } = await auth();
 
     if (!userId) {
         redirect("/signin");
@@ -13,10 +13,10 @@ const Page = async () => {
 
     return (
         <div className="h-screen w-full rounded-md relative antialiased">
-            <div className="relative z-10">
-                <Onboarding userId={userId}/>
+            <div className="relative z-10 min-h-screen flex flex-col items-center justify-center p-6">
+                <Onboarding userId={userId} />
             </div>
-            <BackgroundBeams/>
+            <BackgroundBeams />
         </div>
     );
 };

@@ -1,16 +1,11 @@
 "use client";
 
-import {Button} from "@/components/ui/button";
-import {Input} from "@/components/ui/input";
-import {useDebounce} from "@/hooks/use-debounce";
-import {ArrowLeft} from "lucide-react";
-import {motion} from "motion/react";
-import {useRouter} from "next/navigation";
-import {useEffect, useRef, useState, useTransition} from "react";
-import {useForm} from "react-hook-form";
-import {zodResolver} from "@hookform/resolvers/zod";
-import {z} from "zod";
-import {Form, FormField} from "@/components/ui/form";
+import { ArrowLeft, Mail } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState, useTransition } from "react";
+import OnboardingLayout from "./onboarding-layout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type Props = {
     orgId: string | null;
@@ -23,32 +18,32 @@ type EmailPayload = {
     orgName: string;
 };
 
-const InviteForm = z.object({
-    email: z.string()
-});
+// TODO: collect  an array of invitees and
+// TODO: save it to state or localStorage(whatever is best)
+// TODO: send the invite after the onboarding is completed
 
-const InviteMember = ({orgId, orgName}: Props) => {
-    const [invitees, setInvitees] = useState<{ email: string, id: string }[]>([])
-    const inputRef = useRef<HTMLInputElement | null>(null);
-    const showText = useDebounce(true, 800);
+const InviteMember = ({ orgId, orgName }: Props) => {
     const router = useRouter();
+    const inputRef = useRef<HTMLInputElement | null>(null);
+    const [, setInvitees] = useState<{ email: string, id: string }[]>([])
     const [isCreatePending, startCreateTransaction] = useTransition();
+    const [email, setEmail] = useState<string>("");
 
-    const form = useForm({
-        resolver: zodResolver(InviteForm),
-        defaultValues: {
-            email: "",
-        }
-    });
-
-    const invite_member = async (data: z.infer<typeof InviteForm>) => {
+    const onComplete = async () => {
         startCreateTransaction(async () => {
             const emailPayload = {
-                email: data.email,
+                email: email,
                 orgId: orgId,
                 orgName: orgName,
                 subject: "Organization Invite",
             } as EmailPayload;
+
+            if (!email || !orgId || !orgName) {
+                inputRef.current?.focus();
+                alert("Please fill in all fields");
+                return;
+            };
+
             try {
                 const response = await fetch("/api/organization/invite", {
                     method: "POST",
@@ -57,7 +52,7 @@ const InviteMember = ({orgId, orgName}: Props) => {
                 if (!response.ok) return
                 const resend_result = await response.json();
                 // Toast the user about email being sent
-                setInvitees((prev) => [...prev, {email: data.email, id: resend_result}]);
+                setInvitees((prev) => [...prev, { email, id: resend_result }]);
             } catch (e) {
                 console.error(e);
             }
@@ -69,97 +64,41 @@ const InviteMember = ({orgId, orgName}: Props) => {
     }, []);
 
     return (
-        <motion.div
-            className="flex flex-col h-screen p-4 container mx-auto"
-            exit={{opacity: 0, scale: 0.95}}
-            transition={{duration: 0.3, type: "spring"}}
+        <OnboardingLayout
+            title="Invite Team Members"
+            subtitle="Grant your colleagues access to start reviewing candidates together."
+            icon={Mail}
+            colorClass="bg-blue-50 text-blue-600"
         >
-            {showText && <motion.div
-                className="mt-[40%] w-full flex justify-between"
-                variants={{
-                    show: {
-                        transition: {
-                            staggerChildren: 0.2,
-                        },
-                    },
-                }}
-                initial="hidden"
-                animate="show"
-            >
-                <motion.div className="w-[40%] flex flex-col gap-4">
-                  <span className="text-muted-foreground flex items-center">
-                    <ArrowLeft size={16}/> Back
-                  </span>
-                    <motion.h1
-                        className="text-balance text-2xl font-bold text-blue-900"
-                        variants={{
-                            hidden: {opacity: 0, y: 50},
-                            show: {
-                                opacity: 1,
-                                y: 0,
-                                transition: {duration: 0.4, type: "spring"},
-                            },
-                        }}
-                    >
-                        {orgName}
-                    </motion.h1>
-                    <motion.p
-                        className="text-muted-foreground text-sm"
-                    >
-                        Enter the email of the member to add to the organization!
-                    </motion.p>
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(invite_member)}>
-                            <motion.div
-                                className="flex flex-col gap-4"
-                                variants={{
-                                    hidden: {opacity: 0, y: 50},
-                                    show: {
-                                        opacity: 1,
-                                        y: 0,
-                                        transition: {duration: 0.4, type: "spring"},
-                                    },
-                                }}>
-                                <FormField
-                                    name="email"
-                                    control={form.control}
-                                    render={({field}) => {
-                                        return (<div className="flex items-center gap-2">
-                                            <Input
-                                                // ref={inputRef}
-                                                className="md:text-5xl border-none outline-none shadow-none h-14 p-0 focus-visible:ring-0"
-                                                placeholder=""
-                                                {...field}
-                                            />
-                                        </div>)
-                                    }}
-                                />
-                                <div className="flex items-center gap-4">
-                                    <Button className="rounded-full bg-blue-400 px-10"
-                                            disabled={isCreatePending}>Invite</Button>
-                                    <div className="flex items-center gap-2 text-muted-foreground">
-                                        <ArrowLeft size={16}/>
-                                        <span className=" text-sm">Or press Enter</span>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        </form>
-                    </Form>
-
-                    <div className="">
-                        <Button onClick={() => router.push("/onboarding?step=success")}>Skip</Button>
-                    </div>
-                </motion.div>
-
-                <div className="">
-                    {invitees.map((member) => (
-                        <div key={member.id} className="">
-                            <span>{member.email}</span>
-                        </div>
-                    ))}
+            <div className="space-y-6">
+                <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider ml-1">Team Member Email</label>
+                    <Input
+                        type="email"
+                        placeholder="colleague@company.com"
+                        value={email}
+                        ref={inputRef}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                    />
                 </div>
-            </motion.div>}
-        </motion.div>
+
+                <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 flex items-center gap-3 italic text-zinc-500 text-xs text-center border-dashed">
+                    Invitations will be sent as soon as you finish your setup.
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                    <Button onClick={() => router.back()} className="p-4 bg-zinc-100 text-zinc-600 rounded-2xl hover:bg-zinc-200 transition-all"><ArrowLeft className="w-6 h-6" /></Button>
+                    <Button
+                        onClick={onComplete}
+                        disabled={isCreatePending}
+                        className="flex-1 py-4 bg-zinc-900 text-white rounded-2xl font-bold hover:bg-zinc-800 transition-all"
+                    >
+                        {email ? "Invite & Continue" : "Skip for Now"}
+                    </Button>
+                </div>
+            </div>
+        </OnboardingLayout>
     );
 };
 

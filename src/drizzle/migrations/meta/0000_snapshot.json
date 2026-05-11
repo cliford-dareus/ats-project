@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "eae24f1e-2556-43bb-a506-c51d4a607c61",
+  "id": "f97e7c0d-89e7-49b5-9d73-3845d19bd908",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "applications": {
@@ -43,6 +43,28 @@
           "autoincrement": false,
           "default": false
         },
+        "position_in_stage": {
+          "name": "position_in_stage",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "organization": {
+          "name": "organization",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "subdomain": {
+          "name": "subdomain",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -61,7 +83,30 @@
           "default": "(now())"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "stage_position_idx": {
+          "name": "stage_position_idx",
+          "columns": [
+            "current_stage_id",
+            "position_in_stage"
+          ],
+          "isUnique": false
+        },
+        "applications_job_idx": {
+          "name": "applications_job_idx",
+          "columns": [
+            "job_id"
+          ],
+          "isUnique": false
+        },
+        "candidate_idx": {
+          "name": "candidate_idx",
+          "columns": [
+            "candidate"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {
         "applications_job_id_job_listing_id_fk": {
           "name": "applications_job_id_job_listing_id_fk",
@@ -69,6 +114,19 @@
           "tableTo": "job_listing",
           "columnsFrom": [
             "job_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "applications_current_stage_id_stages_id_fk": {
+          "name": "applications_current_stage_id_stages_id_fk",
+          "tableFrom": "applications",
+          "tableTo": "stages",
+          "columnsFrom": [
+            "current_stage_id"
           ],
           "columnsTo": [
             "id"
@@ -205,13 +263,62 @@
           "notNull": true,
           "autoincrement": false
         },
+        "subdomain": {
+          "name": "subdomain",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "location": {
+          "name": "location",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "address": {
+          "name": "address",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "city": {
+          "name": "city",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "state": {
+          "name": "state",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "zip_code": {
+          "name": "zip_code",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "organization": {
+          "name": "organization",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
         "status": {
           "name": "status",
-          "type": "enum('Active','Rejected','Hired')",
+          "type": "enum('ACTIVE','REJECTED','HIRED')",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false,
-          "default": "'Active'"
+          "default": "'ACTIVE'"
         },
         "created_at": {
           "name": "created_at",
@@ -241,26 +348,7 @@
           ]
         }
       },
-      "uniqueConstraints": {
-        "candidate_email_unique": {
-          "name": "candidate_email_unique",
-          "columns": [
-            "email"
-          ]
-        },
-        "candidate_phone_unique": {
-          "name": "candidate_phone_unique",
-          "columns": [
-            "phone"
-          ]
-        },
-        "candidate_cv_path_unique": {
-          "name": "candidate_cv_path_unique",
-          "columns": [
-            "cv_path"
-          ]
-        }
-      },
+      "uniqueConstraints": {},
       "checkConstraint": {}
     },
     "departments": {
@@ -328,6 +416,27 @@
         "end_at": {
           "name": "end_at",
           "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "enum('VIDEO','PHONE','ONSITE')",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "organization": {
+          "name": "organization",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "link": {
+          "name": "link",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -410,7 +519,7 @@
         },
         "description": {
           "name": "description",
-          "type": "varchar(255)",
+          "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -429,6 +538,13 @@
           "notNull": true,
           "autoincrement": false
         },
+        "subdomain": {
+          "name": "subdomain",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
         "organization": {
           "name": "organization",
           "type": "varchar(255)",
@@ -443,6 +559,14 @@
           "notNull": false,
           "autoincrement": false,
           "default": "'PENDING'"
+        },
+        "type": {
+          "name": "type",
+          "type": "enum('FULL_TIME','PART_TIME','REMOTE','INTERNSHIP','CONTRACT')",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'FULL_TIME'"
         },
         "created_by": {
           "name": "created_by",
@@ -661,13 +785,28 @@
           "autoincrement": false,
           "default": "'company@example.com'"
         },
-        "color": {
-          "name": "color",
+        "primary_color": {
+          "name": "primary_color",
           "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
           "default": "'purple'"
+        },
+        "font_family": {
+          "name": "font_family",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'sans'"
+        },
+        "subdomain": {
+          "name": "subdomain",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
         },
         "plugins": {
           "name": "plugins",
@@ -676,6 +815,13 @@
           "notNull": true,
           "autoincrement": false,
           "default": "('{\"enabled\":[],\"settings\":{}}')"
+        },
+        "theme": {
+          "name": "theme",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {},
@@ -688,7 +834,14 @@
           ]
         }
       },
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "organization_subdomain_unique": {
+          "name": "organization_subdomain_unique",
+          "columns": [
+            "subdomain"
+          ]
+        }
+      },
       "checkConstraint": {}
     },
     "plugins": {
@@ -762,13 +915,6 @@
           "notNull": true,
           "autoincrement": true
         },
-        "applications_id": {
-          "name": "applications_id",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "interviews_id": {
           "name": "interviews_id",
           "type": "int",
@@ -794,19 +940,6 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "scoresCards_applications_id_applications_id_fk": {
-          "name": "scoresCards_applications_id_applications_id_fk",
-          "tableFrom": "scoresCards",
-          "tableTo": "applications",
-          "columnsFrom": [
-            "applications_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
         "scoresCards_interviews_id_interviews_id_fk": {
           "name": "scoresCards_interviews_id_interviews_id_fk",
           "tableFrom": "scoresCards",
@@ -851,7 +984,7 @@
         },
         "stage_name": {
           "name": "stage_name",
-          "type": "enum('Applied','New Candidate','Screening','Phone Interview','Interview','Offer')",
+          "type": "enum('Applied','New Candidate','Screening','Phone Interview','Interview','Offer','Drafted')",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -886,7 +1019,23 @@
           "autoincrement": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "job_stage_unique": {
+          "name": "job_stage_unique",
+          "columns": [
+            "job_id",
+            "stage_name"
+          ],
+          "isUnique": false
+        },
+        "stages_job_idx": {
+          "name": "stages_job_idx",
+          "columns": [
+            "job_id"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {
         "stages_job_id_job_listing_id_fk": {
           "name": "stages_job_id_job_listing_id_fk",
@@ -899,6 +1048,19 @@
             "id"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "stages_assign_to_users_table_id_fk": {
+          "name": "stages_assign_to_users_table_id_fk",
+          "tableFrom": "stages",
+          "tableTo": "users_table",
+          "columnsFrom": [
+            "assign_to"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -974,13 +1136,13 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "('{\"template\":\"\",\"options\":[]}')"
+          "default": "('{\"template\":\"\",\"options\":[],\"delay\":1,\"delayFormat\":\"minutes\"}')"
         },
         "stage_id": {
           "name": "stage_id",
           "type": "int",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "created_at": {
@@ -1002,7 +1164,21 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "triggers_stage_id_stages_id_fk": {
+          "name": "triggers_stage_id_stages_id_fk",
+          "tableFrom": "triggers",
+          "tableTo": "stages",
+          "columnsFrom": [
+            "stage_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {
         "triggers_id": {
           "name": "triggers_id",
@@ -1040,6 +1216,13 @@
         },
         "email": {
           "name": "email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "organization": {
+          "name": "organization",
           "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true,

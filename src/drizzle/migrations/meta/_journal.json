@@ -5,43 +5,8 @@
     {
       "idx": 0,
       "version": "5",
-      "when": 1751589909653,
-      "tag": "0000_chunky_nick_fury",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "5",
-      "when": 1772993577034,
-      "tag": "0001_curly_wasp",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "5",
-      "when": 1773541749555,
-      "tag": "0002_rapid_diamondback",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "5",
-      "when": 1773624295097,
-      "tag": "0003_shocking_dreaming_celestial",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "5",
-      "when": 1776467152361,
-      "tag": "0004_freezing_ultron",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "5",
-      "when": 1777992751077,
-      "tag": "0005_curious_mandroid",
+      "when": 1778517928247,
+      "tag": "0000_dusty_galactus",
       "breakpoints": true
     }
   ]

@@ -12,18 +12,28 @@ type KanbanContextType = {
     jobStages: any[];  // StageResponseType[]
     setJobStages: (stages: any[]) => void;
     fetchApplicationTasks: () => Promise<void>;
+    orgMembers: Member[];
+    setOrgMembers: (members: Member[]) => void;
+};
+
+type Member = {
+    id: string;
+    name: string;
+    email: string;
 };
 
 const KanbanContext = createContext<KanbanContextType | undefined>(undefined);
 
-export function KanbanProvider({children, initialTriggers = [], initialStages = []}: {
+export function KanbanProvider({children, initialTriggers = [], initialStages = [], initialOrgMembers = []}: {
     children: React.ReactNode;
     initialTriggers?: StageTrigger[];
     initialStages?: any[];
+    initialOrgMembers?: Member[];
 }) {
     const [tasks, setTasks] = useState<TriggerTask[]>([])
     const [triggers, setTriggers] = useState(initialTriggers);
     const [jobStages, setJobStages] = useState(initialStages);
+    const [orgMembers, setOrgMembers] = useState<Member[]>(initialOrgMembers);
 
     const fetchApplicationTasks = async () => {
         const tasks = await get_all_tasks_action();
@@ -39,6 +49,8 @@ export function KanbanProvider({children, initialTriggers = [], initialStages = 
         triggers,
         setTriggers,
         fetchApplicationTasks,
+        orgMembers,
+        setOrgMembers,
     };
 
     return (

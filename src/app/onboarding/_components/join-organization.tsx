@@ -1,29 +1,30 @@
 "use client";
 
-import {Button} from "@/components/ui/button";
-import {Form, FormField} from "@/components/ui/form";
-import {Input} from "@/components/ui/input";
-import {useDebounce} from "@/hooks/use-debounce";
-import {zodResolver} from "@hookform/resolvers/zod";
-import {motion} from "framer-motion";
-import {ArrowLeft, LucideCornerDownLeft} from "lucide-react";
-import {useRouter, useSearchParams} from "next/navigation";
-import {useEffect, useRef, useTransition} from "react";
-import {useForm} from "react-hook-form";
-import {z} from "zod";
-import {useOrganizationList} from "@clerk/nextjs";
+import { Button } from "@/components/ui/button";
+import { Form, FormField } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useDebounce } from "@/hooks/use-debounce";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { motion } from "framer-motion";
+import { ArrowLeft, LucideCornerDownLeft, Users } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef, useTransition } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { useOrganizationList } from "@clerk/nextjs";
+import OnboardingLayout from "./onboarding-layout";
 
 const inviteeForm = z.object({
     orgId: z.string()
 });
 
-const JoinOrganization = ({userId}: { userId: string }) => {
+const JoinOrganization = ({ userId }: { userId: string }) => {
     const router = useRouter();
     const inputRef = useRef<HTMLInputElement | null>(null);
     const showText = useDebounce(true, 800);
     const searchParams = useSearchParams();
     const [isCreatePending, startCreateTransaction] = useTransition();
-    const {createOrganization, setActive} = useOrganizationList();
+    const { createOrganization, setActive } = useOrganizationList();
 
     const form = useForm<z.infer<typeof inviteeForm>>({
         resolver: zodResolver(inviteeForm),
@@ -45,7 +46,7 @@ const JoinOrganization = ({userId}: { userId: string }) => {
                     };
 
                     const organization = await result.json();
-                    await setActive({organization: data.orgId});
+                    await setActive({ organization: data.orgId });
                     const newSearchParams = new URLSearchParams(searchParams);
                     newSearchParams.set("step", "success");
                     newSearchParams.set("orgId", organization.id);
@@ -62,90 +63,27 @@ const JoinOrganization = ({userId}: { userId: string }) => {
     }, []);
 
     return (
-        <motion.div
-            className="flex flex-col h-screen p-4 container mx-auto"
-            exit={{opacity: 0, scale: 0.95}}
-            transition={{duration: 0.3, type: "spring"}}
+        <OnboardingLayout
+            title={`Join an Organization`}
+            subtitle="You're about to join this organization. An admin might need to approve your request."
+            icon={Users}
         >
-            {showText && <motion.div
-                className="mt-[40%] w-full flex"
-                variants={{
-                    show: {
-                        transition: {
-                            staggerChildren: 0.2,
-                        },
-                    },
-                }}
-                initial="hidden"
-                animate="show"
-            >
-                <motion.div className="w-[40%] flex flex-col gap-4">
-          <span onClick={() => router.back()} className="text-muted-foreground flex items-center gap-2 cursor-pointer">
-            <ArrowLeft size={16}/> Back
-          </span>
-                    <motion.h1
-                        className="text-balance text-2xl font-bold text-blue-900"
-                        variants={{
-                            hidden: {opacity: 0, y: 50},
-                            show: {
-                                opacity: 1,
-                                y: 0,
-                                transition: {duration: 0.4, type: "spring"},
-                            },
-                        }}
+            <div className="space-y-6">
+                <div className="p-6 bg-brand-50 rounded-[32px] border border-brand-100 text-center space-y-2">
+                    <p className="text-brand-600 text-sm font-bold">Request Access</p>
+                    <p className="text-brand-400 text-xs">A notification will be sent to the team owner.</p>
+                </div>
+                <div className="flex gap-3">
+                    <button onClick={onBack} className="p-4 bg-zinc-100 text-zinc-600 rounded-2xl hover:bg-zinc-200 transition-all"><ArrowLeft className="w-6 h-6" /></button>
+                    <button
+                        onClick={onJoin}
+                        className="flex-1 py-4 bg-zinc-900 text-white rounded-2xl font-bold hover:bg-zinc-800 transition-all"
                     >
-                        Organization Link
-                    </motion.h1>
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(join)}>
-                            <motion.div
-                                className="flex flex-col gap-4"
-                                variants={{
-                                    hidden: {opacity: 0, y: 50},
-                                    show: {
-                                        opacity: 1,
-                                        y: 0,
-                                        transition: {duration: 0.4, type: "spring"},
-                                    },
-                                }}
-                            >
-                                <FormField
-                                    control={form.control}
-                                    name="orgId"
-                                    render={({field}) => {
-                                        console.log("Field props:", field)
-                                        return(<div className="flex items-center gap-2">
-                                            <span className="text-5xl text-muted-foreground">https://</span>
-                                            <Input
-                                                className="md:text-6xl border-none outline-none shadow-none h-14 p-0 focus-visible:ring-0 caret-sky-500"
-                                                placeholder=""
-                                                {...field}
-                                                // ref={inputRef}
-                                            />
-                                        </div>)
-                                    }}
-                                />
-
-                                <div className="flex items-center gap-4">
-                                    <Button type="submit" disabled={isCreatePending}
-                                            className="rounded-full bg-blue-400 px-10">Next</Button>
-                                    <div className="flex items-center gap-2 text-muted-foreground">
-                                        <LucideCornerDownLeft size={16}/>
-                                        <span className=" text-sm">or press Enter</span>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        </form>
-                    </Form>
-                </motion.div>
-
-                <motion.div className="">
-                    <div className="h-[300px]">
-                        <div className="">{}</div>
-                    </div>
-                </motion.div>
-            </motion.div>}
-        </motion.div>
+                        Continue to Dashboard
+                    </button>
+                </div>
+            </div>
+        </OnboardingLayout>
     );
 };
 

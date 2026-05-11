@@ -1,129 +1,115 @@
 "use client"
 
-import React, {useEffect, useState, useTransition} from 'react';
-import {motion} from "motion/react"
-import {ArrowLeft, LucideCornerDownLeft, LucidePlus} from "lucide-react";
-import {useRouter} from "next/navigation";
-import {useDebounce} from "@/hooks/use-debounce";
-import {Button} from "@/components/ui/button";
-import {cn, DEPARTMENTS} from "@/lib/utils";
-import {add_department_in_organization} from "@/server/actions/organization_actions";
+import React, { useState, useTransition } from 'react';
+import { ArrowLeft, Building, Plus } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { add_department_in_organization } from "@/server/actions/organization_actions";
+import OnboardingLayout from './onboarding-layout';
+import { DEPARTMENTS } from '@/lib/constant';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
 
 type Props = {
     orgName: string | null;
     orgId: string | null;
 };
 
-const AddOrganizationDepartment = ({orgId, orgName}: Props) => {
-    const showText = useDebounce(true, 800);
+const AddOrganizationDepartment = ({ orgId, orgName }: Props) => {
     const router = useRouter();
-    const [selectedDepartments, setSelectedDepartments] = useState<{
-        id: number,
-        name: string,
-        isSelected: boolean
-    }[]>([]);
+    const searchParams = useSearchParams();
+    const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
+    const [newDept, setNewDept] = useState('');
     const [isCreatePending, startCreateTransaction] = useTransition();
 
-    const add = async () => {
-        startCreateTransaction(async () => {
-            const deps = selectedDepartments
-                .filter((dep) => dep.isSelected)
-                .map((dep) => dep.name);
-            await add_department_in_organization({departments: deps, orgId: orgId!});
-            router.push(`/onboarding?step=invite&orgId=${orgId}&orgName=${orgName}`);
+    const handleSelectDepartment = (department: string) => {
+        setSelectedDepartments((prev) => {
+            if (prev.includes(department)) {
+                return prev.filter((d) => d !== department);
+            }
+            return [...prev, department];
         });
     };
 
-    useEffect(() => {
-        const formatedDepartment = DEPARTMENTS.map((dep, index) => {
-            return {id: index, name: dep, isSelected: false}
+    const addDept = () => {
+        if (newDept.trim()) {
+            setSelectedDepartments((prev) => [...prev, newDept.trim()]);
+            setNewDept('');
+        }
+    };
+
+    const onComplete = async () => {
+        startCreateTransaction(async () => {
+            if (selectedDepartments.length === 0) {
+                alert('Please select at least one department.');
+                return;
+            };
+
+            try {
+                await add_department_in_organization({ departments: selectedDepartments, orgId: orgId! });
+
+                const newSearchParams = new URLSearchParams(searchParams);
+                newSearchParams.set("step", "invite");
+                newSearchParams.set("orgId", orgId!);
+                newSearchParams.set("orgName", orgName!);
+
+                router.push(`/onboarding?${newSearchParams.toString()}`);
+            } catch (error) {
+                alert('Failed to add department: ' + error);
+            }
         });
-        setSelectedDepartments(formatedDepartment);
-    }, []);
+    };
 
     return (
-        <motion.div
-            className="flex flex-col h-screen p-4 container mx-auto"
-            exit={{opacity: 0, scale: 0.95}}
-            transition={{duration: 0.3, type: "spring"}}
+        <OnboardingLayout
+            title="Add Organization Department"
+            subtitle="Select department that your organization is separate into."
+            icon={Building}
         >
-            {showText && (
-                <motion.div
-                    className="mt-auto pb-5 w-full flex items-center"
-                    variants={{
-                        show: {
-                            transition: {
-                                staggerChildren: 0.2,
-                            },
-                        },
-                    }}
-                    initial="hidden"
-                    animate="show"
-                >
-                    <motion.div className="w-[50%] flex flex-col gap-4">
-                        <span
-                            onClick={() => router.back()}
-                            className="text-muted-foreground flex items-center gap-2 cursor-pointer"
+            <div className="space-y-6">
+                <div className="flex flex-wrap gap-2">
+                    {DEPARTMENTS.map((deps, index) => (
+                        <Button
+                            key={index}
+                            onClick={() => handleSelectDepartment(deps)}
+                            className={cn(`px-4 py-2 text-sm font-bold rounded-xl border border-brand-100 flex items-center gap-2 hover:text-white`, selectedDepartments.includes(deps) ? 'bg-primary text-white' : 'bg-zinc-100 text-zinc-600')}
                         >
-                          <ArrowLeft size={16}/> Back
-                        </span>
-                        <motion.h1
-                            className="text-balance text-2xl font-bold text-blue-900"
-                            variants={{
-                                hidden: {opacity: 0, y: 50},
-                                show: {
-                                    opacity: 1,
-                                    y: 0,
-                                    transition: {duration: 0.4, type: "spring"},
-                                },
-                            }}
-                        >
-                            {orgName ?? "Bridge"}
-                        </motion.h1>
-                        <motion.p
-                            className="text-muted-foreground"
-                        >
-                            Select department that your {orgName} is separate into.
-                        </motion.p>
-                        <div className="flex gap-4">
-                            <div className="flex gap-2 flex-wrap">
-                                {selectedDepartments.map((department) => (
-                                    <div
-                                        key={department.id}
-                                        className={cn("flex justify-center items-center px-5 rounded-md border border-blue-400 cursor-pointer text-2xl", department.isSelected ? "bg-red-300" : "")}
-                                        onClick={() => {
-                                            setSelectedDepartments(prev => {
-                                                return prev.map(dep =>
-                                                    dep.id === department.id
-                                                        ? {...dep, isSelected: !dep.isSelected}
-                                                        : dep
-                                                );
-                                            });
-                                        }}
-                                    >
-                                        {department.name}
-                                    </div>
-                                ))}
-                            </div>
-                            <Button><LucidePlus /></Button>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <Button
-                                type="button"
-                                disabled={isCreatePending}
-                                className="rounded-full bg-blue-400 px-10"
-                                onClick={add}
-                            >
-                                Next
-                            </Button>
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                                <LucideCornerDownLeft size={16}/>
-                                <span className=" text-sm">Or press Enter</span>
-                            </div>
-                        </div>
-                    </motion.div>
-                </motion.div>)}
-        </motion.div>
+                            {deps}
+                        </Button>
+                    ))}
+                </div>
+
+                <div className="flex gap-2">
+                    <Input
+                        type="text"
+                        placeholder="Add department..."
+                        value={newDept}
+                        onChange={(e) => setNewDept(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && addDept()}
+                        className="flex-1 px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                    />
+                    <Button
+                        onClick={addDept}
+                        className="p-3 bg-primary text-white rounded-xl hover:bg-brand-700 transition-all shadow-sm shadow-brand-500/20"
+                    >
+                        <Plus className="w-6 h-6" />
+                    </Button>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                    <Button onClick={() => router.back()} className="p-4 bg-zinc-100 text-zinc-600 rounded-2xl hover:bg-zinc-200 transition-all">
+                        <ArrowLeft className="w-6 h-6" />
+                    </Button>
+                    <Button
+                        onClick={onComplete}
+                        disabled={isCreatePending}
+                        className="flex-1 py-4 bg-zinc-900 text-white rounded-2xl font-bold hover:bg-zinc-800 transition-all"
+                    >
+                        Save Departments
+                    </Button>
+                </div>
+            </div>
+        </OnboardingLayout>
     )
 };
 

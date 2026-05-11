@@ -1,126 +1,40 @@
 "use client";
 
-import {motion} from "framer-motion";
-import {useRouter} from "next/navigation";
-import {useDebounce} from "@/hooks/use-debounce";
-import {Button} from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import OnboardingLayout from "./onboarding-layout";
+import { ArrowRight, Briefcase, Globe, Users, Zap } from "lucide-react";
 
 const Intro = () => {
     const router = useRouter();
-    const showText = useDebounce(true, 800);
-
-    const images = [
-        {src: "calendar.png", top: "-250px", left: "0px"},
-        {src: "chart.png", top: "-50px", left: "-400px"},
-        {src: "communication.png", top: "300px", left: "100px"},
-        {src: "paper.png", top: "-80px", left: "350px"},
-        {src: "paper-2.png", top: "200px", left: "-250px"},
-    ];
 
     return (
-        <motion.div
-            className="flex w-screen h-screen flex-col items-center justify-center"
-            exit={{opacity: 0, scale: 0.95}}
-            transition={{duration: 0.3, type: "spring"}}
+        <OnboardingLayout
+            title="Welcome to TalentPortal"
+            subtitle="The all-in-one platform to manage your recruitment pipeline and build your company culture."
+            icon={Zap}
         >
-            {showText && (
-                <motion.div
-                    variants={{
-                        show: {
-                            transition: {
-                                staggerChildren: 0.2,
-                            },
-                        },
-                    }}
-                    initial="hidden"
-                    animate="show"
-                    className="relative mx-5 flex flex-col items-center space-y-2.5 text-center sm:mx-auto"
+            <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-3">
+                    {[
+                        { icon: Briefcase, text: "Manage job openings effortlessly" },
+                        { icon: Users, text: "Track candidates throughout the pipeline" },
+                        { icon: Globe, text: "Build a beautiful career page in minutes" }
+                    ].map((item, i) => (
+                        <div key={i} className="flex items-center gap-3 p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
+                            <item.icon className="w-5 h-5 text-zinc-400" />
+                            <span className="text-sm font-medium text-zinc-700">{item.text}</span>
+                        </div>
+                    ))}
+                </div>
+                <button
+                    onClick={() => router.push("/onboarding?step=organization")}
+                    className="w-full py-4 bg-zinc-900 text-white rounded-2xl font-bold hover:bg-zinc-800 transition-all flex items-center justify-center gap-2 group"
                 >
-                    <motion.h1
-                        className="text-balance text-4xl font-bold sm:text-5xl"
-                        variants={{
-                            hidden: {opacity: 0, y: 50},
-                            show: {
-                                opacity: 1,
-                                y: 0,
-                                transition: {duration: 0.4, type: "spring"},
-                            },
-                        }}
-                    >
-                        Welcome to TinyATS
-                    </motion.h1>
-                    <motion.p
-                        className="max-w-md text-muted-foreground transition-colors sm:text-lg"
-                        variants={{
-                            hidden: {opacity: 0, y: 50},
-                            show: {
-                                opacity: 1,
-                                y: 0,
-                                transition: {duration: 0.4, type: "spring"},
-                            },
-                        }}
-                    >
-                        Get started with your Ats in just a few steps and start tracking
-                        your jobs and candidates.
-                    </motion.p>
-                    <motion.div
-                        className="pt-4"
-                        variants={{
-                            hidden: {opacity: 0, y: 50},
-                            show: {
-                                opacity: 1,
-                                y: 0,
-                                transition: {duration: 0.4, type: "spring"},
-                            },
-                        }}
-                    >
-                        <Button
-                            className="px-8 py-2 rounded-full relative bg-slate-700 text-white text-sm hover:shadow-2xl hover:shadow-white/[0.1] transition duration-200 border border-slate-600"
-                            onClick={() => router.push("/onboarding?step=organization")}
-                        >
-                            <div
-                                className="absolute inset-x-0 h-[2px] w-1/2 mx-auto -top-px shadow-2xl  bg-gradient-to-r from-transparent via-teal-500 to-transparent"/>
-                            <span className="relative z-20">Get started</span>
-                        </Button>
-                    </motion.div>
-                </motion.div>
-            )}
-
-            {images.map((image, index) => (
-                <motion.img
-                    key={index}
-                    src={image.src}
-                    alt={`Image ${index + 1}`}
-                    initial={{
-                        scale: 0.5,
-                        opacity: 0,
-                        top: `50%`,
-                        left: `50%`,
-                        x: "-50%",
-                        y: "-50%",
-                    }}
-                    animate={{
-                        scale: 1,
-                        opacity: 1,
-                        top: `calc(50% + ${image.top})`,
-                        left: `calc(50% + ${image.left})`,
-                        x: "-50%",
-                        y: "-50%",
-                    }}
-                    transition={{
-                        duration: 1.5,
-                        delay: index * 0.3,
-                        ease: [0.5, 0.71, 1, 1.5],
-                    }}
-                    style={{
-                        position: "absolute",
-                        width: "50px",
-                        height: "50px",
-                        borderRadius: "50%",
-                    }}
-                />
-            ))}
-        </motion.div>
+                    Get Started
+                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </button>
+            </div>
+        </OnboardingLayout>
     );
 };
 

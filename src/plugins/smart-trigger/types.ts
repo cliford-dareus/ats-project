@@ -17,13 +17,32 @@ export type ConfigType = {
         subject?: string;
         body?: string;
     };
+    note?: {
+        content?: string;
+        adddress_to?: string;
+    };
+    calendar?: {
+        eventName?: string;
+        eventDate?: string;
+        eventTime?: string;
+    };
+    todo?: {
+        steps?: string[];
+        dueDate?: string;
+    };
+    tag?: {
+        name?: string;
+    };
+    score?: {
+        value?: number;
+    };
     delay: number;
     delayFormat: "minutes" | "hours" | "days"
 };
 
 export type TriggerAction = {
     id: number;
-    action_type: 'MOVE' | 'MESSAGE' | 'INTERVIEW' | 'NOTE' | 'todo' | 'tag' | 'score' | 'EMAIL';
+    action_type: 'MOVE' | 'MESSAGE' | 'INTERVIEW' | 'NOTE' | 'TODO' | 'TAG' | 'SCORE' | 'EMAIL';
     config: ConfigType;
 };
 

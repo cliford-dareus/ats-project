@@ -1,18 +1,23 @@
-import {SidebarProvider} from "@/components/ui/sidebar";
-import {NewJobContextProvider} from "./new-job-provider";
-import {PluginProvider} from "@/providers/plugin-provider";
-import {useServerFlags} from "@/lib/plugins-registry";
-import {SocketProvider} from "@/providers/socket-provider";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { NewJobContextProvider } from "./new-job-provider";
+import { PluginProvider } from "@/providers/plugin-provider";
+import { useServerFlags } from "@/lib/plugins-registry";
+import { SocketProvider } from "@/providers/socket-provider";
+import { usersTable } from "@/drizzle/schema";
+import { db } from "@/drizzle/db";
 
 type Props = {
     children: React.ReactNode;
     orgId: string;
 };
 
-const Provider = async ({children, orgId}: Props) => {
+const Provider = async ({ children, orgId }: Props) => {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const flags = await useServerFlags(orgId);
     const initialPlugins = Object.keys(flags);
+
+    // const initialOrgMembers = await db.select().from(usersTable).where({ organization: orgId });
+    
     return (
         <SocketProvider>
             <NewJobContextProvider>

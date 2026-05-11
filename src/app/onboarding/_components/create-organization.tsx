@@ -1,186 +1,146 @@
 "use client";
 
-import {BackgroundGradient} from "@/components/ui/background-gradient";
-import {Button} from "@/components/ui/button";
-import {Input} from "@/components/ui/input";
-import {useDebounce} from "@/hooks/use-debounce";
-import {create_organization_action} from "@/server/actions/organization_actions";
-import {useOrganizationList} from "@clerk/nextjs";
-import {ArrowLeft, LucideCornerDownLeft} from "lucide-react";
-import {motion} from "motion/react";
-import {useRouter, useSearchParams} from "next/navigation";
-import {useEffect, useState, useTransition} from "react";
-import {z} from "zod";
+import { create_organization_action } from "@/server/actions/organization_actions";
+import { useOrganizationList } from "@clerk/nextjs";
+import { ArrowLeft, Plus } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useState, useTransition } from "react";
+import OnboardingLayout from "./onboarding-layout";
+import { Button } from "@/components/ui/button";
 
-type Props = {
-    userId: string;
-};
-
-export const orgSchema = z.object({
-    name: z.string().min(2).max(100),
-});
-
-const CreateOrganization = ({userId}: Props) => {
-    const showText = useDebounce(true, 800);
-    const [subdomain, setSubdomain] = useState("");
+const CreateOrganization = () => {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [isCreatePending, startCreateTransaction] = useTransition();
-    const {createOrganization, setActive} = useOrganizationList()
-    const [debouncedValue] = useDebounce(subdomain, 500);
+
+    const { createOrganization, setActive } = useOrganizationList();
+
+    const [displayName, setDisplayName] = useState("");
+    const [slug, setSlug] = useState("");
     const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
     const [loading, setLoading] = useState(false);
 
-
     useEffect(() => {
         async function checkAvailability() {
-            if (debouncedValue?.length < 3) {
+            if (!displayName) {
                 setIsAvailable(null);
                 return;
             }
 
             setLoading(true);
-            const res = await fetch(`/api/domains/check?subdomain=${debouncedValue}`);
-            const data = await res.json();
-            setIsAvailable(data.available);
-            setLoading(false);
+            try {
+                const res = await fetch(`/api/organization/check?subdomain=${slug}`);
+                if (!res.ok) {
+                    setIsAvailable(null);
+                    return;
+                }
+                const data = await res.json();
+                setIsAvailable(data.available);
+            } catch (err) {
+                console.error(err);
+                setIsAvailable(null);
+            } finally {
+                setLoading(false);
+            }
         }
 
-        checkAvailability();
-    }, [debouncedValue]);
+        const debounceFn = setTimeout(() => {
+            checkAvailability();
+        }, 500);
 
-    const submit = async (data: z.infer<typeof orgSchema>) => {
+        return () => clearTimeout(debounceFn);
+    }, [displayName, slug]);
+
+    const isValid = slug.length >= 3 && isAvailable === true;
+
+    const onCreated = useCallback(async () => {
+        if (!isValid || !createOrganization) return;
+
         startCreateTransaction(async () => {
             try {
-                if (createOrganization) {
-                    const new_org = await createOrganization({name: data.name});
-                    await setActive({organization: new_org.id});
-                    await create_organization_action({
-                        clerk_id: new_org.id,
-                        name: new_org.name,
-                    });
+                const newOrg = await createOrganization({ name: displayName || slug });
 
-                    // TODO: Check if Organization is created successfully
-                    // Before navigation, ensure that the organization is active
-                    const newSearchParams = new URLSearchParams(searchParams);
-                    newSearchParams.set("step", "department");
-                    newSearchParams.set("orgId", new_org.id);
-                    newSearchParams.set("orgName", new_org.name);
-                    router.push(`/onboarding?${newSearchParams.toString()}`);
-                }
+                await setActive({ organization: newOrg.id });
+
+                await create_organization_action({
+                    clerk_id: newOrg.id,
+                    name: newOrg.name,
+                });
+
+                const newSearchParams = new URLSearchParams(searchParams);
+                newSearchParams.set("step", "department");
+                newSearchParams.set("orgId", newOrg.id);
+                newSearchParams.set("orgName", newOrg.name);
+
+                router.push(`/onboarding?${newSearchParams.toString()}`);
             } catch (err) {
-                console.log(err);
+                console.error("Failed to create organization:", err);
+                // TODO: Show toast error
             }
         });
+    }, [isValid, createOrganization, displayName, slug, setActive, searchParams, router]);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setDisplayName(value);
+
+        const cleanSlug = value
+            .toLowerCase()
+            .replace(/[^a-z0-9-]/g, "")
+            .replace(/-+/g, "-")
+            .replace(/^-|-$/g, "");
+
+        setSlug(cleanSlug);
     };
 
     return (
-        <motion.div
-            className="flex flex-col h-screen p-4 container mx-auto"
-            exit={{opacity: 0, scale: 0.95}}
-            transition={{duration: 0.3, type: "spring"}}
+        <OnboardingLayout
+            title="Create Organization"
+            subtitle="Enter your organization name to get started."
+            icon={Plus}
+            colorClass="bg-emerald-50 text-emerald-600"
         >
-            {showText && (
-                <motion.div
-                    className="mt-[40%] w-full flex items-center"
-                    variants={{
-                        show: {
-                            transition: {
-                                staggerChildren: 0.2,
-                            },
-                        },
-                    }}
-                    initial="hidden"
-                    animate="show"
-                >
-                    <motion.div className="flex flex-col gap-4">
-                        <span
-                            onClick={() => router.back()}
-                            className="text-muted-foreground flex items-center gap-2 cursor-pointer"
-                        >
-                          <ArrowLeft size={16}/> Back
-                        </span>
-                        <motion.h1
-                            className="uppercase text-balance text-2xl font-bold text-blue-900"
-                            variants={{
-                                hidden: {opacity: 0, y: 50},
-                                show: {
-                                    opacity: 1,
-                                    y: 0,
-                                    transition: {duration: 0.4, type: "spring"},
-                                },
-                            }}
-                        >
-                            Organization Name
-                        </motion.h1>
+            <div className="space-y-6">
+                <div className="space-y-4 flex items-center gap-2">
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider ml-1">Company Name</label>
+                        <input
+                            type="text"
+                            placeholder="e.g. Acme Corp"
+                            value={displayName}
+                            onChange={handleInputChange}
+                            className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                        />
+                    </div>
 
-                        <motion.div
-                            className="flex flex-col gap-4"
-                            variants={{
-                                hidden: {opacity: 0, y: 50},
-                                show: {
-                                    opacity: 1,
-                                    y: 0,
-                                    transition: {duration: 0.4, type: "spring"},
-                                },
-                            }}
-                        >
-                            <div>
-                                <form className="flex flex-col gap-4">
-                                    <div className="flex items-center gap-2">
-                                                    <span className="text-5xl text-muted-foreground">
-                                                        Org::
-                                                    </span>
-                                        <Input
-                                            className="md:text-6xl border-none outline-none shadow-none h-14 p-0 focus-visible:ring-0 caret-sky-500"
-                                            placeholder=""
-                                            autoFocus
-                                            value={subdomain}
-                                            onChange={(e) => setSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
-                                        />
-                                        <span className="md:text-5xl bg-gray-100 p-3 text-gray-500 border-l">
-                                                        .youratshub.com
-                                                    </span>
-                                    </div>
+                    <span className="font-mono text-emerald-600 font-medium">
+                        .youratshub.com
+                    </span>
+                </div>
 
+                {/* Status Indicator */}
+                <div className="mt-2 text-sm">
+                    {loading && <p className="text-gray-500">Checking availability...</p>}
+                    {isAvailable === true &&
+                        <p className="text-green-600">✓ This URL is available!</p>}
+                    {isAvailable === false &&
+                        <p className="text-red-600">✗ Sorry, that name is taken.</p>}
+                </div>
 
-                                    {/* Status Indicator */}
-                                    <div className="mt-2 text-sm">
-                                        {loading && <p className="text-gray-500">Checking availability...</p>}
-                                        {isAvailable === true &&
-                                            <p className="text-green-600">✓ This URL is available!</p>}
-                                        {isAvailable === false &&
-                                            <p className="text-red-600">✗ Sorry, that name is taken.</p>}
-                                    </div>
-
-                                    <div className="flex items-center gap-4">
-                                        <Button
-                                            type="submit"
-                                            disabled={isCreatePending}
-                                            className="rounded-full bg-blue-400 px-10"
-                                        >
-                                            Next
-                                        </Button>
-                                        <div className="flex items-center gap-2 text-muted-foreground">
-                                            <LucideCornerDownLeft size={16}/>
-                                            <span className=" text-sm">Or press Enter</span>
-                                        </div>
-                                    </div>
-                                </form>
-                            </div>
-                        </motion.div>
-                    </motion.div>
-
-                    {/*<div className="ml-auto h-full w-[30%]">*/}
-                    {/*    <BackgroundGradient className="min-w-[250px] grid grid-cols-1 p-4">*/}
-                    {/*        <div className="border rounded-full p-2 h-10">*/}
-                    {/*            <p className="">{subdomain}</p>*/}
-                    {/*        </div>*/}
-                    {/*    </BackgroundGradient>*/}
-                    {/*</div>*/}
-                </motion.div>
-            )}
-        </motion.div>
+                <div className="flex gap-3 pt-2">
+                    <Button className="p-4 bg-zinc-100 text-zinc-600 rounded-2xl hover:bg-zinc-200 transition-all">
+                        <ArrowLeft className="w-6 h-6" />
+                    </Button>
+                    <Button
+                        onClick={onCreated}
+                        disabled={isCreatePending}
+                        className="flex-1 py-4 bg-zinc-900 text-white rounded-2xl font-bold hover:bg-zinc-800 disabled:opacity-50 transition-all"
+                    >
+                        Create & Continue
+                    </Button>
+                </div>
+            </div>
+        </OnboardingLayout>
     );
 };
 
