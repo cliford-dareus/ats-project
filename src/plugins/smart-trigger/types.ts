@@ -1,9 +1,11 @@
+import { JOB_STAGES } from '@/zod';
 import { StageResponseType } from '@/types';
+import { z } from 'zod';
 
 export type ConfigType = {
     condition?: {
         type: string;
-        target: string;
+        target: z.infer<typeof JOB_STAGES>;
         location?: string;
         experience?: number;
         operator?: string;

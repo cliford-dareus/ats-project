@@ -27,8 +27,15 @@ export const add_trigger_to_stage_action = async (stageId: number, action: Trigg
     return await add_trigger_to_stage(stageId, action);
 };
 
+type AddTaskToQueueActionParams = {
+    applicationId: number;
+    action: TriggerAction;
+    jobId: number;
+    stageName?: string;
+};
+
 // MOVE LATER
-export const add_task_to_queue_action = async (applicationId: number, action: TriggerAction, stageName: string, jobId: number) => {
+export const add_task_to_queue_action = async (unsafeData: AddTaskToQueueActionParams) => {
     const {userId} = await auth();
     const canCreate = await canCreateJob(userId);
 
@@ -36,5 +43,5 @@ export const add_task_to_queue_action = async (applicationId: number, action: Tr
         return {error: true, message: "There was an error creating your product"}
     }
 
-    return await addTaskToQueue(applicationId, action, stageName, jobId);
+    return await addTaskToQueue(unsafeData);
 };

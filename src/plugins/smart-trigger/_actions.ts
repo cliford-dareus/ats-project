@@ -31,6 +31,9 @@ export const executeSmartTriggerAction = async (jobData: SmartTriggerJobData) =>
         case 'EMAIL':
             await executeSmartEmailAction(jobData);
             break;
+        case 'NOTE':
+            await executeSmartNoteAction(jobData);
+            break;
         default:
     }
 };
@@ -45,13 +48,19 @@ export const executeSmartMoveAction = async (jobData: SmartTriggerJobData) => {
         .limit(1);
     if (!application) throw new Error(`Application ${application_id} not found`);
 
+    const [candidate] = await db.select()
+        .from(candidates)
+        .where(eq(candidates.id, application.candidate))
+        .limit(1);
+    if (!candidate) throw new Error(`Candidate ${application_id} not found`);
+
     // Handle location conditions
-    if (config?.condition?.type === 'location' && config?.condition?.location) {
+    if (config?.condition?.type === 'location' && config?.condition?.location && config.condition.target) {
         const [targetStage] = await db.select()
             .from(stages)
             .where(and(
                 eq(stages.job_id, application.job_id!),
-                eq(stages.stage_name, new_stage_name)
+                eq(stages.stage_name, config.condition.target)
             ))
             .limit(1);
         if (!targetStage) throw new Error(`Target stage ${new_stage_name} not found for this job`);
@@ -69,7 +78,7 @@ export const executeSmartMoveAction = async (jobData: SmartTriggerJobData) => {
 export const executeSmartEmailAction = async (jobData: SmartTriggerJobData) => {
     await mongodb();
     const { application_id: candidateId, trigger_id, config } = jobData;
-    
+
     const [application] = await db.select()
         .from(applications)
         .where(eq(applications.id, candidateId))
@@ -87,8 +96,8 @@ export const executeSmartEmailAction = async (jobData: SmartTriggerJobData) => {
 
     const savedProps = await EmailTemplate.findOne({ _id: config?.email?.template });
     if (!savedProps) return new Response('Not Found', { status: 404 });
-    
-    const template = getTemplateById( savedProps.templateId || '');
+
+    const template = getTemplateById(savedProps.templateId || '');
     if (!template) return new Response('Not Found', { status: 404 });
 
     // Convert React component to HTML string
@@ -96,10 +105,31 @@ export const executeSmartEmailAction = async (jobData: SmartTriggerJobData) => {
 
     // Send email
     const result = await sendEmail({
-        to: email.toLowerCase(),
+        to: email,
         subject: config?.email?.subject as string,
         html,
         from: config?.email?.from,
     });
     if (!result) throw new Error(`Failed to send email to ${email}`);
 };
+
+export const executeSmartNoteAction = async (jobData: SmartTriggerJobData) => {
+    await mongodb();
+    const { application_id: candidateId, trigger_id, config } = jobData;
+
+    const noteContent = config?.note?.content as string;
+    if (!noteContent) return;
+
+    const [application] = await db.select()
+        .from(applications)
+        .where(eq(applications.id, candidateId))
+        .limit(1);
+    if (!application) throw new Error(`Application ${candidateId} not found`);
+
+    await db.insert(notes)
+        .values({
+            content: noteContent,
+            application_id: candidateId,
+            trigger_id,
+        });
+}

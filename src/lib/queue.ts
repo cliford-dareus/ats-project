@@ -32,15 +32,19 @@ export const setupWorker = (io: SocketServer) => {
     taskWorker.on('completed', (job) => {
         // Emit to specific room (board:${application.job_id})
         const roomId = `board:${job.data.jobId}`;
-        io.to(roomId).emit('job-completed', {
-            room: `board:${job.data.jobId}`,
-            payload: {
-                type: job.data.type,
-                applicationId: job.data.application_id,
-                newStageId: job.data.newStageId,
-                message: 'Application moved successfully',
-            },
-        });
+        
+        if (job.data.type === 'MOVE') {
+            console.log(`Job ${job.data.type} completed. Emitting to room ${roomId}`);
+            io.to(roomId).emit('job-completed', {
+                room: `board:${job.data.jobId}`,
+                payload: {
+                    type: job.data.type,
+                    applicationId: job.data.application_id,
+                    newStageName: job.data.config.condition.target,
+                    message: 'Application moved successfully',
+                },
+            });
+        }
     });
 
     taskWorker.on('failed', (job, err) => console.error(`Job ${job?.id} failed`, err));

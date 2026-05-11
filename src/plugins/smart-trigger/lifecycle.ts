@@ -50,7 +50,7 @@ export const smartTriggerLifecycle = {
 
         const { applicationId, stageId, stageName, jobId } = data;
         const stageTriggers = context.filter?.((t: StageTrigger) => t.id === String(stageId));
-        console.log('triggerAction', context);
+        console.log('triggerAction', context, stageTriggers);
 
         await smartTriggerLifecycle.processTriggerActions(
             applicationId,
@@ -79,12 +79,12 @@ export const smartTriggerLifecycle = {
         stageName: string,
         jobId: number,
     ) => {
-        for (const trigger of stageTriggers) {
-            for (const action of trigger.actions) {
-                if (action.action_type === null) continue;
-                console.log(trigger)
-                await add_task_to_queue_action(applicationId, action, stageName, jobId);
-            }
+        const actions = stageTriggers.flatMap(t => t.actions);
+   
+        for (const action of actions) {
+            if (action.action_type === null) continue;
+            console.log("TRIGGER", action);
+            await add_task_to_queue_action({ applicationId, action, stageName, jobId });
         }
     }
 };

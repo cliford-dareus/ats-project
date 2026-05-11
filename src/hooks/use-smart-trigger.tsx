@@ -22,7 +22,7 @@ export function useSmartTriggers(jobId: number, orgId: string) {
 
     const triggerAction = useCallback(async (data: { applicationId: number; stageId: number; stageName: string }) => {
         if (!isEnabled) return;
-        
+      
         const context = {
             orgId,
             filter: (fn: (t: any) => boolean) => triggers.filter(fn)
@@ -35,8 +35,12 @@ export function useSmartTriggers(jobId: number, orgId: string) {
     }, [isEnabled, triggers, jobId, orgId]);
 
     useEffect(() => {
+        if (triggers.length > 0 || stages.length > 0) {
+            // Already initialized
+            return;
+        }
         activate();
-    }, [activate]);
+    }, [activate, triggers.length, stages.length]);
 
     return {
         isEnabled,

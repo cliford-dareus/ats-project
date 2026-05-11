@@ -1,6 +1,7 @@
 import Column from "@/components/kanban/column";
 import { useEffect, useState } from "react";
 import { ApplicationType, StageResponseType } from "@/types";
+import { useSmartTriggers } from "@/hooks/use-smart-trigger";
 
 type Props = {
     data: ApplicationType[];
@@ -11,10 +12,11 @@ type Props = {
 const Kanban = ({ data, stages, jobDetails }: Props) => {
     const [jobs, setJobs] = useState<ApplicationType[]>();
     const [showTriggers, setShowTriggers] = useState(false);
+    const { isEnabled, triggerAction, stages: Tstages } = useSmartTriggers(data[0].job_id, data[0].organization);
 
     useEffect(() => {
         setJobs(data)
-    }, []);
+    }, [data]);
 
     return (
         <div className="flex h-full gap-4 overflow-y-hidden overflow-x-scroll">
@@ -31,7 +33,9 @@ const Kanban = ({ data, stages, jobDetails }: Props) => {
                     setCards={setJobs}
                     showTriggers={showTriggers}
                     setShowTriggers={setShowTriggers}
-                    orgId={data[0].organization}
+                    triggerAction={triggerAction}
+                    isEnabled={isEnabled}
+                    stages={Tstages}
                 />
             ))}
         </div>
