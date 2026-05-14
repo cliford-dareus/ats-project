@@ -18,6 +18,7 @@ export const jobFormSchema = z.object({
         job_description: z.string(),
         job_location: z.string(),
         department: z.string(),
+        job_type: JOB_TYPE,
         organization: z.string(),
         salary_up_to: z.string(),
     }).required(),
@@ -30,7 +31,7 @@ export const jobFormSchema = z.object({
     jobStages: z.array(
         z.object({
             stage_name: JOB_STAGES,
-            stage_assign_to: z.string(),
+            stage_assign_to: z.number(),
             color: z.string(),
             need_schedule: z.boolean().optional(),
         })),
@@ -38,7 +39,7 @@ export const jobFormSchema = z.object({
         job_effective_date: z.date().optional(),
         job_agency: z.string().optional(),
     }),
-    userId: z.string().nullish(),
+    userId: z.number().nullish(),
 });
 
 export const updateJobListingSchema = z.object({
@@ -261,6 +262,8 @@ export const stepOneSchema = z.object({
     job_description: z.string(),
     job_location: z.string(),
     salary_up_to: z.string(),
+    job_type: JOB_TYPE,
+    department: z.string(),
 });
 
 export const stepTwoSchema = z.array(
@@ -282,7 +285,8 @@ export const stepThreeSchema = z.array(
 // ORGANIZATION SCHEMA
 export const organizationSchema = z.object({
     clerk_id: z.string(),
-    name: z.string().min(2).max(100),
+    name: z.string().min(3).max(100),
+    subdomain: z.string().min(3).max(100),
 });
 
 export const inviteMemberSchema = z.object({

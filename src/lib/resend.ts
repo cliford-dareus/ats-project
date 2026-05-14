@@ -1,27 +1,30 @@
+"use server";
+
 import { Resend } from "resend";
 
-interface EmailPayload {
-    to: string;
+interface SendEmailParams {
+    apiKey: string;
+    from: string;           // e.g. "ATS <hiring@acme.com>"
+    to: string | string[];
     subject: string;
     html: string;
-    from?: string;
-};
+    replyTo?: string;
+    tags?: { name: string; value: string }[];
+}
 
-export const resend = new Resend(process.env.RESEND_API_KEY);
+export const sendEmail = async (params: SendEmailParams) => {
+    const resend = new Resend(params.apiKey);
+    // const resend = new Resend(process.env.RESEND_API_KEY);
 
-export const sendEmail = async ({ to, subject, html, from = 'onboarding@resend.dev' }: EmailPayload) => {
-    try {
-        // 2. Send via Resend
-        const data = await resend.emails.send({
-            from: from,
-            to: [to],
-            subject: subject,
-            html: html,
-        });
+    // 2. Send via Resend
+    const { data, error } = await resend.emails.send({
+        from: params.from,
+        to: params.to,
+        subject: params.subject,
+        html: params.html,
+        replyTo: params.replyTo,
+    });
 
-        return { success: true, data };
-    } catch (error) {
-        console.error("Email Error:", error);
-        return { success: false, error };
-    }
+    if (error) throw new Error(error.message);
+    return { id: data!.id };
 };

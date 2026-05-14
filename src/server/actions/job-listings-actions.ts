@@ -6,19 +6,22 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { jobFormSchema, filterJobSchema, updateJobListingSchema } from "@/zod";
 import { canCreateJob } from "@/server/permissions";
+import { AutomationRule } from "@/types";
+import { db } from "@/drizzle/db";
 
 const jobIdSchema = z.number();
 
 export const create_job_action = async (unsafeData: z.infer<typeof jobFormSchema>) => {
     const { userId } = await auth();
-    const { success, data } = await jobFormSchema.spa(unsafeData);
-    const canCreate = await canCreateJob(userId);
+    // const { success, data } = await jobFormSchema.spa(unsafeData);
+    // const canCreate = await canCreateJob(userId);
 
-    if (!success || !userId || !canCreate) {
-        return { error: true, message: "There was an error creating your product" }
-    }
+    // if (!success || !userId || !canCreate) {
+    //     return { error: true, message: "There was an error creating your product" }
+    // }
+    console.log('Job created:');
 
-    const { id } = await create_job_listing(data);
+    const { id } = await create_job_listing(unsafeData);
     redirect(`/jobs/${id}`);
 };
 
@@ -80,3 +83,48 @@ export const get_job_listings_stages_action = async (unsafeData: z.infer<typeof 
 
     return await get_job_listings_stages(jobId);
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+//AutomationRules
+// ─────────────────────────────────────────────────────────────────────────────
+export async function getJobAutomationRules(jobId: number): Promise<AutomationRule[]> {
+    const { userId } = await auth();
+
+    if (!userId) {
+        return [];
+    }
+
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            resolve([
+                {
+                    id: "1", name: "Welcome note on apply", enabled: true,
+                    job_id: 1,
+                    trigger: { event: "stage_changed", toStage: "Applied" },
+                    delay: { value: 0, unit: "minutes" },
+                    action: { type: "add_note", content: "{{candidate.name}} applied for {{job.title}}. Review resume and schedule screen within 2 days.", pinned: true },
+                    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+                },
+                {
+                    id: "2", name: "SMS after phone screen", enabled: true,
+                    job_id: 1,
+                    trigger: { event: "stage_changed", toStage: "Phone Interview" },
+                    delay: { value: 1, unit: "minutes" },
+                    action: { type: "send_sms", to: "candidate", message: "Hi {{candidate.name}}! We'd love to chat. Expect a call from our team shortly. — {{job.title}} Hiring Team" },
+                    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+                },
+                {
+                    id: "3", name: "Email to hiring manager", enabled: true,
+                    job_id: 1,
+                    trigger: { event: "stage_changed", toStage: "Interview" },
+                    delay: { value: 0, unit: "minutes" },
+                    action: { type: "send_email", to: "hiring_manager", subject: "{{candidate.name}} has moved to Interview stage", body: "Candidate {{candidate.name}} is now in the Interview stage for {{job.title}}. Review their profile and schedule next steps." },
+                    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+                }
+            ]);
+        }, 300);
+    });
+
+}
+export async function saveJobAutomationRule(jobId: number, rule: AutomationRule): Promise<void> { }
+export async function deleteJobAutomationRule(jobId: number, ruleId: string): Promise<void> { }

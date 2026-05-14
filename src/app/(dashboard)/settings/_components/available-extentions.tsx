@@ -4,11 +4,14 @@ import { PluginIcon } from "@/components/icon";
 import { cn } from "@/lib/utils";
 import { AVAILABLE_PLUGINS } from "@/plugins/registry";
 import { toggle_organization_plugin_action } from "@/server/actions/organization_actions";
+import { InstalledPlugin } from "@/types";
 import { ExternalLink } from "lucide-react";
 import { useTransition } from "react";
 
-const AvailableExtensions = ({ available, orgId }: { available: typeof AVAILABLE_PLUGINS; orgId: string }) => {
+const AvailableExtensions = ({ orgId, installed }: { orgId: string, installed: InstalledPlugin[] }) => {
     const [, startTransition] = useTransition();
+    
+    const available = AVAILABLE_PLUGINS.filter((plugin) => !installed?.some((p) => p.id === plugin.id));
 
     const onInstall = async (pluginId: string) => {
         startTransition(async () => {
@@ -28,8 +31,8 @@ const AvailableExtensions = ({ available, orgId }: { available: typeof AVAILABLE
                 {available.map((plugin) => (
                     <div key={plugin.id} className="bg-zinc-50/50 p-6 rounded-2xl border border-zinc-100 transition-all hover:bg-white hover:border-zinc-200 shadow-sm relative group">
                         <div className="flex justify-between items-start mb-4">
-                            <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", plugin.bg)}>
-                                <PluginIcon name={plugin.id} className={cn("w-6 h-6", plugin.color)} />
+                            <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", plugin.providerColor)}>
+                                <PluginIcon name={plugin?.icon} className={cn("w-6 h-6", plugin.providerColor)} />
                             </div>
                             <button
                                 onClick={() => onInstall(plugin.id)}
@@ -39,9 +42,9 @@ const AvailableExtensions = ({ available, orgId }: { available: typeof AVAILABLE
                             </button>
                         </div>
                         <h4 className="font-bold text-zinc-900">{plugin.name}</h4>
-                        <p className="text-xs text-zinc-400 font-medium">by {plugin.provider}</p>
+                        {/*<p className="text-xs text-zinc-400 font-medium">by {plugin.provider}</p>*/}
                         <p className="text-sm text-zinc-500 mt-3 leading-relaxed">
-                            {plugin.desc}
+                            {plugin.description}
                         </p>
                         <div className="mt-6 flex items-center gap-3">
                             <span className="text-[10px] font-bold text-zinc-400 flex items-center gap-1 group-hover:text-zinc-600">

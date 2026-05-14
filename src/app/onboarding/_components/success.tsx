@@ -1,4 +1,4 @@
-import { useRouter } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import { useEffect, useTransition } from "react";
 import OnboardingLayout from "./onboarding-layout";
 import { CheckCircle2, Zap } from "lucide-react";
@@ -9,7 +9,7 @@ const Success = ({ orgId }: { orgId: string | null }) => {
 
     const onFinish = () => {
         startTransition(() => {
-            router.push("/");
+            redirect(`http://app.localhost:3000/dashboard`);
         });
     };
 

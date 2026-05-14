@@ -15,12 +15,12 @@ import { Badge } from "../ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { cn } from "@/lib/utils";
 import { ApplicationType } from "@/types";
-import { JOB_ENUM } from "@/zod";
+import { JOB_STAGES } from "@/zod";
+import { z } from "zod";
 
 type Props = {
-    stage: JOB_STAGES;
+    stage: z.infer<typeof JOB_STAGES> | null;
     color: string | null;
-    title: string;
     filteredCards: ApplicationType[];
     openModal: () => void;
     hasSmartTrigger: boolean;
@@ -32,13 +32,13 @@ type Props = {
     }>>;
 };
 
-const ColumnHeader = ({ stage, color, title, filteredCards, openModal, hasSmartTrigger, setShowTriggers, setOpenSmartMove }: Props) => {
+const ColumnHeader = ({ stage, color, filteredCards, openModal, hasSmartTrigger, setShowTriggers, setOpenSmartMove }: Props) => {
 
     return (
         <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
                 {color && <div className={cn(color, "h-3 w-3 rounded-full")} />}
-                <p className="font-medium text-slate-600 text-sm">{title}</p>
+                <p className="font-medium text-slate-600 text-sm">{stage}</p>
                 <Badge variant="secondary" className="text-xs">
                     {filteredCards.length}
                 </Badge>

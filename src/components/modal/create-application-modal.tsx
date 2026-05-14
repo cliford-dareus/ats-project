@@ -1,28 +1,28 @@
 'use client';
 
-import React, {useCallback, useMemo, useRef, useState} from 'react';
-import {DialogDescription, DialogHeader, DialogTitle} from '@/components/ui/dialog';
-import {BriefcaseBusiness, FileText, Upload} from 'lucide-react';
-import {Separator} from '@/components/ui/separator';
-import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
-import {useForm} from 'react-hook-form';
-import {zodResolver} from '@hookform/resolvers/zod';
-import {Input} from '@/components/ui/input';
-import {Button} from '@/components/ui/button';
-import {Switch} from '@/components/ui/switch';
-import {Badge} from '@/components/ui/badge';
-import {CandidatesResponseType, JobListing} from '@/types';
-import {create_application_action} from '@/server/actions/application_actions';
-import {useTransition} from 'react';
-import {applicationFormSchema} from '@/zod';
-import type {z} from 'zod';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { BriefcaseBusiness, FileText, Upload } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { CandidatesResponseType, JobListing } from '@/types';
+import { create_application_action } from '@/server/actions/application_actions';
+import { useTransition } from 'react';
+import { applicationFormSchema } from '@/zod';
+import type { z } from 'zod';
 
 type FormData = z.infer<typeof applicationFormSchema>;
 
 const CreateApplicationModal = ({
-                                    job,
-                                    candidates,
-                                }: {
+    job,
+    candidates,
+}: {
     job: JobListing;
     candidates: CandidatesResponseType[];
 }) => {
@@ -34,7 +34,7 @@ const CreateApplicationModal = ({
     const form = useForm<FormData>({
         resolver: zodResolver(applicationFormSchema),
         defaultValues: {
-            candidate_info: {first_name: "", last_name: "", email: "", phone: "", location: ""},
+            candidate_info: { first_name: "", last_name: "", email: "", phone: "", location: "" },
             job: job.job_id
         }
     });
@@ -48,8 +48,8 @@ const CreateApplicationModal = ({
 
     const onSubmit = async (data: FormData) => {
         const payload = isExistingCandidate
-            ? {...data, candidate: data.candidate, candidate_info: null}
-            : {...data, candidate: null, file: {file_: file, file_type: "RESUME"}};
+            ? { ...data, candidate: data.candidate, candidate_info: null }
+            : { ...data, candidate: null, file: { file_: file, file_type: "RESUME" } };
 
         await create_application_action(payload);
     };
@@ -74,7 +74,7 @@ const CreateApplicationModal = ({
             <DialogHeader className="flex flex-row gap-4 items-center">
                 <div
                     className="flex aspect-square w-12 h-12 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                    <BriefcaseBusiness size={24}/>
+                    <BriefcaseBusiness size={24} />
                 </div>
                 <div>
                     <DialogTitle className="text-2xl uppercase">Create Application</DialogTitle>
@@ -82,16 +82,16 @@ const CreateApplicationModal = ({
                 </div>
             </DialogHeader>
 
-            <Separator/>
+            <Separator />
 
-                    {/* === Toggle: Existing or New Candidate === */}
-                    <div className="flex items-center justify-between">
-                        <span className="text-base">Candidate already exists in database?</span>
-                        <Switch
-                            checked={isExistingCandidate}
-                            onCheckedChange={setIsExistingCandidate}
-                        />
-                    </div>
+            {/* === Toggle: Existing or New Candidate === */}
+            <div className="flex items-center justify-between">
+                <span className="text-base">Candidate already exists in database?</span>
+                <Switch
+                    checked={isExistingCandidate}
+                    onCheckedChange={setIsExistingCandidate}
+                />
+            </div>
 
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -155,7 +155,7 @@ const CreateApplicationModal = ({
                                     <div className="flex flex-col items-center gap-4">
                                         <div
                                             className={`w-16 h-16 rounded-2xl flex items-center justify-center ${file ? 'bg-brand-600 text-white' : 'bg-zinc-100 text-zinc-400'}`}>
-                                            {file ? <FileText className="w-8 h-8"/> : <Upload className="w-8 h-8"/>}
+                                            {file ? <FileText className="w-8 h-8" /> : <Upload className="w-8 h-8" />}
                                         </div>
                                         <div>
                                             <p className="text-lg font-bold text-zinc-900">
@@ -171,7 +171,7 @@ const CreateApplicationModal = ({
                                 <FormField
                                     control={form.control}
                                     name="candidate_info.first_name"
-                                    render={({field}) => (
+                                    render={({ field }) => (
                                         <FormItem className="flex items-center gap-4 justify-between">
                                             <FormLabel>First Name</FormLabel>
                                             <FormControl>
@@ -181,7 +181,7 @@ const CreateApplicationModal = ({
                                                     {...field}
                                                 />
                                             </FormControl>
-                                            <FormMessage/>
+                                            <FormMessage />
                                         </FormItem>
                                     )}
                                 />
@@ -189,7 +189,7 @@ const CreateApplicationModal = ({
                                 <FormField
                                     control={form.control}
                                     name="candidate_info.last_name"
-                                    render={({field}) => (
+                                    render={({ field }) => (
                                         <FormItem className="flex items-center gap-4 justify-between">
                                             <FormLabel>Last Name</FormLabel>
                                             <FormControl>
@@ -199,7 +199,7 @@ const CreateApplicationModal = ({
                                                     {...field}
                                                 />
                                             </FormControl>
-                                            <FormMessage/>
+                                            <FormMessage />
                                         </FormItem>
                                     )}
                                 />
@@ -207,7 +207,7 @@ const CreateApplicationModal = ({
                                 <FormField
                                     control={form.control}
                                     name="candidate_info.email"
-                                    render={({field}) => (
+                                    render={({ field }) => (
                                         <FormItem className="flex items-center gap-4 justify-between">
                                             <FormLabel>Email</FormLabel>
                                             <FormControl>
@@ -217,7 +217,7 @@ const CreateApplicationModal = ({
                                                     {...field}
                                                 />
                                             </FormControl>
-                                            <FormMessage/>
+                                            <FormMessage />
                                         </FormItem>
                                     )}
                                 />
@@ -225,7 +225,7 @@ const CreateApplicationModal = ({
                                 <FormField
                                     control={form.control}
                                     name="candidate_info.phone"
-                                    render={({field}) => (
+                                    render={({ field }) => (
                                         <FormItem className="flex items-center gap-4 justify-between">
                                             <FormLabel>Phone</FormLabel>
                                             <FormControl>
@@ -235,7 +235,7 @@ const CreateApplicationModal = ({
                                                     {...field}
                                                 />
                                             </FormControl>
-                                            <FormMessage/>
+                                            <FormMessage />
                                         </FormItem>
                                     )}
                                 />
@@ -243,7 +243,7 @@ const CreateApplicationModal = ({
                                 <FormField
                                     control={form.control}
                                     name="candidate_info.location"
-                                    render={({field}) => (
+                                    render={({ field }) => (
                                         <FormItem className="flex items-center gap-4 justify-between">
                                             <FormLabel>Address</FormLabel>
                                             <FormControl>
@@ -253,7 +253,7 @@ const CreateApplicationModal = ({
                                                     {...field}
                                                 />
                                             </FormControl>
-                                            <FormMessage/>
+                                            <FormMessage />
                                         </FormItem>
                                     )}
                                 />

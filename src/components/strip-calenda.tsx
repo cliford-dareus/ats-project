@@ -1,17 +1,17 @@
-import {useState} from "react";
-import {AnimatePresence, motion} from "framer-motion";
-import {Calendar, ChevronLeft, ChevronRight} from "lucide-react";
-import {Avatar} from "@/components/ui/avatar";
-import {UpcomingInterview} from "@/app/(dashboard)/dashboard/_components/dashboard";
-import {ScrollArea, ScrollBar} from "@/components/ui/scroll-area";
-import {subDays, addDays} from "date-fns";
-import {Separator} from "@/components/ui/separator";
+import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { Avatar } from "@/components/ui/avatar";
+import { UpcomingInterview } from "@/app/(dashboard)/dashboard/_components/dashboard";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { subDays, addDays } from "date-fns";
+import { Separator } from "@/components/ui/separator";
 
-const StripCalendar: React.FC<{ interviews: UpcomingInterview[] }> = ({interviews}) => {
+const StripCalendar: React.FC<{ interviews: UpcomingInterview[] }> = ({ interviews }) => {
     const [selectedDate, setSelectedDate] = useState(new Date());
 
     // Generate 14 days starting from today
-    const days = Array.from({length: 14}, (_, i) => {
+    const days = Array.from({ length: 14 }, (_, i) => {
         const date = new Date();
         date.setDate(date.getDate() + i);
         return date;
@@ -30,14 +30,14 @@ const StripCalendar: React.FC<{ interviews: UpcomingInterview[] }> = ({interview
                 <button
                     onClick={() => setSelectedDate(subDays(selectedDate, 1))}
                     className="p-1 hover:bg-brand-light rounded-md transition-colors">
-                    <ChevronLeft size={16} className="text-brand-dark/30"/>
+                    <ChevronLeft size={16} className="text-brand-dark/30" />
                 </button>
                 <span
                     className="text-xs font-bold tracking-tight">{days[0].toLocaleDateString()}-{days[days.length - 1].toLocaleDateString()}</span>
                 <button
                     onClick={() => setSelectedDate(addDays(selectedDate, 1))}
                     className="p-1 hover:bg-brand-light rounded-md transition-colors">
-                    <ChevronRight size={16} className="text-brand-dark/30"/>
+                    <ChevronRight size={16} className="text-brand-dark/30" />
                 </button>
             </div>
 
@@ -50,24 +50,23 @@ const StripCalendar: React.FC<{ interviews: UpcomingInterview[] }> = ({interview
                         return (
                             <motion.button
                                 key={i}
-                                whileHover={{y: -4}}
-                                whileTap={{scale: 0.95}}
+                                whileHover={{ y: -4 }}
+                                whileTap={{ scale: 0.95 }}
                                 onClick={() => setSelectedDate(date)}
-                                className={`flex-shrink-0 py-2  px-1 rounded-[2rem] flex flex-col items-center justify-center gap-1 transition-all duration-300 border-2 ${
-                                    isSelected
+                                className={`flex-shrink-0 py-2  px-1 rounded-[2rem] flex flex-col items-center justify-center gap-1 transition-all duration-300 border-2 ${isSelected
                                         ? 'bg-primary  text-white border shadow-xl shadow-blue-200'
                                         : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'
-                                }`}
+                                    }`}
                             >
-              <span
-                  className={`text-[10px] font-black uppercase tracking-widest ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>
-                {date.toLocaleDateString('en-US', {weekday: 'short'})}
-              </span>
+                                <span
+                                    className={`text-[10px] font-black uppercase tracking-widest ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>
+                                    {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                                </span>
                                 <span className="font-black tracking-tighter">
-                {date.getDate()}
-              </span>
+                                    {date.getDate()}
+                                </span>
                                 {hasInterviews && (
-                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500"/>
+                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
                                 )}
                             </motion.button>
                         );
@@ -76,14 +75,14 @@ const StripCalendar: React.FC<{ interviews: UpcomingInterview[] }> = ({interview
                 {/*<ScrollBar orientation="horizontal"/>*/}
             </ScrollArea>
 
-            <Separator/>
+            <Separator />
 
             <AnimatePresence mode="wait">
                 <motion.div
                     key={selectedDate.toISOString()}
-                    initial={{opacity: 0, y: 10}}
-                    animate={{opacity: 1, y: 0}}
-                    exit={{opacity: 0, y: -10}}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
                     className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4"
                 >
                     {selectedInterviews.length > 0 ? (
@@ -96,7 +95,7 @@ const StripCalendar: React.FC<{ interviews: UpcomingInterview[] }> = ({interview
                                     className="flex flex-col items-center justify-center w-14 h-14 rounded-xl shadow-inner flex-shrink-0 bg-blue-100">
                                     <span className="font-black">{new Date(interview.time).getDate()}</span>
                                     <span
-                                        className="text-xs uppercase">{new Date(interview.time).toLocaleDateString('en-US', {weekday: 'short'})}</span>
+                                        className="text-xs uppercase">{new Date(interview.time).toLocaleDateString('en-US', { weekday: 'short' })}</span>
                                 </div>
 
                                 <div className="flex-1 min-w-0">
@@ -121,7 +120,7 @@ const StripCalendar: React.FC<{ interviews: UpcomingInterview[] }> = ({interview
                         <div
                             className="col-span-full py-4 flex flex-col items-center justify-center rounded-[2rem] border-2 border-dashed border-slate-200  border-foreground/5 p-8 gap-4 bg-background/20">
                             <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                <Calendar size={20} className="text-foreground/20"/>
+                                <Calendar size={20} className="text-foreground/20" />
                             </div>
                             <div className="text-center">
                                 <p className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest mb-1">No

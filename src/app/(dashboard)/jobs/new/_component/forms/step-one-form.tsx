@@ -3,11 +3,10 @@
 import { Input } from "@/components/ui/input";
 import { FormErrors } from "@/types/index";
 import CustomButton from "@/components/custom-button";
-import React, { useActionState, useEffect, useState } from "react";
+import React, { useActionState} from "react";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useNewJobContext } from "@/providers/new-job-provider";
-import { useOrganization, useUser } from "@clerk/nextjs";
 import {
     Select,
     SelectContent,
@@ -41,10 +40,14 @@ const StepOneForm = ({ orgId, departments }: Props) => {
         updateNewJobDetails({ [e.target.name]: e.target.value }, "jobInfo");
     };
 
-    const handleSelectChange = (value: string) => {
-        updateNewJobDetails({ department: value, organization: orgId }, "jobInfo");
+    const handleSelectDeptChange = (value: string) => {
+        updateNewJobDetails({ department: value,  organization: orgId }, "jobInfo");
     };
-
+    
+    const handleSelectJobTypeChange = (value: string) => {
+        updateNewJobDetails({ job_type: value }, "jobInfo");
+    };
+    
     return (
         <form action={formAction} className="w-full flex gap-4 h-[calc(100vh_-_200px)]">
             <ScrollArea className="flex-1">
@@ -102,8 +105,13 @@ const StepOneForm = ({ orgId, departments }: Props) => {
                                     <Building2 size={16} className="inline mr-1" />
                                     Department
                                 </Label>
-                                <Select onValueChange={handleSelectChange}
-                                    defaultValue={newJobData.jobInfo["department"]}>
+                                <Select
+                                    id="department"
+                                    name="department"
+                                    onValueChange={handleSelectDeptChange}
+                                    value={newJobData.jobInfo["department"]}
+                                    defaultValue={newJobData.jobInfo["department"]}
+                                >
                                     <SelectTrigger className="h-11">
                                         <SelectValue placeholder="Select department" />
                                     </SelectTrigger>
@@ -136,14 +144,19 @@ const StepOneForm = ({ orgId, departments }: Props) => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <Label htmlFor="department" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                                <Label htmlFor="job_type" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                                     <Building2 size={16} className="inline mr-1" />
                                     Type
                                 </Label>
-                                <Select onValueChange={handleSelectChange}
-                                    defaultValue={newJobData.jobInfo["department"]}>
+                                <Select
+                                    id="job_type"
+                                    name="job_type"
+                                    onValueChange={handleSelectJobTypeChange}
+                                    value={newJobData.jobInfo["job_type"]}
+                                    defaultValue={newJobData.jobInfo["job_type"]}
+                                >
                                     <SelectTrigger className="h-11">
-                                        <SelectValue placeholder="Select department" />
+                                        <SelectValue placeholder="Select job type" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {JOB_TYPE.options.map((dept) => (

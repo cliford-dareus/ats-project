@@ -49,7 +49,7 @@ const JobTabs = ({ applications, stages, jobs, jobListingId, singleJob }: Props)
     }, [searchParams]);
 
     return (
-        <div className="h-full">
+        <div className="h-[calc(100vh-210px)] overflow-hidden">
             <div className="flex px-4">
                 <Tabs className="px-0 h-full w-full" value={activeTab} onValueChange={handleTabChange}>
                     <div className="flex items-center justify-between border-b border-zinc-200 pb-4">

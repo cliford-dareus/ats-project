@@ -9,6 +9,7 @@ export const create_organization = async (data: z.infer<typeof organizationSchem
     return db.insert(organization).values({
         clerk_id: data.clerk_id,
         name: data.name,
+        subdomain: data.subdomain
     }).$returningId();
 };
 
@@ -92,9 +93,9 @@ export const add_department_in_organization = async (data: z.infer<typeof depart
 
         const deps = await trx.select().from(departments);
 
-        if (org.length === 0 || deps.length === 0) {
-            trx.rollback();
-        };
+        // if (org.length === 0 || deps.length === 0) {
+        //     trx.rollback();
+        // };
 
         for (const item of data.departments) {
             const department = deps.find(x => x.name.toLowerCase() === item.toLowerCase());

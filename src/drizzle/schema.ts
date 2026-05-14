@@ -1,5 +1,6 @@
 import { int, mysqlTable, varchar, mysqlEnum, timestamp, boolean, json, unique, index, text } from 'drizzle-orm/mysql-core';
 import { relations } from "drizzle-orm";
+import { createId } from '@paralleldrive/cuid2';
 
 export const organization = mysqlTable('organization', {
     clerk_id: varchar({ length: 255 }).notNull().primaryKey(),
@@ -14,19 +15,11 @@ export const organization = mysqlTable('organization', {
     theme: json('theme'),
 });
 
-export const plugins = mysqlTable('plugins', {
-    id: int('id').primaryKey().autoincrement(),
-    name: varchar({ length: 255 }).notNull(),
-    description: varchar({ length: 255 }).notNull(),
-    version: varchar({ length: 255 }).notNull(),
-    enabled: boolean('enabled').notNull().default(true),
-    config: json('config').notNull().default({}),
-});
-
 export const organization_relation = relations(organization, ({ many }) => ({
     departments: many(departments),
     users: many(usersTable),
     job_listings: many(job_listings),
+    automation_rules: many(automation_rules)
 }));
 
 export const departments = mysqlTable('departments', {
@@ -102,6 +95,7 @@ export const job_listingsRelations = relations(job_listings, ({ many, one }) => 
         fields: [job_listings.organization],
         references: [organization.clerk_id]
     }),
+    automation: many(automation_rules)
 }));
 
 export const technologies = mysqlTable('technologies', {
@@ -154,20 +148,27 @@ export const stagesRelations = relations(stages, ({ one, many }) => ({
         fields: [stages.assign_to],
         references: [usersTable.id]
     }),
-    triggers: many(triggers)
 }));
 
-export const triggers = mysqlTable('triggers', {
-    id: int('id').primaryKey().autoincrement(),
-    action_type: varchar({ length: 255 }).notNull(),
-    config: json('config').notNull().default({ template: '', options: [], delay: 1, delayFormat: 'minutes' }),
-    stage_id: int('stage_id').notNull().references(() => stages.id, { onDelete: 'cascade' }),
+export const automation_rules = mysqlTable('automation_rule', {
+    id: varchar('id', { length: 30 }).primaryKey().$defaultFn(() => `AUT-${createId()}`).notNull(),
+    job_id: int().notNull().references(() => job_listings.id, { onDelete: 'cascade' }),
+    org_id: varchar("org_id", { length: 255 }).notNull().references(() => organization.clerk_id, { onDelete: 'cascade' }),
+    name: varchar({ length: 255 }).notNull(),
+    enabled: boolean().default(true),
+    trigger: json('trigger').notNull().default({ template: '', options: [], delay: 1, delayFormat: 'minutes' }),
+    delay: json('delay').notNull().default({ template: '', options: [], delay: 1, delayFormat: 'minutes' }),
+    action: json('action').notNull().default({ template: '', options: [], delay: 1, delayFormat: 'minutes' }),
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
-})
+}, (table) => ({
+    jobIdx: index("job_automation_index").on(table.job_id),
+    orgIdx: index("org_automation_index").on(table.org_id)
+}));
 
-export const triggers_relations = relations(triggers, ({ one }) => ({
-    stage: one(stages, { fields: [triggers.stage_id], references: [stages.id] }),
+export const automation_rules_relations = relations(automation_rules, ({ one }) => ({
+    job: one(job_listings, { fields: [automation_rules.job_id], references: [job_listings.id] }),
+    organization: one(organization, { fields: [automation_rules.org_id], references: [organization.clerk_id] })
 }));
 
 export const candidates = mysqlTable('candidate', {

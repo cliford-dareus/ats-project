@@ -33,15 +33,15 @@ export const create_job_listing = async (data: z.infer<typeof jobFormSchema>) =>
         const [inserted_job] = await trx
             .insert(job_listings)
             .values({
-                name: data.jobInfo.job_name,
-                location: data.jobInfo.job_location,
-                salary_up_to: data.jobInfo.salary_up_to,
-                // type: data.jobInfo.job_type,
-                description: data.jobInfo.job_description,
-                createdBy: data.userId!,
-                department: Number(data.jobInfo.department),
-                organization: data.jobInfo.organization,
-                subdomain: ""
+              name: data.jobInfo.job_name,
+              location: data.jobInfo.job_location,
+              salary_up_to: data.jobInfo.salary_up_to,
+              type: data.jobInfo.job_type,
+              created_by: String(data.userId),
+              description: data.jobInfo.job_description,
+              department: Number(data.jobInfo.department),
+              organization: data.jobInfo.organization,
+              subdomain: "bridge",
             })
             .$returningId();
 
@@ -73,7 +73,7 @@ export const create_job_listing = async (data: z.infer<typeof jobFormSchema>) =>
                 job_id: inserted_job.id,
                 stage_name: 'Applied',
                 stage_order_id: 0,
-                assign_to: data.userId,
+                assign_to: String(data.userId),
                 need_schedule: false,
                 color: '#a21caf',
             },
@@ -82,7 +82,7 @@ export const create_job_listing = async (data: z.infer<typeof jobFormSchema>) =>
                 job_id: inserted_job.id,
                 stage_name: 'Drafted',
                 stage_order_id: 1,
-                assign_to: data.userId,
+                assign_to: String(data.userId),
                 need_schedule: false,
                 color: '#52525b', // Gray color for applied state
             },
@@ -91,7 +91,7 @@ export const create_job_listing = async (data: z.infer<typeof jobFormSchema>) =>
                 job_id: inserted_job.id,
                 stage_name: item.stage_name,
                 stage_order_id: i + 2,
-                assign_to: item.stage_assign_to,
+                assign_to: String(item.stage_assign_to),
                 need_schedule: item.need_schedule,
                 color: item.color,
             })),
@@ -231,6 +231,7 @@ export const get_job_by_id_db = async (jobId: number): Promise<JobListingType[]>
                     stage_order_id: row.stage?.stage_order_id ?? null,
                     position_in_stage: row.application.position_in_stage ?? null,
                     current_stage_id: row.stage?.id ?? null,
+                    organization: row.application.organization ?? null,
                     interview: [],
                     candidate: row.candidate
                         ? {
@@ -303,7 +304,7 @@ export const get_all_job_listings_db = async (filter: FilterInterface) => {
             description: job_listings.description,
             created_at: job_listings.created_at,
             updated_at: job_listings.updated_at,
-            createdBy: job_listings.createdBy,
+            createdBy: job_listings.created_by,
             candidatesCount: db.$count(
                 applications,
                 eq(applications.job_id, job_listings.id),

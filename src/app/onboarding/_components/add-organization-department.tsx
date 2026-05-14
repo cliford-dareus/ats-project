@@ -47,7 +47,7 @@ const AddOrganizationDepartment = ({ orgId, orgName }: Props) => {
 
             try {
                 await add_department_in_organization({ departments: selectedDepartments, orgId: orgId! });
-
+                
                 const newSearchParams = new URLSearchParams(searchParams);
                 newSearchParams.set("step", "invite");
                 newSearchParams.set("orgId", orgId!);

@@ -38,13 +38,13 @@ const Card = ({ data, handleDragStart, stage, jobDetails }: Props) => {
     return (
         <>
             <DropIndicator active={false} beforeId={data.id} stage={stage} column={data.stage} />
-
+            
             <motion.div
                 layout
                 layoutId={String(data.id)}
                 draggable="true"
                 onDragStart={(e: never) => handleDragStart(e, data.id!)}
-                className="group cursor-grab active:cursor-grabbing bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md"
+                className="group cursor-grab active:cursor-grabbing bg-white border border-slate-200 rounded-[10px] p-4 shadow-sm hover:shadow-md"
             >
                 <div className="flex gap-4 items-center">
                     <div className="relative flex-shrink-0">

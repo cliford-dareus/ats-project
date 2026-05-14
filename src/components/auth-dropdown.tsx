@@ -55,7 +55,7 @@ const AuthDropdown = ({user, orgId, className, ...props}: Props) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent>
                 <DropdownMenuItem>
-                    <Link href={orgId ? `http://app.localhost:3000/` : "/onboarding"}>
+                    <Link href={orgId ? `http://app.localhost:3000/dashboard` : "/onboarding"}>
                         <LucideLayoutDashboard/>
                         <span>Dashboard</span>
                         <DropdownMenuShortcut>⌘D</DropdownMenuShortcut>

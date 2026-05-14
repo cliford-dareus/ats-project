@@ -8,14 +8,14 @@ import React, {
     useMemo,
     useState,
 } from 'react';
-import {jobFormSchema, jobStageSchema, jobTechSchema} from "@/zod";
-import {z} from "zod";
+import { jobFormSchema, jobStageSchema, jobTechSchema } from "@/zod";
+import { z } from "zod";
 
 const defaultJobListing: z.infer<typeof jobFormSchema> = {
-    jobInfo: {job_name: "", job_description: "", job_location: "", salary_up_to: "", department: "", organization: ""},
+    jobInfo: { job_name: "", job_description: "", job_location: "", salary_up_to: "", department: "", organization: "" },
     jobTechnology: [],
     jobStages: [],
-    jobOptional: {job_effective_date: new Date(), job_agency: ""}
+    jobOptional: { job_effective_date: new Date(), job_agency: "" }
 };
 
 const LOCAL_STORAGE_KEY = 'multi-page-form-demo-newDealData';
@@ -31,7 +31,7 @@ type newJobContextType = {
 
 export const NewJobContext = createContext<newJobContextType | null>(null);
 
-export const NewJobContextProvider = ({children}: { children: React.ReactNode; }) => {
+export const NewJobContextProvider = ({ children }: { children: React.ReactNode; }) => {
     const [newJobData, setNewJobData] = useState<z.infer<typeof jobFormSchema>>(defaultJobListing);
     const [dataLoaded, setDataLoaded] = useState(false);
 
@@ -50,7 +50,7 @@ export const NewJobContextProvider = ({children}: { children: React.ReactNode; }
         (newInfo: { newInfo: any }, stage: string) => {
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-expect-error
-            setNewJobData({...newJobData, [stage]: {...newJobData[stage], ...newInfo}});
+            setNewJobData({ ...newJobData, [stage]: { ...newJobData[stage], ...newInfo } });
 
             if (stage === "jobTechnology") {
                 setNewJobData({
@@ -70,19 +70,19 @@ export const NewJobContextProvider = ({children}: { children: React.ReactNode; }
     );
 
     const updateStageOptions = (newStages: z.infer<typeof jobStageSchema>[]) => {
-        setNewJobData({...newJobData, jobStages: newStages});
+        setNewJobData({ ...newJobData, jobStages: newStages });
     };
 
     const removeJob = useCallback(
         (remove: any, stage: string) => {
             if (stage === "jobTechnology") {
                 const filter = newJobData.jobTechnology.filter((item) => item.technology !== remove.technology);
-                setNewJobData({...newJobData, jobTechnology: filter});
+                setNewJobData({ ...newJobData, jobTechnology: filter });
             }
 
             if (stage === "jobStages") {
                 const filter = newJobData.jobStages.filter((item) => item.stage_name !== remove.stage_name);
-                setNewJobData({...newJobData, jobStages: filter});
+                setNewJobData({ ...newJobData, jobStages: filter });
             }
         },
         [newJobData]

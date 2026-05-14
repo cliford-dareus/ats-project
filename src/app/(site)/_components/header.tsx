@@ -4,15 +4,16 @@ import React from 'react';
 
 type Props = {
     user: User | null;
+    orgId: string | null;
 };
 
-const Header = ({user}: Props) => {
+const Header = ({ user, orgId }: Props) => {
     return (
         <div className="flex flex-col">
             <div className="bg-gray-800 text-white p-4">
                 <h1 className="text-2xl font-bold">My Website</h1>
             </div>
-            <AuthDropdown user={user}/>
+            <AuthDropdown user={user} orgId={orgId} />
         </div>
     );
 };

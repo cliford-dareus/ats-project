@@ -24,7 +24,6 @@ export type StageCountType = {
 
 const Layout = async ({ children }: Props) => {
     const user = await currentUser();
-    console.log(user);
     if (!user) {
         return redirect("/sign-in");
     }
@@ -35,33 +34,36 @@ const Layout = async ({ children }: Props) => {
     }
 
     return (
-        <Provider orgId={orgId as string}>
-            <AppSidebar />
-            <SidebarInset>
-                <header className="sticky top-0 flex shrink-0 items-center gap-2 border-b bg-background p-4">
-                    <SidebarTrigger className="-ml-1" />
-                    <Separator orientation="vertical" className="mr-2 h-4" />
-                    <OrganizationSwitcher />
-                    <Separator orientation="vertical" className="mr-2 h-4" />
-                    <div className="ml-auto flex items-center gap-4">
-                        <Bell size={18} />
-                        <Button className="!p-0 border rounded-lg text-[10px] uppercase tracking-widest font-bold text-white transition-all flex items-center gap-2">
-                            <Link
-                                href="/jobs/new"
-                                className="flex items-center gap-2 px-4 !py-2 "
-                            >
-                                <Plus size={20} />
-                                <p>Create New Job</p>
-                            </Link>
-                        </Button>
-                        <AuthDropdown user={user} orgId={orgId} />
+        <div className="min-h-screen">
+            <Provider orgId={orgId as string}>
+                <AppSidebar />
+                <SidebarInset>
+                    <header className="sticky top-0 flex shrink-0 items-center gap-2 border-b bg-background p-4">
+                        <SidebarTrigger className="-ml-1" />
+                        <Separator orientation="vertical" className="mr-2 h-4" />
+                        <OrganizationSwitcher />
+                        <Separator orientation="vertical" className="mr-2 h-4" />
+                        <div className="ml-auto flex items-center gap-4">
+                            <Bell size={18} />
+                            <Button className="!p-0 border rounded-lg text-[10px] uppercase tracking-widest font-bold text-white transition-all flex items-center gap-2">
+                                <Link
+                                    href="/jobs/new"
+                                    className="flex items-center gap-2 px-4 !py-2 "
+                                >
+                                    <Plus size={20} />
+                                    <p>Create New Job</p>
+                                </Link>
+                            </Button>
+                            <AuthDropdown user={user} orgId={orgId} />
+                        </div>
+                    </header>
+
+                    <div className="h-[calc(100vh-69px)] max-w-7xl w-full mx-auto overflow-scroll no-scrollbar">
+                        {children}
                     </div>
-                </header>
-                <div className="max-h-[calc(100vh_-_100px)] max-w-7xl w-full mx-auto overflow-scroll no-scrollbar">
-                    {children}
-                </div>
-            </SidebarInset>
-        </Provider>
+                </SidebarInset>
+            </Provider>
+        </div>
     );
 };
 

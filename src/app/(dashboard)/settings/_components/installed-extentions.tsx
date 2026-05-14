@@ -2,18 +2,22 @@
 
 import { PluginIcon } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import { ICON_MAP, PluginInterface, PluginSettings } from "@/plugins/registry";
 import { toggle_organization_plugin_action, update_organization_plugins_action } from "@/server/actions/organization_actions";
+import { InstalledPlugin } from "@/types";
 import { CheckCircle2, Loader2, Power } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useTransition } from "react";
+import { ProviderBadge } from "./provider-badge";
 
 type InstalledExtensionsProps = {
     orgId: string;
-    installed: (PluginInterface & { settings: PluginSettings })[];
+    installed: InstalledPlugin[];
 };
 
 const InstalledExtensions = ({ installed, orgId }: InstalledExtensionsProps) => {
+     const router = useRouter();
     const [isPending, startTransition] = useTransition();
+
 
     const onToggleActive = async (pluginId: string, currentStatus: boolean) => {
         startTransition(async () => {
@@ -54,8 +58,8 @@ const InstalledExtensions = ({ installed, orgId }: InstalledExtensionsProps) => 
                         plugin.settings.active ? "border-zinc-200 shadow-sm" : "border-zinc-100 opacity-75 grayscale-[0.5]"
                     )}>
                         <div className="flex justify-between items-start mb-4">
-                            <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center relative", plugin.bg)}>
-                                <PluginIcon name={plugin.id} className={cn("w-6 h-6", plugin.color)} />
+                            <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center relative", plugin.providerColor)}>
+                                <PluginIcon name={plugin.id} className={cn("w-6 h-6")} />
                                 {plugin.settings.active && (
                                     <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white shadow-sm" />
                                 )}
@@ -83,14 +87,17 @@ const InstalledExtensions = ({ installed, orgId }: InstalledExtensionsProps) => 
                                 <span className="px-1.5 py-0.5 bg-brand-100 text-brand-700 text-[8px] font-bold uppercase rounded leading-none">Pro</span>
                             )}
                         </div>
-                        <p className="text-xs text-zinc-400 font-medium">by {plugin.provider}</p>
+                        {/*<p className="text-xs text-zinc-400 font-medium">by {plugin.provider}</p>*/}
                         <p className="text-sm text-zinc-500 mt-3 leading-relaxed min-h-[40px]">
-                            {plugin.desc}
+                            {plugin.description}
                         </p>
 
                         <div className="mt-6 pt-6 border-t border-zinc-50 flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                                <button className="text-xs font-bold text-zinc-500 hover:text-zinc-800 transition-colors flex items-center gap-1">
+                                <button
+                                    onClick={() => router.push(`/settings/${plugin.id}`)}
+                                    className="text-xs font-bold text-zinc-500 hover:text-zinc-800 transition-colors flex items-center gap-1"
+                                >
                                     Settings
                                 </button>
                                 <div className="w-1 h-1 bg-zinc-200 rounded-full" />
@@ -102,13 +109,7 @@ const InstalledExtensions = ({ installed, orgId }: InstalledExtensionsProps) => 
                                 </button>
                             </div>
                             <div className="flex items-center gap-2 text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
-                                {plugin.settings.status === 'Configure' ? (
-                                    <span className="text-blue-500">Action Required</span>
-                                ) : (
-                                    <span className="text-emerald-500 flex items-center gap-1">
-                                        <CheckCircle2 className="w-3 h-3" /> Online
-                                    </span>
-                                )}
+                                <ProviderBadge providerId={plugin.id} />
                             </div>
                         </div>
                     </div>

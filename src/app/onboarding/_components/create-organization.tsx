@@ -65,6 +65,7 @@ const CreateOrganization = () => {
                 await create_organization_action({
                     clerk_id: newOrg.id,
                     name: newOrg.name,
+                    subdomain: slug.toLowerCase(),
                 });
 
                 const newSearchParams = new URLSearchParams(searchParams);

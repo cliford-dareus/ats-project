@@ -25,7 +25,7 @@ interface ApplicationSubmittedProps {
     senderTitle?: string;
 }
 
-export const ApplicationSubmittedTemplate = ({
+export const ApplicationConfirmationTemplate = ({
     candidateName,
     jobTitle,
     companyName = "Acme Corp",
@@ -124,4 +124,4 @@ export const ApplicationSubmittedTemplate = ({
     );
 };
 
-export default ApplicationSubmittedTemplate;
+export default ApplicationConfirmationTemplate;

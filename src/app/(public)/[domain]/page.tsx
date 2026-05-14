@@ -17,7 +17,7 @@ const CareerPage = async ({ params }: { params: Promise<{ domain: string }> }) =
         subdomain: job_listings.subdomain,
         organization: job_listings.organization,
         status: job_listings.status,
-        createdBy: job_listings.createdBy,
+        created_by: job_listings.created_by,
         created_at: job_listings.created_at,
         updated_at: job_listings.updated_at,
         department: departments.name,
@@ -37,7 +37,7 @@ const CareerPage = async ({ params }: { params: Promise<{ domain: string }> }) =
 
     const activeTheme = defaultTheme;
 
-    if (openJobs.length === 0) {
+    if (openJobs?.length === 0) {
         return (
             <div className="text-center">
                 No Open Job Available...

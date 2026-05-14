@@ -90,7 +90,8 @@ const InviteMember = ({ orgId, orgName }: Props) => {
                 <div className="flex gap-3 pt-2">
                     <Button onClick={() => router.back()} className="p-4 bg-zinc-100 text-zinc-600 rounded-2xl hover:bg-zinc-200 transition-all"><ArrowLeft className="w-6 h-6" /></Button>
                     <Button
-                        onClick={onComplete}
+                        onClick={
+                            () => { if (email) { onComplete(); } else { router.push(`/onboarding?step=success&orgId=${orgId}&orgName=${orgName}`); } }}
                         disabled={isCreatePending}
                         className="flex-1 py-4 bg-zinc-900 text-white rounded-2xl font-bold hover:bg-zinc-800 transition-all"
                     >

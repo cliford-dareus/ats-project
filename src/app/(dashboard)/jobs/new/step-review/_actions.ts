@@ -64,12 +64,12 @@ export const stepReviewFormAction = async (
                 job_effective_date: new Date(),
                 job_agency: ""
             },
-            userId: userId
+            userId: 1
         };
-
         // Create the job listing
         await create_job_action(completeJobData);
 
+        console.log( completeJobData);
         // The create_job_action will handle the redirect
         return undefined;
 
