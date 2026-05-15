@@ -1,9 +1,9 @@
 "use client";
 
 import React from 'react';
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Progress} from "@/components/ui/progress";
-import {Badge} from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import {
     TrendingUp,
     TrendingDown,
@@ -14,7 +14,7 @@ import {
     AlertTriangle,
     Calendar
 } from "lucide-react";
-import {cn} from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 interface PerformanceMetric {
     title: string;
@@ -32,7 +32,7 @@ interface Props {
     className?: string;
 }
 
-const PerformanceMetrics = ({className}: Props) => {
+const PerformanceMetrics = ({ className }: Props) => {
     const metrics: PerformanceMetric[] = [
         {
             title: "Time to Hire",
@@ -106,11 +106,11 @@ const PerformanceMetrics = ({className}: Props) => {
     const getTrendIcon = (trend: 'up' | 'down' | 'stable') => {
         switch (trend) {
             case 'up':
-                return <TrendingUp className="h-3 w-3 text-green-600"/>;
+                return <TrendingUp className="h-3 w-3 text-green-600" />;
             case 'down':
-                return <TrendingDown className="h-3 w-3 text-red-600"/>;
+                return <TrendingDown className="h-3 w-3 text-red-600" />;
             default:
-                return <div className="h-3 w-3 rounded-full bg-gray-400"/>;
+                return <div className="h-3 w-3 rounded-full bg-gray-400" />;
         }
     };
 
@@ -127,9 +127,11 @@ const PerformanceMetrics = ({className}: Props) => {
 
     return (
         <Card className={cn("", className)}>
+            {/* Decorative background element */}
+            <div className="absolute -bottom-12 -right-12 w-48 h-48 bg-primary/20 rounded-full blur-3xl group-hover:bg-primary/20 transition-all duration-700" />
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5"/>
+                    <TrendingUp className="h-5 w-5" />
                     Performance Metrics
                 </CardTitle>
                 <CardDescription>
@@ -148,28 +150,28 @@ const PerformanceMetrics = ({className}: Props) => {
                             <div key={index} className="space-y-3">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                        <metric.icon className={cn("h-4 w-4", metric.color)}/>
+                                        <metric.icon className={cn("h-4 w-4", metric.color)} />
                                         <span className="font-medium text-sm">{metric.title}</span>
                                     </div>
                                     <div className="flex items-center gap-1">
                                         {getTrendIcon(metric.trend)}
                                         <span className={cn("text-xs font-medium", getTrendColor(metric.trend))}>
-                      {metric.trendValue}%
-                    </span>
+                                            {metric.trendValue}%
+                                        </span>
                                     </div>
                                 </div>
 
                                 <div className="space-y-2">
                                     <div className="flex items-baseline justify-between">
-                    <span className="text-2xl font-bold">
-                      {metric.value}
-                        <span className="text-sm font-normal text-muted-foreground ml-1">
-                        {metric.unit}
-                      </span>
-                    </span>
+                                        <span className="text-2xl font-bold">
+                                            {metric.value}
+                                            <span className="text-sm font-normal text-muted-foreground ml-1">
+                                                {metric.unit}
+                                            </span>
+                                        </span>
                                         <span className="text-xs text-muted-foreground">
-                      Target: {metric.target}{metric.unit}
-                    </span>
+                                            Target: {metric.target}{metric.unit}
+                                        </span>
                                     </div>
 
                                     <Progress
@@ -196,7 +198,7 @@ const PerformanceMetrics = ({className}: Props) => {
                             <span className="font-medium">78/100</span>
                         </div>
                     </div>
-                    <Progress value={78} className="mt-2 h-2"/>
+                    <Progress value={78} className="mt-2 h-2" />
                 </div>
             </CardContent>
         </Card>

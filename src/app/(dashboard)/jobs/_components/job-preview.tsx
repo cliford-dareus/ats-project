@@ -1,10 +1,10 @@
 'use client'
 
-import React, {useState} from 'react';
-import {useRouter} from "next/navigation";
-import {JobResponseType} from "@/types";
-import {Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbSeparator} from "@/components/ui/breadcrumb";
-import {SheetClose} from "@/components/ui/sheet";
+import React, { useState } from 'react';
+import { useRouter } from "next/navigation";
+import { JobResponseType } from "@/types";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { SheetClose } from "@/components/ui/sheet";
 import {
     Briefcase,
     Calendar, Edit3,
@@ -20,7 +20,7 @@ type Props = {
     jobs: JobResponseType[];
 };
 
-const JobPreview = ({data, jobs}: Props) => {
+const JobPreview = ({ data, jobs }: Props) => {
     const router = useRouter();
     const [isEditJobOpen, setIsEditJobOpen] = useState(false);
 
@@ -31,23 +31,23 @@ const JobPreview = ({data, jobs}: Props) => {
                     <BreadcrumbList>
                         <BreadcrumbItem>
                             <SheetClose className="flex items-center justify-center cursor-pointer">
-                                <X size={20}/>
+                                <X size={20} />
                             </SheetClose>
                         </BreadcrumbItem>
                         <BreadcrumbSeparator>
-                            <Tally1/>
+                            <Tally1 />
                         </BreadcrumbSeparator>
                         <BreadcrumbItem>
                             <span onClick={() => {
                                 router.push(`/jobs/${data?.id}`)
                             }} className="flex items-center justify-center cursor-pointer">
-                                <Expand size={16}/>
+                                <Expand size={16} />
                             </span>
                         </BreadcrumbItem>
                     </BreadcrumbList>
                 </Breadcrumb>
                 <span className='flex items-center justify-center text-sm text-muted-foreground sm:gap-2.5'>
-                    <Share size={16}/>
+                    <Share size={16} />
                 </span>
             </div>
 
@@ -101,14 +101,14 @@ const JobPreview = ({data, jobs}: Props) => {
                         <div className="grid grid-cols-2 gap-4">
                             <div className="bg-zinc-50 p-4 rounded-2xl border border-zinc-100">
                                 <div className="flex items-center gap-2 text-zinc-400 mb-1">
-                                    <Users className="w-4 h-4"/>
+                                    <Users className="w-4 h-4" />
                                     <span className="text-xs font-bold uppercase tracking-wider">Applicants</span>
                                 </div>
                                 <p className="text-xl font-bold text-zinc-900">{data?.candidatesCount}</p>
                             </div>
                             <div className="bg-zinc-50 p-4 rounded-2xl border border-zinc-100">
                                 <div className="flex items-center gap-2 text-zinc-400 mb-1">
-                                    <Calendar className="w-4 h-4"/>
+                                    <Calendar className="w-4 h-4" />
                                     <span className="text-xs font-bold uppercase tracking-wider">Posted Date</span>
                                 </div>
                                 <p className="text-xl font-bold text-zinc-900">{new Date(data?.created_at).toDateString()}</p>
@@ -130,7 +130,7 @@ const JobPreview = ({data, jobs}: Props) => {
                                 <ul className="space-y-2">
                                     {['Lead development of core features', 'Collaborate with cross-functional teams', 'Mentor junior engineers', 'Participate in code reviews'].map((item, i) => (
                                         <li key={i} className="flex items-start gap-2 text-sm text-zinc-600">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 flex-shrink-0"/>
+                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 flex-shrink-0" />
                                             {item}
                                         </li>
                                     ))}
@@ -140,7 +140,7 @@ const JobPreview = ({data, jobs}: Props) => {
                     </div>
                 </div>
             </div>
-            <EditJobListingModal isEditJobOpen={isEditJobOpen} setIsEditJobOpen={setIsEditJobOpen} data={data}/>
+            <EditJobListingModal isEditJobOpen={isEditJobOpen} setIsEditJobOpen={setIsEditJobOpen} data={data} />
         </>
     );
 };

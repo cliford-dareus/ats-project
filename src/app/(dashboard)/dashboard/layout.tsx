@@ -5,12 +5,10 @@ type Props = {
     children: React.ReactNode
 }
 
-const DashboardLayout = async ({children}: Props) => {
+const DashboardLayout = async ({ children }: Props) => {
     return (
         <AuthOrgProvider>
-            <>
-                {children}
-            </>
+            {children}
         </AuthOrgProvider>
     )
 }

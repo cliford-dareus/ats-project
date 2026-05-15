@@ -76,7 +76,7 @@ const data = {
     ]
 };
 
-export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({needToCreateOrgInDb,...props }: React.ComponentProps<typeof Sidebar>) {
     const pathname = usePathname();
     const {setOpen} = useSidebar();
     const router = useRouter();
@@ -147,20 +147,20 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
 
             {/* FILTER / NAV */}
             <Sidebar collapsible="none" className="hidden flex-1 md:flex">
-                <SidebarHeader className="gap-3.5 border-b p-4">
+                <SidebarHeader className="gap-3.5 border-b py-2.5 px-4">
                     <div className="flex w-full items-center justify-between">
-                        <div className="text-base font-medium text-foreground">
+                        <span className="text-xl font-bold text-zinc-900 uppercase tracking-tight">
                             {activeItem.title}
-                        </div>
+                        </span>
                     </div>
                     {activeItem.title !== "Settings" && <AppSidebarSearch />}
                 </SidebarHeader>
 
-                <SidebarContent className="">
-                    <SidebarGroup className="px-0">
-                        <SidebarGroupContent>
+                <SidebarContent className="h-full">
+                    <SidebarGroup className="px-0 h-full">
+                        <SidebarGroupContent className="h-full">
                             {activeItem.title === "Dashboard" ? (
-                                <SidebarDashboard/>
+                                <SidebarDashboard />
                             ) : activeItem.title === "Jobs" && !pathname.startsWith('/jobs/new/step') ? (
                                 <JobListingSidebar/>
                             ) : activeItem.title === "Applications" ? (

@@ -40,7 +40,7 @@ const AutomationGroup = ({ stage, rules, onSave, onDelete, onAdd, installedInteg
                             backgroundColor: stage.color ? stage.color : "#a1a1aa"
                         }}
                     />
-                    <p className="font-bold text-zinc-900 text-[13px] tracking-tight ml-1">{stage.stage_name}</p>
+                    <p className="font-bold text-zinc-800 text-[11px] tracking-wider ml-1 uppercase">{stage.stage_name}</p>
                     <span className="px-1.5 py-0.5 bg-white border border-zinc-200 text-[10px] font-bold text-zinc-500 rounded-lg ml-2">
                         {applications.filter(r => r.stage === stage.stage_name).length}
                     </span>
@@ -50,7 +50,7 @@ const AutomationGroup = ({ stage, rules, onSave, onDelete, onAdd, installedInteg
                     onClick={() => setCollapsed(!collapsed)}
                     className={cn(
                         "flex items-center rounded-lg transition-all",
-                        collapsed ? "text-zinc-400 hover:bg-white hover:text-zinc-600" : "text-brand-600 bg-brand-50"
+                        collapsed ? "text-primary/60 hover:bg-white hover:text-primary" : "text-primary bg-primary/10"
                     )}
                 >
                     <WandSparkles size={16} />
@@ -80,7 +80,7 @@ const AutomationGroup = ({ stage, rules, onSave, onDelete, onAdd, installedInteg
 
                         <button
                             onClick={() => onAdd("stage_changed", stage.stage_name!)}
-                            className="w-full h-10 mt-2 flex items-center justify-center gap-2 border-2 border-dashed border-zinc-200 rounded-xl text-zinc-400 text-xs font-bold hover:border-brand-500 hover:text-brand-600 hover:bg-brand-50/50 transition-all group"
+                            className="w-full h-10 mt-2 flex items-center justify-center gap-2 border-2 border-dashed border-primary/20 rounded-xl text-zinc-400 text-xs font-bold hover:border-primary/50 hover:text-primary hover:bg-primary/5 transition-all group"
                         >
                             <Plus size={14} className="group-hover:scale-110 transition-transform" />
                             Add Automation

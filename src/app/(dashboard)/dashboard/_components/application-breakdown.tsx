@@ -9,8 +9,8 @@ import {
 } from "@/components/ui/chart";
 import { Label, Pie, PieChart, Sector } from "recharts"
 import { PieSectorDataItem } from "recharts/types/polar/Pie";
-import {Select, SelectContent, SelectItem, SelectTrigger} from "@/components/ui/select";
-import {JOB_ENUM} from "@/zod";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
+import { JOB_ENUM } from "@/zod";
 
 interface Props {
     data: RecrutmentFunnel[];
@@ -40,6 +40,9 @@ const ApplicationBreakdown = ({ data, className }: Props) => {
 
     return (
         <Card className={className}>
+            {/* Decorative background element */}
+            <div className="absolute -bottom-12 -right-12 w-48 h-48 bg-primary/20 rounded-full blur-3xl group-hover:bg-primary/20 transition-all duration-700" />
+
             <CardHeader className="flex flex-row items-center justify-between">
                 <div className="flex items-center justify-between w-full">
                     <div className="flex items-center gap-4">
@@ -50,8 +53,12 @@ const ApplicationBreakdown = ({ data, className }: Props) => {
                             onValueChange={(e) => setActiveStage(e as JOB_ENUM)}
                             value={activeStage as string}
                         >
-                            <SelectTrigger>{activeStage}</SelectTrigger>
-                            <SelectContent className="text-[11px] font-bold text-slate-600 uppercase">
+                            <SelectTrigger
+                                className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-[11px] font-bold text-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-500/5 transition-all cursor-pointer uppercase tracking-widest"
+                            >
+                                {activeStage}
+                            </SelectTrigger>
+                            <SelectContent className="text-[11px] font-bold bg-white border border-slate-200 rounded-xl px-4 py-2 text-slate-600 focus:outline-none focus:ring-4 focus:ring-blue-500/5 transition-all cursor-pointer uppercase tracking-widest">
                                 {stages.map((stage) => (
                                     <SelectItem key={stage} value={stage as string}>{stage}</SelectItem>
                                 ))}

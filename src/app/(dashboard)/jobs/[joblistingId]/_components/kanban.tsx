@@ -26,7 +26,7 @@ type CardOrder = { id: number; position: number };
 type Props = {
     data: ApplicationType[];
     stages: StageResponseType[];
-    jobDetails: { jobName: string, department: string }
+    jobDetails: { jobId: number, jobName: string, department: string }
 };
 
 const Kanban = ({ data, stages, jobDetails }: Props) => {
@@ -43,12 +43,13 @@ const Kanban = ({ data, stages, jobDetails }: Props) => {
     }, [data]);
 
     useEffect(() => {
-        const jobId = applications[0]?.job_id;
+        const jobId = jobDetails.jobId;
         if (!jobId) return;
+        console.log("LOAD:RULES")
         getJobAutomationRules(jobId).then(rules => {
             automationEngine.loadJobRules(jobId, rules);
         });
-    }, []);
+    }, [jobDetails]);
 
     // ────────────────────────────────────────────────
     // Socket – handle external job completion
@@ -194,8 +195,7 @@ const Kanban = ({ data, stages, jobDetails }: Props) => {
 
     return (
         <div className="flex flex-col h-full w-full gap-4 overflow-x-scroll [&::-webkit-scrollbar]:hidden">
-            <AutomationBuilder job_id={applications[0]?.job_id} stages={stages} applications={applications} />
-
+            <AutomationBuilder job_id={jobDetails.jobId} stages={stages} applications={applications} />
             <div className="flex gap-4">
                 {stages?.map((stage) => (
                     <Column

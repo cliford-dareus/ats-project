@@ -4,7 +4,7 @@ import Kanban from "@/app/(dashboard)/jobs/[joblistingId]/_components/kanban";
 type Props = {
     data: ApplicationType[];
     stages: StageResponseType[];
-    jobDetails: {jobName: string, department: string}
+    jobDetails: {jobId: number, jobName: string, department: string}
 };
 
 const JobPipeline = ({data, stages, jobDetails}: Props) => {

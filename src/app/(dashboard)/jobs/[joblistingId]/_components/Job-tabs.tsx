@@ -91,7 +91,11 @@ const JobTabs = ({ applications, stages, jobs, jobListingId, singleJob }: Props)
                         <JobPipeline
                             data={applications}
                             stages={stages}
-                            jobDetails={{ jobName: singleJob.job_name, department: singleJob.job_department }}
+                            jobDetails={{
+                                jobId: Number(jobListingId),
+                                jobName: singleJob.job_name,
+                                department: singleJob.job_department
+                            }}
                         />
                     </TabsContent>
                     <TabsContent value="options">

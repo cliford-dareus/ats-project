@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Card, CardContent, CardHeader} from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
     XAxis,
     YAxis,
@@ -11,9 +11,9 @@ import {
     Area,
     AreaChart
 } from 'recharts';
-import {TrendingUp} from "lucide-react";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
-import {RecruitmentFunnel} from "@/app/(dashboard)/dashboard/_components/dashboard";
+import { TrendingUp } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RecruitmentFunnel } from "@/app/(dashboard)/dashboard/_components/dashboard";
 
 interface AnalyticsData {
     applications: { date: string; count: number; }[];
@@ -51,7 +51,7 @@ const AnalyticsOverview = ({ data, className }: Props) => {
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-[11px] font-bold text-slate-600 focus:outline-none focus:ring-4 focus:ring-blue-500/5 transition-all cursor-pointer uppercase tracking-widest">
-                                <SelectItem  value="7d">Last 7 Days</SelectItem>
+                                <SelectItem value="7d">Last 7 Days</SelectItem>
                                 <SelectItem value="30d">Last 30 Days</SelectItem>
                             </SelectContent>
                         </Select>

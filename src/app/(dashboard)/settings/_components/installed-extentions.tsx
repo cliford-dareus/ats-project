@@ -4,7 +4,7 @@ import { PluginIcon } from "@/components/icon";
 import { cn } from "@/lib/utils";
 import { toggle_organization_plugin_action, update_organization_plugins_action } from "@/server/actions/organization_actions";
 import { InstalledPlugin } from "@/types";
-import { CheckCircle2, Loader2, Power } from "lucide-react";
+import { Loader2, Power } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { ProviderBadge } from "./provider-badge";

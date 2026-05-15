@@ -75,7 +75,7 @@ const StripCalendar: React.FC<{ interviews: UpcomingInterview[] }> = ({ intervie
                 {/*<ScrollBar orientation="horizontal"/>*/}
             </ScrollArea>
 
-            <Separator />
+            <Separator className="bg-primary/10"/>
 
             <AnimatePresence mode="wait">
                 <motion.div
@@ -92,7 +92,7 @@ const StripCalendar: React.FC<{ interviews: UpcomingInterview[] }> = ({ intervie
                                 className="col-span-full bg-white rounded-md flex gap-2"
                             >
                                 <div
-                                    className="flex flex-col items-center justify-center w-14 h-14 rounded-xl shadow-inner flex-shrink-0 bg-blue-100">
+                                    className="flex flex-col items-center justify-center w-14 h-14 rounded-md shadow-inner flex-shrink-0 bg-blue-100">
                                     <span className="font-black">{new Date(interview.time).getDate()}</span>
                                     <span
                                         className="text-xs uppercase">{new Date(interview.time).toLocaleDateString('en-US', { weekday: 'short' })}</span>
@@ -118,9 +118,9 @@ const StripCalendar: React.FC<{ interviews: UpcomingInterview[] }> = ({ intervie
                         ))
                     ) : (
                         <div
-                            className="col-span-full py-4 flex flex-col items-center justify-center rounded-[2rem] border-2 border-dashed border-slate-200  border-foreground/5 p-8 gap-4 bg-background/20">
-                            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                <Calendar size={20} className="text-foreground/20" />
+                            className="col-span-full py-4 flex flex-col items-center justify-center rounded-md border-2 border-dashed border-slate-200  border-foreground/5 p-8 gap-4 bg-primary/5">
+                            <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-sm">
+                                <Calendar size={20} className="text-primary" />
                             </div>
                             <div className="text-center">
                                 <p className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest mb-1">No
@@ -131,15 +131,6 @@ const StripCalendar: React.FC<{ interviews: UpcomingInterview[] }> = ({ intervie
                                 </button>
                             </div>
                         </div>
-                        // <div
-                        //     className="col-span-full text-center py-4 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
-                        //     <p className="text-xs text-zinc-400 mb-3">No interview has been scheduled
-                        //         yet.</p>
-                        //     <button
-                        //         className="px-4 py-2 text-accent border-zinc-700 rounded-lg text-xs font-bold hover:bg-zinc-50 hover:text-foreground transition-all shadow-sm">
-                        //         Schedule Interview
-                        //     </button>
-                        // </div>
                     )}
                 </motion.div>
             </AnimatePresence>

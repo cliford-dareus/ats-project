@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { ATSIntegration } from "@/lib/plugin-interfaces";
 import { AutomationRule, StageResponseType } from "@/types";
-import { Move, Settings2, Trash2 } from "lucide-react";
+import { Move, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import RuleEditorModal from "./rule-editor-modal";
+import { Switch } from "../ui/switch";
 
 export const ACTION_TYPES = [
     { type: "add_note", label: "Add note", icon: "📝", color: "#6366f1", description: "Append a note to the candidate profile" },
@@ -79,7 +80,7 @@ const RuleCard = ({ rule, onSave, onDelete, stages, installedIntegrations }: {
                             <div className="text-[10px] text-slate-400">
                                 <span className="inline-flex items-center gap-1 uppercase">
                                     <Move size={12} className="inline-block align-middle mr-1" />
-                                    {stageMeta?.stage_name ?? draft.trigger.toStage}
+                                    {stageMeta?.stage_name ?? draft.trigger?.toStage}
                                 </span>
                             </div>
                         </div>
@@ -88,26 +89,17 @@ const RuleCard = ({ rule, onSave, onDelete, stages, installedIntegrations }: {
 
                 <div className="mt-2 flex items-center justify-between">
                     <div className="flex -space-x-1">
-                        <div className="w-5 h-5 rounded-full bg-brand-100 border border-white flex items-center justify-center">
-                            <Settings2 size={10} className="text-brand-600" />
-                        </div>
+                        {/*<div className="w-5 h-5 rounded-full bg-primary/10 border border-white flex items-center justify-center">
+                            <Settings2 size={10} className="text-primary" />
+                        </div>*/}
+                        <Switch
+                            className=""
+                            checked={draft.enabled}
+                            onCheckedChange={v => { update({ enabled: v }); onSave({ ...draft, enabled: v }); }}
+                        />
                     </div>
                     <span className="text-[10px] text-zinc-400 font-medium italic">{delayMeta.label}</span>
                 </div>
-
-                {/*<div className="flex items-center justify-between mt-2">
-                    <Switch
-                        className=""
-                        checked={draft.enabled} onChange={v => { update({ enabled: v }); onSave({ ...draft, enabled: v }); }} />
-                    <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
-                            <Edit3 className="text-slate-400" size={12} />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => onDelete(rule.id)} >
-                            <Trash2 className="text-slate-400" size={12} />
-                        </Button>
-                    </div>
-                </div>*/}
             </motion.div>
 
             <RuleEditorModal

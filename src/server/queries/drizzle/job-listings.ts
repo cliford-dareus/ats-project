@@ -7,10 +7,9 @@ import {
     job_technologies,
     stages,
     technologies,
-    triggers,
 } from "@/drizzle/schema";
-import { db } from "@/drizzle/db";
-import { and, eq, inArray, sql, SQL } from "drizzle-orm";
+import {db} from "@/drizzle/db";
+import {and, eq, inArray, sql, SQL} from "drizzle-orm";
 import {
     CACHE_TAGS,
     dbCache,
@@ -18,9 +17,9 @@ import {
     getIdTag,
     revalidateDbCache,
 } from "@/lib/cache";
-import { z } from "zod";
-import { filterJobSchema, jobFormSchema, updateJobListingSchema } from "@/zod";
-import { ApplicationType, CandidateType, JobListingType } from "@/types";
+import {z} from "zod";
+import {filterJobSchema, jobFormSchema, updateJobListingSchema} from "@/zod";
+import {ApplicationType, CandidateType, JobListingType} from "@/types";
 
 type Technology = typeof technologies.$inferSelect;
 
@@ -30,25 +29,25 @@ interface FilterInterface extends z.infer<typeof filterJobSchema> {
 
 export const create_job_listing = async (data: z.infer<typeof jobFormSchema>) => {
     return await db.transaction(async (trx) => {
+        // ── Job ──────────────────────────────────────────────────────────────
         const [inserted_job] = await trx
             .insert(job_listings)
             .values({
-              name: data.jobInfo.job_name,
-              location: data.jobInfo.job_location,
-              salary_up_to: data.jobInfo.salary_up_to,
-              type: data.jobInfo.job_type,
-              created_by: String(data.userId),
-              description: data.jobInfo.job_description,
-              department: Number(data.jobInfo.department),
-              organization: data.jobInfo.organization,
-              subdomain: "bridge",
+                name: data.jobInfo.job_name,
+                location: data.jobInfo.job_location,
+                salary_up_to: data.jobInfo.salary_up_to,
+                type: data.jobInfo.job_type,
+                created_by: String(data.userId),
+                description: data.jobInfo.job_description,
+                department: Number(data.jobInfo.department),
+                organization: data.jobInfo.organization,
+                subdomain: "bridge",
             })
             .$returningId();
 
-        if (!inserted_job) {
-            trx.rollback();
-        };
+        if (!inserted_job) return trx.rollback();
 
+        // ── Technologies ──────────────────────────────────────────────────────
         const techs = await trx
             .insert(technologies)
             .values(
@@ -65,8 +64,10 @@ export const create_job_listing = async (data: z.infer<typeof jobFormSchema>) =>
                 job_id: inserted_job.id,
                 technology_id: tech.id,
             });
-        };
+        }
+        ;
 
+        // ── Stages ────────────────────────────────────────────────────────────
         await trx.insert(stages).values([
             // Add Applied as the first stage (order 0)
             {
@@ -123,18 +124,18 @@ export const update_job_listing = async (data: z.infer<typeof updateJobListingSc
     await db
         .update(job_listings)
         .set({
-            ...(data.name && { name: data.name }),
-            ...(data.description && { description: data.description }),
-            ...(data.location && { location: data.location }),
-            ...(data.status && { status: data.status }),
-            ...(department_id !== null && { department_id: department_id }),
-            ...(data.organization && { organization: data.organization }),
-            ...(data.salary_up_to && { salary_up_to: data.salary_up_to }),
-            ...(data.type && { type: data.type }),
+            ...(data.name && {name: data.name}),
+            ...(data.description && {description: data.description}),
+            ...(data.location && {location: data.location}),
+            ...(data.status && {status: data.status}),
+            ...(department_id !== null && {department_id: department_id}),
+            ...(data.organization && {organization: data.organization}),
+            ...(data.salary_up_to && {salary_up_to: data.salary_up_to}),
+            ...(data.type && {type: data.type}),
         })
         .where(eq(job_listings.id, data.jobId));
 
-    revalidateDbCache({ tag: CACHE_TAGS.jobs, id: String(data.jobId) });
+    revalidateDbCache({tag: CACHE_TAGS.jobs, id: String(data.jobId)});
 };
 
 export const delete_job_listing = async (jobId: number) => {
@@ -142,7 +143,7 @@ export const delete_job_listing = async (jobId: number) => {
         .delete(job_listings)
         .where(eq(job_listings.id, jobId));
 
-    revalidateDbCache({ tag: CACHE_TAGS.jobs, id: String(jobId) });
+    revalidateDbCache({tag: CACHE_TAGS.jobs, id: String(jobId)});
 };
 
 export const get_job_listings_stages = (jobId: number) => {
@@ -160,14 +161,14 @@ export const get_all_job_listings = (filter: FilterInterface) => {
     return cacheFn(filter);
 };
 
-export const get_job_by_id = (jobId: number) => {
+export const get_job_by_id = (jobId: number, org_id: string) => {
     const cacheFn = dbCache(get_job_by_id_db, {
         tags: [getGlobalTag(CACHE_TAGS.applications), getIdTag(String(jobId), CACHE_TAGS.applications)],
     });
-    return cacheFn(jobId);
+    return cacheFn(jobId, org_id);
 };
 
-export const get_job_by_id_db = async (jobId: number): Promise<JobListingType[]> => {
+export const get_job_by_id_db = async (jobId: number, org_id: string): Promise<JobListingType[]> => {
     const rows = await db
         .select({
             jobListing: job_listings,
@@ -188,11 +189,12 @@ export const get_job_by_id_db = async (jobId: number): Promise<JobListingType[]>
         .leftJoin(attachments, eq(candidates.id, attachments.candidate_id))
         .leftJoin(interviews, eq(applications.id, interviews.applications_id))
         .leftJoin(stages, eq(applications.current_stage_id, stages.id))
-        .where(eq(job_listings.id, jobId));
+        .where(and(
+            eq(job_listings.id, jobId),
+            eq(job_listings.organization, org_id)
+        ));
 
-    if (rows.length === 0) {
-        return [];
-    };
+    if (rows.length === 0) return [];
 
     const firstRow = rows[0];
     const jobListing: JobListingType = {
@@ -202,6 +204,7 @@ export const get_job_by_id_db = async (jobId: number): Promise<JobListingType[]>
         job_department: firstRow.department?.name ?? '',
         job_type: firstRow.jobListing.type,
         job_location: firstRow.jobListing.location,
+        job_subdomain: firstRow.jobListing.subdomain,
         job_created_at: firstRow.jobListing.created_at,
         job_updated_at: firstRow.jobListing.updated_at,
         job_description: firstRow.jobListing.description,
@@ -209,53 +212,74 @@ export const get_job_by_id_db = async (jobId: number): Promise<JobListingType[]>
         applications: [],
     };
 
+    // ── Dedup maps ──────────────────────────────────────────────────────────────
     const technologyMap = new Map<number, Technology>();
     const applicationMap = new Map<number, ApplicationType>();
+    // Per-application sets so interview dedup is O(1) not O(n)
+    const interviewSets = new Map<number, Set<number>>();
+    const attachmentSets = new Map<number, Set<number>>();
+
 
     for (const row of rows) {
-        if (row.experience?.id) {
-            if (!technologyMap.has(row.experience.id)) {
-                technologyMap.set(row.experience.id, row.experience);
+        // ── Technologies ──────────────────────────────────────────────────────────
+        if (row.experience?.id && !technologyMap.has(row.experience.id)) {
+            technologyMap.set(row.experience.id, row.experience)
+        }
+
+        // ── Applications ──────────────────────────────────────────────────────────
+        if (!row.application?.id) continue;
+        let application = applicationMap.get(row.application.id);
+
+        if (!application) {
+            application = {
+                id: row.application.id,
+                job_id: row.jobListing.id,
+                created_at: row.application.created_at,
+                updated_at: row.application.updated_at,
+                stage: row.stage?.stage_name ?? null,
+                stage_order_id: row.stage?.stage_order_id ?? null,
+                position_in_stage: row.application.position_in_stage ?? null,
+                current_stage_id: row.stage?.id ?? null,
+                organization: row.application.organization ?? null,
+                interviews: [],
+                attachments:      [],
+                candidate: row.candidate
+                    ? {
+                        id: row.candidate.id,
+                        name: row.candidate.name,
+                        email: row.candidate.email,
+                        phone: row.candidate.phone,
+                        cv_path: row.candidate.cv_path,
+                        status: row.candidate.status,
+                        created_at: row.candidate.created_at,
+                        updated_at: row.candidate.updated_at,
+                    }
+                    : {} as unknown as CandidateType, // Candidate object or empty object
+            };
+
+            applicationMap.set(row.application.id, application);
+            interviewSets.set(row.application.id,  new Set());
+            attachmentSets.set(row.application.id, new Set());
+            jobListing.applications.push(application);
+        };
+
+        // ── Interviews (belong to application, not candidate) ─────────────────────
+        if (row.interview?.id) {
+            const seen = interviewSets.get(row.application.id)!;
+            if (!seen.has(row.interview.id)) {
+                seen.add(row.interview.id);
+                application.interviews.push(row.interview);
             }
         }
 
-        if (row.application?.id) {
-            let application = applicationMap.get(row.application.id);
-            if (!application) {
-                application = {
-                    id: row.application.id,
-                    job_id: row.jobListing.id,
-                    created_at: row.application.created_at,
-                    updated_at: row.application.updated_at,
-                    stage: row.stage?.stage_name ?? null,
-                    stage_order_id: row.stage?.stage_order_id ?? null,
-                    position_in_stage: row.application.position_in_stage ?? null,
-                    current_stage_id: row.stage?.id ?? null,
-                    organization: row.application.organization ?? null,
-                    interview: [],
-                    candidate: row.candidate
-                        ? {
-                            id: row.candidate.id,
-                            name: row.candidate.name,
-                            email: row.candidate.email,
-                            phone: row.candidate.phone,
-                            cv_path: row.candidate.cv_path,
-                            status: row.candidate.status,
-                            created_at: row.candidate.created_at,
-                            updated_at: row.candidate.updated_at,
-                        }
-                        : {} as unknown as CandidateType, // Candidate object or empty object
-                };
-                applicationMap.set(row.application.id, application);
-                jobListing.applications.push(application);
-            };
-
-            if (row.interview?.id && application?.candidate.interview) {
-                if (!application.candidate.interview.some((int) => int.id === row.interview!.id)) {
-                    application.candidate.interview.push(row.interview);
-                }
+        // ── Attachments ───────────────────────────────────────────────────────────
+        if (row.attachment?.id) {
+            const seen = attachmentSets.get(row.application.id)!;
+            if (!seen.has(row.attachment.id)) {
+                seen.add(row.attachment.id);
+                application.attachments.push(row.attachment);
             }
-        };
+        }
     };
 
     jobListing.job_technologies = Array.from(technologyMap.values());
@@ -286,8 +310,8 @@ export const get_all_job_listings_db = async (filter: FilterInterface) => {
         filters.push(inArray(job_listings.status, statuses));
     }
 
-    const [{ count }] = await db
-        .select({ count: sql<number>`count(*)` })
+    const [{count}] = await db
+        .select({count: sql<number>`count(*)`})
         .from(job_listings)
         .where(and(...filters, eq(job_listings.organization, filter.organization)));
 
@@ -329,20 +353,8 @@ export const get_job_listings_stages_db = async (jobId: number) => {
             need_schedule: stages.need_schedule,
             stage_name: stages.stage_name,
             stage_order_id: stages.stage_order_id,
-            trigger: sql<string>`COALESCE(JSON_ARRAYAGG(
-                JSON_OBJECT('id',
-            ${triggers.id},
-            'action_type',
-            ${triggers.action_type},
-            'config',
-            ${triggers.config}
-            )
-            ),
-            '[]'
-            )`.as("trigger"),
         })
         .from(stages)
-        .leftJoin(triggers, eq(triggers.stage_id, stages.id))
         .where(eq(stages.job_id, jobId))
         .groupBy(stages.id);
 };

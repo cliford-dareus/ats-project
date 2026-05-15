@@ -99,7 +99,8 @@ export interface ApplicationType {
     stage_order_id?: number | null;
     position_in_stage?: number;
     candidate: CandidateType;
-    interview: InterviewType[];
+    interviews: InterviewType[];
+    attachments: any[]
 };
 
 export type JobListingWithCandidatesType = {
@@ -184,7 +185,7 @@ export interface JobListingType {
     job_department: string;
     job_status: typeof JOB_STATUS._type | null;
     job_type: typeof JOB_TYPE._type | null;
-    job_subdomail: string;
+    job_subdomain: string;
     job_location: string;
     job_technologies: JobExperienceType[];
     applications: ApplicationType[];
@@ -385,8 +386,8 @@ export interface AutomationRule {
     trigger: AutomationTriggerOn;
     delay: AutomationDelay;
     action: AutomationAction;
-    createdAt: string;          // ISO date string
-    updatedAt: string;
+    created_at: string;          // ISO date string
+    updated_at: string;
 }
 
 // ── Pending delayed execution (stored in memory / Redis / DB) ─────────────────=

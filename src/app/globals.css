@@ -4,62 +4,65 @@
 
 @layer base {
     :root {
-        /* Backgrounds */
-        --background: 210 20% 98%; /* #f9f9fa → very light background */
-        --foreground: 230 25% 18%; /* #25273c → main text */
+        /* ====================== Base ====================== */
+        --background: 210 20% 98%; /* #FCFDFC - Very light bg */
+        --foreground: 0 0% 7%; /* #0B0A0A - Almost black text */
 
-        --card: 0 0% 100%; /* White cards */
-        --card-foreground: 230 25% 18%;
-
+        /* ====================== Cards & Surfaces ====================== */
+        --card: 0 0% 100%;
+        --card-foreground: 0 0% 7%;
         --popover: 0 0% 100%;
-        --popover-foreground: 230 25% 18%;
+        --popover-foreground: 0 0% 7%;
 
-        /* Primary = Your Blue #3b64d6 */
-        --primary: 217 68% 48%; /* #3b64d6 */
-        --primary-dark: #25273c;
-        --primary-foreground: 210 40% 98%; /* White text on primary */
+        /* ====================== Primary (Teal) ====================== */
+        --primary: 182 51% 38%; /* #2F8D8F */
+        --primary-foreground: 0 0% 100%;
 
-        /* Secondary / Muted */
-        --secondary: 210 20% 96%; /* Light gray */
-        --secondary-foreground: 230 25% 18%;
+        /* ====================== Accent (Coral) ====================== */
+        --accent: 8 95% 64%; /* #FA614B */
+        --accent-foreground: 0 0% 100%;
 
+        /* ====================== Secondary / Muted ====================== */
+        --secondary: 210 20% 96%;
+        --secondary-foreground: 0 0% 7%;
         --muted: 210 20% 96%;
         --muted-foreground: 215 16% 47%;
 
-        /* Accent = Your Teal #00b9cb */
-        --accent: 184 100% 42%; /* #00b9cb */
-        --accent-foreground: 210 40% 98%;
-
-        /* Destructive (Red) - kept standard but you can change */
+        /* ====================== Destructive ====================== */
         --destructive: 0 84% 60%;
-        --destructive-foreground: 210 40% 98%;
+        --destructive-foreground: 0 0% 100%;
 
-        /* Border & Input */
+        /* ====================== Borders & Inputs ====================== */
         --border: 214 32% 91%;
         --input: 214 32% 91%;
+        --ring: 182 51% 38%; /* Matches primary */
 
-        /* Ring (focus rings) - using your primary */
-        --ring: 217 68% 48%;
+        /* ====================== Sidebar (Light version) ====================== */
+        --sidebar-background: 210 20% 98%;
+        --sidebar-foreground: 0 0% 7%;
+        --sidebar-primary: 182 51% 38%;
+        /* Teal */
+        --sidebar-primary-foreground: 0 0% 100%;
+        --sidebar-accent: 8 95% 64%;
+        /* Coral */
+        --sidebar-accent-foreground: 0 0% 100%;
+        --sidebar-border: 214 32% 91%;
 
-        /* Sidebar - using your dark color #25273c */
-        --sidebar-background: 0 0% 98%;
-        --sidebar-foreground: 240 5.3% 26.1%;
-        --sidebar-primary: 240 5.9% 10%;
-        --sidebar-primary-foreground: 0 0% 98%;
-        --sidebar-accent: 240 4.8% 95.9%;
-        --sidebar-accent-foreground: 240 5.9% 10%;
-        --sidebar-border: 220 13% 91%;
-        --sidebar-ring: 217.2 91.2% 59.8%;
+        /* ====================== Success & Warning ====================== */
+        --success: 142 71% 45%;
+        --success-foreground: 0 0% 100%;
+        --warning: 38 92% 50%;
+        --warning-foreground: 0 0% 100%;
 
-        /* Charts - using your colors + nice complements */
-        --chart-1: 217 68% 48%; /* Primary blue */
-        --chart-2: 184 100% 42%; /* Accent teal */
-        --chart-3: 230 25% 18%; /* Dark navy */
-        --chart-4: 142 71% 45%; /* Nice green for success */
-        --chart-5: 38 92% 50%; /* Warm accent */
+        /* ====================== Charts ====================== */
+        --chart-1: 182 51% 38%; /* Primary Teal */
+        --chart-2: 8 95% 64%; /* Coral */
+        --chart-3: 0 0% 7%; /* Dark */
+        --chart-4: 142 71% 45%;/* Success Green */
+        --chart-5: 38 92% 50%; /* Warm Yellow/Orange */
 
-        /* Radius (you can change this) */
-        --radius: 0.5rem;
+        /* ====================== Radius ====================== */
+        --radius: 0.625rem; /* Slightly rounded (modern feel) */
     }
 
     .dark {
@@ -108,7 +111,6 @@
     }
 }
 
-/* add the code bellow */
 @layer utilities {
     /* Hide scrollbar for Chrome, Safari and Opera */
     .no-scrollbar::-webkit-scrollbar {
