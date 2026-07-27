@@ -1,7 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Single source of truth. Routes TriggerEvents → ATSIntegrations.
 // ─────────────────────────────────────────────────────────────────────────────
-
 import { EventEmitter } from "events";
 import { ProviderStateManager } from "./provider-state-manager";
 import type { ATSPluginProvider, ATSIntegration } from "./plugin-interfaces";
@@ -19,7 +18,9 @@ export class ATSPluginRegistry extends EventEmitter {
     private providers = new Map<string, ATSPluginProvider>();
     // eventType → Set<"providerId:integrationId">
     private triggerIndex = new Map<TriggerEventType, Set<string>>();
+    private initializedOrgs = new Set<string>(); // orgId
     public stateManager = new ProviderStateManager();
+    private enabledIntegrations = new Map<string, boolean>();
 
     // ── Registration ──────────────────────────────────────────────────────────
     register(provider: ATSPluginProvider): void {
@@ -46,6 +47,7 @@ export class ATSPluginRegistry extends EventEmitter {
                     if (!this.triggerIndex.has(eventType)) {
                         this.triggerIndex.set(eventType, new Set());
                     }
+                    console.log(`[Registry] Indexing ${eventType} for ${provider.id}:${integration.id}`);
                     this.triggerIndex
                         .get(eventType)!
                         .add(`${provider.id}:${integration.id}`);
@@ -86,12 +88,25 @@ export class ATSPluginRegistry extends EventEmitter {
             .find((i) => i.id === integrationId);
     }
 
+    setEnabledIntegrations(map: Record<string, boolean>): void {
+        this.enabledIntegrations = new Map(Object.entries(map));
+    }
+
     getInstalledIntegrations(): ATSIntegration[] {
         return this.getAllProviders().flatMap((p) => p.getIntegrations());
     }
 
+    // ── Server Initialization ────────────────────────────────────────────────
     isInitialized(): boolean {
         return this.providers.size > 0;
+    }
+
+    isInitializedForOrg(orgId: string): boolean {
+        return this.initializedOrgs.has(orgId);
+    }
+
+    markInitialized(orgId: string): void {
+        this.initializedOrgs.add(orgId);
     }
 
     // ── Smart Trigger Dispatch ────────────────────────────────────────────────
@@ -102,9 +117,11 @@ export class ATSPluginRegistry extends EventEmitter {
     ): Promise<FiredTrigger[]> {
         const keys = this.triggerIndex.get(event.type) ?? new Set<string>();
         const fired: FiredTrigger[] = [];
+        console.log(`[Registry] Dispatching ${event.type} to ${keys.size} integrations`);
 
         const tasks = Array.from(keys).map(async (key) => {
             const [providerId, integrationId] = key.split(":");
+            console.log(`[Registry] Processing ${key}`);
 
             const provider = this.providers.get(providerId);
             const integration = provider
@@ -120,6 +137,10 @@ export class ATSPluginRegistry extends EventEmitter {
                 return;
             }
 
+            // ── Enabled check ───────────────────────────────────────
+            const integrationEnabled = this.enabledIntegrations.get(integrationId) ?? true;
+            if (!integrationEnabled) return;
+
             // Evaluate trigger conditions
             for (const trigger of integration.getSupportedTriggers()) {
                 if (!trigger.on.includes(event.type)) continue;
@@ -127,7 +148,6 @@ export class ATSPluginRegistry extends EventEmitter {
                     const pass = await trigger.condition(event, context);
                     if (!pass) continue;
                 }
-
 
                 try {
                     console.log(`[Registry] Integration ${event.type} completed`);
@@ -155,10 +175,8 @@ export class ATSPluginRegistry extends EventEmitter {
         await Promise.allSettled(tasks);
         return fired;
     }
-}
+};
 
 // ── Singleton ─────────────────────────────────────────────────────────────────
 // Module-level — shared across the entire client bundle automatically.
-// Zed equivalent: GlobalLanguageModelRegistry
-
 export const pluginRegistry = new ATSPluginRegistry();

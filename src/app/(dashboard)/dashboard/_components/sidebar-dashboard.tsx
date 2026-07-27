@@ -16,7 +16,8 @@ import {
     ArrowUpRight,
     Sparkles,
     Zap,
-    Settings
+    Settings,
+    PartyPopper
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -24,28 +25,6 @@ import { Input } from '@/components/ui/input';
 
 
 const SidebarDashboard = () => {
-    const [selectedTimeframe, setSelectedTimeframe] = useState('week');
-
-    const timeframes = [
-        { id: 'today', label: 'Today', period: '24h' },
-        { id: 'week', label: 'This Week', period: '7d' },
-        { id: 'month', label: 'This Month', period: '30d' },
-        { id: 'quarter', label: 'This Quarter', period: '90d' }
-    ];
-
-    const getPriorityColor = (priority: string) => {
-        switch (priority) {
-            case 'high':
-                return 'bg-red-500';
-            case 'medium':
-                return 'bg-yellow-500';
-            case 'low':
-                return 'bg-green-500';
-            default:
-                return 'bg-gray-500';
-        }
-    };
-
     return (
         <div className="flex flex-col overflow-y-auto h-[calc(100vh-125px)]">
             <div className="px-4">
@@ -135,7 +114,10 @@ const SidebarDashboard = () => {
 
                 <div className="relative z-10 space-y-6">
                     <div className="space-y-4">
-                        <h3 className="text-2xl font-bold text-white tracking-tight">Need custom triggers?</h3>
+                        <div className='flex items-center gap-1'>
+                            <PartyPopper size={20} className='text-white'/>
+                            <h3 className="text-2xl font-bold text-white tracking-tight">What's New</h3>
+                        </div>
                         <p className="text-zinc-400 text-sm max-w-md">
                             Connect with over 2,000+ apps via our Zapier integration to build even more powerful workflows.
                         </p>

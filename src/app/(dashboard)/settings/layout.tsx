@@ -10,10 +10,6 @@ const SettingLayout = async ({ children }: Props) => {
 
     return (
         <div className="">
-            <div className="flex flex-col gap-1 p-4">
-                <h2 className="text-2xl font-bold text-zinc-900">Admin Settings</h2>
-                <p className="text-sm text-zinc-500">Manage your organization's configuration and extensions.</p>
-            </div>
             {children}
         </div>
     )

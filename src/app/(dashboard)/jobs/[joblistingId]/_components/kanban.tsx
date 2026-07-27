@@ -3,12 +3,10 @@
 import Column from "@/components/kanban/column";
 import { DragEvent, useEffect, useState } from "react";
 import { ApplicationType, StageResponseType } from "@/types";
-import { useKanbanContext } from "@/providers/kanban-provider";
 import { useSocket } from "@/providers/socket-provider";
 import { moveApplicationAndReorder } from "@/server/actions/application_actions";
 import { JOB_STAGES } from "@/zod";
 import { z } from "zod";
-import { useDispatch } from "@/hooks/use-plugin-registry";
 import AutomationBuilder from "./automation-builder";
 import { getJobAutomationRules } from "@/server/actions/job-listings-actions";
 import { automationEngine } from "@/lib/automation-engine";
@@ -31,7 +29,6 @@ type Props = {
 
 const Kanban = ({ data, stages, jobDetails }: Props) => {
     const { socket } = useSocket();
-    const { fetchApplicationTasks } = useKanbanContext();
 
     const [applications, setApplications] = useState<ApplicationType[]>(data);
     const [showTriggers, setShowTriggers] = useState(false);
@@ -45,7 +42,6 @@ const Kanban = ({ data, stages, jobDetails }: Props) => {
     useEffect(() => {
         const jobId = jobDetails.jobId;
         if (!jobId) return;
-        console.log("LOAD:RULES")
         getJobAutomationRules(jobId).then(rules => {
             automationEngine.loadJobRules(jobId, rules);
         });
@@ -98,7 +94,6 @@ const Kanban = ({ data, stages, jobDetails }: Props) => {
                     console.error("Socket move failed to sync; rolling back.");
                     if (snapshot) setApplications(snapshot);
                 }
-                await fetchApplicationTasks();
             }
         };
 

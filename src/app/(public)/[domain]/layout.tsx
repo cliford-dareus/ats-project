@@ -10,18 +10,18 @@ export default async function PublicLayout({
     children: ReactNode;
 }) {
     const { domain: subdomain } = await params;
-    const tenant = await get_organization_by_subdomain_action(subdomain);
 
+    const [tenant] = await get_organization_by_subdomain_action(subdomain);
     if (!tenant) {
         return <></>;
-    }
+    };
 
     return (
         <>
             {/*Inject CSS variables globally for this tenant */}
             <style>{`:root {
-            --primary-color: ${tenant[0]?.primary_color};
-            --font-main: ${tenant[0]?.font_family};
+            --primary-color: ${tenant?.primary_color};
+            --font-main: ${tenant?.font_family};
             }`}</style>
             {/*<header className="bg-white border-b border-zinc-200 sticky top-0 z-10">
                 <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
@@ -69,4 +69,4 @@ export default async function PublicLayout({
             </footer>
         </>
     );
-}
+};

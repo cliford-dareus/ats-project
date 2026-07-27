@@ -1,55 +1,103 @@
+// middleware.ts
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-const isPublicRoute = createRouteMatcher([
-    "/",
-    "/sign-in(.*)",
-    "/sign-up(.*)",
-    "/api/webhooks(.*)"
+// ── Constants ─────────────────────────────────────────────────────────────────
+const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "apliko.com";
+const LOCAL_ROOT = process.env.NEXT_PUBLIC_LOCAL_DOMAIN ?? "apliko.localhost";
+const APP_SUB = "app";
+const MARKETING_SUB = null; // bare localhost:3000 or apliko.com with no subdomain                              // app.apliko.com → dashboard
+
+// Routes that require Clerk auth inside the dashboard
+const isProtected = createRouteMatcher([
+    "/dashboard(.*)",
+    "/jobs(.*)",
+    "/candidates(.*)",
+    "/reports(.*)",
+    "/applications(.*)",
+    "/settings(.*)",
+    "/api/ats/trigger$",   // authenticated trigger route only
 ]);
 
+// ── Host parser ───────────────────────────────────────────────────────────────
+type HostType =
+    | { kind: "marketing" }                     // localhost:3000 | apliko.com
+    | { kind: "dashboard" }                     // app.apliko.localhost | app.apliko.com
+    | { kind: "career"; subdomain: string };    // bridge.apliko.localhost | bridge.apliko.com
+
+function parseHost(req: NextRequest): HostType {
+    const host = req.headers.get("host") ?? "";
+    const hostname = host.split(":")[0]; // strip port
+
+    // ── bare localhost → marketing ────────────────────────────────────────────
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+        return { kind: "marketing" };
+    }
+
+    // ── resolve root: prod or local ───────────────────────────────────────────
+    const isProd = hostname === ROOT_DOMAIN || hostname.endsWith(`.${ROOT_DOMAIN}`);
+    const isLocal = hostname === LOCAL_ROOT || hostname.endsWith(`.${LOCAL_ROOT}`);
+
+    if (!isProd && !isLocal) {
+        // Unknown host — fall through to marketing (safe default)
+        return { kind: "marketing" };
+    }
+
+    const root = isProd ? ROOT_DOMAIN : LOCAL_ROOT;
+
+    // bare root (apliko.com | apliko.localhost) → marketing
+    if (hostname === root) return { kind: "marketing" };
+
+    // extract subdomain label: "app" | "bridge" | "hisgra" …
+    const sub = hostname.slice(0, hostname.length - root.length - 1); // strip ".root"
+
+    if (sub === APP_SUB) return { kind: "dashboard" };
+
+    return { kind: "career", subdomain: sub };
+}
+
+// ── Middleware ────────────────────────────────────────────────────────────────
 export default clerkMiddleware(async (auth, req) => {
-    const url = req.nextUrl;
-    let hostname = req.headers.get('host') || '';
-    hostname = hostname.replace(/:\d+$/, '');
+    const host = parseHost(req);
 
-    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost';
+    switch (host.kind) {
 
-    let subdomain = '';
-    if (hostname.endsWith(`.${rootDomain}`)) {
-        subdomain = hostname.replace(`.${rootDomain}`, '');
-    } else if (hostname === rootDomain) {
-        subdomain = '';
-    } else {
-        subdomain = hostname;
-    }
-
-    const searchParams = url.searchParams.toString();
-    const path = `${url.pathname}${searchParams ? `?${searchParams}` : ''}`;
-
-    // === MAIN DOMAIN ===
-    if (!subdomain || subdomain === 'www') {
-        return NextResponse.next(); // ✅ no rewrite loop
-    }
-
-    // === APP / RECRUITER DASHBOARD ===
-    if (subdomain === 'app') {
-        if (!isPublicRoute(req)) {
-            await auth.protect(); // ✅ redirects if not authed
+        // ── Marketing site ──────────────────────────────────────────────────────
+        // localhost:3000 or apliko.com — serve /(marketing) group
+        case "marketing": {
+            const url = req.nextUrl.clone();
+            // url.pathname = `/marketing${url.pathname === "/" ? "" : url.pathname}`;
+            return NextResponse.rewrite(url);
         }
-        if (url.pathname === '/') {
-            return NextResponse.rewrite(new URL('/dashboard', req.url));
-        }
-        return NextResponse.next();
-    }
 
-    // === CANDIDATE / TENANT PORTALS ===
-    return NextResponse.rewrite(new URL(`/${subdomain}${path}`, req.url));
+        // ── Dashboard ───────────────────────────────────────────────────────────
+        // app.apliko.localhost or app.apliko.com — Clerk protected
+        case "dashboard": {
+            if (isProtected(req)) await auth.protect();
+            // No rewrite needed — (dashboard) folder matches naturally
+            return NextResponse.next();
+        }
+
+        // ── Career page ─────────────────────────────────────────────────────────
+        // {org}.apliko.localhost or {org}.apliko.com
+        case "career": {
+            const url = req.nextUrl.clone();
+            const { subdomain } = host;
+
+            // Rewrite: /jobs/1/apply → /(public)/[subdomain]/jobs/1/apply
+            url.pathname = `/${subdomain}${url.pathname === "/" ? "" : url.pathname}`;
+
+            const res = NextResponse.rewrite(url);
+            res.headers.set("x-subdomain", subdomain);
+            res.headers.set("x-root-domain", ROOT_DOMAIN);
+            return res;
+        }
+    }
 });
 
 export const config = {
     matcher: [
-        "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-        "/(api|trpc)(.*)",
+        // Match everything except Next.js internals and static files
+        "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)).*)",
     ],
 };

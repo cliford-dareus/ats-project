@@ -1,9 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-// import { updatePluginSettings } from '@/server/actions/plugin-settings';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ResendConfig from './resend-config';
+import GoogleConfig from './google-config';
 
 type Props = {
     plugin: any;
@@ -36,24 +35,25 @@ export default function PluginConfigClient({
     return (
         <div className="space-y-8">
             <div>
-                <h1 className="text-3xl font-bold">{plugin.name} Configuration</h1>
+                <h1 className="text-3xl font-bold uppercase tracking-tight">{plugin.name} Configuration</h1>
                 <p className="text-muted-foreground">{plugin.desc}</p>
             </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Plugin Settings</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {/* Example: Different settings based on plugin */}
-                    {plugin.id === 'resend' && (
-                        <ResendConfig
-                            settings={settings}
-                            onSave={handleSave}
-                        />
-                    )}
-                </CardContent>
-            </Card>
+            {plugin.id === 'resend' && (
+                <ResendConfig
+                    pluginId={plugin.id}
+                    settings={settings}
+                    onSave={handleSave}
+                />
+            )}
+
+            {plugin.id === 'google' && (
+                <GoogleConfig
+                    pluginId={plugin.id}
+                    settings={settings}
+                    onSave={handleSave}
+                />
+            )}
         </div>
     );
-}
+};

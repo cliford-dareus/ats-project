@@ -27,8 +27,8 @@ const Card = ({ data, handleDragStart, stage, jobDetails }: Props) => {
     const hasActiveTrigger = activeTrigger.length > 0 &&
     activeTrigger.some(task => new Date(task.triggerTime).getTime() > Date.now());
 
-    const hasScheduledInterview = data.interview?.length > 0 &&
-    data.interview.some(interview => new Date(interview.interview_date).getTime() > Date.now());
+    const hasScheduledInterview = data.interviews?.length > 0 &&
+    data.interviews.some(interview => new Date(interview.interview_date).getTime() > Date.now());
 
     useEffect(() => {
         const filteredTasks = tasks.filter(task => task.application_id === data.id);
@@ -38,7 +38,7 @@ const Card = ({ data, handleDragStart, stage, jobDetails }: Props) => {
     return (
         <>
             <DropIndicator active={false} beforeId={data.id} stage={stage} column={data.stage} />
-            
+
             <motion.div
                 layout
                 layoutId={String(data.id)}

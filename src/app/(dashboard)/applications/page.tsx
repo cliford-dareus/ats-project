@@ -46,7 +46,11 @@ const Page = async ({ searchParams }: Props) => {
 
     return (
         <div className="p-4">
-            <ListPageTop name="Applications" count={len as number} file="application" />
+            <ListPageTop
+                name="Applications"
+                count={len as number}
+                file="application" data={application as unknown as ApplicationResponseType[]}
+            />
 
             <ApplicationList
                 application={application as unknown as ApplicationResponseType[]}

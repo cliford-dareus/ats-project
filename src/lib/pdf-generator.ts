@@ -1,5 +1,8 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { TABLE_HEADER } from './constant';
+import { applyPlugin } from 'jspdf-autotable';
+applyPlugin(jsPDF);
 
 export interface ReportData {
     title: string;
@@ -28,10 +31,12 @@ export interface ReportData {
 
 export class PDFGenerator {
     private pdf: jsPDF;
+    // private autoTable: any;
     private pageHeight: number;
     private pageWidth: number;
     private currentY: number;
     private margin: number;
+    private padding: number;
 
     constructor() {
         this.pdf = new jsPDF();
@@ -39,9 +44,11 @@ export class PDFGenerator {
         this.pageWidth = this.pdf.internal.pageSize.width;
         this.currentY = 20;
         this.margin = 20;
+        this.padding = 1;
     };
 
-    private addHeader(title: string, dateRange: { from: Date; to: Date }) {
+    // ── Elements ──────────────────────────────────────────────────────────
+    private addHeader(title: string, dateRange?: { from: Date; to: Date }) {
         // Company logo placeholder
         this.pdf.setFontSize(20);
         this.pdf.setFont('helvetica', 'bold');
@@ -52,13 +59,15 @@ export class PDFGenerator {
         this.pdf.setFont('helvetica', 'normal');
         this.pdf.text(title, this.margin, this.currentY);
 
-        this.currentY += 8;
-        this.pdf.setFontSize(10);
-        this.pdf.text(
-            `Report Period: ${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}`,
-            this.margin,
-            this.currentY
-        );
+        if (dateRange) {
+            this.currentY += 8;
+            this.pdf.setFontSize(10);
+            this.pdf.text(
+                `Report Period: ${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}`,
+                this.margin,
+                this.currentY
+            )
+        }
 
         this.currentY += 8;
         this.pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, this.margin, this.currentY);
@@ -85,37 +94,84 @@ export class PDFGenerator {
         this.currentY += fontSize * 0.6;
     };
 
-    private addTable(headers: string[], rows: string[][]) {
+    private addTable(table: string, rows: string[][]) {
         this.checkPageBreak(30);
-
-        const startY = this.currentY;
         const cellHeight = 8;
-        const cellWidth = (this.pageWidth - 2 * this.margin) / headers.length;
+        const lineHeight = 4;
+        const headers = TABLE_HEADER[table];
+        const tableWidth = this.pageWidth - 2 * this.margin;
+        const cellWidth = tableWidth / headers.length;
+        const columnWidths = Array(headers.length).fill(cellWidth);
 
-        // Headers
-        this.pdf.setFontSize(10);
+        // ── Headers ──────────────────────────────────────────────
+        this.pdf.setFontSize(8);
         this.pdf.setFont('helvetica', 'bold');
+        const headerY = this.currentY;
+
         headers.forEach((header, index) => {
-            this.pdf.rect(this.margin + index * cellWidth, startY, cellWidth, cellHeight);
-            this.pdf.text(header, this.margin + index * cellWidth + 2, startY + 6);
+            const x = this.margin + index * cellWidth;
+            const maxWidth = columnWidths[index] - this.padding * 2;
+
+            this.pdf.rect(x, headerY, columnWidths[index], cellHeight);
+
+            const lines = this.pdf.splitTextToSize(header, maxWidth);
+            lines.forEach((line: string, idx: number) => {  // fix: use idx
+                this.pdf.text(
+                    line,
+                    x + this.padding,
+                    headerY + this.padding + idx * lineHeight,
+                    { baseline: 'middle' }
+                );
+            });
         });
 
-        this.currentY = startY + cellHeight;
+        this.currentY += cellHeight;
 
-        // Rows
+        // ── Rows ─────────────────────────────────────────────────
+        this.pdf.setFontSize(7);
         this.pdf.setFont('helvetica', 'normal');
+
         rows.forEach((row) => {
-            this.checkPageBreak(cellHeight + 2);
-            row.forEach((cell, index) => {
-                this.pdf.rect(this.margin + index * cellWidth, this.currentY, cellWidth, cellHeight);
-                this.pdf.text(cell, this.margin + index * cellWidth + 2, this.currentY + 6);
+            let maxLines = 1;
+            const rowData = row.map((cell, colIndex) => {
+                const maxWidth = columnWidths[colIndex] - this.padding * 2;
+                const text = cell?.toString() ?? '';
+                const lines = this.pdf.splitTextToSize(text, maxWidth);
+                maxLines = Math.max(maxLines, lines.length);
+                return lines;
             });
-            this.currentY += cellHeight;
+
+            const rowHeight = Math.max(cellHeight, maxLines * lineHeight + this.padding * 2);
+            this.checkPageBreak(rowHeight + 4);
+
+            const rowY = this.currentY;
+
+            rowData.forEach((lines, colIndex) => {
+                const x = this.margin + colIndex * cellWidth;
+
+                this.pdf.rect(x, rowY, columnWidths[colIndex], rowHeight);
+
+                // center the text block vertically within the row
+                const blockHeight = lines.length * lineHeight;
+                const topPad = (rowHeight - blockHeight) / 2;
+
+                lines.forEach((line: string, lineIndex: number) => {
+                    this.pdf.text(
+                        line,
+                        x + this.padding,
+                        rowY + topPad + lineIndex * lineHeight,
+                        { baseline: 'middle' }
+                    );
+                });
+            });
+
+            this.currentY += rowHeight;
         });
 
         this.currentY += 10;
     }
 
+    // ── Registration ──────────────────────────────────────────────────────────
     private checkPageBreak(requiredSpace: number) {
         if (this.currentY + requiredSpace > this.pageHeight - this.margin) {
             this.pdf.addPage();
@@ -189,7 +245,7 @@ export class PDFGenerator {
         this.addJobBreakdown(data.breakdown);
         this.addSourceAnalysis(data.sourceAnalysis);
 
-        return new Blob([this.pdf.output('blob')], {type: 'application/pdf'});
+        return new Blob([this.pdf.output('blob')], { type: 'application/pdf' });
     };
 
     public async generateDetailedReport(data: ReportData): Promise<Blob> {
@@ -206,15 +262,30 @@ export class PDFGenerator {
         this.addText('• Monitor time-to-hire metrics to maintain competitive advantage', 10);
         this.addText('• Implement diversity initiatives to improve candidate pool quality', 10);
 
-        return new Blob([this.pdf.output('blob')], {type: 'application/pdf'});
+        return new Blob([this.pdf.output('blob')], { type: 'application/pdf' });
+    };
+
+    // ── Generate Tables ──────────────────────────────────────────────────────────
+    public async generateTable(table: string, rows: string[][]): Promise<Blob> {
+        const headers = TABLE_HEADER[table];
+
+        this.addHeader("Job")
+        this.addSection("Table name")
+        this.pdf.autoTable({
+            head: [headers],
+            body: rows,
+            startY: this.currentY,
+            margin: { left: this.margin, right: this.margin },
+        });
+
+        return new Blob([this.pdf.output('blob')], { type: 'application/pdf' })
     };
 
     public async captureChartAsPDF(chartElementId: string, title: string): Promise<Blob> {
         const chartElement = document.getElementById(chartElementId);
         if (!chartElement) {
             throw new Error('Chart element not found');
-        }
-        ;
+        };
 
         const canvas = await html2canvas(chartElement, {
             backgroundColor: '#ffffff',
@@ -232,7 +303,7 @@ export class PDFGenerator {
 
         this.pdf.addImage(imgData, 'PNG', this.margin, this.currentY, imgWidth, imgHeight);
 
-        return new Blob([this.pdf.output('blob')], {type: 'application/pdf'});
+        return new Blob([this.pdf.output('blob')], { type: 'application/pdf' });
     };
 };
 
@@ -251,8 +322,7 @@ export const exportChartAsImage = async (chartElementId: string, filename: strin
     const chartElement = document.getElementById(chartElementId);
     if (!chartElement) {
         throw new Error('Chart element not found');
-    }
-    ;
+    };
 
     const canvas = await html2canvas(chartElement, {
         backgroundColor: '#ffffff',
@@ -269,7 +339,6 @@ export const exportChartAsImage = async (chartElementId: string, filename: strin
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-        }
-        ;
+        };
     }, 'image/png');
 };

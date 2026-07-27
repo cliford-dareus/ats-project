@@ -3,7 +3,7 @@
 import { Input } from "@/components/ui/input";
 import { FormErrors } from "@/types/index";
 import CustomButton from "@/components/custom-button";
-import React, { useActionState} from "react";
+import React, { useActionState } from "react";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useNewJobContext } from "@/providers/new-job-provider";
@@ -41,18 +41,21 @@ const StepOneForm = ({ orgId, departments }: Props) => {
     };
 
     const handleSelectDeptChange = (value: string) => {
-        updateNewJobDetails({ department: value,  organization: orgId }, "jobInfo");
+        updateNewJobDetails({ department: value, organization: orgId }, "jobInfo");
     };
-    
+
     const handleSelectJobTypeChange = (value: string) => {
         updateNewJobDetails({ job_type: value }, "jobInfo");
     };
-    
+
     return (
         <form action={formAction} className="w-full flex gap-4 h-[calc(100vh_-_200px)]">
             <ScrollArea className="flex-1">
                 {/* Job Information Card */}
-                <Card>
+                <Card className="relative overflow-hidden rounded-md">
+                    {/* Decorative background element */}
+                    <div className="absolute -top-12 -left-12 w-48 h-48 bg-primary/20 rounded-full blur-3xl"></div>
+
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-xl font-bold">
                             <FileText size={20} className="text-blue-500" />
@@ -191,12 +194,12 @@ const StepOneForm = ({ orgId, departments }: Props) => {
 
             {/* Preview */}
             <div className="flex flex-col relative">
-                <SidePreview />
+                <SidePreview departments={departments} />
                 {/* Action Buttons */}
                 <div className="w-full flex items-center justify-between absolute bottom-4">
                     <CustomButton
                         text="Continue to Requirements"
-                        className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                        className="px-8 py-3 rounded-md"
                     />
                 </div>
             </div>

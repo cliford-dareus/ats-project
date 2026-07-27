@@ -7,6 +7,8 @@
 //   4. offer-letter               offer_extended          → formal offer email to candidate
 //   5. resume-score-report        score_updated           → internal scorecard email to recruiter
 
+import ApplicationConfirmationTemplate from "@/emails/application_submitted_template";
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Integration 1 — Application Confirmation
 // Fires on: candidate_applied
@@ -63,14 +65,14 @@ class ApplicationConfirmationIntegration implements ATSIntegration {
         const applicationSubmittedProps = {
             candidateName: candidate.name,
             jobTitle: job?.job_name,
-            companyName: job?.job_subdomail,
+            companyName: job?.job_subdomain,
             companyLogoUrl: "",
             applicationId: 1,         // Optional reference number
             expectedResponseTime: "",    // e.g. "within 7-10 business days"
             senderName: "",
             senderTitle: ""
         };
-        
+
         console.log(`[Registry] Processing integration ${this.id} for provider ${this.providerId} with event ${event.type} and apiKey=${this.apiKey}`);
 
         const html = await render(React.createElement(ApplicationConfirmationTemplate), applicationSubmittedProps || {})
@@ -97,7 +99,13 @@ class ApplicationConfirmationIntegration implements ATSIntegration {
     }
 };
 
-import ApplicationConfirmationTemplate from "@/emails/application_submitted_template";
+// ─────────────────────────────────────────────────────────────────────────────
+// Integration 2 — stage-transition- 
+// Fires on: stage_changed
+// Sends:    email candidate + hiring manager
+// ─────────────────────────────────────────────────────────────────────────────
+
+
 // ─────────────────────────────────────────────────────────────────────────────
 // ResendProvider — owns all 5 integrations
 // ─────────────────────────────────────────────────────────────────────────────
@@ -107,8 +115,6 @@ import { sendEmail } from "@/lib/resend";
 import { verifyResend } from "@/server/actions/stage_actions";
 import { ATSContext, ATSIntegrationResult, InstalledPlugin, PluginAuthState, PluginCapability, SmartTrigger, TriggerEvent } from "@/types";
 import { render } from "@react-email/components";
-import React from "react";
-import { Resend } from "resend";
 
 export class ResendProvider implements ATSPluginProvider {
     readonly id = "resend";

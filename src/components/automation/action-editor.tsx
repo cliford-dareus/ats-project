@@ -30,11 +30,12 @@ const ActionEditor = ({ action, onChange, stages, installedIntegrations }: {
     const TokenHint = () => (
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
             {["{{candidate.name}}", "{{candidate.email}}", "{{job.title}}", "{{stage}}"].map(t => (
-                <span key={t} style={{
-                    fontSize: 10, padding: "1px 6px", borderRadius: 4,
-                    background: "#1a1a1a", border: "1px solid #2a2a2a",
-                    color: "#555", fontFamily: "monospace", cursor: "default",
-                }}>{t}</span>
+                <span
+                    key={t}
+                    className="text-[10px] py-0.5 px-2 rounded-md bg-primary border text-white cursor-default"
+                >
+                    {t}
+                </span>
             ))}
         </div>
     );
@@ -47,7 +48,7 @@ const ActionEditor = ({ action, onChange, stages, installedIntegrations }: {
                 placeholder="Note content… supports {{candidate.name}}, {{job.title}}"
                 rows={4}
             />
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div className="flex items-center gap-2">
                 <Switch checked={action.pinned ?? false} onCheckedChange={v => update({ pinned: v })} />
                 <span style={{ fontSize: 12, color: "#666" }}>Pin this note</span>
             </div>
@@ -127,8 +128,8 @@ const ActionEditor = ({ action, onChange, stages, installedIntegrations }: {
             onValueChange={v => update({ toStage: v })}
         >
             <SelectTrigger className="w-full max-w-48">
-                    {/*<SelectValue placeholder="Select integration…" />*/}
-                </SelectTrigger>
+                {/*<SelectValue placeholder="Select integration…" />*/}
+            </SelectTrigger>
             <SelectContent>
                 {stageOptions.map(opt => (
                     <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>

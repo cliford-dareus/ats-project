@@ -7,9 +7,9 @@ type Props = {
     type: string | null;
 };
 
-const JobQuickViewCard = ({name, department, location, type}: Props) => {
+const JobQuickViewCard = ({ name, department, location, type }: Props) => {
     return (
-        <div className="bg-foreground rounded-2xl p-6 text-white space-y-4">
+        <div className="relative bg-foreground rounded-2xl p-6 text-white space-y-4">
             <div className="flex items-center gap-2">
                 <Briefcase className="w-4 h-4 text-brand-400" />
                 <h3 className="font-bold text-sm uppercase tracking-wider">Job
@@ -30,6 +30,9 @@ const JobQuickViewCard = ({name, department, location, type}: Props) => {
                     <span className="font-medium">{type}</span>
                 </div>
             </div>
+
+            {/* Decorative background element */}
+            <div className="absolute -bottom-12 -right-12 w-48 h-48 bg-primary/20 rounded-full blur-3xl"></div>
         </div>
     );
 };

@@ -26,16 +26,15 @@ import { z } from "zod";
 import { uploadResumeToR2 } from "@/lib/upload-file-to-r2";
 import { create_candidate_details } from "../mongo/candidate-details";
 import { check_organization_subdomain } from "./organization";
+import { file } from "googleapis/build/src/apis/file";
 
 interface InterviewType {
     applicationId: number;
     location: string;
     start_at: Date;
     end_at: Date;
-}
+};
 
-// TODO: FIX LATER
-// ALso add the ORGANIZATION ID to the application
 export const create_application = async (data: z.infer<typeof applicationFormSchema>) => {
     // 1. Get "Applied" stage
     const [appliedStage] = await db
@@ -85,8 +84,6 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
             message: "No organization found with this subdomain",
         };
     }
-    
-    console.log("create_application", { existingSubdomain });
 
     try {
         let candidateId: number;
@@ -110,66 +107,73 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
 
             // Better uniqueness check: email (not name)
             const existingCandidate = await db
-                .select({ id: candidates.id })
+                .select({ id: candidates.id, file_key: candidates.cv_path })
                 .from(candidates)
                 .where(eq(candidates.email, info.email));
 
             if (existingCandidate.length > 0) {
-                return {
-                    success: false,
-                    message: "Candidate with this email already exists",
-                };
+                
+                candidateId = existingCandidate[0].id;
+            } else {
+
+                const resumeFile = data?.file?.file_ as File | undefined;
+                let cvKey = `no-resume-${info.firstName}-${Date.now()}`;
+
+                const candidateFullName = `${info.firstName} ${info.lastName}`;
+                if (resumeFile && resumeFile.size > 0) {
+                    cvKey = await uploadResumeToR2(resumeFile, candidateFullName);
+                }
+
+                // Create candidate
+                const [newCandidate] = await db
+                    .insert(candidates)
+                    .values({
+                        organization: existingSubdomain[0].id,
+                        name: candidateFullName,
+                        email: info.email,
+                        phone: info.phone,
+                        location: info.city,
+                        address: info.address,
+                        city: info.city,
+                        state: info.state,
+                        zip_code: info.zipCode,
+                        cv_path: cvKey,
+                        subdomain: subdomain,
+                    })
+                    .$returningId();
+
+                candidateId = newCandidate.id;
+
+                // Create attachment record
+                await db.insert(attachments).values({
+                    file_name: `${info.firstName}'s Resume`,
+                    file_url: cvKey, // we store the R2 key
+                    candidate_id: candidateId,
+                    attachment_type: "RESUME",
+                });
+
+                // Create candidate details record
+                await create_candidate_details({
+                    candidate_id: candidateId,
+                    resumeSummary: "No resume summary provided",
+                    skills: [],
+                    experience: data.workExperience,
+                    education: data.education,
+                    references: data.references ?? [],
+                });
+
+                revalidateDbCache({ tag: CACHE_TAGS.candidates });
             }
-
-            const resumeFile = data?.file?.file_ as File | undefined;
-            let cvKey = `no-resume-${info.firstName}-${Date.now()}`;
-
-            const candidateFullName = `${info.firstName} ${info.lastName}`;
-            if (resumeFile && resumeFile.size > 0) {
-                cvKey = await uploadResumeToR2(resumeFile, candidateFullName);
-            }
-
-            // Create candidate
-            const [newCandidate] = await db
-                .insert(candidates)
-                .values({
-                    organization: existingSubdomain[0].id,
-                    name: candidateFullName,
-                    email: info.email,
-                    phone: info.phone,
-                    location: info.city,
-                    address: info.address,
-                    city: info.city,
-                    state: info.state,
-                    zip_code: info.zipCode,
-                    cv_path: cvKey,
-                    subdomain: subdomain,
-                })
-                .$returningId();
-
-            candidateId = newCandidate.id;
-
-            // Create attachment record
-            await db.insert(attachments).values({
-                file_name: `${info.firstName}'s Resume`,
-                file_url: cvKey, // we store the R2 key
-                candidate_id: candidateId,
-                attachment_type: "RESUME",
-            });
-
-            // Create candidate details record
-            await create_candidate_details({
-                candidate_id: candidateId,
-                resumeSummary: "No resume summary provided",
-                skills: [],
-                experience: data.workExperience,
-                education: data.education,
-                references: data.references ?? [],
-            });
-            
-            revalidateDbCache({ tag: CACHE_TAGS.candidates });
         }
 
+        const [candidate] = await db
+            .select()
+            .from(candidates)
+            .where(eq(candidates.id, candidateId));
+
+        const file_key = candidate.cv_path;
+
+        // === CREATE APPLICATION ===
         // 3. Create application (shared for both paths)
         const [newApplication] = await db
             .insert(applications)
@@ -190,6 +194,7 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
             success: true,
             applicationId: newApplication.id,
             candidateId,
+            fileUrl: file_key,
             message: "Application created successfully",
         };
     } catch (err) {

@@ -14,4 +14,4 @@ export async function assignAdminRoleToFirstUser(userId: string) {
             })
         })
     }
-}
+};

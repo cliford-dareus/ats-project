@@ -9,7 +9,7 @@ import {deleteJobAutomationRule, saveJobAutomationRule} from "@/server/actions/j
 
 const newRule = (job_id: number, stage_name: z.infer<typeof JOB_STAGES>, event_type: AutomationTriggerOn['event']): AutomationRule => {
     return {
-        id: `Rule_${Date.now()}`,
+        id: `rule_`,
         name: "",
         job_id,
         enabled: true,
@@ -32,6 +32,7 @@ const AutomationBuilder = ({ job_id, stages, applications }: {
     
     const handleSave = useCallback(async (rule: AutomationRule) => {
         const saved = await saveJobAutomationRule(job_id, rule);
+        automationEngine.deleteRule(job_id, rule.id)
         automationEngine.upsertRule(saved)
     }, [job_id]);
 

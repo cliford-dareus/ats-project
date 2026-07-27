@@ -4,7 +4,6 @@
 // Receives pre-filtered InstalledPlugin[] from the server action
 // (only enabled + active plugins for this org, with their saved credentials).
 // ─────────────────────────────────────────────────────────────────────────────
-
 import { pluginRegistry } from "./plugin-registry";
 import type { InstalledPlugin } from "../types";
 
@@ -25,6 +24,8 @@ async function getFactory(pluginId: string) {
         // return (await import("@/plugins/providers/others")).createSlackNotifyProvider;
         case "resend":
             return (await import("@/plugins/providers/resend")).createResendProvider;
+        case "google":
+            return (await import("@/plugins/providers/google")).createGoogleProvider;
         default:
             console.warn(`[PluginSystem] No factory for plugin "${pluginId}"`);
             return null;
@@ -33,7 +34,8 @@ async function getFactory(pluginId: string) {
 
 // ── Main bootstrap ────────────────────────────────────────────────────────────
 export async function initializePluginSystem(
-    installed: InstalledPlugin[]
+    installed: InstalledPlugin[],
+    orgId?: string
 ): Promise<void> {
     if (pluginRegistry.isInitialized()) {
         // Already booted — update any newly enabled/disabled providers
@@ -51,8 +53,27 @@ export async function initializePluginSystem(
         pluginRegistry.register(provider);
     }
 
+    if (orgId) pluginRegistry.markInitialized(orgId);
+
+    const allEnabled = installed.reduce((acc, plugin) => ({
+        ...acc,
+        ...plugin.settings.enabledIntegrations,
+    }), {} as Record<string, boolean>);
+
+    pluginRegistry.setEnabledIntegrations(allEnabled);
+
     console.log(
         `[PluginSystem] Initialized with ${pluginRegistry.getAllProviders().length} providers:`,
         pluginRegistry.getAllProviders().map((p) => p.id)
     );
-}
+};
+
+export async function initializePluginSystemServer(orgId: string): Promise<void> {
+    // Already initialized for this org — skip
+    if (pluginRegistry.isInitializedForOrg(orgId)) return;
+
+    const { getOrgPluginState } = await import("@/server/actions/stage_actions");
+    const { installed } = await getOrgPluginState(orgId);
+
+    await initializePluginSystem(installed);
+};

@@ -1,7 +1,9 @@
 import { ConfigType } from "@/plugins/smart-trigger/types";
 import { CANDIDATE_STATUS, JOB_ENUM, JOB_STAGES, JOB_STATUS, JOB_TYPE } from "@/zod";
 
-// RESPONSE TYPES
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared API response types
+// ─────────────────────────────────────────────────────────────────────────────
 export type JobResponseType = {
     id: number;
     name: string;
@@ -15,7 +17,7 @@ export type JobResponseType = {
     organization: string;
     department: string;
     status: typeof JOB_STATUS._type;
-    candidatesCount: number;
+    application_count: number;
 };
 
 export type CandidatesResponseType = {
@@ -76,7 +78,9 @@ export type NoteResponseType = {
     total: number;
 };
 
-// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared types
+// ─────────────────────────────────────────────────────────────────────────────
 export type InterviewType = {
     id: number,
     application_id: number,
@@ -98,6 +102,16 @@ export interface ApplicationType {
     current_stage_id?: number | null;
     stage_order_id?: number | null;
     position_in_stage?: number;
+
+    // Resume Scoring
+    resume_score: number | null;
+    resume_score_fit: number  | null;
+    resume_score_skills: number | null;
+    resume_score_exp: number | null;
+    resume_score_summary: string | null;
+    resume_scored_at: Date | null;
+    resume_score_model: string | null;
+
     candidate: CandidateType;
     interviews: InterviewType[];
     attachments: any[]
@@ -128,14 +142,14 @@ export interface CandidateExperience {
     current: boolean;
     description: string;
     totalExperience: number;
-}
+};
 
 export interface CandidateEducation {
     school: string;
     degree: string;
     field_of_study: string;
     graduation_date: string;
-}
+};
 
 export interface CandidateReference {
     name: string;
@@ -143,7 +157,7 @@ export interface CandidateReference {
     company: string;
     relationship: string;
     phone: string;
-}
+};
 
 export interface CandidateType {
     id: number;
@@ -223,7 +237,6 @@ export type NoteType = {
     author: string;
 };
 
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared types for the ATS plugin system
 // ─────────────────────────────────────────────────────────────────────────────
@@ -253,19 +266,20 @@ export interface PluginAuthState {
     status: "unauthenticated" | "authenticating" | "authenticated" | "error";
     error?: string;
     credentials?: Record<string, string>;
-}
+};
 
 // ── Plugin DB record (what's stored in your DB per org) ──────────────────────
 export interface OrgPluginRecord {
     enabled: string[];
     settings: Record<string, OrgPluginSettings>;
-}
+};
 
 export interface OrgPluginSettings {
     active: boolean;
     credentials?: Record<string, string>;
     config?: Record<string, unknown>;
-}
+    enabledIntegrations?: Record<string, boolean>;
+};
 
 // ── Installed plugin (hydrated from DB + AVAILABLE_PLUGINS manifest) ─────────
 export interface InstalledPlugin {
@@ -276,13 +290,13 @@ export interface InstalledPlugin {
     logoUrl?: string;
     providerColor?: string;
     settings: OrgPluginSettings;
-}
+};
 
 // ── Org plugin state returned by server action ────────────────────────────────
 export interface OrgPluginState {
     flags: Record<string, boolean>;
     installed: InstalledPlugin[];
-}
+};
 
 // ── ATS Context passed to every integration execute() call ───────────────────
 export interface ATSContext {
@@ -291,7 +305,7 @@ export interface ATSContext {
     candidate?: Partial<CandidateType>;
     job?: Partial<JobListingType>;
     settings: Record<string, unknown>;
-}
+};
 
 // ── Smart Trigger definition ─────────────────────────────────────────────────
 export interface SmartTrigger {
@@ -300,7 +314,7 @@ export interface SmartTrigger {
     description: string;
     on: TriggerEventType[];
     condition?: (event: TriggerEvent, context: ATSContext) => boolean | Promise<boolean>;
-}
+};
 
 // ── Integration result ────────────────────────────────────────────────────────
 export interface ATSIntegrationResult {
@@ -326,7 +340,7 @@ export type AutomationTriggerOn =
 export interface AutomationDelay {
     value: number;
     unit: "seconds" | "minutes" | "hours" | "days";
-}
+};
 
 export function delayToMs(d: AutomationDelay): number {
     const factors: Record<AutomationDelay["unit"], number> = {
@@ -336,11 +350,11 @@ export function delayToMs(d: AutomationDelay): number {
         days: 86_400_000,
     };
     return d.value * factors[d.unit];
-}
+};
 
 export function delayLabel(d: AutomationDelay): string {
     return d.value === 0 ? "immediately" : `after ${d.value} ${d.unit === "minutes" && d.value === 1 ? "minute" : d.unit}`;
-}
+};
 
 // ── Action — what to do ───────────────────────────────────────────────────────
 export type AutomationAction =
@@ -388,7 +402,7 @@ export interface AutomationRule {
     action: AutomationAction;
     created_at: string;          // ISO date string
     updated_at: string;
-}
+};
 
 // ── Pending delayed execution (stored in memory / Redis / DB) ─────────────────=
 export interface PendingExecution {
@@ -398,7 +412,7 @@ export interface PendingExecution {
     scheduledAt: number;          // Date.now() + delayMs
     event: Record<string, unknown>;
     context: Record<string, unknown>;
-}
+};
 
 // ── UI metadata for the rule builder ─────────────────────────────────────────
 export const ACTION_LABELS: Record<AutomationActionType, { label: string; icon: string; description: string }> = {
@@ -425,6 +439,6 @@ export const DELAY_PRESETS: AutomationDelay[] = [
 
 // ── Token interpolation ───────────────────────────────────────────────────────
 // Used in note content, SMS messages, email subjects/bodies.
-export function interpolate(template: string, vars: Record<string, string>): string {
+export const interpolate = (template: string, vars: Record<string, string>): string => {
     return template.replace(/\{\{(\w+(?:\.\w+)*)\}\}/g, (_, key) => vars[key] ?? `{{${key}}}`);
-}
+};

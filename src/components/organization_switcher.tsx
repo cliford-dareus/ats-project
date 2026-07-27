@@ -43,7 +43,7 @@ const OrganizationSwitcher = () => {
                     // variant="outline"
                     role="combobox"
                     aria-expanded={open}
-                    className="bg-transparent gap-4 shadow-none text-black hover:bg-muted"
+                    className="!py-2 border rounded-md text-[10px] uppercase tracking-widest font-bold transition-all flex items-center gap-2"
                 >
                     {value
                         ? userMemberships.data.find((framework) => framework.organization.name === value)?.organization.name

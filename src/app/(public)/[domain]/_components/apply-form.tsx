@@ -18,6 +18,8 @@ import ProgressSteps from "./progess";
 import { cn } from "@/lib/utils";
 import { create_application_action } from "@/server/actions/application_actions";
 import { applicationSchema } from "@/zod";
+import { useDispatch } from "@/hooks/use-plugin-registry";
+import { desc } from "drizzle-orm";
 
 type FormValues = z.infer<typeof applicationSchema>;
 
@@ -30,6 +32,7 @@ const STEPS = [
 ];
 
 const ApplyForm = ({ jobId, subdomain }: { jobId: number; subdomain: string }) => {
+    const dispatch = useDispatch();
     const [currentStep, setCurrentStep] = useState(1);
     const [complete, setComplete] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -60,7 +63,6 @@ const ApplyForm = ({ jobId, subdomain }: { jobId: number; subdomain: string }) =
             education: [{ school: "", degree: "", fieldOfStudy: "", graduationDate: "" }],
             references: [
                 { name: "", relationship: "", company: "", email: "", phone: "" },
-                { name: "", relationship: "", company: "", email: "", phone: "" }
             ],
             additionalInfo: {
                 coverLetter: "",
@@ -113,7 +115,69 @@ const ApplyForm = ({ jobId, subdomain }: { jobId: number; subdomain: string }) =
             ...data, file: { file_: file as File }, jobId, subdomain
         };
         try {
-            await create_application_action(payload);
+            // const response = await create_application_action(payload);
+            const response = {
+                candidateId: 1,
+                success: true,
+                fileUrl: null,
+                message: "",
+                fileUrl: "resumes/1779058531569-jouvens-kersaint.pdf",
+                applicationId: 1
+            };
+            if (!response.success) {
+                throw new Error(response.message);
+            }
+
+            void fireTrigger({
+                event: {
+                    type: "candidate_applied",
+                    candidateId: String(response.candidateId),
+                    jobId: String(jobId),
+                },
+                context: {
+                    subdomain: subdomain,   // ← "bridge" | "hisgra" — from params or env
+                    jobId: jobId,
+                    candidate: { id: response.candidateId, cv_path: response.fileUrl },
+                    job: {
+                        id: jobId, job_description: `We are looking for a skilled Python Developer with hands-on experience in LangChain and LangGraph to build and optimize AI-driven applications.
+                        Visa : Independent Candidates
+                        Key Responsibilities:
+                        · Develop and maintain Python-based applications
+                        · Work with LangChain and LangGraph frameworks for LLM integrations
+                        · Design and implement scalable AI/automation workflows
+                        · Collaborate with cross-functional teams for solution delivery
+
+                        Required Skills:
+                        · Strong experience in Python
+                        · Hands-on experience with LangChain and LangGraph
+                        · Experience with LLMs / AI integrations
+                        · Good problem-solving and communication skills` },
+                    settings: {
+                        applicationId: response.applicationId
+                    },
+                },
+            });
+
+            // if(response.fileUrl) {
+            //     void fireTrigger({
+            //         event: {
+            //             type: "resume_uploaded",
+            //             candidateId: String(response.candidateId),
+            //             jobId: String(jobId),
+            //             fileUrl: response.fileUrl,
+            //         },
+            //         context: {
+            //             subdomain: subdomain,   // ← "bridge" | "hisgra" — from params or env
+            //             jobId: String(jobId),
+            //             candidate: { id: String(response.candidateId) },
+            //             job: { id: String(jobId) },
+            //             settings: {},
+            //         }
+            //     })
+            // }
+
+            // Show success message
+            console.log("Application submitted successfully:", response.message);
             setComplete(true);
         } catch (error) {
             console.error("Error submitting application:", error);
@@ -198,8 +262,36 @@ const ApplyForm = ({ jobId, subdomain }: { jobId: number; subdomain: string }) =
                     )}
                 </div>
             </form>
+
+            <Button onClick={() => onSubmit({})}></Button>
         </div>
     );
 };
+
+// ── Trigger caller ────────────────────────────────────────────────────────────
+// Calls the main app's trigger route from the public careers subdomain.
+// Uses NEXT_PUBLIC_API_URL so it works from any subdomain.
+// Errors are swallowed — a failed integration should never block the applicant.
+async function fireTrigger(body: { event: unknown; context: unknown }) {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
+
+    try {
+        const res = await fetch(`${apiUrl}/api/trigger/public`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "x-trigger-secret": process.env.NEXT_PUBLIC_INTERNAL_TRIGGER_SECRET!,
+            },
+            body: JSON.stringify(body),
+        });
+
+        if (!res.ok) {
+            console.warn("[Trigger] Integration dispatch failed:", res.status);
+        }
+    } catch (err) {
+        // Network failure — don't surface to the applicant
+        console.warn("[Trigger] Integration dispatch error:", err);
+    }
+}
 
 export default ApplyForm;

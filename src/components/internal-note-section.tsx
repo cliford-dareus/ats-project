@@ -40,7 +40,11 @@ const InternalNoteSection = ({ parent_type, parent_id, selectedId }: Props) => {
                 >
                     {internalNotes.notes?.length || 0}
                 </span>
-                <Button variant="ghost" className="ml-auto text-[10px] font-bold text-foreground/40 uppercase tracking-widest hover:text-primary hover:bg-transparent transition-colors" onClick={() => setIsOpen(!isOpen)}>
+                <Button
+                    variant="ghost"
+                    className="ml-auto text-[10px] font-bold text-foreground/40 uppercase tracking-widest hover:text-primary hover:bg-transparent transition-colors"
+                    onClick={() => setIsOpen(!isOpen)}
+                >
                     Add note
                 </Button>
             </div>

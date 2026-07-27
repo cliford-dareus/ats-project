@@ -1,16 +1,16 @@
-import React, {useState} from 'react';
-import {ChevronDown, ChevronUp, Code} from "lucide-react";
-import {useNewJobContext} from "@/providers/new-job-provider";
-import {Card, CardContent, CardHeader} from "@/components/ui/card";
-import {Button} from "@/components/ui/button";
-import {Badge} from "@/components/ui/badge";
+import React, { useState } from 'react';
+import { ChevronDown, ChevronUp, Code } from "lucide-react";
+import { useNewJobContext } from "@/providers/new-job-provider";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 const StepTwoCollapse = () => {
     const [isOpen, setIsOpen] = useState(true);
-    const {newJobData} = useNewJobContext();
+    const { newJobData } = useNewJobContext();
 
     return (
-        <Card className="border-blue-200 bg-blue-50 mt-4">
+        <Card className="border-primary/20 bg-primary/10 mt-4">
             <CardHeader className="pb-3">
                 <Button
                     variant="ghost"
@@ -19,13 +19,13 @@ const StepTwoCollapse = () => {
                     className="flex items-center justify-between w-full p-0 h-auto hover:bg-transparent"
                 >
                     <div className="flex items-center gap-2">
-                        <Code size={18} className="text-blue-600" />
-                        <span className="font-medium text-blue-900">Technical Requirements</span>
-                        <Badge variant="secondary" className="bg-blue-200 text-blue-800">
+                        <Code size={18} className="text-primary" />
+                        <span className="font-medium text-primary">Technical Requirements</span>
+                        <Badge variant="secondary" className="bg-primary/20 text-primary">
                             {newJobData.jobTechnology.length} requirements
                         </Badge>
                     </div>
-                    {isOpen ? <ChevronUp size={18} className="text-blue-600" /> : <ChevronDown size={18} className="text-blue-600" />}
+                    {isOpen ? <ChevronUp size={18} className="text-primary" /> : <ChevronDown size={18} className="text-primary" />}
                 </Button>
             </CardHeader>
 
@@ -41,7 +41,7 @@ const StepTwoCollapse = () => {
                             ))}
                         </div>
                     ) : (
-                        <p className="text-blue-700 text-sm">No requirements added yet</p>
+                        <p className="text-primary text-sm">No requirements added yet</p>
                     )}
                 </CardContent>
             )}

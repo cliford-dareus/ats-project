@@ -3,10 +3,14 @@ import StepOneCollapse from "@/app/(dashboard)/jobs/new/_component/step-one-coll
 import StepTwoCollapse from "@/app/(dashboard)/jobs/new/_component/step-two-collapse";
 import StepThreeCollapse from "@/app/(dashboard)/jobs/new/_component/step-three-collapse";
 
-const SidePreview = () => {
+type Props = {
+    departments: { id: number, organization_id: string, name: string | null }[]
+};
+
+const SidePreview = ({departments}: Props) => {
     return(
         <ScrollArea className="flex-1">
-            <StepOneCollapse/>
+            <StepOneCollapse departments={ departments} />
             <StepTwoCollapse/>
             <StepThreeCollapse />
         </ScrollArea>

@@ -90,7 +90,7 @@ async function get_organization_plugins(orgId: string): Promise<OrgPluginRecord>
     // TODO: replace with real DB call
     // For demo purposes, return a record with some plugins enabled
     return {
-        enabled: ["openai-scoring", "anthropic-screening", "calendly", "checkr", "resend"],
+        enabled: ["openai-scoring", "anthropic-screening", "calendly", "checkr", "resend", "google"],
         settings: {
             "openai-scoring": {
                 active: true,
@@ -125,6 +125,10 @@ async function get_organization_plugins(orgId: string): Promise<OrgPluginRecord>
                     recruiterEmail: "sam@example.com",
                     offerSigningUrl: "",
                 },
+            },
+            "google": {
+                active: true,
+                credentials: { apiKey: process.env.GOOGLE_GEMINI_API_KEY ?? "" },
             }
         },
     };

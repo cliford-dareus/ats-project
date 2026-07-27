@@ -8,8 +8,8 @@ import {
     stages,
     technologies,
 } from "@/drizzle/schema";
-import {db} from "@/drizzle/db";
-import {and, eq, inArray, sql, SQL} from "drizzle-orm";
+import { db } from "@/drizzle/db";
+import { and, eq, inArray, sql, SQL } from "drizzle-orm";
 import {
     CACHE_TAGS,
     dbCache,
@@ -17,9 +17,9 @@ import {
     getIdTag,
     revalidateDbCache,
 } from "@/lib/cache";
-import {z} from "zod";
-import {filterJobSchema, jobFormSchema, updateJobListingSchema} from "@/zod";
-import {ApplicationType, CandidateType, JobListingType} from "@/types";
+import { z } from "zod";
+import { filterJobSchema, jobFormSchema, updateJobListingSchema } from "@/zod";
+import { ApplicationType, CandidateType, JobListingType } from "@/types";
 
 type Technology = typeof technologies.$inferSelect;
 
@@ -124,18 +124,18 @@ export const update_job_listing = async (data: z.infer<typeof updateJobListingSc
     await db
         .update(job_listings)
         .set({
-            ...(data.name && {name: data.name}),
-            ...(data.description && {description: data.description}),
-            ...(data.location && {location: data.location}),
-            ...(data.status && {status: data.status}),
-            ...(department_id !== null && {department_id: department_id}),
-            ...(data.organization && {organization: data.organization}),
-            ...(data.salary_up_to && {salary_up_to: data.salary_up_to}),
-            ...(data.type && {type: data.type}),
+            ...(data.name && { name: data.name }),
+            ...(data.description && { description: data.description }),
+            ...(data.location && { location: data.location }),
+            ...(data.status && { status: data.status }),
+            ...(department_id !== null && { department_id: department_id }),
+            ...(data.organization && { organization: data.organization }),
+            ...(data.salary_up_to && { salary_up_to: data.salary_up_to }),
+            ...(data.type && { type: data.type }),
         })
         .where(eq(job_listings.id, data.jobId));
 
-    revalidateDbCache({tag: CACHE_TAGS.jobs, id: String(data.jobId)});
+    revalidateDbCache({ tag: CACHE_TAGS.jobs, id: String(data.jobId) });
 };
 
 export const delete_job_listing = async (jobId: number) => {
@@ -143,7 +143,7 @@ export const delete_job_listing = async (jobId: number) => {
         .delete(job_listings)
         .where(eq(job_listings.id, jobId));
 
-    revalidateDbCache({tag: CACHE_TAGS.jobs, id: String(jobId)});
+    revalidateDbCache({ tag: CACHE_TAGS.jobs, id: String(jobId) });
 };
 
 export const get_job_listings_stages = (jobId: number) => {
@@ -242,7 +242,18 @@ export const get_job_by_id_db = async (jobId: number, org_id: string): Promise<J
                 current_stage_id: row.stage?.id ?? null,
                 organization: row.application.organization ?? null,
                 interviews: [],
-                attachments:      [],
+                attachments: [],
+
+                // ── Resume score ─────────────────────────────────────────────────
+                resume_score: row.application.resume_score ?? null,
+                resume_score_fit: row.application.resume_score_fit ?? null,
+                resume_score_skills: row.application.resume_score_skills ?? null,
+                resume_score_exp: row.application.resume_score_exp ?? null,
+                resume_score_summary: row.application.resume_score_summary ?? null,
+                resume_scored_at: row.application.resume_scored_at ?? null,
+                resume_score_model: row.application.resume_score_model ?? null,
+
+                // ── Candidate ───────────────────────────────────────────────────
                 candidate: row.candidate
                     ? {
                         id: row.candidate.id,
@@ -258,7 +269,7 @@ export const get_job_by_id_db = async (jobId: number, org_id: string): Promise<J
             };
 
             applicationMap.set(row.application.id, application);
-            interviewSets.set(row.application.id,  new Set());
+            interviewSets.set(row.application.id, new Set());
             attachmentSets.set(row.application.id, new Set());
             jobListing.applications.push(application);
         };
@@ -310,8 +321,8 @@ export const get_all_job_listings_db = async (filter: FilterInterface) => {
         filters.push(inArray(job_listings.status, statuses));
     }
 
-    const [{count}] = await db
-        .select({count: sql<number>`count(*)`})
+    const [{ count }] = await db
+        .select({ count: sql<number>`count(*)` })
         .from(job_listings)
         .where(and(...filters, eq(job_listings.organization, filter.organization)));
 
@@ -329,7 +340,7 @@ export const get_all_job_listings_db = async (filter: FilterInterface) => {
             created_at: job_listings.created_at,
             updated_at: job_listings.updated_at,
             createdBy: job_listings.created_by,
-            candidatesCount: db.$count(
+            application_count: db.$count(
                 applications,
                 eq(applications.job_id, job_listings.id),
             ),

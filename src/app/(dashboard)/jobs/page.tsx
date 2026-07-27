@@ -50,7 +50,12 @@ const Page = async ({searchParams}: Props) => {
 
     return (
         <div className="md:p-4">
-            <ListPageTop name="JOBS OPENINGS" count={len as number} file="jobs"/>
+            <ListPageTop
+                name="JOBS OPENINGS"
+                count={len as number}
+                file="jobs"
+                data={jobs as JobResponseType[]}
+            />
             <JobListingsList jobs={jobs as JobResponseType[]} pageCount={pageCount}/>
         </div>
     );

@@ -13,10 +13,10 @@ const Page = async () => {
 
     return (
         <div className="h-screen w-full rounded-md relative antialiased">
-            <div className="relative z-10 min-h-screen flex flex-col items-center justify-center p-6">
+            <div className="flex-1 relative z-10 min-h-screen flex flex-col items-center justify-center p-6">
                 <Onboarding userId={userId} />
             </div>
-            <BackgroundBeams />
+            {/*<BackgroundBeams />*/}
         </div>
     );
 };

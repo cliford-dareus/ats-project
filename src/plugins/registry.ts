@@ -54,6 +54,14 @@ export const AVAILABLE_PLUGINS: PluginManifestEntry[] = [
         providerColor: "#000000",
         icon: "Zap"
     },
+    {
+        id: "google",
+        name: "Google",
+        description: "Uses Google suites to shedule interviews and use Gemini to score resumes and rank candidates.",
+        capabilities: ["calendar_integration", "llm_scoring"],
+        providerColor: "#4285F4",
+        icon: "Zap"
+    }
 ];
 
 export const PLUGIN_MAP = new Map(

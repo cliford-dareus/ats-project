@@ -75,7 +75,7 @@ export const columns: ColumnDef<JobResponseType>[] = [
         header: "Applicants No.",
         cell: ({row}) => (
             <div className="mr-4 text-right">
-                <span className="text-lg font-bold">{row.original.candidatesCount}</span>
+                <span className="text-lg font-bold">{row.original.application_count}</span>
                 <p className="text-xs font-bold text-foreground/30 uppercase tracking-widest">Applicants</p>
             </div>
         )

@@ -214,8 +214,17 @@ export const applications = mysqlTable('applications', {
     can_contact: boolean().default(false),
     position_in_stage: int("position_in_stage").notNull().default(0),
     organization: varchar({ length: 255 }).notNull(),
-    // activities: json("activities").notNull().default({}),
     subdomain: varchar({ length: 255 }).notNull(),
+
+    // ── Resume score ─────────────────────────────────────────────────────────
+    resume_score: int("resume_score"),          // 0-100
+    resume_score_fit: int("resume_score_fit"),
+    resume_score_skills: int("resume_score_skills"),
+    resume_score_exp: int("resume_score_experience"),
+    resume_score_summary: text("resume_score_summary"),
+    resume_scored_at: timestamp("resume_scored_at"),
+    resume_score_model: text("resume_score_model"),
+
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
 }, (table) => ({

@@ -149,7 +149,7 @@ const StepTwoForm = () => {
                     </Button>
                     <CustomButton
                         text="Continue to Workflow"
-                        className="px-8 py-3 bg-primary hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                        className="px-8 py-3 font-medium"
                     />
                 </div>
             </div>

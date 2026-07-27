@@ -3,10 +3,11 @@ import { get_all_candidates_action } from "@/server/actions/candidates-actions";
 import { CandidatesResponseType } from "@/types";
 import CandidatesList from "@/app/(dashboard)/candidates/_components/candidates-list";
 import { LucideSortAsc } from "lucide-react";
-import ExtractFileButton from "@/components/extract-file-button";
+import ExtractFileButton from "@/components/extract-table-button";
 import UploadCandidateResume from "@/components/modal/upload-candidate-resume";
 import { CANDIDATE_STATUS } from "@/zod";
 import { auth } from "@clerk/nextjs/server";
+import ListPageTop from "@/components/list-page-top";
 
 type Props = {
     searchParams: Promise<{
@@ -56,21 +57,12 @@ const Page = async ({ searchParams }: Props) => {
 
     return (
         <div className="p-4">
-            <div className="flex items-center justify-between p-4 rounded mb-2 border bg-muted">
-                <div className="items-center flex gap-2">
-                    <h1 className="text-2xl font-bold text-gray-900">ALL CANDIDATES</h1>
-                    <span className="px-2 bg-slate-300 flex items-center justify-center rounded">
-                        {len as number}
-                    </span>
-                </div>
-
-                <div className="flex items-center gap-4">
-                    <LucideSortAsc size={18} />
-                    <ExtractFileButton status="candidates" />
-                    <UploadCandidateResume />
-                </div>
-            </div>
-
+            <ListPageTop
+                name="Candidates"
+                count={len as number} file="candidates"
+                data={candidates as CandidatesResponseType[]}
+            />
+            
             <CandidatesList
                 candidate={candidates as CandidatesResponseType[]}
                 pageCount={pageCount}

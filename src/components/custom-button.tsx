@@ -13,7 +13,7 @@ export default function CustomButton({ text, className }: CustomButtonProps) {
     const { pending } = useFormStatus();
     return (
         <Button
-            className={cn("mt-2 px-4 !py-2 border rounded-lg text-[10px] uppercase tracking-widest font-bold text-white transition-all flex items-center gap-2", className)}
+            className={cn("mt-2 px-4 !py-2 border rounded-md text-[10px] uppercase tracking-widest font-bold text-white transition-all flex items-center gap-2", className)}
             type="submit"
         >
             {pending ? <Loader /> : text}

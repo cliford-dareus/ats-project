@@ -1,4 +1,4 @@
-import {format} from 'date-fns';
+import { format } from 'date-fns';
 
 export interface ExportData {
     title: string;
@@ -9,7 +9,7 @@ export interface ExportData {
 
 export class ExportUtils {
     static downloadFile(content: string, filename: string, mimeType: string) {
-        const blob = new Blob([content], {type: mimeType});
+        const blob = new Blob([content], { type: mimeType });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -21,7 +21,7 @@ export class ExportUtils {
     };
 
     static exportToCSV(exportData: ExportData): void {
-        const {title, data, headers, filename} = exportData;
+        const { title, data, headers, filename } = exportData;
 
         // Create CSV content
         const csvContent = [
@@ -42,7 +42,7 @@ export class ExportUtils {
     };
 
     static exportToJSON(exportData: ExportData): void {
-        const {title, data, filename} = exportData;
+        const { title, data, filename } = exportData;
 
         const jsonContent = JSON.stringify({
             title,
@@ -56,34 +56,34 @@ export class ExportUtils {
 
     static exportToExcel(exportData: ExportData): void {
         // For Excel export, we'll create a simple HTML table that Excel can import
-        const {title, data, headers, filename} = exportData;
+        const { title, data, headers, filename } = exportData;
 
         const htmlContent = `
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <title>${title}</title>
-        </head>
-        <body>
-          <h1>${title}</h1>
-          <p>Exported on: ${format(new Date(), 'PPP')}</p>
-          <table border="1">
-            <thead>
-              <tr>
-                ${headers.map(header => `<th>${header}</th>`).join('')}
-              </tr>
-            </thead>
-            <tbody>
-              ${data.map(row =>
-            `<tr>
-                  ${headers.map(header => `<td>${row[header] || ''}</td>`).join('')}
-                </tr>`
-        ).join('')}
-            </tbody>
-          </table>
-        </body>
-      </html>
-    `;
+        <html>
+            <head>
+            <meta charset="utf-8">
+            <title>${title}</title>
+            </head>
+            <body>
+            <h1>${title}</h1>
+            <p>Exported on: ${format(new Date(), 'PPP')}</p>
+            <table border="1">
+                <thead>
+                <tr>
+                    ${headers.map(header => `<th>${header}</th>`).join('')}
+                </tr>
+                </thead>
+                <tbody>
+                ${data.map(row =>
+                `<tr>
+                    ${headers.map(header => `<td>${row[header] || ''}</td>`).join('')}
+                    </tr>`
+            ).join('')}
+                </tbody>
+            </table>
+            </body>
+        </html>
+        `;
 
         const excelFilename = filename || `${title.replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.xls`;
         this.downloadFile(htmlContent, excelFilename, 'application/vnd.ms-excel');
@@ -193,11 +193,11 @@ export class ExportUtils {
         ;
 
         if (format === 'png') {
-            const {exportChartAsImage} = await import('./pdf-generator');
+            const { exportChartAsImage } = await import('./pdf-generator');
             const pngFilename = filename || `chart_${new Date().toISOString().split('T')[0]}.png`;
             await exportChartAsImage(chartElementId, pngFilename);
         } else if (format === 'pdf') {
-            const {PDFGenerator, downloadPDF} = await import('./pdf-generator');
+            const { PDFGenerator, downloadPDF } = await import('./pdf-generator');
             const pdfGenerator = new PDFGenerator();
             const pdfBlob = await pdfGenerator.captureChartAsPDF(chartElementId, 'Chart Export');
             const pdfFilename = filename || `chart_${new Date().toISOString().split('T')[0]}.pdf`;

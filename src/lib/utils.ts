@@ -1,7 +1,7 @@
-import {clsx, type ClassValue} from "clsx"
-import {twMerge} from "tailwind-merge"
-import {UseFormReturn} from "react-hook-form";
-import {ApplicationResponseType, CandidateExperience, CandidatesResponseType, JobExperience} from "@/types";
+import { clsx, type ClassValue } from "clsx"
+import { twMerge } from "tailwind-merge"
+import { UseFormReturn } from "react-hook-form";
+import { ApplicationResponseType, CandidateExperience, CandidatesResponseType, JobExperience } from "@/types";
 import {
     differenceInDays, differenceInMonths,
     differenceInWeeks,
@@ -117,7 +117,7 @@ export const createNewSearchParam = (params: Record<string, string | string[] | 
 //     }, {} as Record<string, { date: string; count: number; fill: string }>);
 // };
 
-export const groupByDay = (data: CandidatesResponseType [] | ApplicationResponseType[]) => {
+export const groupByDay = (data: CandidatesResponseType[] | ApplicationResponseType[]) => {
     return data.reduce((acc, curr) => {
         const createdAt = new Date(curr.created_at);
         const date = createdAt.toISOString().split("T")[0];
@@ -189,14 +189,14 @@ export const getChartDateArray = (startDate: Date, endDate: Date = new Date()) =
     if (months < 30) {
         return {
             array: eachMonthOfInterval(interval(startDate, endDate)),
-            format: new Intl.DateTimeFormat("en", {month: "long", year: "numeric"})
+            format: new Intl.DateTimeFormat("en", { month: "long", year: "numeric" })
                 .format,
         }
     }
 
     return {
         array: eachYearOfInterval(interval(startDate, endDate)),
-        format: new Intl.DateTimeFormat("en", {year: "numeric"}).format,
+        format: new Intl.DateTimeFormat("en", { year: "numeric" }).format,
     }
 };
 
@@ -224,85 +224,98 @@ export function getRangeOption(range?: string, from?: string, to?: string) {
 };
 
 export const getApplicationMatch = (candidate_id: number, jobSkills: JobExperience[], experience: CandidateExperience[]) => {
-        const candidateMap = new Map<string, number>();
-        experience.forEach((item) => {
-            const skill = item.position.trim();
-            const years = Number(item.totalExperience) || 0;
-            candidateMap.set(skill, Math.max(years, candidateMap.get(skill) ?? 0));
+    const candidateMap = new Map<string, number>();
+    experience.forEach((item) => {
+        const skill = item.position.trim();
+        const years = Number(item.totalExperience) || 0;
+        candidateMap.set(skill, Math.max(years, candidateMap.get(skill) ?? 0));
+    });
+
+    let matchedCount = 0;
+    const matches: MatchResult[] = [];
+    jobSkills.forEach((req) => {
+        const skill = req.name.trim();
+        const required = Number(req.years_experience) || 0;
+        const candidateYears = candidateMap.get(skill) ?? 0;
+
+        const isMatch = candidateYears >= required;
+        matches.push({
+            name: skill,
+            candidateYears,
+            requiredYears: required,
+            match: isMatch,
         });
 
-        let matchedCount = 0;
-        const matches: MatchResult[] = [];
+        if (isMatch) matchedCount++;
+    });
+
+    let score = 0;
+    const totalRequired = jobSkills.length;
+    if (totalRequired > 0) {
+        // score = Math.round((matchedCount / totalRequired) * 100);
+
+        // Optional: more nuanced version (partial credit)
+        let totalPoints = 0;
+        let earnedPoints = 0;
+
         jobSkills.forEach((req) => {
-            const skill = req.name.trim();
-            const required = Number(req.years_experience) || 0;
-            const candidateYears = candidateMap.get(skill) ?? 0;
-
-            const isMatch = candidateYears >= required;
-            matches.push({
-                name: skill,
-                candidateYears,
-                requiredYears: required,
-                match: isMatch,
-            });
-
-            if (isMatch) matchedCount++;
+            const required = req.years_experience || 0;
+            const candidate = candidateMap.get(req.name.trim()) || 0;
+            totalPoints += required;
+            earnedPoints += Math.min(candidate, required);
         });
 
-        let score = 0;
-        const totalRequired = jobSkills.length;
-        if (totalRequired > 0) {
-            // score = Math.round((matchedCount / totalRequired) * 100);
-
-            // Optional: more nuanced version (partial credit)
-            let totalPoints = 0;
-            let earnedPoints = 0;
-
-            jobSkills.forEach((req) => {
-                const required = req.years_experience || 0;
-                const candidate = candidateMap.get(req.name.trim()) || 0;
-                totalPoints += required;
-                earnedPoints += Math.min(candidate, required);
-            });
-
-            score = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0;
-        }
-
-        return {
-            score,
-            matchedCount,
-            totalRequired,
-            skills: matches,
-        };
+        score = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0;
     }
+
+    return {
+        score,
+        matchedCount,
+        totalRequired,
+        skills: matches,
+    };
+}
 
 export const getStatusColor = (status: string) => {
     switch (status) {
-      case 'OPEN': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
-      case 'ACHIEVED': return 'bg-amber-50 text-amber-700 border-amber-100';
-      case 'CLOSED': return 'bg-zinc-100 text-zinc-600 border-zinc-200';
-      case 'DRAFT': return 'bg-blue-50 text-blue-700 border-blue-100';
-      case 'PENDING': return 'bg-red-50 text-red-700 border-red-100';
-      default: return 'bg-zinc-50 text-zinc-700 border-zinc-100';
+        case 'OPEN': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+        case 'ACHIEVED': return 'bg-amber-50 text-amber-700 border-amber-100';
+        case 'CLOSED': return 'bg-zinc-100 text-zinc-600 border-zinc-200';
+        case 'DRAFT': return 'bg-blue-50 text-blue-700 border-blue-100';
+        case 'PENDING': return 'bg-red-50 text-red-700 border-red-100';
+        default: return 'bg-zinc-50 text-zinc-700 border-zinc-100';
     }
-  };
+};
 
 export const getCandidateStatusColor = (status: string) => {
-  switch (status) {
-    case 'ACTIVE': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
-    case 'REJECTED': return 'bg-amber-50 text-amber-700 border-amber-100';
-    case 'HIRED': return 'bg-zinc-100 text-zinc-600 border-zinc-200';
-    case 'REVIEWED': return 'bg-blue-50 text-blue-700 border-blue-100';
-    default: return 'bg-zinc-50 text-zinc-700 border-zinc-100';
-  }
+    switch (status) {
+        case 'ACTIVE': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+        case 'REJECTED': return 'bg-amber-50 text-amber-700 border-amber-100';
+        case 'HIRED': return 'bg-zinc-100 text-zinc-600 border-zinc-200';
+        case 'REVIEWED': return 'bg-blue-50 text-blue-700 border-blue-100';
+        default: return 'bg-zinc-50 text-zinc-700 border-zinc-100';
+    }
 };
 
 export const getStateIcon = (status: string) => {
-  switch (status) {
-    case 'ACTIVE': return ;
-    case 'REJECTED': return ;
-    case 'HIRED': return ;
-    case 'REVIEWED': return ;
-    default: return ;
-  }
+    switch (status) {
+        case 'ACTIVE': return;
+        case 'REJECTED': return;
+        case 'HIRED': return;
+        case 'REVIEWED': return;
+        default: return;
+    }
+};
+
+export const getPriorityColor = (priority: string) => {
+    switch (priority) {
+        case 'high':
+            return 'bg-red-500';
+        case 'medium':
+            return 'bg-yellow-500';
+        case 'low':
+            return 'bg-green-500';
+        default:
+            return 'bg-gray-500';
+    }
 };
