@@ -54,6 +54,7 @@ const Page = async ({ params }: Props) => {
                                     <ApplicationExperienceMatch
                                         candidate_id={applicationResult.candidate_id}
                                         experience={candidateDetails.experience}
+                                        resume_score_fit={candidateDetails.resume_score_fit}
                                         jobSkills={
                                             job.job_technologies as unknown as JobExperienceType[]
                                         }

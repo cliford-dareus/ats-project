@@ -6,7 +6,11 @@ import { NextRequest, NextResponse } from "next/server";
 const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "apliko.com";
 const LOCAL_ROOT = process.env.NEXT_PUBLIC_LOCAL_DOMAIN ?? "apliko.localhost";
 const APP_SUB = "app";
-const MARKETING_SUB = null; // bare localhost:3000 or apliko.com with no subdomain                              // app.apliko.com → dashboard
+
+// Subdomains that should never be treated as a career-page org lookup.
+// Anything in here (other than "app", which has its own branch) falls
+// back to the marketing site.
+const RESERVED_SUBDOMAINS = new Set(["www", "api", "mail", "admin", "static", "assets"]);
 
 // Routes that require Clerk auth inside the dashboard
 const isProtected = createRouteMatcher([
@@ -16,18 +20,18 @@ const isProtected = createRouteMatcher([
     "/reports(.*)",
     "/applications(.*)",
     "/settings(.*)",
-    "/api/ats/trigger$",   // authenticated trigger route only
+    "/api/ats/trigger", // authenticated trigger route only (exact match, no wildcard)
 ]);
 
 // ── Host parser ───────────────────────────────────────────────────────────────
 type HostType =
-    | { kind: "marketing" }                     // localhost:3000 | apliko.com
-    | { kind: "dashboard" }                     // app.apliko.localhost | app.apliko.com
-    | { kind: "career"; subdomain: string };    // bridge.apliko.localhost | bridge.apliko.com
+    | { kind: "marketing" }                     // localhost:3000 | apliko.com | www.apliko.com
+    | { kind: "dashboard" }                     // app.localhost:3000 | app.apliko.com
+    | { kind: "career"; subdomain: string };    // bridge.localhost:3000 | bridge.apliko.com
 
 function parseHost(req: NextRequest): HostType {
     const host = req.headers.get("host") ?? "";
-    const hostname = host.split(":")[0]; // strip port
+    const hostname = host.split(":")[0].toLowerCase(); // strip port, normalize case
 
     // ── bare localhost → marketing ────────────────────────────────────────────
     if (hostname === "localhost" || hostname === "127.0.0.1") {
@@ -52,6 +56,7 @@ function parseHost(req: NextRequest): HostType {
     const sub = hostname.slice(0, hostname.length - root.length - 1); // strip ".root"
 
     if (sub === APP_SUB) return { kind: "dashboard" };
+    if (RESERVED_SUBDOMAINS.has(sub)) return { kind: "marketing" };
 
     return { kind: "career", subdomain: sub };
 }
@@ -63,7 +68,7 @@ export default clerkMiddleware(async (auth, req) => {
     switch (host.kind) {
 
         // ── Marketing site ──────────────────────────────────────────────────────
-        // localhost:3000 or apliko.com — serve /(marketing) group
+        // localhost:3000, apliko.com, or www.apliko.com — serve /(marketing) group
         case "marketing": {
             const url = req.nextUrl.clone();
             // url.pathname = `/marketing${url.pathname === "/" ? "" : url.pathname}`;

@@ -2,7 +2,6 @@ import React from "react";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Onboarding from "./_components/onboarding";
-import { BackgroundBeams } from "@/components/ui/background-beams";
 
 const Page = async () => {
     const { userId } = await auth();

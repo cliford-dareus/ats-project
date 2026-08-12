@@ -142,9 +142,10 @@ type ApplicationExperienceMatchProps = {
     candidate_id: number;
     experience: CandidateExperience[];
     jobSkills: JobExperienceType[];
+    resume_score_fit: number | null;
 };
 
-export const ApplicationExperienceMatch = ({ candidate_id, experience, jobSkills }: ApplicationExperienceMatchProps) => {
+export const ApplicationExperienceMatch = ({ candidate_id, experience, jobSkills, resume_score_fit }: ApplicationExperienceMatchProps) => {
     const experienceMatch = getApplicationMatch(candidate_id, jobSkills, experience);
 
     return (
@@ -159,7 +160,7 @@ export const ApplicationExperienceMatch = ({ candidate_id, experience, jobSkills
                 <div className="bg-accent/10 text-accent px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-1">
                     <Sparkles className="w-3.5 h-3.5" />
                     <span className="text-xs font-bold">
-                        {experienceMatch?.score}% Match
+                        {resume_score_fit ? `${resume_score_fit}% Match` : `${experienceMatch?.score}% Match`}
                     </span>
                 </div>
             </div>
@@ -197,7 +198,7 @@ export const ApplicationExperienceMatch = ({ candidate_id, experience, jobSkills
 
 export const EmptyApplicationSummary = ({ candidate_id }: { candidate_id: number }) => {
     const [loading, setLoading] = useState(false);
-    
+
     const analyzeCandidate = async (candidate_id: number) => {
         try {
             setLoading(true);
@@ -274,7 +275,7 @@ export const EmptyApplicationSummary = ({ candidate_id }: { candidate_id: number
 
 export const GenerateFieldButton = ({ candidate_id, field_name }: { candidate_id: number; field_name: string }) => {
     const [loading, setLoading] = useState(false);
-    
+
     const handleClick = async () => {
         try {
             setLoading(true);

@@ -3,6 +3,7 @@
 // Called ONCE on the client from PluginSystemProvider.
 // Receives pre-filtered InstalledPlugin[] from the server action
 // (only enabled + active plugins for this org, with their saved credentials).
+// TODO: Hash the credentials before saving
 // ─────────────────────────────────────────────────────────────────────────────
 import { pluginRegistry } from "./plugin-registry";
 import type { InstalledPlugin } from "../types";

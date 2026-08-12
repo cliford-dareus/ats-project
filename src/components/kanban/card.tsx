@@ -49,12 +49,6 @@ const Card = ({ data, handleDragStart, stage, jobDetails }: Props) => {
                 <div className="flex gap-4 items-center">
                     <div className="relative flex-shrink-0">
                         <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-sm ring-1 ring-slate-100">
-                            {/* <img
-                                src={data?.candidate?.avatar}
-                                alt={data?.candidate.name}
-                                className="w-full h-full object-cover"
-                                referrerPolicy="no-referrer"
-                            /> */}
                             <Avatar className="w-8 h-8">
                                 <AvatarImage src="https://github.com/shadcn.png"/>
                                 <AvatarFallback>CN</AvatarFallback>
@@ -100,6 +94,7 @@ const Card = ({ data, handleDragStart, stage, jobDetails }: Props) => {
                             </button>
                         )}
                     </div>
+                    
                     <p className="text-[10px] font-medium text-slate-400">
                         {getTimeElapsed(data.updated_at)}d ago
                     </p>

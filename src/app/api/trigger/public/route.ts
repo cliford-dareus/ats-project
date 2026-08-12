@@ -2,8 +2,8 @@
 //   bridge.apliko.com  →  POST https://app.apliko.com/api/ats/trigger/public
 //   hisgra.apliko.com  →  POST https://app.apliko.com/api/ats/trigger/public
 //
-// Auth: shared secret via x-trigger-secret header (no Clerk — public pages have no session)
-// Scope: candidate_applied + resume_uploaded only — the two events a public page can fire
+//   Auth: shared secret via x-trigger-secret header (no Clerk — public pages have no session)
+//   Scope: candidate_applied + resume_uploaded only — the two events a public page can fire
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const runtime = "nodejs";
@@ -228,24 +228,9 @@ export async function POST(req: NextRequest) {
         settings: context.settings,
     };
 
-    // ── 7. Load job automation rules into the engine ───────────────────────────
-    // The engine is a singleton — rules may not be loaded yet if this is the
-    // first request for this job since the server started.
-    // try {
-    //     const existingRules = automationEngine.getRulesForJob(Number(context.jobId));
-    //     if (existingRules.length === 0) {
-    //         const rules = await getJobAutomationRules(Number(context.jobId));
-    //         automationEngine.loadJobRules(Number(context.jobId), rules);
-    //     }
-    // } catch (err) {
-    //     // Non-fatal — automation rules failing shouldn't block plugin dispatch
-    //     console.warn("[trigger/public] Failed to load automation rules:", err);
-    // }
-
     // ── 8. Dispatch plugins + automation rules in parallel ─────────────────────
     const [pluginSettled] = await Promise.allSettled([
         pluginRegistry.dispatch(event as TriggerEvent, atsContext),
-        // automationEngine.evaluate(event as TriggerEvent, atsContext),
     ]);
 
     const pluginResults =
@@ -253,6 +238,8 @@ export async function POST(req: NextRequest) {
 
     const [fired_resume_score] = pluginResults.filter((result) => result.integrationId === "resume-score");
     const payload = fired_resume_score.result.data as ScorePayload;
+
+    console.log("[trigger/public] fired_resume_score:", fired_resume_score);
 
     if (fired_resume_score.result.success) {
         await db
@@ -276,9 +263,6 @@ export async function POST(req: NextRequest) {
     if (pluginSettled.status === "rejected") {
         console.error("[trigger/public] pluginRegistry.dispatch failed:", pluginSettled.reason);
     }
-    // if (automationSettled.status === "rejected") {
-    //     console.error("[trigger/public] automationEngine.evaluate failed:", automationSettled.reason);
-    // }
 
     // ── 9. Respond ─────────────────────────────────────────────────────────────
     // Keep the response minimal — no internal data should leak to the public page.

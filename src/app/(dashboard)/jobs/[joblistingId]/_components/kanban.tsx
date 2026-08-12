@@ -169,7 +169,7 @@ const Kanban = ({ data, stages, jobDetails }: Props) => {
                 }
             )
 
-            await fetchApplicationTasks();
+            // await fetchApplicationTasks();
         } else {
             // Same-column reorder: still persist the new order
             const result = await moveApplicationAndReorder(payload);

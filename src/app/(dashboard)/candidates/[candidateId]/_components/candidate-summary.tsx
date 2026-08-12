@@ -1,234 +1,165 @@
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import {
-    Mail,
-    Phone,
-    MapPin,
-    Calendar,
-    Briefcase,
-    GraduationCap,
-    Star,
-    Clock,
-    FileText,
-    ExternalLink,
-    Edit,
-    MessageSquare
-} from "lucide-react";
+import { Calendar, FileText, Loader2, Mail, Phone, Sparkles } from "lucide-react";
 import { CandidateWithDetails } from "@/types";
-import { format } from "date-fns";
+import { format} from "date-fns";
+import InternalNoteSection from '@/components/internal-note-section';
 
 type Props = {
     data: CandidateWithDetails;
+    softSkills: string[];
+    technicalSkills: string[];
+    resumeSummary: string;
 };
 
-const CandidateSummary = ({ data }: Props) => {
+const CandidateSummary = ({ data, softSkills, technicalSkills, resumeSummary }: Props) => {
     const candidate = data.candidate;
-    const applications = data.application || [];
-    const interviews = data.interview || [];
-
-    const getStatusColor = (status: string) => {
-        switch (status?.toLowerCase()) {
-            case 'active': return 'bg-blue-100 text-blue-800';
-            case 'hired': return 'bg-green-100 text-green-800';
-            case 'rejected': return 'bg-red-100 text-red-800';
-            case 'interviewing': return 'bg-blue-100 text-blue-800';
-            case 'screening': return 'bg-yellow-100 text-yellow-800';
-            case 'new candidate': return 'bg-purple-100 text-purple-800';
-            default: return 'bg-gray-100 text-gray-800';
-        }
-    };
 
     return (
-        <div className=" space-y-6 py-6">
-            {/* Contact Information */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Mail className="h-5 w-5" />
-                        Contact Information
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="flex items-center gap-3">
-                            <Mail className="h-4 w-4 text-gray-500" />
-                            <div>
-                                <p className="text-sm font-medium">Email</p>
-                                <p className="text-sm text-gray-600">{candidate?.email}</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <Phone className="h-4 w-4 text-gray-500" />
-                            <div>
-                                <p className="text-sm font-medium">Phone</p>
-                                <p className="text-sm text-gray-600">{candidate?.phone || 'Not provided'}</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <MapPin className="h-4 w-4 text-gray-500" />
-                            <div>
-                                <p className="text-sm font-medium">Location</p>
-                                <p className="text-sm text-gray-600">{candidate?.location || 'Not provided'}</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <Calendar className="h-4 w-4 text-gray-500" />
-                            <div>
-                                <p className="text-sm font-medium">Applied</p>
-                                <p className="text-sm text-gray-600">
-                                    {format(new Date(candidate?.created_at), 'MMM dd, yyyy')}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                    <Separator />
+            {/* Left Column: AI Analysis & Bio */}
+            <div className="lg:col-span-2 space-y-6">
 
-                    <div className="flex items-center justify-between">
+                {/* AI Talent Assessment Card */}
+                {/*<div className="bg-white rounded-2xl border border-zinc-200 p-8 shadow-sm space-y-6 relative overflow-hidden">
+                    <div className="flex items-center justify-between pb-4 border-b border-zinc-100">
                         <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">Current Status:</span>
-                            <Badge className={getStatusColor(candidate?.status)}>
-                                {candidate?.status}
-                            </Badge>
+                            <div className="w-9 h-9 bg-brand-50 rounded-xl flex items-center justify-center">
+                                <Sparkles className="w-5 h-5 text-brand-600" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-lg text-zinc-900 tracking-tight">AI Talent Insights</h3>
+                                <p className="text-xs text-zinc-400 font-medium">Powered by Gemini AI Engine</p>
+                            </div>
                         </div>
-                        <div className="flex gap-2">
-                            <Button variant="outline" size="sm">
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit Profile
-                            </Button>
-                            <Button variant="outline" size="sm">
-                                <MessageSquare className="mr-2 h-4 w-4" />
-                                Add Note
-                            </Button>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
 
-            {/* Professional Summary */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Briefcase className="h-5 w-5" />
-                        Professional Summary
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-4">
-                        <div>
-                            <h4 className="font-medium mb-2">Experience Level</h4>
-                            <p className="text-sm text-gray-600">
-                                {candidate?.experience_level || 'Not specified'}
+                        {!aiAnalysis && !isAnalyzing && (
+                            <button
+                                onClick={handleAnalyzeWithAI}
+                                className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-md shadow-brand-500/20"
+                            >
+                                <Sparkles className="w-3.5 h-3.5" />
+                                Generate AI Report
+                            </button>
+                        )}
+                    </div>
+
+                    {isAnalyzing && (
+                        <div className="flex flex-col items-center justify-center py-10 gap-3">
+                            <Loader2 className="w-8 h-8 text-brand-600 animate-spin" />
+                            <p className="text-xs font-bold text-zinc-600 animate-pulse">Evaluating candidate skills against job requirements...</p>
+                        </div>
+                    )}
+
+                    {aiAnalysis && (
+                        <div className="prose prose-zinc max-w-none text-xs font-medium text-zinc-700 leading-relaxed bg-zinc-50/80 p-6 rounded-2xl border border-zinc-200/60">
+                            <ReactMarkdown>{aiAnalysis}</ReactMarkdown>
+                        </div>
+                    )}
+
+                    {!aiAnalysis && !isAnalyzing && (
+                        <div className="bg-zinc-50/80 rounded-2xl p-6 border border-zinc-200/60 text-center space-y-2">
+                            <p className="text-xs font-bold text-zinc-700">Get an instant AI match score and candidate breakdown</p>
+                            <p className="text-xs text-zinc-500 max-w-md mx-auto">
+                                Click "Generate AI Report" to synthesize {candidate.name}'s experience, technical alignment, and screening recommendations.
                             </p>
                         </div>
+                    )}
+                </div>*/}
 
-                        <div>
-                            <h4 className="font-medium mb-2">Skills & Expertise</h4>
-                            <div className="flex flex-wrap gap-2">
-                                {candidate?.skills ? (
-                                    candidate?.skills.split(',').map((skill, index) => (
-                                        <Badge key={index} variant="secondary">
-                                            {skill.trim()}
-                                        </Badge>
-                                    ))
-                                ) : (
-                                    <p className="text-sm text-gray-500">No skills listed</p>
-                                )}
-                            </div>
+                {/* Bio & Resume Summary */}
+                <div className="bg-white rounded-2xl border border-zinc-200 p-8 shadow-sm space-y-4">
+                    <h3 className="font-bold text-lg text-zinc-900 tracking-tight flex items-center gap-2">
+                        <FileText className="w-5 h-5 text-brand-600" />
+                        Candidate Summary & Background
+                    </h3>
+
+                    <p className="text-xs font-medium text-zinc-600 leading-relaxed">
+                        {resumeSummary || `${candidate.name} is a seasoned ${candidate.role} with extensive hands-on experience building modern, resilient software architectures. Proficient across key backend and frontend stacks with a strong track record of engineering delivery.`}
+                    </p>
+
+                    <div className="pt-4 border-t border-zinc-100">
+                        <h4 className="text-xs font-bold text-zinc-900 mb-3 uppercase tracking-wider">Top Technical Skills</h4>
+                        <div className="flex flex-wrap gap-2">
+                            {technicalSkills.map((skill) => (
+                                <span key={skill} className="px-3 py-1.5 bg-brand-50 border border-brand-200/60 rounded-xl text-xs font-bold text-brand-800">
+                                    {skill}
+                                </span>
+                            ))}
                         </div>
+                    </div>
 
-                        {candidate?.summary && (
+                    <div className="pt-3">
+                        <h4 className="text-xs font-bold text-zinc-900 mb-3 uppercase tracking-wider">Soft Skills & Capabilities</h4>
+                        <div className="flex flex-wrap gap-2">
+                            {softSkills.map((sSkill) => (
+                                <span key={sSkill} className="px-3 py-1.5 bg-zinc-50 border border-zinc-200 rounded-xl text-xs font-bold text-zinc-700">
+                                    {sSkill}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            {/* Right Column: Contact Card & Quick Info */}
+            <div className="space-y-6">
+                <div className="bg-white rounded-2xl border border-zinc-200 p-8 shadow-sm space-y-5">
+                    <h3 className="font-bold text-base text-zinc-900 tracking-tight pb-3 border-b border-zinc-100">
+                        Contact Details
+                    </h3>
+
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-zinc-50 rounded-2xl flex items-center justify-center border border-zinc-100 text-zinc-500">
+                                <Mail className="w-4 h-4" />
+                            </div>
                             <div>
-                                <h4 className="font-medium mb-2">Summary</h4>
-                                <p className="text-sm text-gray-600 leading-relaxed">
-                                    {candidate?.summary}
-                                </p>
+                                <p className="text-[10px] text-zinc-400 font-bold uppercase">Email Address</p>
+                                <p className="text-xs font-bold text-zinc-900">{candidate.email}</p>
                             </div>
-                        )}
-                    </div>
-                </CardContent>
-            </Card>
+                        </div>
 
-            {/* Application Overview */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <FileText className="h-5 w-5" />
-                        Application Overview
-                    </CardTitle>
-                    <CardDescription>
-                        Summary of applications and interview progress
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="text-center p-4 bg-blue-50 rounded-lg">
-                            <div className="text-2xl font-bold text-blue-600">
-                                {applications.length}
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-zinc-50 rounded-2xl flex items-center justify-center border border-zinc-100 text-zinc-500">
+                                <Phone className="w-4 h-4" />
                             </div>
-                            <div className="text-sm text-blue-800">Total Applications</div>
+                            <div>
+                                <p className="text-[10px] text-zinc-400 font-bold uppercase">Phone Number</p>
+                                <p className="text-xs font-bold text-zinc-900">{candidate.phone || '+1 (555) 234-5678'}</p>
+                            </div>
                         </div>
-                        <div className="text-center p-4 bg-green-50 rounded-lg">
-                            <div className="text-2xl font-bold text-green-600">
-                                {interviews.length}
+
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-zinc-50 rounded-2xl flex items-center justify-center border border-zinc-100 text-zinc-500">
+                                <Calendar className="w-4 h-4" />
                             </div>
-                            <div className="text-sm text-green-800">Interviews</div>
-                        </div>
-                        <div className="text-center p-4 bg-purple-50 rounded-lg">
-                            <div className="text-2xl font-bold text-purple-600">
-                                {applications.filter(app => app?.status === 'Active').length}
+                            <div>
+                                <p className="text-[10px] text-zinc-400 font-bold uppercase">Applied On</p>
+                                <p className="text-xs font-bold text-zinc-900">{format(candidate.created_at, 'MM/dd/yyyy')}</p>
                             </div>
-                            <div className="text-sm text-purple-800">Active Applications</div>
                         </div>
                     </div>
-                </CardContent>
-            </Card>
 
-            {/* Documents & Attachments */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <FileText className="h-5 w-5" />
-                        Documents & Attachments
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-3">
-                        {candidate?.cv_path && (
-                            <div className="flex items-center justify-between p-3 border rounded-lg">
-                                <div className="flex items-center gap-3">
-                                    <FileText className="h-5 w-5 text-gray-500" />
-                                    <div>
-                                        <p className="font-medium">Resume/CV</p>
-                                        <p className="text-sm text-gray-500">PDF Document</p>
-                                    </div>
-                                </div>
-                                <Button variant="outline" size="sm">
-                                    <ExternalLink className="mr-2 h-4 w-4" />
-                                    View
-                                </Button>
-                            </div>
-                        )}
+                    <div className="pt-4 border-t border-zinc-100 space-y-2">
+                        <button
+                            className="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-2xl text-xs font-bold transition-all shadow-md shadow-primary-500/20"
+                        >
+                            Schedule Interview
+                        </button>
 
-                        {/* Placeholder for additional documents */}
-                        <div className="flex items-center justify-between p-3 border rounded-lg border-dashed">
-                            <div className="flex items-center gap-3">
-                                <FileText className="h-5 w-5 text-gray-400" />
-                                <div>
-                                    <p className="text-gray-500">No additional documents</p>
-                                    <p className="text-sm text-gray-400">Upload cover letter, portfolio, etc.</p>
-                                </div>
-                            </div>
-                            <Button variant="outline" size="sm">
-                                Upload
-                            </Button>
-                        </div>
+                        <button
+                            className="w-full py-3 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 rounded-2xl text-xs font-bold transition-all"
+                        >
+                            Reject Candidate
+                        </button>
                     </div>
-                </CardContent>
-            </Card>
+                </div>
+                
+                <InternalNoteSection parent_type="candidate" parent_id={candidate.id} selectedId={candidate.id} />
+            </div>
+
         </div>
     );
 };

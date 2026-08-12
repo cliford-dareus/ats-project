@@ -59,8 +59,7 @@ type Props = {
 const JobCandidate = ({ job, stages }: Props) => {
     const applications = job.applications as unknown as ApplicationType[];
     const [selectedCandidates, setSelectedCandidates] = useState<number[]>([]);
-    const [selectedApplications, setSelectedApplications] =
-        useState<ApplicationType>();
+    const [selectedApplications, setSelectedApplications] = useState<ApplicationType>();
     const [applicationSummary, setApplicationSummary] =
         useState<ApplicationSummaryType>({
             candidate_id: 0,
@@ -302,7 +301,8 @@ const JobCandidate = ({ job, stages }: Props) => {
                                     </div>
                                 </div>
 
-                                {!applicationSummary.experience ||
+                                {
+                                    !applicationSummary.experience ||
                                     !applicationSummary.skills ||
                                     !applicationSummary.education ||
                                     !applicationSummary.resumeSummary ? (
@@ -313,11 +313,12 @@ const JobCandidate = ({ job, stages }: Props) => {
                                     </div>
                                 ) : (
                                     <div className="col-span-2 space-y-4">
-                                        <ApplicationExperienceMatch
-                                            candidate_id={selectedApplications.candidate.id}
-                                            experience={applicationSummary.experience}
-                                            jobSkills={
-                                                job.job_technologies as unknown as JobExperienceType[]
+                                            <ApplicationExperienceMatch
+                                                resume_score_fit={selectedApplications.resume_score_fit}
+                                                candidate_id={selectedApplications.candidate.id}
+                                                experience={applicationSummary.experience}
+                                                jobSkills={
+                                                    job.job_technologies as unknown as JobExperienceType[]
                                             }
                                         />
                                     </div>
