@@ -8,7 +8,7 @@
 ## Overview
 
 ATS Project is an applicant tracking system (ATS) designed to streamline recruitment workflows. It provides a central workspace for managing candidates, job postings, application progress, and hiring decisions.
-<!--**TODO:** Update this paragraph to describe the exact problem your application solves and its intended users—for example, recruiters, hiring managers, or job seekers.-->
+
 Post jobs, move candidates through a drag-and-drop pipeline, auto-parse resumes, trigger automated emails and calendar invites, and generate hiring reports — all in one app.
 
 ## Features
@@ -110,8 +110,6 @@ Before running the project locally, install:
 | `npm run lint` | Checks code quality and style |
 <!--| `npm test` | Runs the test suite |-->
 
-<!--> **TODO:** Keep only the scripts that actually exist in `package.json`.-->
-
 ## Project Structure
 
 ```text
@@ -181,12 +179,13 @@ Add screenshots or a short demo GIF here so visitors can understand the product 
 
 ## Roadmap
 
-- [ ] Improve candidate search and filtering
+- [X] Improve candidate search and filtering
 - [ ] Add role-based access control
 - [ ] Add interview scheduling
 - [ ] Add candidate notes and activity history
 - [ ] Add reporting and hiring analytics
-- [ ] Add automated email notifications
+- [ ] Add automated email 
+- [ ] Dockerize the application
 - [ ] Deploy a public demo
 
 ## Contributing
