@@ -23,7 +23,7 @@ const EducationForm = ({ register, errors, eduFields, appendEdu, removeEdu }) =>
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => appendEdu({ school: "", degree: "", fieldOfStudy: "", graduationDate: "" })}
+                    onClick={() => appendEdu({ school: "", degree: "", field_of_study: "", graduation_date: "" })}
                 >
                     <Plus className="h-4 w-4 mr-1" /> Add School
                 </Button>
@@ -56,14 +56,14 @@ const EducationForm = ({ register, errors, eduFields, appendEdu, removeEdu }) =>
                         <FormInput
                             label="Field of Study"
                             placeholder="Computer Science"
-                            {...register(`education.${index}.fieldOfStudy`)}
-                            error={errors.education?.[index]?.fieldOfStudy?.message}
+                            {...register(`education.${index}.field_of_study`)}
+                            error={errors.education?.[index]?.field_of_study?.message}
                         />
                         <FormInput
                             label="Graduation Date"
                             type="date"
-                            {...register(`education.${index}.graduationDate`)}
-                            error={errors.education?.[index]?.graduationDate?.message}
+                            {...register(`education.${index}.graduation_date`)}
+                            error={errors.education?.[index]?.graduation_date?.message}
                         />
                     </div>
                 </Card>

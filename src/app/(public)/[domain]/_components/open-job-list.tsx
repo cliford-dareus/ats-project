@@ -4,8 +4,9 @@ import React, { useState, useTransition } from "react";
 import { ArrowRight, Briefcase, Clock, MapPin, Search } from "lucide-react";
 import Filter from "./filter";
 import { useRouter } from "next/navigation";
+import { OpenJobResponseType } from "@/types";
 
-const OpenJobList = ({ openJobs, activeTheme }: { openJobs: any[]; activeTheme: any }) => {
+const OpenJobList = ({ openJobs, activeTheme }: { openJobs: OpenJobResponseType[]; activeTheme: any }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [departmentFilter, setDepartmentFilter] = useState('All');
     const [locationFilter, setLocationFilter] = useState('All');
@@ -15,7 +16,7 @@ const OpenJobList = ({ openJobs, activeTheme }: { openJobs: any[]; activeTheme: 
 
     const filteredJobs = openJobs.filter(job => {
         const matchesSearch = job.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            job.department.toLowerCase().includes(searchQuery.toLowerCase());
+            job?.department?.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesDept = departmentFilter === 'All' || job.department === departmentFilter;
         const matchesLoc = locationFilter === 'All' || job.location === locationFilter;
         const matchesType = typeFilter === 'All' || job.type === typeFilter;

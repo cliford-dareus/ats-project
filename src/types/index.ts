@@ -78,12 +78,30 @@ export type NoteResponseType = {
     total: number;
 };
 
+export type OpenJobResponseType = {
+    id: number,
+    name: string,
+    location: string,
+    description: string,
+    salary_up_to: string,
+    type: typeof JOB_TYPE._type | null,
+    subdomain: string,
+    organization: string,
+    status: string,
+    created_by: number,
+    created_at: string,
+    updated_at: string,
+    department: string | null,
+};
+
 export type CandidateDetailsType = {
+    candidate_id: number;
     resumeSummary: string;
     skills: string[];
     experience: CandidateExperience[];
     education: CandidateEducation[];
     key_accomplishments: string[];
+    references: CandidateReference[];
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -149,7 +167,7 @@ export interface CandidateExperience {
     end_date?: string;
     current: boolean;
     description: string;
-    total_experience: number;
+    total_experience?: number;
 };
 
 export interface CandidateEducation {
@@ -160,11 +178,11 @@ export interface CandidateEducation {
 };
 
 export interface CandidateReference {
-    name: string;
-    email: string;
-    company: string;
-    relationship: string;
-    phone: string;
+    name?: string;
+    email?: string;
+    company?: string;
+    relationship?: string;
+    phone?: string;
 };
 
 export interface CandidateType {

@@ -35,6 +35,22 @@ interface InterviewType {
 };
 
 export const create_application = async (data: z.infer<typeof applicationFormSchema>) => {
+    const jobId = data.jobId;
+    const subdomain = data.subdomain;
+
+    // check if job is still exist and not closed/achieved
+    const [job] = await db
+        .select({
+            id: job_listings.id,
+            description: job_listings.description,
+        })
+        .from(job_listings)
+        .where(and(eq(job_listings.id, jobId), eq(job_listings.subdomain, subdomain)));
+
+    if (!job) {
+        return { success: false, message: "Job not found" };
+    }
+
     // 1. Get "Applied" stage
     const [appliedStage] = await db
         .select()
@@ -48,12 +64,8 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
         );
 
     if (!appliedStage) {
-        throw new Error("Applied stage not found for this job");
+        return { success: false, message: "Applied stage not found for this job" };
     }
-
-    const jobId = data.jobId;
-    const subdomain = data.subdomain;
-    console.log("create_application", { jobId, subdomain });
 
     // 2. Check for duplicate application
     if (data.candidate) {
@@ -85,10 +97,10 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
     }
 
     try {
-        let candidateId: number;
+        let candidate_id: number;
         if (data.candidate) {
             // === EXISTING CANDIDATE ===
-            candidateId = Number(data.candidate);
+            candidate_id = Number(data.candidate);
         } else {
             // === NEW CANDIDATE ===
             const info = data.personalInfo as {
@@ -111,9 +123,10 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
                 .where(eq(candidates.email, info.email));
 
             if (existingCandidate.length > 0) {
-                candidateId = existingCandidate[0].id;
+                candidate_id = existingCandidate[0].id;
             } else {
                 const resumeFile = data?.file?.file_ as File | undefined;
+                console.log("Form Submitted:", data.file);
                 let cvKey = `no-resume-${info.firstName}-${Date.now()}`;
 
                 const candidateFullName = `${info.firstName} ${info.lastName}`;
@@ -122,7 +135,7 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
                 }
 
                 // Create candidate
-                const [newCandidate] = await db
+                const [new_candidate] = await db
                     .insert(candidates)
                     .values({
                         organization: existingSubdomain[0].id,
@@ -137,26 +150,27 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
                         cv_path: cvKey,
                         subdomain: subdomain,
                     })
-                    // .$returningId();
+                // .$returningId();
 
-                candidateId = newCandidate.insertId;
+                candidate_id = new_candidate.insertId;
 
                 // Create attachment record
                 await db.insert(attachments).values({
                     file_name: `${info.firstName}'s Resume`,
                     file_url: cvKey, // we store the R2 key
-                    candidate_id: candidateId,
+                    candidate_id: candidate_id,
                     attachment_type: "RESUME",
                 });
 
                 // Create candidate details record
                 await create_candidate_details({
-                    candidate_id: candidateId,
+                    candidate_id: candidate_id,
                     resumeSummary: "No resume summary provided",
                     skills: [],
                     experience: data.workExperience ?? [],
                     education: data.education ?? [],
                     references: data.references ?? [],
+                    key_accomplishments: [],
                 });
 
                 revalidateDbCache({ tag: CACHE_TAGS.candidates });
@@ -166,18 +180,18 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
         const [candidate] = await db
             .select()
             .from(candidates)
-            .where(eq(candidates.id, candidateId));
+            .where(eq(candidates.id, candidate_id));
 
         const file_key = candidate.cv_path;
 
         // === CREATE APPLICATION ===
         // 4. Create application (shared for both paths)
-        const [newApplication] = await db
+        const [new_application] = await db
             .insert(applications)
             .values({
                 organization: existingSubdomain[0].id,
                 job_id: jobId,
-                candidate: candidateId,
+                candidate: candidate_id,
                 current_stage_id: appliedStage.id,
                 subdomain: subdomain, // make subdomain unique in the database
             })
@@ -189,9 +203,11 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
 
         return {
             success: true,
-            applicationId: newApplication.id,
-            candidateId,
-            fileUrl: file_key,
+            candidate_id,
+            job_id: job.id,
+            job_description: job.description,
+            application_id: new_application.id,
+            file_url: file_key,
             message: "Application created successfully",
         };
     } catch (err) {

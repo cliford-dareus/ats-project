@@ -6,7 +6,12 @@ import OpenJobList from "./_components/open-job-list";
 
 const CareerPage = async ({ params }: { params: Promise<{ domain: string }> }) => {
     const { domain } = await params;
-
+    
+    const tenant = await get_organization_by_subdomain_action(domain);
+    if (!tenant) {
+        return <div>Tenant not found</div>;
+    }
+    
     const openJobs = await db.select({
         id: job_listings.id,
         name: job_listings.name,
@@ -25,8 +30,6 @@ const CareerPage = async ({ params }: { params: Promise<{ domain: string }> }) =
         .from(job_listings)
         .where(and(eq(job_listings.subdomain, domain), eq(job_listings.status, 'OPEN')))
         .leftJoin(departments, eq(job_listings.department, departments.id));
-
-    const tenant = await get_organization_by_subdomain_action(domain);
 
     const defaultTheme = {
         primaryColor: '#4f46e5', // brand-600

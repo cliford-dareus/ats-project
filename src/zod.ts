@@ -86,18 +86,18 @@ const educationSchema = z.object({
 });
 
 const referenceSchema = z.object({
-    name: z.string().min(2, "Name is required"),
-    relationship: z.string().min(2, "Relationship is required"),
-    company: z.string().min(2, "Company is required"),
-    email: z.string().email("Invalid email address"),
-    phone: z.string().min(10, "Phone number is required"),
+    name: z.string().optional(),
+    relationship: z.string().optional(),
+    company: z.string().optional(),
+    email: z.string().optional(),
+    phone: z.string().optional(),
 });
 
 export const applicationSchema = z.object({
     personalInfo: personalInfoSchema,
     workExperience: z.array(experienceSchema).min(1, "At least one experience item is required"),
     education: z.array(educationSchema).min(1, "At least one education item is required"),
-    references: z.array(referenceSchema).optional(),
+    references: z.array(referenceSchema).min(0),
     additionalInfo: z.object({
         coverLetter: z.string().optional(),
         referralSource: z.string().optional(),

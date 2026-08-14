@@ -23,7 +23,7 @@ const WorkExperienceForm = ({ register, errors, expFields, appendExp, removeExp,
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => appendExp({ company: "", position: "", startDate: "", description: "", current: false })}
+                    onClick={() => appendExp({ company: "", position: "", start_date: "", description: "", current: false })}
                 >
                     <Plus className="h-4 w-4 mr-1" /> Add Job
                 </Button>
@@ -56,15 +56,15 @@ const WorkExperienceForm = ({ register, errors, expFields, appendExp, removeExp,
                         <FormInput
                             label="Start Date"
                             type="date"
-                            {...register(`workExperience.${index}.startDate`)}
-                            error={errors.workExperience?.[index]?.startDate?.message}
+                            {...register(`workExperience.${index}.start_date`)}
+                            error={errors.workExperience?.[index]?.start_date?.message}
                         />
                         <FormInput
                             label="End Date"
                             type="date"
                             disabled={getValues(`workExperience.${index}.current`)}
-                            {...register(`workExperience.${index}.endDate`)}
-                            error={errors.workExperience?.[index]?.endDate?.message}
+                            {...register(`workExperience.${index}.end_date`)}
+                            error={errors.workExperience?.[index]?.end_date?.message}
                         />
                         <div className="md:col-span-2">
                             <FormCheckbox

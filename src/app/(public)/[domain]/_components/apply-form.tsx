@@ -18,8 +18,6 @@ import ProgressSteps from "./progess";
 import { cn } from "@/lib/utils";
 import { create_application_action } from "@/server/actions/application_actions";
 import { applicationSchema } from "@/zod";
-import { useDispatch } from "@/hooks/use-plugin-registry";
-import { desc } from "drizzle-orm";
 
 type FormValues = z.infer<typeof applicationSchema>;
 
@@ -32,7 +30,6 @@ const STEPS = [
 ];
 
 const ApplyForm = ({ jobId, subdomain }: { jobId: number; subdomain: string }) => {
-    const dispatch = useDispatch();
     const [currentStep, setCurrentStep] = useState(1);
     const [complete, setComplete] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -59,8 +56,8 @@ const ApplyForm = ({ jobId, subdomain }: { jobId: number; subdomain: string }) =
                 state: "",
                 zipCode: "",
             },
-            workExperience: [{ company: "", position: "", startDate: "", description: "", current: false }],
-            education: [{ school: "", degree: "", fieldOfStudy: "", graduationDate: "" }],
+            workExperience: [{ company: "", position: "", start_date: "", description: "", current: false }],
+            education: [{ school: "", degree: "", field_of_study: "", graduation_date: "" }],
             references: [
                 { name: "", relationship: "", company: "", email: "", phone: "" },
             ],
@@ -74,12 +71,10 @@ const ApplyForm = ({ jobId, subdomain }: { jobId: number; subdomain: string }) =
         control,
         name: "workExperience",
     });
-
     const { fields: eduFields, append: appendEdu, remove: removeEdu } = useFieldArray({
         control,
         name: "education",
     });
-
     const { fields: refFields, append: appendRef, remove: removeRef } = useFieldArray({
         control,
         name: "references",
@@ -110,71 +105,36 @@ const ApplyForm = ({ jobId, subdomain }: { jobId: number; subdomain: string }) =
     };
 
     const onSubmit = async (data: z.infer<typeof applicationSchema>) => {
-        console.log("Form Submitted:", data);
         const payload = {
             ...data, file: { file_: file as File }, jobId, subdomain
         };
+
         try {
-            // const response = await create_application_action(payload);
-            const response = {
-                candidateId: 1,
-                success: true,
-                fileUrl: null,
-                message: "",
-                fileUrl: "resumes/1779058531569-jouvens-kersaint.pdf",
-                applicationId: 1
-            };
+            const response = await create_application_action(payload);
             if (!response.success) {
-                throw new Error(response.message);
+                console.log(payload);
+                return;
             }
 
             void fireTrigger({
                 event: {
                     type: "candidate_applied",
-                    candidateId: String(response.candidateId),
-                    jobId: String(jobId),
+                    candidateId: String(response?.candidate_id),
+                    jobId: String(response?.job_id),
                 },
                 context: {
                     subdomain: subdomain,   // ← "bridge" | "hisgra" — from params or env
                     jobId: jobId,
-                    candidate: { id: response.candidateId, cv_path: response.fileUrl },
+                    candidate: { id: response?.candidate_id, cv_path: response?.file_url },
                     job: {
-                        id: jobId, job_description: `We are looking for a skilled Python Developer with hands-on experience in LangChain and LangGraph to build and optimize AI-driven applications.
-                        Visa : Independent Candidates
-                        Key Responsibilities:
-                        · Develop and maintain Python-based applications
-                        · Work with LangChain and LangGraph frameworks for LLM integrations
-                        · Design and implement scalable AI/automation workflows
-                        · Collaborate with cross-functional teams for solution delivery
-
-                        Required Skills:
-                        · Strong experience in Python
-                        · Hands-on experience with LangChain and LangGraph
-                        · Experience with LLMs / AI integrations
-                        · Good problem-solving and communication skills` },
+                        id: response?.job_id,
+                        job_description: response?.job_description
+                    },
                     settings: {
-                        applicationId: response.applicationId
+                        applicationId: response?.application_id
                     },
                 },
             });
-
-            // if(response.fileUrl) {
-            //     void fireTrigger({
-            //         event: {
-            //             type: "resume_uploaded",
-            //             candidateId: String(response.candidateId),
-            //             jobId: String(jobId),
-            //             fileUrl: response.fileUrl,
-            //         },
-            //         context: {
-            //             subdomain: subdomain,   // ← "bridge" | "hisgra" — from params or env
-            //             jobId: String(jobId),
-            //             candidate: { id: String(response.candidateId) },
-            //             job: { id: String(jobId) },
-            //             settings: {},
-            //         }
-            //     })
-            // }
 
             // Show success message
             console.log("Application submitted successfully:", response.message);
@@ -229,13 +189,38 @@ const ApplyForm = ({ jobId, subdomain }: { jobId: number; subdomain: string }) =
             <form onSubmit={handleSubmit(onSubmit)}>
                 <AnimatePresence mode="wait">
                     {currentStep === 1 &&
-                        <PersonalInfoForm register={register} errors={errors} />}
+                        <PersonalInfoForm
+                            register={register}
+                            errors={errors}
+                        />}
                     {currentStep === 2 &&
-                        <WorkExperienceForm register={register} errors={errors} expFields={expFields} appendExp={appendExp} removeExp={removeExp} getValues={getValues} />}
+                        <WorkExperienceForm
+                            register={register}
+                            errors={errors}
+                            expFields={expFields}
+                            appendExp={appendExp}
+                            removeExp={removeExp}
+                            getValues={getValues}
+                        />}
                     {currentStep === 3 &&
-                        <EducationForm register={register} errors={errors} eduFields={eduFields} appendEdu={appendEdu} removeEdu={removeEdu} />}
+                        <EducationForm
+                            register={register}
+                            errors={errors}
+                            eduFields={eduFields}
+                            appendEdu={appendEdu}
+                            removeEdu={removeEdu}
+                        />}
                     {currentStep === 4 &&
-                        <ReferencesForm register={register} errors={errors} refFields={refFields} appendRef={appendRef} removeRef={removeRef} fileInputRef={fileInputRef} resumeName={resumeName} handleFileUpload={handleFileUpload} />}
+                        <ReferencesForm
+                            register={register}
+                            errors={errors}
+                            refFields={refFields}
+                            appendRef={appendRef}
+                            removeRef={removeRef}
+                            fileInputRef={fileInputRef}
+                            resumeName={resumeName}
+                            handleFileUpload={handleFileUpload}
+                        />}
                     {currentStep === 5 &&
                         <ReviewForm register={register} setCurrentStep={setCurrentStep} getValues={getValues} />}
                 </AnimatePresence>
@@ -262,8 +247,6 @@ const ApplyForm = ({ jobId, subdomain }: { jobId: number; subdomain: string }) =
                     )}
                 </div>
             </form>
-
-            <Button onClick={() => onSubmit({})}></Button>
         </div>
     );
 };
@@ -274,7 +257,6 @@ const ApplyForm = ({ jobId, subdomain }: { jobId: number; subdomain: string }) =
 // Errors are swallowed — a failed integration should never block the applicant.
 async function fireTrigger(body: { event: unknown; context: unknown }) {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
-
     try {
         const res = await fetch(`${apiUrl}/api/trigger/public`, {
             method: "POST",

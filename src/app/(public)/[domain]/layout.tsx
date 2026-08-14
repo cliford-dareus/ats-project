@@ -1,5 +1,5 @@
 import { get_organization_by_subdomain_action } from '@/server/actions/organization_actions';
-import { Briefcase } from 'lucide-react';
+// import { Briefcase } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 export default async function PublicLayout({
@@ -10,7 +10,6 @@ export default async function PublicLayout({
     children: ReactNode;
 }) {
     const { domain: subdomain } = await params;
-
     const [tenant] = await get_organization_by_subdomain_action(subdomain);
     if (!tenant) {
         return <></>;
