@@ -70,8 +70,10 @@ const personalInfoSchema = z.object({
 const experienceSchema = z.object({
     company: z.string().min(2, "Company name is required"),
     position: z.string().min(2, "Position is required"),
-    startDate: z.string().min(1, "Start date is required"),
-    endDate: z.string().optional(),
+    start_date: z.string().min(1, "Start date is required"),
+    end_date: z.string().optional(),
+    period: z.string().optional(),
+    total_experience: z.number().optional(),
     current: z.boolean(),
     description: z.string().min(10, "Description should be more detailed"),
 });
@@ -79,8 +81,8 @@ const experienceSchema = z.object({
 const educationSchema = z.object({
     school: z.string().min(2, "School name is required"),
     degree: z.string().min(2, "Degree is required"),
-    fieldOfStudy: z.string().min(2, "Field of study is required"),
-    graduationDate: z.string().min(1, "Graduation date is required"),
+    field_of_study: z.string().min(2, "Field of study is required"),
+    graduation_date: z.string().min(1, "Graduation date is required"),
 });
 
 const referenceSchema = z.object({

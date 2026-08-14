@@ -26,7 +26,6 @@ import { z } from "zod";
 import { uploadResumeToR2 } from "@/lib/upload-file-to-r2";
 import { create_candidate_details } from "../mongo/candidate-details";
 import { check_organization_subdomain } from "./organization";
-import { file } from "googleapis/build/src/apis/file";
 
 interface InterviewType {
     applicationId: number;
@@ -112,10 +111,8 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
                 .where(eq(candidates.email, info.email));
 
             if (existingCandidate.length > 0) {
-                
                 candidateId = existingCandidate[0].id;
             } else {
-
                 const resumeFile = data?.file?.file_ as File | undefined;
                 let cvKey = `no-resume-${info.firstName}-${Date.now()}`;
 
@@ -140,9 +137,9 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
                         cv_path: cvKey,
                         subdomain: subdomain,
                     })
-                    .$returningId();
+                    // .$returningId();
 
-                candidateId = newCandidate.id;
+                candidateId = newCandidate.insertId;
 
                 // Create attachment record
                 await db.insert(attachments).values({
@@ -157,8 +154,8 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
                     candidate_id: candidateId,
                     resumeSummary: "No resume summary provided",
                     skills: [],
-                    experience: data.workExperience,
-                    education: data.education,
+                    experience: data.workExperience ?? [],
+                    education: data.education ?? [],
                     references: data.references ?? [],
                 });
 
@@ -174,7 +171,7 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
         const file_key = candidate.cv_path;
 
         // === CREATE APPLICATION ===
-        // 3. Create application (shared for both paths)
+        // 4. Create application (shared for both paths)
         const [newApplication] = await db
             .insert(applications)
             .values({

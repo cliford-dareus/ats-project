@@ -19,7 +19,7 @@ export async function getEmailTemplates() {
 
 export async function getEmailTemplateByTemplateId(templateId: string) {
     await mongodb();
-    
+
     const { orgId } = await auth();
     if (!orgId) return JSON.stringify([]);
 
@@ -35,7 +35,7 @@ export async function getEmailTemplateByTemplateId(templateId: string) {
 
 export async function getEmailTemplateById(templateId: string) {
     await mongodb();
-    
+
     const { orgId } = await auth();
     if (!orgId) return JSON.stringify([]);
 

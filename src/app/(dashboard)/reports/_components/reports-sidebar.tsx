@@ -128,8 +128,8 @@ const ReportsSidebar = () => {
                                     <div
                                         key={report.id}
                                         className={`p-2 rounded cursor-pointer transition-colors ${selectedReport === report.id
-                                                ? "bg-primary/10 text-primary border border-primary/20"
-                                                : "hover:bg-muted"
+                                            ? "bg-primary/10 text-primary border border-primary/20"
+                                            : "hover:bg-muted"
                                             }`}
                                         onClick={() => setSelectedReport(report.id)}
                                     >

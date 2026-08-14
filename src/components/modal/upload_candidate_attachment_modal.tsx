@@ -2,7 +2,6 @@ import React, { useCallback, useState } from "react";
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
@@ -28,7 +27,7 @@ export const AttachmentForm = z.object({
     attachment_type: z.enum(attachmentType),
 });
 
-const AddCandidateAttachmentModal = ({candidateId}: Props) => {
+const AddCandidateAttachmentModal = ({ candidateId }: Props) => {
     const [isFileSelected, setIsFileSelected] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
@@ -69,61 +68,61 @@ const AddCandidateAttachmentModal = ({candidateId}: Props) => {
         }
     };
 
-  return (
-    <Dialog>
-         <DialogTrigger asChild>
-            <Button className="flex items-center gap-2 text-sm" variant="ghost">
-                <Paperclip size={18} />
-                <p>Import Files</p>
-            </Button>
-        </DialogTrigger>
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button className="flex items-center gap-2 text-sm" variant="ghost">
+                    <Paperclip size={18} />
+                    <p>Import Files</p>
+                </Button>
+            </DialogTrigger>
 
-        <DialogContent className="max-w-xl">
-            <div className="relative mx-auto flex gap-4 my-8 z-0">
-                <form className="w-[250px] flex flex-col my-8" onSubmit={onSubmit}>
-                    <UseDropZone name="my-file" onDrop={onDrop} />
+            <DialogContent className="max-w-xl">
+                <div className="relative mx-auto flex gap-4 my-8 z-0">
+                    <form className="w-[250px] flex flex-col my-8" onSubmit={onSubmit}>
+                        <UseDropZone name="my-file" onDrop={onDrop} />
 
-                    <div className="flex flex-col items-center mt-4 text-center">
-                        <DialogTitle className="font-medium">Attachment Upload</DialogTitle>
-                        <p className="text-sm text-slate-500 mt-2">
-                            Or{" "}
-                            <span className="text-blue-500">Create</span> candidate
-                            yourself, fill in and upload information manually.{" "}
-                        </p>
-                    </div>
+                        <div className="flex flex-col items-center mt-4 text-center">
+                            <DialogTitle className="font-medium">Attachment Upload</DialogTitle>
+                            <p className="text-sm text-slate-500 mt-2">
+                                Or{" "}
+                                <span className="text-blue-500">Create</span> candidate
+                                yourself, fill in and upload information manually.{" "}
+                            </p>
+                        </div>
 
 
-                    <div className="absolute -top-10 -left-[136px] w-full z-50">
-                        <Popover open={open} onOpenChange={setOpen}>
-                            <PopoverTrigger asChild>
-                                <Button
-                                variant="outline"
-                                role="combobox"
-                                aria-expanded={open}
-                                className="w-[200px] justify-between"
-                                >
-                                    {value
-                                        ? attachmentType.find((type) => type === value)?.charAt(0).toUpperCase() + value.slice(1).toLowerCase()
-                                        : "Select file type..."}
-                                <ChevronsUpDown className="opacity-50" />
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[200px] p-0">
-                                <Command>
-                                    <CommandInput placeholder="Search framework..." className="h-9" />
-                                    <CommandList>
-                                        <CommandEmpty>No framework found.</CommandEmpty>
-                                        <CommandGroup>
-                                            {attachmentType.map((type, i) => (
-                                                <CommandItem
-                                                            key={i}
-                                                            value={type}
-                                                            onSelect={(currentValue) => {
-                                                                setValue(currentValue === value ? "" : currentValue)
-                                                                setOpen(false)
-                                                            }}
-                                                        >
-                                                            {type.charAt(0).toUpperCase() + type.slice(1).toLowerCase()}
+                        <div className="absolute -top-10 -left-[136px] w-full z-50">
+                            <Popover open={open} onOpenChange={setOpen}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        role="combobox"
+                                        aria-expanded={open}
+                                        className="w-[200px] justify-between"
+                                    >
+                                        {value
+                                            ? attachmentType.find((type) => type === value)?.charAt(0).toUpperCase() + value.slice(1).toLowerCase()
+                                            : "Select file type..."}
+                                        <ChevronsUpDown className="opacity-50" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[200px] p-0">
+                                    <Command>
+                                        <CommandInput placeholder="Search framework..." className="h-9" />
+                                        <CommandList>
+                                            <CommandEmpty>No framework found.</CommandEmpty>
+                                            <CommandGroup>
+                                                {attachmentType.map((type, i) => (
+                                                    <CommandItem
+                                                        key={i}
+                                                        value={type}
+                                                        onSelect={(currentValue) => {
+                                                            setValue(currentValue === value ? "" : currentValue)
+                                                            setOpen(false)
+                                                        }}
+                                                    >
+                                                        {type.charAt(0).toUpperCase() + type.slice(1).toLowerCase()}
                                                         <Check
                                                             className={cn("ml-auto",
                                                                 value === type ? "opacity-100" : "opacity-0"
@@ -138,18 +137,18 @@ const AddCandidateAttachmentModal = ({candidateId}: Props) => {
                             </Popover>
                         </div>
 
-                       <div className="w-full flex items-center gap-4 absolute -bottom-10 -right-[215px]">
+                        <div className="w-full flex items-center gap-4 absolute -bottom-10 -right-[215px]">
                             <Button>Cancel</Button>
                             <Button type="submit" disabled={loading || !isFileSelected}>
                                 {loading ? "Uploading..." : "Upload"}
                             </Button>
-                       </div>
-                </form>
-                {error && <div className="text-red-500">{error}</div>}
-            </div>
-        </DialogContent>
-    </Dialog>
-  )
+                        </div>
+                    </form>
+                    {error && <div className="text-red-500">{error}</div>}
+                </div>
+            </DialogContent>
+        </Dialog>
+    )
 };
 
 export default AddCandidateAttachmentModal;

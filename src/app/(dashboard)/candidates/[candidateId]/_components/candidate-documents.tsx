@@ -17,7 +17,7 @@ const CandidateDocuments = ({ data, resumeSummary }: Props) => {
     return (
         <div className="bg-white rounded-2xl border border-zinc-200 p-8 shadow-sm space-y-6">
             <div className="flex items-center justify-between pb-4 border-b border-zinc-100">
-                <h3 className="font-bold text-xl text-zinc-900 tracking-tight">Attached Documents & Resume</h3>
+                <h3 className="font-bold text-zinc-900 text-brand-dark uppercase tracking-widest">Attached Documents & Resume</h3>
                 <button
                     onClick={() => alert("Simulating PDF download...")}
                     className="px-4 py-2 bg-zinc-900 text-white rounded-xl text-xs font-bold hover:bg-zinc-800 transition-all flex items-center gap-2"

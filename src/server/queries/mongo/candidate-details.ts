@@ -5,8 +5,9 @@ import { candidates } from "@/drizzle/schema";
 import mongodb from "@/lib/mongodb";
 import { eq } from "drizzle-orm";
 import CandidateDetails from "@/models/candidate-details";
+import { CandidateDetailsType } from "@/types";
 
-export const create_candidate_details = async (data: any) => {
+export const create_candidate_details = async (data: CandidateDetailsType) => {
     try {
         await mongodb();
 
@@ -38,10 +39,9 @@ export const get_candidate_details = async (candidate_id: number) => {
     }
 };
 
-export const update_candidate_details = async (candidate_id: number, data: any) => {
+export const update_candidate_details = async (candidate_id: number, data: Partial<CandidateDetailsType>) => {
     try {
         await mongodb();
-
         const updated = await CandidateDetails.updateOne({ candidate_id: candidate_id }, data);
         return JSON.stringify(updated);
     } catch (error) {

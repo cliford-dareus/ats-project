@@ -78,6 +78,14 @@ export type NoteResponseType = {
     total: number;
 };
 
+export type CandidateDetailsType = {
+    resumeSummary: string;
+    skills: string[];
+    experience: CandidateExperience[];
+    education: CandidateEducation[];
+    key_accomplishments: string[];
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared types
 // ─────────────────────────────────────────────────────────────────────────────
@@ -105,7 +113,7 @@ export interface ApplicationType {
 
     // Resume Scoring
     resume_score: number | null;
-    resume_score_fit: number  | null;
+    resume_score_fit: number | null;
     resume_score_skills: number | null;
     resume_score_exp: number | null;
     resume_score_summary: string | null;
@@ -136,12 +144,12 @@ export type JobListingWithCandidatesType = {
 export interface CandidateExperience {
     company: string;
     position: string;
-    period: string;
-    startDate: string;
-    endDate: string;
+    period?: string;
+    start_date: string;
+    end_date?: string;
     current: boolean;
     description: string;
-    totalExperience: number;
+    total_experience: number;
 };
 
 export interface CandidateEducation {

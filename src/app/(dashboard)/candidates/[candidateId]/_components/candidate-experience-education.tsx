@@ -18,7 +18,7 @@ const CandidateExperienceAndEducation = ({ data, experience, education }: Props)
             <div className="lg:col-span-2 space-y-6">
 
                 <div className="bg-white rounded-2xl border border-zinc-200 p-8 shadow-sm space-y-6">
-                    <h3 className="font-bold text-xl text-zinc-900 tracking-tight flex items-center gap-2">
+                    <h3 className="font-bold text-zinc-900 flex items-center gap-2 text-brand-dark uppercase tracking-widest">
                         <Building2 className="w-5 h-5 text-brand-600" />
                         Work Experience Timeline
                     </h3>
@@ -45,7 +45,7 @@ const CandidateExperienceAndEducation = ({ data, experience, education }: Props)
                 </div>
 
                 <div className="bg-white rounded-2xl border border-zinc-200 p-8 shadow-sm space-y-6">
-                    <h3 className="font-bold text-xl text-zinc-900 tracking-tight flex items-center gap-2">
+                    <h3 className="font-bold text-zinc-900 flex items-center gap-2 text-brand-dark uppercase tracking-widest">
                         <GraduationCap className="w-5 h-5 text-brand-600" />
                         Education & Credentials
                     </h3>

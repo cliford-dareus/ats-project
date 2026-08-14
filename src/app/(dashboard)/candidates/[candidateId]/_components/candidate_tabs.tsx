@@ -21,8 +21,8 @@ type Props = {
     candidate_notes: any;
 };
 
-type TabValue = "profile" | "resume" | "application" | "interviews";
-const DEFAULT_TAB: TabValue = "profile";
+type TabValue = "overview" | "experience" | "documents" | "interview";
+const DEFAULT_TAB: TabValue = "overview";
 
 const CandidateTabs = ({ data, candidate_details, candidate_notes }: Props) => {
     const pathname = usePathname();
@@ -45,9 +45,9 @@ const CandidateTabs = ({ data, candidate_details, candidate_notes }: Props) => {
     return (
         <div>
             <div className="flex px-4 ">
-                <Tabs className="px-0 h-full w-full" defaultValue="summary" value={activeTab}
+                <Tabs className="px-0 h-full w-full" defaultValue="overview" value={activeTab}
                     onValueChange={handleTabChange}>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between border-b border-zinc-200 pb-4">
                         <TabsList className="bg-transparent rounded-none p-0 border-b w-full justify-start">
                             {[
                                 { id: 'overview', label: 'Profile Overview', icon: User },
@@ -57,10 +57,10 @@ const CandidateTabs = ({ data, candidate_details, candidate_notes }: Props) => {
                             ].map((tab) => (
                                 <CustomTabsTrigger
                                     key={tab.id}
-                                    className="px-4 flex items-center gap-4"
+                                    className="px-4 flex items-center gap-4 py-2 rounded-lg text-xs font-bold transition-all text-[10px] uppercase tracking-widest"
                                     value={tab.id}
                                 >
-                                    <tab.icon size={20} />
+                                    <tab.icon size={18} />
                                     <p>{tab.label}</p>
                                 </CustomTabsTrigger>
                             ))}

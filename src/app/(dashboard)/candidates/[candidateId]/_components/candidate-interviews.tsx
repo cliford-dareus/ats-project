@@ -36,7 +36,7 @@ const CandidateInterviews = ({ data }: Props) => {
                 <div key={index} className="bg-white rounded-2xl border border-zinc-200 p-8 shadow-sm space-y-6">
                     <div className="flex items-center justify-between pb-4 border-b border-zinc-100">
                         <div>
-                            <h3 className="font-bold text-xl text-zinc-900 tracking-tight">Interview Management</h3>
+                            <h3 className="font-bold text-zinc-900 text-brand-dark uppercase tracking-widest">Interview Management</h3>
                             <p className="text-xs text-zinc-500">Track and schedule evaluation calls with candidate</p>
                         </div>
 

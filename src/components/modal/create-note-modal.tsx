@@ -1,13 +1,13 @@
 "use client";
 
 import React from 'react';
-import {create_note} from "@/server/queries/mongo/note";
-import {zodResolver} from '@hookform/resolvers/zod';
-import {z} from 'zod';
-import {Form, FormField, FormItem, FormControl} from '../ui/form';
-import {Input} from '../ui/input';
-import {Command, Send} from "lucide-react";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import { create_note } from "@/server/queries/mongo/note";
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Form, FormField, FormItem, FormControl } from '../ui/form';
+import { Input } from '../ui/input';
+import { Command, Send } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
     Dialog,
     DialogContent,
@@ -16,7 +16,7 @@ import {
     DialogTitle,
     DialogTrigger
 } from "@/components/ui/dialog";
-import {useForm} from "react-hook-form";
+import { useForm } from "react-hook-form";
 
 export const NOTE_ENUM = ["NEUTRAL", "POSITIVE", "NEGATIVE"] as const;
 
@@ -34,7 +34,7 @@ type Props = {
     parent_type: string;
 };
 
-const CreateNoteModal = ({parent_id, parent_type, isOpen, setIsOpen}: Props) => {
+const CreateNoteModal = ({ parent_id, parent_type, isOpen, setIsOpen }: Props) => {
     const form = useForm<z.infer<typeof noteSchema>>({
         resolver: zodResolver(noteSchema),
         defaultValues: {
@@ -47,7 +47,7 @@ const CreateNoteModal = ({parent_id, parent_type, isOpen, setIsOpen}: Props) => 
 
     const addNote = async (data: z.infer<typeof noteSchema>) => {
         try {
-            const response = await create_note({...data});
+            const response = await create_note({ ...data });
             console.log(response);
         } catch (error) {
             console.log(error);
@@ -61,7 +61,7 @@ const CreateNoteModal = ({parent_id, parent_type, isOpen, setIsOpen}: Props) => 
                 <DialogHeader className="flex flex-row gap-4 items-center">
                     <div
                         className="flex aspect-square w-[52px] items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                        <Command/>
+                        <Command />
                     </div>
                     <div className="">
                         <DialogTitle className="text-2xl uppercase">Edit Job</DialogTitle>
@@ -74,7 +74,7 @@ const CreateNoteModal = ({parent_id, parent_type, isOpen, setIsOpen}: Props) => 
                         <div className="flex items-center w-full gap-2">
                             <FormField
                                 name="type"
-                                render={({field}) => (
+                                render={({ field }) => (
                                     <FormItem>
                                         <FormControl>
                                             <Select
@@ -84,7 +84,7 @@ const CreateNoteModal = ({parent_id, parent_type, isOpen, setIsOpen}: Props) => 
                                             >
                                                 <SelectTrigger
                                                     className="border-zinc-200 focus:outline-none rounded-xl">
-                                                    <SelectValue/>
+                                                    <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     {NOTE_ENUM.map(type => (
@@ -100,7 +100,7 @@ const CreateNoteModal = ({parent_id, parent_type, isOpen, setIsOpen}: Props) => 
                             <FormField
                                 control={form.control}
                                 name="text"
-                                render={({field}) => (
+                                render={({ field }) => (
                                     <FormItem className="flex-1">
                                         <FormControl>
                                             <Input
@@ -120,7 +120,7 @@ const CreateNoteModal = ({parent_id, parent_type, isOpen, setIsOpen}: Props) => 
                             // disabled={!newNote.trim()}
                             className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 text-brand-600 hover:bg-brand-50 rounded-lg transition-all disabled:opacity-30"
                         >
-                            <Send className="w-3.5 h-3.5"/>
+                            <Send className="w-3.5 h-3.5" />
                         </button>
                     </form>
                 </Form>

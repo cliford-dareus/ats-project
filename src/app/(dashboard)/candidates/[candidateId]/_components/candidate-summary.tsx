@@ -69,7 +69,7 @@ const CandidateSummary = ({ data, softSkills, technicalSkills, resumeSummary }: 
 
                 {/* Bio & Resume Summary */}
                 <div className="bg-white rounded-2xl border border-zinc-200 p-8 shadow-sm space-y-4">
-                    <h3 className="font-bold text-lg text-zinc-900 tracking-tight flex items-center gap-2">
+                    <h3 className="font-bold text-zinc-900 flex items-center gap-2 text-brand-dark uppercase tracking-widest">
                         <FileText className="w-5 h-5 text-brand-600" />
                         Candidate Summary & Background
                     </h3>

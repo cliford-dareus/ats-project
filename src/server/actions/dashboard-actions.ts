@@ -22,20 +22,20 @@ import { subDays, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { JOB_STAGES } from "@/zod";
 
 const stageOrder = [
-  "Applied",
-  "New Candidate",
-  "Screening",
-  "Phone Interview",
-  "Interview",
-  "Offer",
-  "Hired",
-  "Drafted"
+    "Applied",
+    "New Candidate",
+    "Screening",
+    "Phone Interview",
+    "Interview",
+    "Offer",
+    "Hired",
+    "Drafted"
 ] as const;
 
 type StageName = typeof stageOrder[number];
 
 export async function getDashboardMetrics() {
-    const { orgId , orgSlug } = await auth();
+    const { orgId, orgSlug } = await auth();
     if (!orgId) throw new Error("Unauthorized");
 
     const now = new Date();
@@ -495,9 +495,9 @@ export async function getRecruitmentFunnel() {
     ];
 
     return stageOrder
-      .map(stage => aggregated[stage] ?? {
-        stage: stage , count: 0, conversion: 0
-      })
+        .map(stage => aggregated[stage] ?? {
+            stage: stage, count: 0, conversion: 0
+        })
         .sort((a, b) => stageOrder.indexOf(a.stage) - stageOrder.indexOf(b.stage)) as { stage: JOB_STAGES; count: number; conversion: number }[]
 };
 

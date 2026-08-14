@@ -1,4 +1,4 @@
-import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
     ChevronDown,
     Mail,
@@ -19,7 +19,7 @@ import {
     Eye,
     Plus
 } from "lucide-react";
-import {CustomTabsTrigger, Tabs, TabsContent, TabsList} from "@/components/ui/tabs";
+import { CustomTabsTrigger, Tabs, TabsContent, TabsList } from "@/components/ui/tabs";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -28,12 +28,12 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import {Button} from "@/components/ui/button";
-import {Badge} from "@/components/ui/badge";
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {Separator} from "@/components/ui/separator";
-import {Progress} from "@/components/ui/progress";
-import {Textarea} from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
 import { get_application_by_id_action } from "@/server/actions/application_actions";
 import { get_candidate_by_id_action } from "@/server/actions/candidates-actions";
 import Link from "next/link";
@@ -45,8 +45,8 @@ type Props = {
     }
 };
 
-const Page = async ({params}: Props) => {
-    const {applicationId, candidateId} = await params;
+const Page = async ({ params }: Props) => {
+    const { applicationId, candidateId } = await params;
 
     const applicationResult = await get_application_by_id_action(Number(applicationId));
     const candidateResult = await get_candidate_by_id_action(Number(candidateId));
@@ -101,7 +101,7 @@ const Page = async ({params}: Props) => {
                     <div className="flex justify-between items-start">
                         <div className="flex items-center gap-6">
                             <Avatar className="w-20 h-20">
-                                <AvatarImage src="https://github.com/shadcn.png"/>
+                                <AvatarImage src="https://github.com/shadcn.png" />
                                 <AvatarFallback className="text-xl font-semibold">
                                     {candidate?.name?.split(' ').map((n: string) => n[0]).join('')}
                                 </AvatarFallback>
@@ -112,18 +112,18 @@ const Page = async ({params}: Props) => {
                                     <div className="flex items-center gap-6 text-sm text-gray-600 mt-2">
                                         {candidate?.email && (
                                             <div className="flex items-center gap-2">
-                                                <Mail size={16}/>
+                                                <Mail size={16} />
                                                 <span>{candidate.email}</span>
                                             </div>
                                         )}
                                         {candidate?.phone && (
                                             <div className="flex items-center gap-2">
-                                                <Phone size={16}/>
+                                                <Phone size={16} />
                                                 <span>{candidate.phone}</span>
                                             </div>
                                         )}
                                         <div className="flex items-center gap-2">
-                                            <Calendar size={16}/>
+                                            <Calendar size={16} />
                                             <span>Applied {new Date(candidate?.created_at || '').toLocaleDateString()}</span>
                                         </div>
                                     </div>
@@ -164,12 +164,12 @@ const Page = async ({params}: Props) => {
                                     <Button className="gap-2">
                                         <CheckCircle size={16} />
                                         <span>Advance</span>
-                                        <ChevronDown size={16}/>
+                                        <ChevronDown size={16} />
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                     <DropdownMenuLabel>Advance Candidate</DropdownMenuLabel>
-                                    <DropdownMenuSeparator/>
+                                    <DropdownMenuSeparator />
                                     <DropdownMenuItem>
                                         <Eye size={16} className="mr-2" />
                                         Move to Screening
@@ -198,12 +198,12 @@ const Page = async ({params}: Props) => {
                                     <Button variant="destructive" className="gap-2">
                                         <XCircle size={16} />
                                         <span>Reject</span>
-                                        <ChevronDown size={16}/>
+                                        <ChevronDown size={16} />
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                     <DropdownMenuLabel>Rejection Reasons</DropdownMenuLabel>
-                                    <DropdownMenuSeparator/>
+                                    <DropdownMenuSeparator />
                                     <DropdownMenuItem>
                                         <AlertCircle size={16} className="mr-2" />
                                         Not qualified

@@ -2,12 +2,17 @@ import { db } from "@/drizzle/db";
 import { applications, attachments, candidates, interviews } from "@/drizzle/schema";
 import { and, eq, inArray, sql, SQL } from "drizzle-orm";
 import { CACHE_TAGS, dbCache, getGlobalTag, getIdTag, revalidateDbCache } from "@/lib/cache";
-import { z } from "zod";
 import { filterCandidateSchema, newCandidateFormSchema, updateCandidateSchema } from "@/zod";
+import { z } from "zod";
 
 export const create_candidate = async (data: z.infer<typeof newCandidateFormSchema>) => {
     const [candidate] = await db.insert(candidates)
-        .values({ ...data, cv_path: data.resume as string, organization: data.organization, subdomain: data.subdomain })
+        .values({
+            ...data,
+            cv_path: data.resume as string,
+            organization: data.organization,
+            subdomain: data.subdomain,
+        })
         .$returningId();
     revalidateDbCache({
         tag: CACHE_TAGS.candidates,
@@ -27,7 +32,7 @@ export const update_candidate = async (data: z.infer<typeof updateCandidateSchem
             // ...(data.profession && { profession: data.profession }),
             ...(data.subdomain && { subdomain: data.subdomain }),
         })
-        .where(eq(candidates.id, id))
+        .where(eq(candidates.id, data.id))
 
     revalidateDbCache({
         tag: CACHE_TAGS.candidates,

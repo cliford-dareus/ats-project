@@ -11,6 +11,14 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { CACHE_TAGS, revalidateDbCache } from "@/lib/cache";
 
+type CompletedNotes = {
+    note_text: string;
+    note_type: string;
+    note_parent_id: string;
+    created_by: string;
+    author: string;
+    type: "POSITIVE" | "NEGATIVE" | "NEUTRAL";
+};
 
 export const create_note = async (unsafeData: z.infer<typeof noteSchema>) => {
     try {
@@ -38,12 +46,17 @@ export const create_note = async (unsafeData: z.infer<typeof noteSchema>) => {
     }
 };
 
-
 export const get_candidate_notes = async (parent_id: string) => {
     try {
         await mongodb();
+        const completeNotes: CompletedNotes[] = [];
+        
         const notes = await Note.find({ note_parent_id: parent_id });
-        return JSON.stringify(notes);
+        for (const note of notes) {
+            const copy = { ...note._doc };
+            completeNotes.push(copy);
+        }
+        return JSON.stringify(completeNotes);
     } catch (error) {
         console.log(error);
     }
@@ -54,7 +67,7 @@ export const get_application_notes = async ({ id, limit, offset }: { id: number,
         await mongodb();
         const note_id = 'application' + "_" + id
 
-        const completeNotes: any[] = [];
+        const completeNotes: CompletedNotes[] = [];
 
         const notes = await Note.find({ note_id: note_id }).limit(limit).skip(offset).sort({ created_at: -1 });
         for (const note of notes) {
