@@ -128,6 +128,7 @@ const ApplyForm = ({ jobId, subdomain }: { jobId: number; subdomain: string }) =
                     candidate: { id: response?.candidate_id, cv_path: response?.file_url },
                     job: {
                         id: response?.job_id,
+                        job_name: response?.job_name,
                         job_description: response?.job_description
                     },
                     settings: {
