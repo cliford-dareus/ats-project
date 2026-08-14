@@ -2,7 +2,7 @@
 
 import { FormErrors } from "@/types";
 import { create_job_action } from "@/server/actions/job-listings-actions";
-import { redirect } from "next/navigation";
+// import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 import { canCreateJob } from "@/server/permissions";
 
@@ -69,7 +69,7 @@ export const stepReviewFormAction = async (
         // Create the job listing
         await create_job_action(completeJobData);
 
-        console.log( completeJobData);
+        console.log(completeJobData);
         // The create_job_action will handle the redirect
         return undefined;
 
@@ -81,53 +81,50 @@ export const stepReviewFormAction = async (
     }
 };
 
-export const saveDraftAction = async (
-    prevState: FormErrors | undefined,
-    formData: FormData
-) => {
-    const { userId, orgId } = await auth();
-    const canCreate = await canCreateJob(userId);
+// export const saveDraftAction = async (prevState: FormErrors | undefined,formData: FormData) => {
+//     const { userId, orgId } = await auth();
+//     const canCreate = await canCreateJob(userId);
 
-    if (!userId || !orgId || !canCreate) {
-        return {
-            general: "You are not authorized to save a draft"
-        };
-    }
+//     if (!userId || !orgId || !canCreate) {
+//         return {
+//             general: "You are not authorized to save a draft"
+//         };
+//     }
 
-    try {
-        // Here you would save the job as a draft
-        // This could be stored in a separate drafts table or with a status field
+//     try {
+//         // Here you would save the job as a draft
+//         // This could be stored in a separate drafts table or with a status field
 
-        const jobInfoData = formData.get('jobInfo');
-        const jobTechnologyData = formData.get('jobTechnology');
-        const jobStagesData = formData.get('jobStages');
+//         const jobInfoData = formData.get('jobInfo');
+//         const jobTechnologyData = formData.get('jobTechnology');
+//         const jobStagesData = formData.get('jobStages');
 
-        if (!jobInfoData) {
-            return {
-                general: "No job data to save"
-            };
-        }
+//         if (!jobInfoData) {
+//             return {
+//                 general: "No job data to save"
+//             };
+//         }
 
-        const jobInfo = JSON.parse(jobInfoData as string);
-        const jobTechnology = jobTechnologyData ? JSON.parse(jobTechnologyData as string) : [];
-        const jobStages = jobStagesData ? JSON.parse(jobStagesData as string) : [];
+//         const jobInfo = JSON.parse(jobInfoData as string);
+//         const jobTechnology = jobTechnologyData ? JSON.parse(jobTechnologyData as string) : [];
+//         const jobStages = jobStagesData ? JSON.parse(jobStagesData as string) : [];
 
-        // Save as draft (you'll need to implement this in your queries)
-        // await save_job_draft({
-        //     ...jobInfo,
-        //     jobTechnology,
-        //     jobStages,
-        //     organization: orgId,
-        //     userId: userId,
-        //     status: 'draft'
-        // });
+//         // Save as draft (you'll need to implement this in your queries)
+//         // await save_job_draft({
+//         //     ...jobInfo,
+//         //     jobTechnology,
+//         //     jobStages,
+//         //     organization: orgId,
+//         //     userId: userId,
+//         //     status: 'draft'
+//         // });
 
-        redirect('/jobs?tab=drafts');
+//         redirect('/jobs?tab=drafts');
 
-    } catch (error) {
-        console.error('Error saving draft:', error);
-        return {
-            general: "There was an error saving your draft. Please try again."
-        };
-    }
-};
+//     } catch (error) {
+//         console.error('Error saving draft:', error);
+//         return {
+//             general: "There was an error saving your draft. Please try again."
+//         };
+//     }
+// };

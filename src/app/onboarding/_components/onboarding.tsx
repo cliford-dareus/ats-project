@@ -3,7 +3,7 @@
 import { AnimatePresence } from "motion/react";
 import { useSearchParams } from "next/navigation";
 import Intro from "./intro";
-import CreateOrganization from "./create-organization";
+// import CreateOrganization from "./create-organization";
 import Organization from "./organization";
 import JoinOrganization from "./join-organization";
 import Success from "./success";

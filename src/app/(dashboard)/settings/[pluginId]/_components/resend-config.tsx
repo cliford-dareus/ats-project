@@ -7,10 +7,10 @@ import { Switch } from "@/components/ui/switch";
 import { useAuthenticateProvider, useProviderAuthState } from "@/hooks/use-plugin-registry";
 import { ATSIntegration } from "@/lib/plugin-interfaces";
 import { pluginRegistry } from "@/lib/plugin-registry";
-import { OrgPluginSettings } from "@/types";
 import { Badge } from "lucide-react";
 import { SetStateAction, useEffect, useState } from "react";
 import { ConfigProps } from "./shared/types";
+import ApiKeySection from "./shared/api-key-section";
 
 
 const ResendConfig = ({ pluginId, onSave, settings }: ConfigProps) => {
@@ -22,7 +22,7 @@ const ResendConfig = ({ pluginId, onSave, settings }: ConfigProps) => {
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
     const [domains, setDomains] = useState([]);
-    const [domainsLoading, setDomainsLoading] = useState(false);
+    const [domainsLoading, ] = useState(false);
 
     const provider = pluginRegistry.getProvider(pluginId);
     const INTERGRATIONS = provider?.getIntegrations();
@@ -30,7 +30,7 @@ const ResendConfig = ({ pluginId, onSave, settings }: ConfigProps) => {
         settings.enabledIntegrations
     );
 
-    console.log(INTERGRATIONS)
+    // console.log(INTERGRATIONS, save)
 
     const [config, setConfig] = useState({
         companyName: "",
@@ -63,20 +63,20 @@ const ResendConfig = ({ pluginId, onSave, settings }: ConfigProps) => {
         setApiKey("");
     };
 
-    const loadDomains = async (key) => {
-        setDomainsLoading(true);
-        try {
-            // Real: const res = await fetch("/api/plugins/resend/domains");
-            await new Promise(r => setTimeout(r, 800));
-            setDomains([
-                { name: "mail.acme.com", verified: true },
-                { name: "hiring.acme.com", verified: true },
-                { name: "noreply.acme.com", verified: true },
-            ]);
-        } finally {
-            setDomainsLoading(false);
-        }
-    };
+    // const loadDomains = async (key) => {
+    //     setDomainsLoading(true);
+    //     try {
+    //         // Real: const res = await fetch("/api/plugins/resend/domains");
+    //         await new Promise(r => setTimeout(r, 800));
+    //         setDomains([
+    //             { name: "mail.acme.com", verified: true },
+    //             { name: "hiring.acme.com", verified: true },
+    //             { name: "noreply.acme.com", verified: true },
+    //         ]);
+    //     } finally {
+    //         setDomainsLoading(false);
+    //     }
+    // };
 
     // ── Save ───────────────────────────────────────────────────────────────────
     const handleSave = async () => {
@@ -91,9 +91,9 @@ const ResendConfig = ({ pluginId, onSave, settings }: ConfigProps) => {
         }
     };
 
-    const fromAddress = config.fromAlias && config.fromDomain
-        ? `${config.fromAlias}@${config.fromDomain}`
-        : "";
+    // const fromAddress = config.fromAlias && config.fromDomain
+    //     ? `${config.fromAlias}@${config.fromDomain}`
+    //     : "";
 
     return (
         <div className="relative">
@@ -203,11 +203,12 @@ export default ResendConfig;
 // ─────────────────────────────────────────────────────────────────────────────
 // Sender config
 // ─────────────────────────────────────────────────────────────────────────────
+//@ts-expect-error
 const SenderSection = ({ config, onChange, domains, domainsLoading, auth, }) => {
     const isConnected = auth.status === "authenticated";
-    const domainOptions = domains.length > 0
-        ? domains
-        : [{ name: "No verified domains", verified: false }];
+    // const domainOptions = domains.length > 0
+    //     ? domains
+    //     : [{ name: "No verified domains", verified: false }];
 
     return (
         <section className="bg-card overflow-hidden rounded-md mb-3 border">

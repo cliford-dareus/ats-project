@@ -11,7 +11,6 @@ import {
     Calendar,
     Clock,
     Trash2,
-    Eye,
     Share
 } from "lucide-react";
 import { format } from 'date-fns';

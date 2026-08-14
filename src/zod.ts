@@ -31,7 +31,7 @@ export const jobFormSchema = z.object({
     jobStages: z.array(
         z.object({
             stage_name: JOB_STAGES,
-            stage_assign_to: z.number(),
+            stage_assign_to: z.string(),
             color: z.string(),
             need_schedule: z.boolean().optional(),
         })),

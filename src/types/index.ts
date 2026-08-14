@@ -140,7 +140,7 @@ export interface ApplicationType {
 
     candidate: CandidateType;
     interviews: InterviewType[];
-    attachments: any[]
+    attachments: { id: number; file_name: string; file_type: string; file_url: string }[]
 };
 
 export type JobListingWithCandidatesType = {

@@ -2,8 +2,22 @@
 
 import React from "react";
 import { Search } from "lucide-react";
+import { OpenJobResponseType } from "@/types";
 
-const Filter = ({ openJobs, searchQuery, setSearchQuery, departmentFilter, setDepartmentFilter, locationFilter, setLocationFilter, typeFilter, setTypeFilter, activeTheme }) => {
+type FilterProps = {
+    openJobs: OpenJobResponseType[];
+    searchQuery: string;
+    setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
+    departmentFilter: string;
+    setDepartmentFilter: React.Dispatch<React.SetStateAction<string>>;
+    locationFilter: string;
+    setLocationFilter: React.Dispatch<React.SetStateAction<string>>;
+    typeFilter: string;
+    setTypeFilter: React.Dispatch<React.SetStateAction<string>>;
+    activeTheme: {primaryColor: string};
+};
+
+const Filter = ({ openJobs, searchQuery, setSearchQuery, departmentFilter, setDepartmentFilter, locationFilter, setLocationFilter, typeFilter, setTypeFilter, activeTheme }: FilterProps) => {
     const departments = ['All', ...new Set(openJobs.map(j => j.department))];
     const locations = ['All', ...new Set(openJobs.map(j => j.location))];
     const types = ['All', ...new Set(openJobs.map(j => j.type))];
@@ -29,7 +43,7 @@ const Filter = ({ openJobs, searchQuery, setSearchQuery, departmentFilter, setDe
                     style={{ '--tw-ring-color': `${activeTheme.primaryColor}33` } as React.CSSProperties}
                 >
                     <option value="All">All Departments</option>
-                    {departments.filter(d => d !== 'All').map(d => <option key={d} value={d}>{d}</option>)}
+                    {departments.filter(d => d !== 'All').map(d => <option key={d} value={String(d)}>{d}</option>)}
                 </select>
                 <select
                     value={locationFilter}
@@ -47,7 +61,7 @@ const Filter = ({ openJobs, searchQuery, setSearchQuery, departmentFilter, setDe
                     style={{ '--tw-ring-color': `${activeTheme.primaryColor}33` } as React.CSSProperties}
                 >
                     <option value="All">All Job Types</option>
-                    {types.filter(t => t !== 'All').map(t => <option key={t} value={t}>{t}</option>)}
+                    {types.filter(t => t !== 'All').map(t => <option key={t} value={t!}>{t}</option>)}
                 </select>
             </div>
         </div>

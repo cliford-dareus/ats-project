@@ -2,8 +2,9 @@ import { useAuthenticateProvider, useProviderAuthState } from "@/hooks/use-plugi
 import ApiKeySection from "./shared/api-key-section";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ConfigProps } from "./shared/types";
 
-const GoogleConfig = ({ pluginId, onSave, settings }) => {
+const GoogleConfig = ({ pluginId, settings }: ConfigProps) => {
     const authenticate = useAuthenticateProvider();
     const auth = useProviderAuthState("google");
     const isConnected = auth.status === "authenticated";
@@ -13,8 +14,8 @@ const GoogleConfig = ({ pluginId, onSave, settings }) => {
     const [saved, setSaved] = useState(false);
 
     useEffect(() => {
-        if (settings?.apiKey) {
-            setApiKey(settings.apiKey);
+        if (settings?.credentials?.apiKey) {
+            setApiKey(settings.credentials.apiKey);
         }
     }, [settings]);
 
@@ -25,11 +26,13 @@ const GoogleConfig = ({ pluginId, onSave, settings }) => {
             // because authenticate() calls pluginRegistry.stateManager.setState()
             // which triggers useSyncExternalStore re-renders everywhere
         } catch (e) {
-            // auth.status is now "error", auth.error has the message
+            // auth.status is now "error", auth.error has the 
+            const error = e as Error;
+            console.error(error);
         }
     };
 
-    const handleDisconnect = async() => {
+    const handleDisconnect = async () => {
         setApiKey("");
         await authenticate("google", { apiKey: apiKey });
     };

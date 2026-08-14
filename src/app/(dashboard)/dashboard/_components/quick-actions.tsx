@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
     Plus,
     Users,
@@ -13,9 +12,6 @@ import {
     Upload
 } from "lucide-react";
 import Link from "next/link";
-import { Separator } from '@/components/ui/separator';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { UpcomingInterview } from './dashboard';
 
 interface QuickAction {
@@ -27,7 +23,7 @@ interface QuickAction {
     badge?: string;
 };
 
-const QuickActions = ({upcomingInterviews}: {upcomingInterviews?: UpcomingInterview[]}) => {
+const QuickActions = ({}: {upcomingInterviews?: UpcomingInterview[]}) => {
     const actions: QuickAction[] = [
         {
             title: "Post New Job",

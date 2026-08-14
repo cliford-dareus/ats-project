@@ -3,22 +3,23 @@
 import { useState } from 'react';
 import ResendConfig from './resend-config';
 import GoogleConfig from './google-config';
+import { InstalledPlugin, OrgPluginSettings } from '@/types';
 
 type Props = {
-    plugin: any;
+    plugin: InstalledPlugin;
     organizationId: string;
-    initialSettings: any;
+    initialSettings: OrgPluginSettings;
 };
 
 export default function PluginConfigClient({
     plugin,
-    organizationId,
+    // organizationId,
     initialSettings
 }: Props) {
     const [settings, setSettings] = useState(initialSettings);
-    const [saving, setSaving] = useState(false);
+    const [, setSaving] = useState(false);
 
-    const handleSave = async (newSettings: any) => {
+    const handleSave = async (newSettings: OrgPluginSettings) => {
         setSaving(true);
         try {
             // await updatePluginSettings(organizationId, plugin.id, newSettings);
@@ -36,7 +37,7 @@ export default function PluginConfigClient({
         <div className="space-y-8">
             <div>
                 <h1 className="text-3xl font-bold uppercase tracking-tight">{plugin.name} Configuration</h1>
-                <p className="text-muted-foreground">{plugin.desc}</p>
+                <p className="text-muted-foreground">{plugin.description}</p>
             </div>
 
             {plugin.id === 'resend' && (

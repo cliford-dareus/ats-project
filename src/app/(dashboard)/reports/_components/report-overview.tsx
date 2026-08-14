@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import {
-    TrendingUp,
+    // TrendingUp,
     Users,
     Briefcase,
     Target,
@@ -16,8 +16,9 @@ import {
 } from "lucide-react";
 import { Area, AreaChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { cn } from '@/lib/utils';
-import { ExportUtils } from "@/lib/export-utils";
+// import { ExportUtils } from "@/lib/export-utils";
 import { ReportData } from './reports-component';
+import { format } from 'date-fns';
 
 interface Props {
     reportData: ReportData;
@@ -30,16 +31,22 @@ const ReportOverview = ({ reportData }: Props) => {
     // AI Health Check state
     const [isGeneratingAiReport, setIsGeneratingAiReport] = useState(false);
     const [aiHealthReport, setAiHealthReport] = useState<string | null>(null);
-
-    const handleExportData = (dataType: string) => {
-        try {
-            const exportData = ExportUtils.exportReportData(dataType, reportData);
-            ExportUtils.exportToCSV(exportData);
-        } catch (error) {
-            console.error('Export failed:', error);
-            alert('Failed to export data. Please try again.');
-        }
+    
+    const handleGenerateAiReport = () => {
+        setIsGeneratingAiReport(true);
+        setAiHealthReport(null);
+        setTimeRange('30d');
     };
+
+    // const handleExportData = (dataType: string) => {
+    //     try {
+    //         const exportData = ExportUtils.exportReportData(dataType, reportData);
+    //         ExportUtils.exportToCSV(exportData);
+    //     } catch (error) {
+    //         console.error('Export failed:', error);
+    //         alert('Failed to export data. Please try again.');
+    //     }
+    // };
 
     // const keyMetrics = [
     //     {
@@ -79,17 +86,17 @@ const ReportOverview = ({ reportData }: Props) => {
     //     }
     // ];
 
-    const getTrendIcon = (trend: number) => {
-        return trend > 0 ? (
-            <TrendingUp className="h-4 w-4 text-green-600" />
-        ) : (
-            <TrendingDown className="h-4 w-4 text-red-600" />
-        );
-    };
+    // const getTrendIcon = (trend: number) => {
+    //     return trend > 0 ? (
+    //         <TrendingUp className="h-4 w-4 text-green-600" />
+    //     ) : (
+    //         <TrendingDown className="h-4 w-4 text-red-600" />
+    //     );
+    // };
 
-    const getTrendColor = (trend: number) => {
-        return trend > 0 ? 'text-green-600' : 'text-red-600';
-    };
+    // const getTrendColor = (trend: number) => {
+    //     return trend > 0 ? 'text-green-600' : 'text-red-600';
+    // };
 
     return (
         <div className="space-y-6">
@@ -187,7 +194,7 @@ const ReportOverview = ({ reportData }: Props) => {
                         </div>
 
                         <button
-                            // onClick={handleGenerateAiReport}
+                            onClick={handleGenerateAiReport}
                             disabled={isGeneratingAiReport}
                             className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-2xl text-xs font-bold transition-all shadow-md shadow-brand-500/20 flex items-center gap-2 disabled:opacity-50"
                         >
@@ -290,7 +297,7 @@ const ReportOverview = ({ reportData }: Props) => {
                                         dataKey="count"
                                     >
                                         {reportData.breakdown.applicationsByStage.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.stageColor} />
+                                            <Cell key={`cell-${index}`} fill={entry.stageColor!} />
                                         ))}
                                     </Pie>
                                     <Tooltip
@@ -307,7 +314,7 @@ const ReportOverview = ({ reportData }: Props) => {
                                     className="flex items-center justify-between p-2 rounded-xl bg-zinc-50 border border-zinc-100"
                                 >
                                     <span className="flex items-center gap-1.5 text-zinc-600">
-                                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.stageColor }} />
+                                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.stageColor! }} />
                                         {item.stageName}
                                     </span>
                                     <span className="text-zinc-900 font-extrabold">{item.count}</span>
@@ -358,19 +365,19 @@ const ReportOverview = ({ reportData }: Props) => {
                                 <div key={index} className="p-4 bg-zinc-50/80 rounded-2xl border border-zinc-200/60 flex items-center justify-between gap-4">
                                     <div>
                                         <h4 className="text-xs font-bold text-zinc-900">{job.jobTitle}</h4>
-                                        <p className="text-[11px] text-zinc-500 font-medium">{job.department} • {job.location}</p>
+                                        <p className="text-[11px] text-zinc-500 font-medium">{job.job_department} • {job.job_location}</p>
                                     </div>
 
                                     <div className="flex items-center gap-3">
                                         <div className="text-right">
                                             <p className="text-xs font-extrabold text-brand-700">{job.count} Applicants</p>
-                                            <p className="text-[10px] text-zinc-400 font-medium">Posted {job.postedDate}</p>
+                                            <p className="text-[10px] text-zinc-400 font-medium">Posted {format(job.job_created_at, 'MMM d, yyyy')}</p>
                                         </div>
                                         <span className={cn(
                                             "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase",
-                                            job.status === 'Open' ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-zinc-100 text-zinc-600"
+                                            job.job_status === 'OPEN' ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-zinc-100 text-zinc-600"
                                         )}>
-                                            {job.status}
+                                            {job.job_status}
                                         </span>
                                     </div>
                                 </div>

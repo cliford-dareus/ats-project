@@ -12,7 +12,7 @@ const ProviderConfig = async ({ params }: Props) => {
     if (!orgId) {
         return
     }
-    
+
     const { flags, installed } = await getOrgPluginState(orgId)
     const available = installed.find(p => p.id === pluginId);
     if (!available || !flags[pluginId]) {

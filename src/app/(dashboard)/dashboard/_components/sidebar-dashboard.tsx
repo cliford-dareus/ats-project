@@ -1,26 +1,17 @@
 "use client";
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
-    Calendar,
-    Users,
-    BriefcaseBusiness,
-    Clock,
-    Target,
-    Activity,
-    RefreshCw,
     Search,
     Briefcase,
     TrendingUp,
     Plus,
     ArrowUpRight,
     Sparkles,
-    Zap,
     Settings,
     PartyPopper
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 
 
@@ -94,7 +85,7 @@ const SidebarDashboard = () => {
                         </div>
 
                         <p className="text-[11px] text-zinc-500 font-medium leading-relaxed my-2">
-                            Personalize your company's profile, invite team members and setup your company's career page.
+                            Personalize your company&#39;s profile, invite team members and setup your company&#39;s career page.
                         </p>
 
 
@@ -116,7 +107,7 @@ const SidebarDashboard = () => {
                     <div className="space-y-4">
                         <div className='flex items-center gap-1'>
                             <PartyPopper size={20} className='text-white'/>
-                            <h3 className="text-2xl font-bold text-white tracking-tight">What's New</h3>
+                            <h3 className="text-2xl font-bold text-white tracking-tight">What&#39;s New</h3>
                         </div>
                         <p className="text-zinc-400 text-sm max-w-md">
                             Connect with over 2,000+ apps via our Zapier integration to build even more powerful workflows.

@@ -5,7 +5,7 @@ type Props = {
     children: React.ReactNode;
     title: string;
     subtitle: string;
-    icon: React.ComponentType<any>;
+    icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
     colorClass?: string;
 };
 

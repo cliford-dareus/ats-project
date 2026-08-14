@@ -21,21 +21,10 @@ import {
 import { subDays, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { JOB_STAGES } from "@/zod";
 
-const stageOrder = [
-    "Applied",
-    "New Candidate",
-    "Screening",
-    "Phone Interview",
-    "Interview",
-    "Offer",
-    "Hired",
-    "Drafted"
-] as const;
-
-type StageName = typeof stageOrder[number];
+// type StageName = typeof stageOrder[number];
 
 export async function getDashboardMetrics() {
-    const { orgId, orgSlug } = await auth();
+    const { orgId } = await auth();
     if (!orgId) throw new Error("Unauthorized");
 
     const now = new Date();
@@ -60,7 +49,7 @@ export async function getDashboardMetrics() {
             .from(candidates)
             .where(
                 and(
-                    eq(candidates.status, 'Hired'),
+                    eq(candidates.status, 'HIRED'),
                     gte(candidates.updated_at, startOfThisMonth)
                 )
             )
@@ -92,7 +81,7 @@ export async function getDashboardMetrics() {
             .from(candidates)
             .where(
                 and(
-                    eq(candidates.status, 'Hired'),
+                    eq(candidates.status, 'HIRED'),
                     gte(candidates.updated_at, startOfLastMonth),
                     lte(candidates.updated_at, endOfLastMonth)
                 )
@@ -132,7 +121,7 @@ export async function getDashboardMetrics() {
 };
 
 export async function getRecentActivity() {
-    const { orgId, orgSlug } = await auth();
+    const { orgId } = await auth();
     if (!orgId) throw new Error("Unauthorized");
 
     const sevenDaysAgo = subDays(new Date(), 7);
@@ -164,7 +153,7 @@ export async function getRecentActivity() {
         .from(candidates)
         .where(
             and(
-                eq(candidates.status, 'Hired'),
+                eq(candidates.status, 'HIRED'),
                 gte(candidates.updated_at, sevenDaysAgo)
             )
         )
@@ -335,7 +324,7 @@ export async function getHiringTrends() {
         .from(candidates)
         .where(
             and(
-                eq(candidates.status, 'Hired'),
+                eq(candidates.status, 'HIRED'),
                 gte(candidates.updated_at, thirtyDaysAgo)
             )
         )
@@ -498,7 +487,8 @@ export async function getRecruitmentFunnel() {
         .map(stage => aggregated[stage] ?? {
             stage: stage, count: 0, conversion: 0
         })
-        .sort((a, b) => stageOrder.indexOf(a.stage) - stageOrder.indexOf(b.stage)) as { stage: JOB_STAGES; count: number; conversion: number }[]
+        .sort((a, b) => stageOrder.indexOf(a.stage) - stageOrder.indexOf(b.stage)) as
+        { stage: typeof JOB_STAGES._type; count: number; conversion: number; stageColor: string }[]
 };
 
 export async function getTimeToHireMetrics() {
@@ -593,7 +583,7 @@ export async function getPerformanceMetrics() {
             .from(candidates)
             .where(
                 and(
-                    eq(candidates.status, 'Hired'),
+                    eq(candidates.status, 'HIRED'),
                     gte(candidates.updated_at, thirtyDaysAgo)
                 )
             ),

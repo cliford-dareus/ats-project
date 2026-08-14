@@ -107,7 +107,7 @@ const Kanban = ({ data, stages, jobDetails }: Props) => {
     // ────────────────────────────────────────────────
     // Drag & Drop Logic
     // ────────────────────────────────────────────────
-    const handleDrop = async (e: DragEvent<HTMLDivElement>, element: any, stageId: number, column: any, application_id: number = 1) => {
+    const handleDrop = async (e: DragEvent<HTMLDivElement>, element: HTMLDivElement, stageId: number, column: typeof JOB_STAGES._type | null, application_id: number = 1) => {
         e.preventDefault();
         setActive(false);
         const cardId = Number(e.dataTransfer.getData("cardId"));
@@ -125,7 +125,7 @@ const Kanban = ({ data, stages, jobDetails }: Props) => {
         const { updatedCards, payload } = computeReorder(
             applications,
             cardId,
-            column,           // this column is the drop target
+            column!,           // this column is the drop target
             dropStageId,
             beforeId,
             stages
@@ -160,7 +160,7 @@ const Kanban = ({ data, stages, jobDetails }: Props) => {
             // );
 
             await automationEngine.evaluate(
-                { type: "stage_changed", candidateId: application_id.toString(), fromStage: "string", toStage: column },
+                { type: "stage_changed", candidateId: application_id.toString(), fromStage: "string", toStage: column! },
                 {
                     organization_id: applications[0]?.organization,
                     user_id: (applications[0]?.candidate).toString(),

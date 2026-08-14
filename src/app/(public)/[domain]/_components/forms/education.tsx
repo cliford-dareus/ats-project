@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { GraduationCap, Plus, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { FormInput } from "../fields";

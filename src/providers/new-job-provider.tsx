@@ -12,7 +12,15 @@ import { jobFormSchema, jobStageSchema, jobTechSchema } from "@/zod";
 import { z } from "zod";
 
 const defaultJobListing: z.infer<typeof jobFormSchema> = {
-    jobInfo: { job_name: "", job_description: "", job_location: "", salary_up_to: "", department: "", organization: "" },
+    jobInfo: {
+        job_name: "",
+        job_description: "",
+        job_location: "",
+        job_type: "FULL_TIME",
+        salary_up_to: "",
+        department: "",
+        organization: ""
+    },
     jobTechnology: [],
     jobStages: [],
     jobOptional: { job_effective_date: new Date(), job_agency: "" }
@@ -21,7 +29,7 @@ const defaultJobListing: z.infer<typeof jobFormSchema> = {
 const LOCAL_STORAGE_KEY = 'multi-page-form-demo-newDealData';
 
 type newJobContextType = {
-    newJobData: z.infer<typeof jobFormSchema>;
+    newJobData: typeof jobFormSchema._type;
     updateNewJobDetails: (newInfo: any, stage: string) => void;
     updateStageOptions: (newStages: z.infer<typeof jobStageSchema>[]) => void;
     dataLoaded: boolean;
@@ -32,7 +40,7 @@ type newJobContextType = {
 export const NewJobContext = createContext<newJobContextType | null>(null);
 
 export const NewJobContextProvider = ({ children }: { children: React.ReactNode; }) => {
-    const [newJobData, setNewJobData] = useState<z.infer<typeof jobFormSchema>>(defaultJobListing);
+    const [newJobData, setNewJobData] = useState<typeof jobFormSchema._type>(defaultJobListing);
     const [dataLoaded, setDataLoaded] = useState(false);
 
     useEffect(() => {
@@ -55,14 +63,14 @@ export const NewJobContextProvider = ({ children }: { children: React.ReactNode;
             if (stage === "jobTechnology") {
                 setNewJobData({
                     ...newJobData,
-                    [stage]: [...newJobData[stage], newInfo as unknown as z.infer<typeof jobTechSchema>]
+                    [stage]: [...newJobData[stage], newInfo as unknown as typeof jobTechSchema._type]
                 });
             }
 
             if (stage === "jobStages") {
                 setNewJobData({
                     ...newJobData,
-                    [stage]: [...newJobData[stage], newInfo as unknown as z.infer<typeof jobStageSchema>]
+                    [stage]: [...newJobData[stage], newInfo as unknown as typeof jobStageSchema._type]
                 });
             }
         },

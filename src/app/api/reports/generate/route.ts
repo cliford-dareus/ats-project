@@ -32,7 +32,8 @@ export async function POST(request: NextRequest) {
 
         if (fromDate >= toDate) {
             return NextResponse.json({
-                error: 'From date must be before to date'
+                error: 'From date must be before to date',
+                metrics
             }, { status: 400 });
         }
 
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
     }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
     try {
         const { userId } = await auth();
 

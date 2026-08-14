@@ -5,7 +5,7 @@ import { CheckCircle2, Zap } from "lucide-react";
 
 const Success = ({ orgId }: { orgId: string | null }) => {
     const router = useRouter();
-    const [isPending, startTransition] = useTransition();
+    const [, startTransition] = useTransition();
 
     const onFinish = () => {
         startTransition(() => {

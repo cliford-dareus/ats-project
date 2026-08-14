@@ -5,20 +5,19 @@ import Card from "@/components/kanban/card";
 import { ApplicationType, StageResponseType } from "@/types";
 import DropIndicator from "@/components/kanban/drop-indicator";
 import { cn } from "@/lib/utils";
+import { JOB_STAGES } from "@/zod";
 
 type Props = {
     stage: StageResponseType;
     applications: ApplicationType[];
     showTriggers: boolean;
     setShowTriggers: Dispatch<SetStateAction<boolean>>;
-
     isEnabled: boolean;
-
     jobId: number;
     jobDetails: { jobName: string; department: string };
     active: boolean;
     setActive: Dispatch<SetStateAction<boolean>>;
-    handleDrop: (e: React.DragEvent<HTMLDivElement>, element: any, stageId: number, column: any) => void;
+    handleDrop: (e: React.DragEvent<HTMLDivElement>, element: HTMLDivElement, stageId: number, column: typeof JOB_STAGES._type | null) => void;
 };
 
 export default function Column({

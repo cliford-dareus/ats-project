@@ -1,6 +1,6 @@
 'use client'
 
-import { useOrganization, useUser } from '@clerk/nextjs';
+import { useOrganization } from '@clerk/nextjs';
 import { DataTable } from "@/app/(dashboard)/settings/_components/data-table";
 import { columns, OrganizationMember } from "@/app/(dashboard)/settings/_components/colunm";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ const OrgMembersParams = {
 };
 
 const Page = () => {
-    const { user } = useUser();
+    // const { user } = useUser();
     const { isLoaded, memberships } = useOrganization(OrgMembersParams);
 
     if (!isLoaded) {
@@ -135,7 +135,7 @@ const Page = () => {
                                 <DialogHeader>
                                     <DialogTitle>Create Organization</DialogTitle>
                                     <DialogDescription>
-                                        Make changes to your profile here. Click save when you're done.
+                                        Make changes to your profile here. Click save when you&#39;re done.
                                     </DialogDescription>
                                 </DialogHeader>
                                 <div className="grid gap-4 py-4">

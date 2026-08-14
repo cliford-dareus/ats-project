@@ -20,7 +20,7 @@ type Props = {
     jobs: JobResponseType[];
 };
 
-const JobPreview = ({ data, jobs }: Props) => {
+const JobPreview = ({ data }: Props) => {
     const router = useRouter();
     const [isEditJobOpen, setIsEditJobOpen] = useState(false);
 
@@ -104,7 +104,8 @@ const JobPreview = ({ data, jobs }: Props) => {
                                     <Users className="w-4 h-4" />
                                     <span className="text-xs font-bold uppercase tracking-wider">Applicants</span>
                                 </div>
-                                <p className="text-xl font-bold text-zinc-900">{data?.candidatesCount}</p>
+                                {/*<p className="text-xl font-bold text-zinc-900">{data?.candidatesCount}</p>*/}
+                                <p className="text-xl font-bold text-zinc-900">100</p>
                             </div>
                             <div className="bg-zinc-50 p-4 rounded-2xl border border-zinc-100">
                                 <div className="flex items-center gap-2 text-zinc-400 mb-1">

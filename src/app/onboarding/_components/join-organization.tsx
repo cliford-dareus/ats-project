@@ -1,12 +1,8 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Form, FormField } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { useDebounce } from "@/hooks/use-debounce";
+// import { useDebounce } from "@/hooks/use-debounce";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { motion } from "framer-motion";
-import { ArrowLeft, LucideCornerDownLeft, Users } from "lucide-react";
+import { ArrowLeft, Users } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useTransition } from "react";
 import { useForm } from "react-hook-form";
@@ -21,19 +17,18 @@ const inviteeForm = z.object({
 const JoinOrganization = ({ userId }: { userId: string }) => {
     const router = useRouter();
     const inputRef = useRef<HTMLInputElement | null>(null);
-    const showText = useDebounce(true, 800);
     const searchParams = useSearchParams();
-    const [isCreatePending, startCreateTransaction] = useTransition();
+    const [, startCreateTransaction] = useTransition();
     const { createOrganization, setActive } = useOrganizationList();
 
-    const form = useForm<z.infer<typeof inviteeForm>>({
+    useForm<z.infer<typeof inviteeForm>>({
         resolver: zodResolver(inviteeForm),
         defaultValues: {
             orgId: "",
         },
     });
 
-    const join = async (data: z.infer<typeof inviteeForm>) => {
+    const onJoin = async (data: z.infer<typeof inviteeForm>) => {
         startCreateTransaction(async () => {
             try {
                 if (createOrganization) {
@@ -74,9 +69,14 @@ const JoinOrganization = ({ userId }: { userId: string }) => {
                     <p className="text-brand-400 text-xs">A notification will be sent to the team owner.</p>
                 </div>
                 <div className="flex gap-3">
-                    <button onClick={onBack} className="p-4 bg-zinc-100 text-zinc-600 rounded-2xl hover:bg-zinc-200 transition-all"><ArrowLeft className="w-6 h-6" /></button>
                     <button
-                        onClick={onJoin}
+                        // onClick={onBack}
+                        className="p-4 bg-zinc-100 text-zinc-600 rounded-2xl hover:bg-zinc-200 transition-all"
+                    >
+                        <ArrowLeft className="w-6 h-6" />
+                    </button>
+                    <button
+                        onClick={() => onJoin({ orgId: inputRef.current?.value ?? "" })}
                         className="flex-1 py-4 bg-zinc-900 text-white rounded-2xl font-bold hover:bg-zinc-800 transition-all"
                     >
                         Continue to Dashboard

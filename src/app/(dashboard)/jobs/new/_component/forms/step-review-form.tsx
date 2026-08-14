@@ -243,7 +243,7 @@ export default function StepReviewForm() {
 
                 {/* Previous Steps Summary */}
                 <div className="flex flex-col relative h-[calc(100vh_-_200px)]">
-                    <SidePreview />
+                    <SidePreview  departments={[]}/>
                     {/* Publish Confirmation */}
                     {/*<Card className="border-green-200 bg-green-50 w-full">
                         <CardContent className="p-6">

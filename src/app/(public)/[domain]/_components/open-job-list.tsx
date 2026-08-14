@@ -6,7 +6,12 @@ import Filter from "./filter";
 import { useRouter } from "next/navigation";
 import { OpenJobResponseType } from "@/types";
 
-const OpenJobList = ({ openJobs, activeTheme }: { openJobs: OpenJobResponseType[]; activeTheme: any }) => {
+type OpenJobListProps = {
+    openJobs: OpenJobResponseType[];
+    activeTheme: {primaryColor: string};
+};
+
+const OpenJobList = ({ openJobs, activeTheme }: OpenJobListProps) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [departmentFilter, setDepartmentFilter] = useState('All');
     const [locationFilter, setLocationFilter] = useState('All');
@@ -80,7 +85,7 @@ const OpenJobList = ({ openJobs, activeTheme }: { openJobs: OpenJobResponseType[
                             <Search className="w-8 h-8 text-zinc-300" />
                         </div>
                         <h3 className="text-xl font-bold text-zinc-900">No roles found</h3>
-                        <p className="text-zinc-500 mt-2">Try adjusting your search or filters to find what you're looking for.</p>
+                        <p className="text-zinc-500 mt-2">Try adjusting your search or filters to find what you&#39;re looking for.</p>
                         <button
                             onClick={() => {
                                 setSearchQuery('');

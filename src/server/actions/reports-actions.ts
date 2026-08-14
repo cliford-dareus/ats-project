@@ -13,12 +13,9 @@ import {
     count,
     eq,
     gte,
-    lte,
     desc,
     sql,
     and,
-    avg,
-    sum
 } from "drizzle-orm";
 import { subDays, subMonths } from "date-fns";
 
@@ -74,6 +71,10 @@ export async function getReportData() {
         .select({
             jobTitle: job_listings.name,
             jobId: job_listings.id,
+            job_created_at: job_listings.created_at,
+            job_location: job_listings.location,
+            job_status: job_listings.status,
+            job_department: job_listings.department,
             count: count(applications.id),
         })
         .from(applications)
@@ -220,6 +221,10 @@ export async function getReportData() {
             applicationsByJob: applicationsByJob.map(item => ({
                 jobTitle: item.jobTitle,
                 jobId: item.jobId,
+                job_created_at: item.job_created_at,
+                job_location: item.job_location,
+                job_department: item.job_department,
+                job_status: item.job_status,
                 count: item.count
             })),
             applicationsByStage: applicationsByStage.map(item => ({

@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building2, MapPin, DollarSign, FileText } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import SidePreview from "@/app/(dashboard)/jobs/new/_component/side-preview";
-import { get_dept, stepOneFormAction } from "../../step-one/_actions";
+import { stepOneFormAction } from "../../step-one/_actions";
 import { JOB_TYPE } from "@/zod";
 
 const initialState: FormErrors = {};
@@ -109,7 +109,7 @@ const StepOneForm = ({ orgId, departments }: Props) => {
                                     Department
                                 </Label>
                                 <Select
-                                    id="department"
+                                    // id="department"
                                     name="department"
                                     onValueChange={handleSelectDeptChange}
                                     value={newJobData.jobInfo["department"]}
@@ -118,7 +118,7 @@ const StepOneForm = ({ orgId, departments }: Props) => {
                                     <SelectTrigger className="h-11">
                                         <SelectValue placeholder="Select department" />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent id="department">
                                         {departments.map((dept) => (
                                             <SelectItem key={dept.id} value={String(dept.id) || ''}>
                                                 {dept.name}
@@ -152,7 +152,7 @@ const StepOneForm = ({ orgId, departments }: Props) => {
                                     Type
                                 </Label>
                                 <Select
-                                    id="job_type"
+                                    // id="job_type"
                                     name="job_type"
                                     onValueChange={handleSelectJobTypeChange}
                                     value={newJobData.jobInfo["job_type"]}
@@ -161,7 +161,7 @@ const StepOneForm = ({ orgId, departments }: Props) => {
                                     <SelectTrigger className="h-11">
                                         <SelectValue placeholder="Select job type" />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent id="job_type">
                                         {JOB_TYPE.options.map((dept) => (
                                             <SelectItem key={dept} value={String(dept) || ''}>
                                                 {dept}

@@ -9,6 +9,7 @@ import {
 import ReportHistory from './report-history';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import ReportOverview from './report-overview';
+import { JOB_STAGES, JOB_STATUS } from '@/zod';
 
 
 export interface ReportData {
@@ -24,8 +25,16 @@ export interface ReportData {
         monthlyTrends: Array<{ month: string; applications: number }>;
     };
     breakdown: {
-        applicationsByJob: Array<{ jobTitle: string; jobId: number; count: number }>;
-        applicationsByStage: Array<{ stageName: "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | 'Applied' | 'Drafted' | null; stageOrder: number; count: number; stageColor: string }>;
+        applicationsByJob: Array<{
+            jobTitle: string;
+            jobId: number;
+            count: number;
+            job_status: typeof JOB_STATUS._type | null;
+            job_created_at: Date;
+            job_location: string;
+            job_department: number;
+        }>;
+        applicationsByStage: Array<{ stageName: typeof JOB_STAGES._type | null; stageOrder: number; count: number; stageColor: string | null }>;
     };
     analysis: {
         sourceAnalysis: Array<{ source: string; applications: number; hires: number; conversionRate: number }>;

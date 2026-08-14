@@ -1,6 +1,6 @@
 import Dashboard from "@/app/(dashboard)/dashboard/_components/dashboard";
 import { auth, currentUser } from "@clerk/nextjs/server";
-import { getRangeOption, RANGE_OPTIONS } from "@/lib/utils";
+// import { getRangeOption, RANGE_OPTIONS } from "@/lib/utils";
 import {
     getDashboardMetrics,
     getRecentActivity,
@@ -15,15 +15,15 @@ type Props = {
     };
 };
 
-const Page = async ({ searchParams }: Props) => {
-    const { range, rangeFrom, rangeTo } = searchParams ?? {};
+const Page = async ({  }: Props) => {
+    // const { range, rangeFrom, rangeTo } = searchParams ?? {};
     const user = await currentUser();
     const { orgId } = await auth();
 
     if (!orgId || !user) return null;
 
-    const chartRange =
-        getRangeOption(range, rangeFrom, rangeTo) || RANGE_OPTIONS.last_7_days;
+    // const chartRange =
+    //     getRangeOption(range, rangeFrom, rangeTo) || RANGE_OPTIONS.last_7_days;
 
     // Fetch dashboard data
     const [metrics, recentActivity, upcomingInterviews, jobPipeline, recruitmentFunnel, applicationTrend] = await Promise.all([

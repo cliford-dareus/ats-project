@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNewJobContext } from "@/providers/new-job-provider";
-import { Briefcase, Gem, MapPin } from "lucide-react";
+import { Briefcase } from "lucide-react";
 
 type Props = {
     departments: { id: number, organization_id: string, name: string | null }[]
@@ -13,7 +13,8 @@ const StepOneCollapse = ({ departments }: Props) => {
     useEffect(() => {
         if (!departments) return;
         const dep = departments.find(d => d.id == Number(newJobData.jobInfo.department));
-        setDepartment(dep?.name);
+        if (!dep || !dep.name) return;
+        setDepartment(dep.name);
     }, [newJobData, departments])
 
     return (
@@ -25,7 +26,7 @@ const StepOneCollapse = ({ departments }: Props) => {
                 </div>
                 <div>
                     <p className="text-lg font-bold leading-tight">{newJobData.jobInfo.job_name !== "" ? newJobData.jobInfo.job_name : "Job Name"}</p>
-                    <p className="text-zinc-400 text-sm uppercase">{department ?? "DEPARTMENT" }</p>
+                    <p className="text-zinc-400 text-sm uppercase">{department ?? "DEPARTMENT"}</p>
                 </div>
                 <div className="space-y-2 pt-2">
                     <div className="flex items-center justify-between text-xs">
