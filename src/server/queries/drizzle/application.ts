@@ -42,6 +42,7 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
     const [job] = await db
         .select({
             id: job_listings.id,
+            name: job_listings.name,
             description: job_listings.description,
         })
         .from(job_listings)
@@ -205,6 +206,7 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
             success: true,
             candidate_id,
             job_id: job.id,
+            job_name: job.name,
             job_description: job.description,
             application_id: new_application.id,
             file_url: file_key,

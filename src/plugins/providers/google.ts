@@ -51,7 +51,13 @@ class ResumeScoreIntegration implements ATSIntegration {
             return { success: false, error: "No resume file URL found" };
         }
 
-        const res = await score_resume(fileUrl, context.job?.job_name ?? "", context.job?.job_description ?? "", this.apiKey);
+        const res = await score_resume(
+            fileUrl,
+            context.job?.job_name ?? "",
+            context.job?.job_description ?? "",
+            this.apiKey,
+        );
+
         if (!res.success) {
             return { success: false, error: res.error };
         }
@@ -118,7 +124,6 @@ export class GoogleProvider implements ATSPluginProvider {
             pluginRegistry.stateManager.setState(this.id, this.authState);
             throw e;
         }
-
     }
 
     async deauthenticate(): Promise<void> {

@@ -87,7 +87,7 @@ const ApplyForm = ({ jobId, subdomain }: { jobId: number; subdomain: string }) =
         if (currentStep === 2) isValid = await trigger("workExperience");
         if (currentStep === 3) isValid = await trigger("education");
         if (currentStep === 4) isValid = await trigger("references");
-        if (currentStep === 5) isValid = true;
+        if (currentStep === 5) isValid = await trigger("review");
 
         if (isValid) {
             if (currentStep < STEPS.length) {

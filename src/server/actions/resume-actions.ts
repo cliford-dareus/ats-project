@@ -380,7 +380,7 @@ export const score_resume = async (fileUrl: string, job_name: string, job_descri
             success: true,
             data,
         };
-    } catch (error) {
+    } catch (err) {
         return { success: false, error: err?.message || 'Failed to summarize text' };
     }
 };

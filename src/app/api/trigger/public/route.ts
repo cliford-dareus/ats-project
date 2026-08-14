@@ -8,7 +8,7 @@
 
 export const runtime = "nodejs";
 
-import { optional, z } from "zod";
+import { z } from "zod";
 import { NextRequest, NextResponse } from "next/server";
 import { pluginRegistry } from "@/lib/plugin-registry";
 
@@ -107,9 +107,7 @@ function verifyOrigin(req: NextRequest): boolean {
 
 // Looks up the org by subdomain slug.
 // Returns { orgId, orgName } or null if not found.
-async function getOrgBySubdomain(
-    subdomain: string,
-): Promise<{ orgId: string; orgName: string } | null> {
+async function getOrgBySubdomain(subdomain: string): Promise<{ orgId: string; orgName: string } | null> {
     const [org] = await db
         .select({ orgId: organization.clerk_id, orgName: organization.name })
         .from(organization)
@@ -120,13 +118,13 @@ async function getOrgBySubdomain(
 
 // Verifies the job belongs to this org — prevents firing triggers
 // for a job that belongs to a different org.
-async function verifyJobBelongsToOrg(
-    jobId: string,
-    orgId: string,
-): Promise<[boolean, { id: number, job_name: string, job_description: string }]> {
-
+async function verifyJobBelongsToOrg(jobId: string, orgId: string): Promise<[boolean, { id: number; job_name: string; job_description: string }]> {
     const [job] = await db
-        .select({ id: job_listings.id, name: job_listings.name, description: job_listings.description })
+        .select({
+            id: job_listings.id,
+            job_name: job_listings.name,
+            job_description: job_listings.description,
+        })
         .from(job_listings)
         .where(and(eq(job_listings.id, Number(jobId)), eq(job_listings.organization, orgId)))
         .limit(1);
@@ -206,9 +204,6 @@ export async function POST(req: NextRequest) {
         );
     }
 
-    // ── Boot the registry for this org ────────────────────────────────────────
-    await initializePluginSystemServer(org.orgId);
-
     // ── 5. Verify job belongs to this org ──────────────────────────────────────
     const [jobValid, job] = await verifyJobBelongsToOrg(String(context.jobId), org.orgId);
     if (!jobValid) {
@@ -218,59 +213,68 @@ export async function POST(req: NextRequest) {
         );
     }
 
-    // ── 6. Build context — orgId comes from DB, not client ────────────────────
-    const atsContext: ATSContext = {
-        organization_id: org.orgId,          // ← from DB lookup, never from request body
-        user_id: "system",           // no user on public pages
-        // jobId: context.jobId,
-        candidate: context.candidate,
-        job: job,
-        settings: context.settings,
-    };
+    // Temporary code for learning
+    // In the completed version, this would be replaced with actual job verification logic.
+    // it will use a queue worker to boot the registry for this org.
+    // and so it doesn't need to block the response to the app licant.
+    (async () => {
+        try {
+            // ── Boot the registry for this org ────────────────────────────────────────
+            await initializePluginSystemServer(org.orgId);
 
-    // ── 8. Dispatch plugins + automation rules in parallel ─────────────────────
-    const [pluginSettled] = await Promise.allSettled([
-        pluginRegistry.dispatch(event as TriggerEvent, atsContext),
-    ]);
+            // ── 6. Build context — orgId comes from DB, not client ────────────────────
+            const atsContext: ATSContext = {
+                organization_id: org.orgId,          // ← from DB lookup, never from request body
+                user_id: "system",           // no user on public pages
+                // jobId: context.jobId,
+                candidate: context.candidate,
+                job: job,
+                settings: context.settings,
+            };
 
-    const pluginResults =
-        pluginSettled.status === "fulfilled" ? pluginSettled.value : [];
+            // ── 8. Dispatch plugins ─────────────────────
+            const [pluginSettled] = await Promise.allSettled([
+                pluginRegistry.dispatch(event as TriggerEvent, atsContext),
+            ]);
 
-    const [fired_resume_score] = pluginResults.filter((result) => result.integrationId === "resume-score");
-    const payload = fired_resume_score.result.data as ScorePayload;
+            const pluginResults = pluginSettled.status === "fulfilled" ? pluginSettled.value : [];
 
-    console.log("[trigger/public] fired_resume_score:", fired_resume_score);
+            const [fired_resume_score] = pluginResults.filter((result) => result.integrationId === "resume-score");
+            const payload = fired_resume_score.result.data as ScorePayload;
 
-    if (fired_resume_score.result.success) {
-        await db
-            .update(applications)
-            .set({
-                resume_score: payload.score,
-                resume_score_fit: payload.breakdown.fit,
-                resume_score_skills: payload.breakdown.skills,
-                resume_score_exp: payload.breakdown.experience,
-                resume_score_summary: payload.summary,
-                resume_scored_at: new Date(),
-                resume_score_model: fired_resume_score.result.metadata.model,
-                updated_at: new Date(),
-            })
-            .where(and(
-                eq(applications.id, context.settings.applicationId as number),
-                eq(applications.organization, org.orgId)
-            ));
-    }
+            console.log("[trigger/public] fired_resume_score:", fired_resume_score);
 
-    if (pluginSettled.status === "rejected") {
-        console.error("[trigger/public] pluginRegistry.dispatch failed:", pluginSettled.reason);
-    }
+            if (fired_resume_score.result.success) {
+                await db
+                    .update(applications)
+                    .set({
+                        resume_score: payload.score,
+                        resume_score_fit: payload.breakdown.fit,
+                        resume_score_skills: payload.breakdown.skills,
+                        resume_score_exp: payload.breakdown.experience,
+                        resume_score_summary: payload.summary,
+                        resume_scored_at: new Date(),
+                        resume_score_model: fired_resume_score.result.metadata.model,
+                        updated_at: new Date(),
+                    })
+                    .where(and(
+                        eq(applications.id, context.settings.applicationId as number),
+                        eq(applications.organization, org.orgId)
+                    ));
+            }
 
+            if (pluginSettled.status === "rejected") {
+                console.error("[trigger/public] pluginRegistry.dispatch failed:", pluginSettled.reason);
+            }
+        } catch (error) {
+            console.error("[trigger/public] pluginRegistry.dispatch error:", error);
+        }
+    })();
+    
     // ── 9. Respond ─────────────────────────────────────────────────────────────
     // Keep the response minimal — no internal data should leak to the public page.
     return NextResponse.json(
-        {
-            ok: true,
-            fired: pluginResults.length,
-        },
+        {ok: true},
         { headers: cors },
     );
 };
