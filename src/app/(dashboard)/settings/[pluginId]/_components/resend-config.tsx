@@ -42,8 +42,8 @@ const ResendConfig = ({ pluginId, onSave, settings }: ConfigProps) => {
     });
 
     useEffect(() => {
-        if (settings?.apiKey) {
-            setApiKey(settings.apiKey);
+        if (settings?.credentials?.apiKey) {
+            setApiKey(settings.credentials.apiKey);
         }
     }, [settings]);
 
