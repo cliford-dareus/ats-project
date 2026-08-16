@@ -2,7 +2,7 @@
 
 import { auth } from "@clerk/nextjs/server";
 import { canCreateJob } from "@/server/permissions";
-import { add_trigger_to_stage, get_stage_by_name } from "@/server/queries/drizzle/stages";
+import { get_stage_by_name } from "@/server/queries/drizzle/stages";
 import { TriggerAction } from "@/plugins/smart-trigger/types";
 import { addTaskToQueue } from "../queries";
 
@@ -61,7 +61,7 @@ export const verifyResend = async (apiKey: string): Promise<{ success: boolean; 
                 error
             };
         }
-
+        console.log("Resend API Key Verification Success:", data);
         return {
             success: true,
             message: "API Key is valid",
@@ -79,8 +79,7 @@ export const verifyResend = async (apiKey: string): Promise<{ success: boolean; 
 // ─────────────────────────────────────────────────────────────────────────────
 // Returns pre-filtered plugin data to the client; credentials never leak.
 // ─────────────────────────────────────────────────────────────────────────────
-import { AVAILABLE_PLUGINS } from "@/plugins/registry";
-import type { InstalledPlugin, OrgPluginRecord, OrgPluginState } from "../../types";
+import type { InstalledPlugin } from "../../types";
 import { Resend } from "resend";
 import {getOrgPluginState} from "@/server/actions/plugin-actions";
 

@@ -66,6 +66,12 @@ const CreateOrganization = () => {
                     name: newOrg.name,
                     subdomain: slug.toLowerCase(),
                 });
+                
+                // also create the user in the database
+                // I do it here so the user is created after the organization is set as active
+                // so the user is associated with the organization
+                // maybe update the user's organization in the database here
+                // but create the user in in the sign up first
 
                 const newSearchParams = new URLSearchParams(searchParams);
                 newSearchParams.set("step", "department");
