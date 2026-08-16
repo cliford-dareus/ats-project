@@ -1,6 +1,9 @@
-'use client'
+'use client';
 
-import { useClerk } from '@clerk/nextjs'
+import { useClerk } from '@clerk/nextjs';
+
+const HOME_URL =
+  process.env.NEXT_PUBLIC_ROOT_URL ?? "https://aplico.online";
 
 export const SignOutButton = () => {
     const { signOut } = useClerk()
@@ -8,6 +11,6 @@ export const SignOutButton = () => {
     return (
         // Clicking this button signs out a user
         // and redirects them to the home page "/".
-        <button onClick={() => signOut({ redirectUrl: '/' })}>Sign out</button>
+        <button onClick={() => signOut({ redirectUrl: HOME_URL })}>Sign out</button>
     )
 }

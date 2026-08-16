@@ -10,7 +10,7 @@ import { Redis } from "ioredis";
 const httpServer = createServer();
 const io = new Server(httpServer, {
     cors: {
-        origin: "http://localhost:3000", // your Next.js frontend
+        origin: process.env.FRONTEND_URL || "http://localhost:3000",
         methods: ["GET", "POST"],
     },
 });

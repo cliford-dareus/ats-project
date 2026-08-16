@@ -5,7 +5,7 @@ RUN apk add --no-cache libc6-compat
 # ---------- Dependencies ----------
 FROM base AS deps
 COPY package.json package-lock.json* ./
-RUN npm ci --omit=dev
+RUN npm ci
 
 # ---------- Runner ----------
 FROM base AS runner
@@ -21,4 +21,5 @@ RUN npm install -g tsx
 EXPOSE 3001
 ENV PORT=3001
 
-CMD ["tsx", "src/socket/server.ts"]
+# Correct entrypoint
+CMD ["tsx", "src/socket/socket.ts"]

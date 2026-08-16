@@ -25,11 +25,16 @@ interface Props
     orgId?: string | null;
 };
 
+const DASHBOARD_URL =
+  process.env.NEXT_PUBLIC_DASHBOARD_URL ??
+  process.env.NEXT_PUBLIC_APP_URL ??
+  "http://app.apliko.localhost:3000";
+
 const AuthDropdown = ({ user, orgId, className, ...props }: Props) => {
     if (!user && !orgId) {
         return (
             <Button size="sm" className={cn(className)} {...props} asChild>
-                <Link href="http://app.apliko.localhost:3000/sign-in">
+                <Link href={`${DASHBOARD_URL}/sign-in`}>
                     Sign In
                     <span className="sr-only">Sign In</span>
                 </Link>
@@ -55,7 +60,7 @@ const AuthDropdown = ({ user, orgId, className, ...props }: Props) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent>
                 <DropdownMenuItem>
-                    <Link href={orgId ? `http://app.apliko.localhost:3000/dashboard` : "/onboarding"}>
+                    <Link href={orgId ? `${DASHBOARD_URL}/dashboard` : `${DASHBOARD_URL}/onboarding`}>
                         <LucideLayoutDashboard />
                         <span>Dashboard</span>
                         <DropdownMenuShortcut>⌘D</DropdownMenuShortcut>

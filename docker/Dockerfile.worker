@@ -5,7 +5,7 @@ RUN apk add --no-cache libc6-compat
 # ---------- Dependencies ----------
 FROM base AS deps
 COPY package.json package-lock.json* ./
-RUN npm ci --omit=dev
+RUN npm ci
 
 # ---------- Runner ----------
 FROM base AS runner
@@ -14,11 +14,10 @@ ENV NODE_ENV=production
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json ./
 COPY src ./src
-COPY drizzle ./drizzle
 COPY drizzle.config.ts ./
 COPY tsconfig.json ./
 
-# Install tsx only for running TypeScript
+# tsx is needed to run TypeScript
 RUN npm install -g tsx
 
 CMD ["tsx", "src/worker/index.ts"]
