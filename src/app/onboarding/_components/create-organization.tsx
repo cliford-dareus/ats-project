@@ -12,7 +12,6 @@ const CreateOrganization = () => {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [isCreatePending, startCreateTransaction] = useTransition();
-
     const { createOrganization, setActive } = useOrganizationList();
 
     const [displayName, setDisplayName] = useState("");
