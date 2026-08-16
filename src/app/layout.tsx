@@ -10,7 +10,7 @@ const geistSans = Inter({
 
 const geistMono = Ubuntu_Mono({
     variable: "--font-ubuntu-mono",
-    subsets: ["cyrillic"],
+    subsets: ["latin"],
     weight: ["400", "700"]
 });
 
