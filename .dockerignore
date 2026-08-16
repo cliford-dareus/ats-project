@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.gitignore
+*.md
+.env*
+Dockerfile*
+docker-compose*.yml
+drizzle/meta
+coverage
+.vscode
+.idea
+npm-debug.log*
+yarn-error.log*

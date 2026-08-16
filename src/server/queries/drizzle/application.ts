@@ -459,6 +459,28 @@ export const get_job_all_applications_db = async (jobId: number) => {
     return Object.values(result);
 };
 
+export async function db_save_resume_score(payload: {
+    applicationId: number;
+    score:         number;
+    breakdown:     { fit: number; skills: number; experience: number };
+    summary:       string;
+    model:         string;
+}) {
+    await db
+        .update(applications)
+        .set({
+            resume_score:         payload.score,
+            resume_score_fit:     payload.breakdown.fit,
+            resume_score_skills:  payload.breakdown.skills,
+            resume_score_exp:     payload.breakdown.experience,
+            resume_score_summary: payload.summary,
+            resume_scored_at:     new Date(),
+            resume_score_model:   payload.model,
+            updated_at:           new Date(),
+        })
+        .where(eq(applications.id, payload.applicationId));
+}
+
 export async function move_application_and_reorder_db({
     applicationId,
     newStageId,

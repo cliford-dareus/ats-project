@@ -1,10 +1,8 @@
-import { Redis } from 'ioredis';
+import IORedis from 'ioredis';
 
-const redis = new Redis({
-    host: '127.0.0.1',
-    port: 6379,
-    maxRetriesPerRequest: null, // Required for BullMQ workers
-    enableReadyCheck: false,    // Optional: disables readiness checks
+const redis = new IORedis(process.env.REDIS_URL || "redis://localhost:6379", {
+    maxRetriesPerRequest: null,
+    tls: {},
 });
 
 export default redis;

@@ -6,7 +6,7 @@
 // TODO: Hash the credentials before saving
 // ─────────────────────────────────────────────────────────────────────────────
 import { pluginRegistry } from "./plugin-registry";
-import type { InstalledPlugin } from "../types";
+import type { InstalledPlugin } from "@/types";
 
 // ── Provider factory map ──────────────────────────────────────────────────────
 // Add a new provider here when you add a new plugins/providers/*.ts file.
@@ -69,12 +69,3 @@ export async function initializePluginSystem(
     );
 };
 
-export async function initializePluginSystemServer(orgId: string): Promise<void> {
-    // Already initialized for this org — skip
-    if (pluginRegistry.isInitializedForOrg(orgId)) return;
-
-    const { getOrgPluginState } = await import("@/server/actions/stage_actions");
-    const { installed } = await getOrgPluginState(orgId);
-
-    await initializePluginSystem(installed);
-};

@@ -6,18 +6,18 @@
 //   Scope: candidate_applied + resume_uploaded only — the two events a public page can fire
 // ─────────────────────────────────────────────────────────────────────────────
 
+import {enqueueTrigger} from "@/lib/enqueue-trigger";
+
 export const runtime = "nodejs";
 
 import { z } from "zod";
 import { NextRequest, NextResponse } from "next/server";
-import { pluginRegistry } from "@/lib/plugin-registry";
 
 // ── DB import — replace with your actual query ────────────────────────────────
 import { db } from "@/drizzle/db";
 import { eq, and } from "drizzle-orm";
-import { applications, job_listings, organization } from "@/drizzle/schema";
-import { ATSContext, TriggerEvent } from "@/types";
-import { initializePluginSystemServer } from "@/lib/initialize-plugins";
+import { job_listings, organization } from "@/drizzle/schema";
+import { ATSContext } from "@/types";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const TRIGGER_SECRET = process.env.INTERNAL_TRIGGER_SECRET!;
@@ -63,12 +63,6 @@ const RequestSchema = z.object({
     event: PublicEventSchema,
     context: PublicContextSchema,
 });
-
-interface ScorePayload {
-    score: number;
-    breakdown: { fit: number; skills: number; experience: number };
-    summary: string;
-}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function verifySecret(req: NextRequest): boolean {
@@ -118,12 +112,13 @@ async function getOrgBySubdomain(subdomain: string): Promise<{ orgId: string; or
 
 // Verifies the job belongs to this org — prevents firing triggers
 // for a job that belongs to a different org.
-async function verifyJobBelongsToOrg(jobId: string, orgId: string): Promise<[boolean, { id: number; job_name: string; job_description: string }]> {
+async function verifyJobBelongsToOrg(jobId: string, orgId: string): Promise<[boolean, { job_id: number; job_name: string; job_description: string, job_subdomain: string }]> {
     const [job] = await db
         .select({
-            id: job_listings.id,
+            job_id: job_listings.id,
             job_name: job_listings.name,
             job_description: job_listings.description,
+            job_subdomain: job_listings.subdomain
         })
         .from(job_listings)
         .where(and(eq(job_listings.id, Number(jobId)), eq(job_listings.organization, orgId)))
@@ -213,68 +208,22 @@ export async function POST(req: NextRequest) {
         );
     }
 
-    // Temporary code for learning
-    // In the completed version, this would be replaced with actual job verification logic.
-    // it will use a queue worker to boot the registry for this org.
-    // and so it doesn't need to block the response to the app licant.
-    (async () => {
-        try {
-            // ── Boot the registry for this org ────────────────────────────────────────
-            await initializePluginSystemServer(org.orgId);
+    // ── 6. Build context — orgId comes from DB, not client ────────────────────
+    const atsContext: ATSContext = {
+        organization_id: org.orgId,          // ← from DB lookup, never from request body
+        user_id: "system",           // no user on public pages
+        // jobId: context.jobId,
+        candidate: context.candidate,
+        job: job,
+        settings: context.settings,
+    };
 
-            // ── 6. Build context — orgId comes from DB, not client ────────────────────
-            const atsContext: ATSContext = {
-                organization_id: org.orgId,          // ← from DB lookup, never from request body
-                user_id: "system",           // no user on public pages
-                // jobId: context.jobId,
-                candidate: context.candidate,
-                job: job,
-                settings: context.settings,
-            };
+    const jobId = await enqueueTrigger({ event, context: {...atsContext, subdomain: atsContext.job?.job_subdomain as string} });
 
-            // ── 8. Dispatch plugins ─────────────────────
-            const [pluginSettled] = await Promise.allSettled([
-                pluginRegistry.dispatch(event as TriggerEvent, atsContext),
-            ]);
-
-            const pluginResults = pluginSettled.status === "fulfilled" ? pluginSettled.value : [];
-
-            const [fired_resume_score] = pluginResults.filter((result) => result.integrationId === "resume-score");
-            const payload = fired_resume_score.result.data as ScorePayload;
-
-            console.log("[trigger/public] fired_resume_score:", fired_resume_score);
-
-            if (fired_resume_score.result.success) {
-                await db
-                    .update(applications)
-                    .set({
-                        resume_score: payload.score,
-                        resume_score_fit: payload.breakdown.fit,
-                        resume_score_skills: payload.breakdown.skills,
-                        resume_score_exp: payload.breakdown.experience,
-                        resume_score_summary: payload.summary,
-                        resume_scored_at: new Date(),
-                        resume_score_model: fired_resume_score.result.metadata.model,
-                        updated_at: new Date(),
-                    })
-                    .where(and(
-                        eq(applications.id, context.settings.applicationId as number),
-                        eq(applications.organization, org.orgId)
-                    ));
-            }
-
-            if (pluginSettled.status === "rejected") {
-                console.error("[trigger/public] pluginRegistry.dispatch failed:", pluginSettled.reason);
-            }
-        } catch (error) {
-            console.error("[trigger/public] pluginRegistry.dispatch error:", error);
-        }
-    })();
-    
     // ── 9. Respond ─────────────────────────────────────────────────────────────
     // Keep the response minimal — no internal data should leak to the public page.
     return NextResponse.json(
-        {ok: true},
+        {ok: true, jobId},
         { headers: cors },
     );
 };

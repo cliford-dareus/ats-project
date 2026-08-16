@@ -82,88 +82,11 @@ export const verifyResend = async (apiKey: string): Promise<{ success: boolean; 
 import { AVAILABLE_PLUGINS } from "@/plugins/registry";
 import type { InstalledPlugin, OrgPluginRecord, OrgPluginState } from "../../types";
 import { Resend } from "resend";
-
-// ── Stub DB fetch — replace with your real DB call ───────────────────────────
-// e.g. prisma.organization.findUnique({ where: { id: orgId }, select: { plugins: true } })
-
-async function get_organization_plugins(orgId: string): Promise<OrgPluginRecord> {
-    // TODO: replace with real DB call
-    // For demo purposes, return a record with some plugins enabled
-    return {
-        enabled: ["openai-scoring", "anthropic-screening", "calendly", "checkr", "resend", "google"],
-        settings: {
-            "openai-scoring": {
-                active: true,
-                credentials: { apiKey: process.env.OPENAI_API_KEY ?? "" },
-            },
-            "anthropic-screening": {
-                active: true,
-                credentials: { apiKey: process.env.ANTHROPIC_API_KEY ?? "" },
-            },
-            "calendly": {
-                active: true,
-                credentials: { oauthToken: process.env.CALENDLY_TOKEN ?? "" },
-                config: { eventSlug: "acme-corp/interview" },
-            },
-            "checkr": {
-                active: true,
-                credentials: { apiKey: process.env.CHECKR_API_KEY ?? "" },
-                config: { packageSlug: "checkr_standard" },
-            },
-            // "slack-notify": {
-            //   active:      true,
-            //   credentials: { webhookUrl: process.env.SLACK_WEBHOOK_URL ?? "" },
-            //   config:      { channel: "#hiring" },
-            // },
-            "resend": {
-                active: true,
-                credentials: { apiKey: process.env.RESEND_API_KEY ?? "" },
-                config: {
-                    fromAddress: "atscompany@resend.dev",
-                    companyName: "ATS Company",
-                    hiringManagerEmail: "hiringmanager@example.com",
-                    recruiterEmail: "sam@example.com",
-                    offerSigningUrl: "",
-                },
-            },
-            "google": {
-                active: true,
-                credentials: { apiKey: process.env.GOOGLE_GEMINI_API_KEY ?? "" },
-            }
-        },
-    };
-}
+import {getOrgPluginState} from "@/server/actions/plugin-actions";
 
 // ── Main server action ────────────────────────────────────────────────────────
 // Single DB call. Builds both flags (for feature gating) and
 // installed[] (for initializing the client registry) in one pass.
-export async function getOrgPluginState(orgId: string): Promise<OrgPluginState> {
-    const record = await get_organization_plugins(orgId);
-    const enabled = record.enabled ?? [];
-
-    const flags: Record<string, boolean> = {};
-    const installed: InstalledPlugin[] = [];
-
-    for (const manifest of AVAILABLE_PLUGINS) {
-        const settings = record.settings?.[manifest.id];
-        const isEnabled = enabled.includes(manifest.id) && settings?.active === true;
-
-        flags[manifest.id] = isEnabled;
-
-        if (isEnabled) {
-            installed.push({
-                ...manifest,
-                settings: {
-                    active: true,
-                    credentials: settings?.credentials ?? {},
-                    config: settings?.config ?? {},
-                },
-            });
-        }
-    }
-
-    return { flags, installed };
-};
 
 // export async function getPluginSettings(organizationId: string, pluginId: string) {
 //     const result = await db.query.organizationPlugins.findFirst({

@@ -9,8 +9,8 @@ import {
     type AutomationAction,
     type AutomationRule,
     type PendingExecution,
-} from "../types";
-import type { ATSContext, TriggerEvent } from "../types";
+} from "@/types";
+import type { ATSContext, TriggerEvent } from "@/types";
 
 export interface AutomationExecutionResult {
     ruleId: string;
@@ -158,6 +158,7 @@ export class AutomationEngine extends EventEmitter {
                     event: event as unknown as Record<string, unknown>,
                     context: context as unknown as Record<string, unknown>,
                 };
+                console.log("AUTOMATION: ", pending)
                 this.emit("execution:scheduled", pending);
 
                 // In production: enqueue to Redis/BullMQ/Inngest instead of setTimeout

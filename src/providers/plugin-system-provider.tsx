@@ -15,7 +15,7 @@ import React, {
     useState,
 } from "react";
 import { initializePluginSystem } from "@/lib/initialize-plugins";
-import type { InstalledPlugin } from "../types";
+import type { InstalledPlugin } from "@/types";
 
 // ── Context ───────────────────────────────────────────────────────────────────
 interface PluginSystemContextValue {

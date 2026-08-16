@@ -8,8 +8,8 @@ import { moveApplicationAndReorder } from "@/server/actions/application_actions"
 import { JOB_STAGES } from "@/zod";
 import { z } from "zod";
 import AutomationBuilder from "./automation-builder";
-import { getJobAutomationRules } from "@/server/actions/job-listings-actions";
 import { automationEngine } from "@/lib/automation-engine";
+import {getJobAutomationRules} from "@/server/actions/plugin-actions";
 
 interface ReorderPayload {
     applicationId: number;

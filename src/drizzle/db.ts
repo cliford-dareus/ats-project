@@ -1,7 +1,7 @@
 import {config} from "dotenv";
 import {drizzle} from 'drizzle-orm/mysql2';
 import mysql from 'mysql2/promise';
-import * as schema from "./schema"
+import * as schema from "./schema";
 
 config({path: ".env"}); // or .env.local
 
@@ -12,6 +12,7 @@ declare global {
 
 function createDatabaseConnection() {
     const pool = mysql.createPool({
+        uri: process.env.DATABASE_URL,
         host: process.env.DB_HOST,
         user: process.env.DB_USER,
         password: process.env.DB_PASSWORD,
@@ -19,8 +20,11 @@ function createDatabaseConnection() {
         waitForConnections: true,
         connectionLimit: 10,
         queueLimit: 0,
+        ssl: {
+            rejectUnauthorized: false,
+        }
     });
-    return drizzle(pool);
+    return drizzle(pool, {schema, mode: "default"});
 }
 
 // export const queries = drizzle(process.env.DATABASE_URL!);

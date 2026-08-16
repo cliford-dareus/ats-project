@@ -22,9 +22,8 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     useEffect(() => {
         // 1. Initialize the socket connection
         // The path MUST match what you defined in server.ts
-        const socketInstance = ClientIO(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000", {
-            path: "/api/socket/io",
-            addTrailingSlash: false,
+        const socketInstance = ClientIO(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3001", {
+            transports: ['websocket'],
         });
 
         socketInstance.on("connect", () => {
