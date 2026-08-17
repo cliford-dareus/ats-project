@@ -11,8 +11,8 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { AlertCircle, Clock, Command, Loader2, Send } from "lucide-react";
-import { Calendar } from "@/components/ui/calendar";
+import { AlertCircle, Calendar, Clock, Command, Loader2, Send } from "lucide-react";
+// import { Calendar } from "@/components/ui/calendar";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormField } from "@/components/ui/form";
@@ -25,6 +25,8 @@ import {
     SelectTrigger,
 } from "@/components/ui/select";
 import { ApplicationResponseType, ApplicationType } from "@/types";
+import { create_interview_action } from "@/server/actions/interview-actions";
+import { newInterviewSchema } from "@/zod";
 
 type Props = {
     isOpen: boolean;
@@ -37,6 +39,7 @@ export const interviewScheduleSchema = z.object({
     date: z.string(),
     time: z.string(),
     duration: z.string(),
+    type: z.enum(["ONSITE", "VIDEO", "PHONE"]),
 });
 
 const ScheduleInterviewModal = ({
@@ -54,6 +57,7 @@ const ScheduleInterviewModal = ({
             date: "",
             time: "",
             duration: "",
+            type: "ONSITE",
         },
     });
 
@@ -93,24 +97,26 @@ const ScheduleInterviewModal = ({
                 payload,
             });
 
-            // const data = await res.json();
-            // if (data.success) {
-            //     onScheduled({
-            //         id: data.event.id,
-            //         date,
-            //         time,
-            //         type: 'Video',
-            //         status: 'Scheduled',
-            //         link: data.meetLink,
-            //     });
-            //
-            //     setIsOpen(false);
-            // } else {
-            //     setError(data.error || 'Failed to schedule interview');
-            // }
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            if (res?.success) {
+                const payload = {
+                    applicationId: application.id,
+                    job_id: application.job_id,
+                    start_at: new Date(startDateTime),
+                    end_at: new Date(endDateTime),
+                    link: res?.meetLink ? res.meetLink : undefined,
+                    location: "New York",
+                    status: "SCHEDULE",
+                    type: data.type
+                } as z.infer<typeof newInterviewSchema>;
+
+                await create_interview_action(payload);
+
+                setIsOpen(false);
+            } else {
+                setError(res.error || 'Failed to schedule interview');
+            }
         } catch (err) {
-            setError("An error occurred while scheduling");
+            setError((err as Error).message);
         } finally {
             setIsScheduling(false);
         }
@@ -178,6 +184,7 @@ const ScheduleInterviewModal = ({
                                         />
                                     </div>
                                 </div>
+
                                 <div>
                                     <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5 ml-1">
                                         Duration
@@ -195,6 +202,28 @@ const ScheduleInterviewModal = ({
                                                     <SelectItem value="30">30 Minutes</SelectItem>
                                                     <SelectItem value="45">45 Minutes</SelectItem>
                                                     <SelectItem value="60">1 Hour</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        )}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5 ml-1">
+                                        Type
+                                    </label>
+                                    <FormField
+                                        name="type"
+                                        render={({ field }) => (
+                                            <Select
+                                                value={field.value}
+                                                onValueChange={field.onChange}
+                                            >
+                                                <SelectTrigger>{field.value}</SelectTrigger>
+                                                <SelectContent className="w-full px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all">
+                                                    <SelectItem value="ONSITE">In-Person</SelectItem>
+                                                    <SelectItem value="VIDEO">Video</SelectItem>
+                                                    <SelectItem value="PHONE">Phone</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         )}

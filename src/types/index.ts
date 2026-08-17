@@ -104,18 +104,22 @@ export type CandidateDetailsType = {
     references: CandidateReference[];
 };
 
+export type InterviewResponseType = {
+    
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared types
 // ─────────────────────────────────────────────────────────────────────────────
 export type InterviewType = {
     id: number,
     application_id: number,
-    candidate_id: number,
-    interview_date: Date,
-    interview_location: string,
+    start_at: Date,
+    end_at: Date,
     locations: string;
-    type: "Video" | "Phone" | "Onsite";
-    link: string;
+    type: "VIDEO" | "PHONE" | "ONSITE";
+    status: "SCHEDULE" | "COMPLETE" | "AWAITING_FEEDBACK";
+    link?: string;
 };
 
 export interface ApplicationType {

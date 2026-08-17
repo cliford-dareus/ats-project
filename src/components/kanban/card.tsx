@@ -6,7 +6,7 @@ import DropIndicator from "@/components/kanban/drop-indicator";
 import { motion } from "motion/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
-import { getTimeElapsed } from "@/lib/utils";
+import { cn, getTimeElapsed } from "@/lib/utils";
 import { Calendar, Clock, ExternalLink, GripVertical } from "lucide-react";
 import { TriggerTask } from "@/plugins/smart-trigger/types";
 import { useKanbanContext } from "@/providers/kanban-provider";
@@ -28,8 +28,9 @@ const Card = ({ data, handleDragStart, stage, jobDetails }: Props) => {
     activeTrigger.some(task => new Date(task.triggerTime).getTime() > Date.now());
 
     const hasScheduledInterview = data.interviews?.length > 0 &&
-    data.interviews.some(interview => new Date(interview.interview_date).getTime() > Date.now());
+    data.interviews.some(interview => new Date(interview.start_at).getTime() > Date.now());
 
+    console.log(data.interviews, hasScheduledInterview);
     useEffect(() => {
         const filteredTasks = tasks.filter(task => task.application_id === data.id);
         setActiveTrigger(filteredTasks);
@@ -91,6 +92,18 @@ const Card = ({ data, handleDragStart, stage, jobDetails }: Props) => {
                                 className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 rounded-md text-[9px] font-bold hover:bg-amber-100 transition-colors">
                                 <Calendar size={10} />
                                 SCHEDULING
+                            </button>
+                        )}
+                        
+                        {hasScheduledInterview && (
+                            <button
+                                className={cn("flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 rounded-md text-[9px] font-bold hover:bg-amber-100 transition-colors",
+                                    // TODO: an application/applicant can only have one interview at a time
+                                    data.interviews?.some(interview => interview.status === "AWAITING_FEEDBACK") && "bg-yellow-50 text-yellow-700",
+                                    data.interviews?.some(interview => interview.status === "COMPLETE") && "bg-green-50 text-green-700"
+                                )}>
+                                <Calendar size={10} />
+                                SCHEDULED
                             </button>
                         )}
                     </div>

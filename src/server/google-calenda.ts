@@ -93,11 +93,11 @@ export async function createCalendarEvent({
         return {
             success: true,
             event: calendarEvent.data,
-            // meetLink: response.data.hangoutLink
+            meetLink: calendarEvent.data.hangoutLink
         };
     } catch (error) {
         console.error("Error creating event", error);
-        // res.status(500).json({ error: "Failed to create calendar event" });
+        return { success: false, error: "Failed to create calendar event" };
     }
     // attendees: [
     //     {email: guestEmail, displayName: guestName},

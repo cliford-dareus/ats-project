@@ -29,13 +29,6 @@ import { uploadResumeToR2 } from "@/lib/upload-file-to-r2";
 import { create_candidate_details } from "../mongo/candidate-details";
 import { check_organization_subdomain } from "./organization";
 
-interface InterviewType {
-    applicationId: number;
-    location: string;
-    start_at: Date;
-    end_at: Date;
-};
-
 export const create_application = async (data: z.infer<typeof applicationFormSchema>) => {
     const jobId = data.jobId;
     const subdomain = data.subdomain;
@@ -610,21 +603,3 @@ export async function move_application_and_reorder_db({
         };
     }
 }
-
-// ========================================================================
-// INTERVIEW
-// =======================================================================
-export const add_interview = async ({
-    applicationId,
-    location,
-    start_at,
-    end_at,
-}: InterviewType) => {
-    return db.insert(interviews).values({
-        organization: "",
-        applications_id: applicationId,
-        locations: location,
-        start_at: start_at,
-        end_at: end_at,
-    });
-};

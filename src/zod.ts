@@ -1,3 +1,4 @@
+import { link } from "node:fs/promises";
 import { z } from "zod";
 
 export const JOB_STAGES = z.enum(['New Candidate', 'Screening', 'Phone Interview', 'Interview', 'Offer', 'Applied', 'Drafted'] as const);
@@ -177,6 +178,24 @@ export const updateCandidateSchema = z.object({
 export const departmentSchema = z.object({
     departments: z.array(z.string()),
     orgId: z.string()
+});
+
+export const interviewScheduleSchema = z.object({
+    date: z.string(),
+    time: z.string(),
+    duration: z.string(),
+    type: z.enum(["ONSITE", "VIDEO", "PHONE"]),
+});
+
+export const newInterviewSchema = z.object({
+    job_id: z.number(),
+    applicationId: z.number(),
+    start_at: z.date(),
+    end_at: z.date(),
+    link: z.string().optional(),
+    location: z.string(),
+    type: z.enum(["ONSITE", "VIDEO", "PHONE"]),
+    status: z.enum(["SCHEDULE", "AWAITING_FEEDBACK", "COMPLETE"]),
 });
 
 // FILTER SCHEMA
