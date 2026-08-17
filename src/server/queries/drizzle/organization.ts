@@ -6,11 +6,14 @@ import { departmentSchema, organizationSchema } from "@/zod";
 import { z } from "zod";
 
 export const create_organization = async (data: z.infer<typeof organizationSchema>) => {
-    return db.insert(organization).values({
+    const result = await db.insert(organization).values({
         clerk_id: data.clerk_id,
         name: data.name,
         subdomain: data.subdomain
     }).$returningId();
+
+    revalidateDbCache({ tag: CACHE_TAGS.organizations });
+    return result;
 };
 
 export const update_organization_plugins = async (orgId: string, pluginId: string, settings?: object) => {
@@ -39,7 +42,9 @@ export const update_organization_plugins = async (orgId: string, pluginId: strin
             .update(organization)
             .set({ plugins: updatedPlugins })
             .where(eq(organization.clerk_id, orgId));
-
+        
+        revalidateDbCache({ tag: CACHE_TAGS.organizations, id: orgId });
+        
         return { message: "Success" };
     } catch (error) {
         console.error('Error toggling plugin:', error);
@@ -77,7 +82,7 @@ export const toggle_organization_plugin = async (orgId: string, enabled: boolean
             .set({ plugins: updatedPlugins })
             .where(eq(organization.clerk_id, orgId));
 
-        revalidateDbCache({ tag: CACHE_TAGS.organizations });
+        revalidateDbCache({ tag: CACHE_TAGS.organizations, id: orgId });
         return { message: "Success" };
     } catch (error) {
         console.error('Error toggling plugin:', error);

@@ -1,7 +1,7 @@
 import { db } from "@/drizzle/db";
-import { applications, attachments, candidates, interviews } from "@/drizzle/schema";
+import { applications, attachments, candidates, interviews, orgToDepartment_relations } from "@/drizzle/schema";
 import { and, eq, inArray, sql, SQL } from "drizzle-orm";
-import { CACHE_TAGS, dbCache, getGlobalTag, getIdTag, revalidateDbCache } from "@/lib/cache";
+import { CACHE_TAGS, dbCache, getGlobalTag, getIdTag, getOrgTag, revalidateDbCache } from "@/lib/cache";
 import { filterCandidateSchema, newCandidateFormSchema, updateCandidateSchema } from "@/zod";
 import { z } from "zod";
 
@@ -14,8 +14,11 @@ export const create_candidate = async (data: z.infer<typeof newCandidateFormSche
             subdomain: data.subdomain,
         })
         .$returningId();
+    
     revalidateDbCache({
         tag: CACHE_TAGS.candidates,
+        id: String(candidate.id),
+        orgId: String(data.organization),
     });
     return candidate;
 };
@@ -36,31 +39,38 @@ export const update_candidate = async (data: z.infer<typeof updateCandidateSchem
 
     revalidateDbCache({
         tag: CACHE_TAGS.candidates,
+        id: String(data.id),
+        orgId: String(data.organization),
     });
 };
 
-export const delete_candidate = async (id: number) => {
+export const delete_candidate = async (id: number, orgId: string) => {
     await db.delete(candidates)
         .where(eq(candidates.id, id))
 
     revalidateDbCache({
         tag: CACHE_TAGS.candidates,
+        id: String(id),
+        orgId: orgId,
     });
 };
 
 export const get_all_candidates = async (filter: z.infer<typeof filterCandidateSchema>) => {
     const cacheFn = dbCache(get_all_candidates_db, {
+        keyParts: ["candidates", filter.organization, JSON.stringify(filter)],
         tags: [
+            getOrgTag(filter.organization, CACHE_TAGS.candidates),
             getGlobalTag(CACHE_TAGS.candidates)
         ]
     });
     return cacheFn(filter);
 };
 
-export const get_candidate_by_id = async (unsafedata: number) => {
+export const get_candidate_by_id = async (unsafedata: number, orgId: string) => {
     const cacheFn = dbCache(get_candidate_by_id_db, {
         tags: [
-            getIdTag(String(unsafedata), CACHE_TAGS.candidates)
+            getIdTag(String(unsafedata), CACHE_TAGS.candidates),
+            getOrgTag(orgId, CACHE_TAGS.candidates),
         ]
     });
     return cacheFn(unsafedata);

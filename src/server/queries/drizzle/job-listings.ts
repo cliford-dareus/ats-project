@@ -15,6 +15,7 @@ import {
     dbCache,
     getGlobalTag,
     getIdTag,
+    getOrgTag,
     revalidateDbCache,
 } from "@/lib/cache";
 import { z } from "zod";
@@ -101,6 +102,7 @@ export const create_job_listing = async (data: z.infer<typeof jobFormSchema>) =>
         revalidateDbCache({
             tag: CACHE_TAGS.jobs,
             id: String(inserted_job.id),
+            orgId: String(data.jobInfo.organization),
         });
 
         return inserted_job;
@@ -135,15 +137,19 @@ export const update_job_listing = async (data: z.infer<typeof updateJobListingSc
         })
         .where(eq(job_listings.id, data.jobId));
 
-    revalidateDbCache({ tag: CACHE_TAGS.jobs, id: String(data.jobId) });
+    revalidateDbCache({
+        tag: CACHE_TAGS.jobs,
+        id: String(data.jobId),
+        orgId: String(data.organization)
+    });
 };
 
-export const delete_job_listing = async (jobId: number) => {
+export const delete_job_listing = async (jobId: number, orgId: string) => {
     await db
         .delete(job_listings)
         .where(eq(job_listings.id, jobId));
 
-    revalidateDbCache({ tag: CACHE_TAGS.jobs, id: String(jobId) });
+    revalidateDbCache({ tag: CACHE_TAGS.jobs, id: String(jobId), orgId: orgId });
 };
 
 export const get_job_listings_stages = (jobId: number) => {
@@ -156,14 +162,21 @@ export const get_job_listings_stages = (jobId: number) => {
 
 export const get_all_job_listings = (filter: FilterInterface) => {
     const cacheFn = dbCache(get_all_job_listings_db, {
-        tags: [getGlobalTag(CACHE_TAGS.jobs)],
-    });
-    return cacheFn(filter);
+        keyParts: ["jobs", filter.organization, JSON.stringify(filter)],
+        tags: [
+            getOrgTag(filter.organization, CACHE_TAGS.jobs),
+            getGlobalTag(CACHE_TAGS.jobs), // optional, for rare global flush
+        ],
+    })
+    return cacheFn(filter)
 };
 
 export const get_job_by_id = (jobId: number, org_id: string) => {
     const cacheFn = dbCache(get_job_by_id_db, {
-        tags: [getGlobalTag(CACHE_TAGS.applications), getIdTag(String(jobId), CACHE_TAGS.applications)],
+        tags: [
+            getIdTag(String(jobId), CACHE_TAGS.jobs),
+            getOrgTag(org_id, CACHE_TAGS.jobs),
+        ],
     });
     return cacheFn(jobId, org_id);
 };

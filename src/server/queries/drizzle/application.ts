@@ -13,6 +13,8 @@ import {
     CACHE_TAGS,
     dbCache,
     getGlobalTag,
+    getIdTag,
+    getOrgTag,
     revalidateDbCache,
 } from "@/lib/cache";
 import {
@@ -199,8 +201,22 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
             .$returningId();
 
         // Revalidate cache
-        revalidateDbCache({ tag: CACHE_TAGS.applications });
-        revalidateDbCache({ tag: CACHE_TAGS.jobs, id: String(jobId) });
+        revalidateDbCache({
+            tag: CACHE_TAGS.applications,
+            orgId: existingSubdomain[0].id,
+        });
+
+        revalidateDbCache({
+            tag: CACHE_TAGS.candidates,
+            id: String(candidate_id),
+            orgId: existingSubdomain[0].id,
+        });
+
+        revalidateDbCache({
+            tag: CACHE_TAGS.jobs,
+            id: String(jobId),
+            orgId: existingSubdomain[0].id,
+        });
 
         return {
             success: true,
@@ -214,7 +230,7 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
         };
     } catch (err) {
         console.error("Create application error:", err);
-        throw new Error(err.message || "Failed to create application");
+        throw new Error((err as Error).message || "Failed to create application");
     }
 };
 
@@ -232,8 +248,16 @@ export const update_application = async (data: z.infer<typeof updateApplicationS
         })
         .where(eq(applications.id, data.applicationId));
 
-    revalidateDbCache({ tag: CACHE_TAGS.candidates });
-    revalidateDbCache({ tag: CACHE_TAGS.applications });
+    revalidateDbCache({
+        tag: CACHE_TAGS.candidates,
+        id: String(data.candidate),
+        orgId: String(data.organization),
+    });
+    revalidateDbCache({
+        tag: CACHE_TAGS.applications,
+        id: String(data.applicationId),
+        orgId: String(data.organization),
+    });
 };
 
 export const update_application_stage = async (data: z.infer<typeof updateApplicationStageSchema>) => {
@@ -242,14 +266,19 @@ export const update_application_stage = async (data: z.infer<typeof updateApplic
         .set({ current_stage_id: data.new_stage_id })
         .where(eq(applications.id, data.applicationId));
 
-    revalidateDbCache({ tag: CACHE_TAGS.candidates });
-    revalidateDbCache({ tag: CACHE_TAGS.applications });
-    // revalidatePath('/(dashboard)/jobs/[joblistingId]');
+    revalidateDbCache({
+        tag: CACHE_TAGS.applications,
+        id: String(data.applicationId),
+        orgId: String(data.organization),
+    });
 };
 
-export const get_application_by_id = async (applicationId: number) => {
+export const get_application_by_id = async (applicationId: number, orgId: string) => {
     const cacheFn = dbCache(get_application_by_id_db, {
-        tags: [getGlobalTag(CACHE_TAGS.applications)],
+        tags: [
+            getIdTag(String(applicationId), CACHE_TAGS.applications),
+            getOrgTag(orgId, CACHE_TAGS.applications),
+        ],
     });
 
     return cacheFn(applicationId);
@@ -257,15 +286,24 @@ export const get_application_by_id = async (applicationId: number) => {
 
 export const get_all_applications = async (filter: z.infer<typeof filterApplicationsSchema>) => {
     const cacheFn = dbCache(get_all_applications_db, {
-        tags: [getGlobalTag(CACHE_TAGS.applications)],
+        keyParts: ["applications", filter.organization, JSON.stringify(filter)],
+        tags: [
+            getOrgTag(filter.organization, CACHE_TAGS.applications),
+            getGlobalTag(CACHE_TAGS.applications),
+        ],
     });
 
     return cacheFn(filter);
 };
 
-export const get_job_all_applications = async (jobId: number) => {
+export const get_job_all_applications = async (jobId: number, orgId?: string) => {
     const cacheFn = dbCache(get_job_all_applications_db, {
-        tags: [getGlobalTag(CACHE_TAGS.applications)],
+        keyParts: ["job-applications", String(jobId), orgId ?? ""],
+        tags: [
+            getIdTag(String(jobId), CACHE_TAGS.applications),
+            getGlobalTag(CACHE_TAGS.applications),
+            ...(orgId ? [getOrgTag(orgId, CACHE_TAGS.applications)] : []),
+        ],
     });
 
     return cacheFn(jobId);
@@ -273,7 +311,12 @@ export const get_job_all_applications = async (jobId: number) => {
 
 export const get_application_stage = async () => {
     const cacheFn = dbCache(get_applications_stages_db, {
-        tags: [getGlobalTag(CACHE_TAGS.stages)],
+        keyParts: ["stages", String(jobId), orgId ?? ""],
+        tags: [
+            getIdTag(String(jobId), CACHE_TAGS.stages),
+            getGlobalTag(CACHE_TAGS.stages),
+            ...(orgId ? [getOrgTag(orgId, CACHE_TAGS.stages)] : []),
+        ],
     });
 
     return cacheFn();
@@ -461,24 +504,30 @@ export const get_job_all_applications_db = async (jobId: number) => {
 
 export async function db_save_resume_score(payload: {
     applicationId: number;
-    score:         number;
-    breakdown:     { fit: number; skills: number; experience: number };
-    summary:       string;
-    model:         string;
+    score: number;
+    breakdown: { fit: number; skills: number; experience: number };
+    summary: string;
+    model: string;
 }) {
     await db
         .update(applications)
         .set({
-            resume_score:         payload.score,
-            resume_score_fit:     payload.breakdown.fit,
-            resume_score_skills:  payload.breakdown.skills,
-            resume_score_exp:     payload.breakdown.experience,
+            resume_score: payload.score,
+            resume_score_fit: payload.breakdown.fit,
+            resume_score_skills: payload.breakdown.skills,
+            resume_score_exp: payload.breakdown.experience,
             resume_score_summary: payload.summary,
-            resume_scored_at:     new Date(),
-            resume_score_model:   payload.model,
-            updated_at:           new Date(),
+            resume_scored_at: new Date(),
+            resume_score_model: payload.model,
+            updated_at: new Date(),
         })
         .where(eq(applications.id, payload.applicationId));
+
+    // revalidateDbCache({
+    //     tag: CACHE_TAGS.applications,
+    //     id: String(payload.applicationId),
+    //     orgId: orgId,
+    // });
 }
 
 export async function move_application_and_reorder_db({
@@ -551,7 +600,6 @@ export async function move_application_and_reorder_db({
             }
         });
 
-        // revalidatePath("/jobs/[jobId]");
         revalidateDbCache({ tag: CACHE_TAGS.applications });
         return { success: true };
     } catch (err) {

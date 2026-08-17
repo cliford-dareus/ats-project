@@ -140,6 +140,7 @@ export const updateApplicationSchema = z.object({
 export const updateApplicationStageSchema = z.object({
     applicationId: z.number(),
     new_stage_id: z.number(),
+    organization: z.string(),
 });
 
 export const moveAndReorderApplicationSchema = z.object({
@@ -170,6 +171,7 @@ export const updateCandidateSchema = z.object({
     status: CANDIDATE_STATUS.optional(),
     profession: z.string().optional(),
     subdomain: z.string().optional(),
+    organization: z.string().optional(),
 });
 
 export const departmentSchema = z.object({

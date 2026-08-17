@@ -43,14 +43,14 @@ export const get_all_candidates_action = async (unsafeData: z.infer<typeof filte
 };
 
 export const get_candidate_by_id_action = async (unsafeData: number) => {
-    const { userId } = await auth();
+    const { userId, orgId } = await auth();
     const canCreate = await canCreateJob(userId);
 
-    if (!userId || !canCreate) {
+    if (!userId || !canCreate || !orgId) {
         return { error: true, message: "There was an error creating your product" }
     }
 
-    return await get_candidate_by_id(unsafeData);
+    return await get_candidate_by_id(unsafeData, orgId);
 };
 
 export const get_candidates_stage_count_action = async () => {

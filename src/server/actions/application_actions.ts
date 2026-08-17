@@ -25,7 +25,7 @@ export const create_application_action = async (unsafeData: z.infer<typeof appli
 
 export const update_application_action = async (unsafeData: z.infer<typeof updateApplicationSchema>) => {
     const { userId } = await auth();
-    const { success, data } = await applicationFormSchema.spa(unsafeData);
+    const { success, data } = await updateApplicationSchema.spa(unsafeData);
     const canCreate = await canCreateJob(userId);
 
     if (!success || !userId || !canCreate) {
@@ -58,13 +58,13 @@ export const get_all_applications_action = async (unsafeData: z.infer<typeof fil
 };
 
 export const get_application_by_id_action = async (applicationId: number) => {
-    const { userId } = await auth();
+    const { userId, orgId } = await auth();
 
-    if (!userId) {
+    if (!userId || !orgId) {
         return { error: true, message: "There was an error retrieving application" }
     }
 
-    return await get_application_by_id(applicationId);
+    return await get_application_by_id(applicationId, orgId);
 };
 
 export const get_job_all_applications_action = async (jobId: number) => {

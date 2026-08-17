@@ -13,10 +13,6 @@ import {auth} from "@clerk/nextjs/server";
 import {redirect} from "next/navigation";
 import {jobFormSchema, filterJobSchema, updateJobListingSchema} from "@/zod";
 import {assertJobBelongsToOrg, canCreateJob, getAuthOrThrow} from "@/server/permissions";
-import {AutomationRule} from "@/types";
-import {db} from "@/drizzle/db";
-import {automation_rules} from "@/drizzle/schema";
-import {and, eq} from "drizzle-orm";
 
 const jobIdSchema = z.number();
 
@@ -57,7 +53,7 @@ export const delete_job_action = async (unsafeData: z.infer<typeof jobIdSchema>)
     const {orgId} = await getAuthOrThrow();
     await assertJobBelongsToOrg(data, orgId);
 
-    await delete_job_listing(data);
+    await delete_job_listing(data, orgId);
     return {success: true};
 };
 
