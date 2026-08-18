@@ -15,7 +15,8 @@ import {
     FileUser,
     BriefcaseBusiness,
     Users, Settings,
-    FileText
+    FileText,
+    Mail
 } from "lucide-react";
 import React from "react";
 import {usePathname, useRouter} from "next/navigation";
@@ -27,6 +28,7 @@ import TrashSidebar from "@/app/(dashboard)/trash/_components/trash-sidebar";
 import StepNavigation from "@/app/(dashboard)/jobs/new/_component/side-navigation";
 import SidebarDashboard from "@/app/(dashboard)/dashboard/_components/sidebar-dashboard";
 import ApplicationsSidebar from "@/app/(dashboard)/applications/_components/application-sidebar";
+import CommunicationSidebarStatic from "@/app/(dashboard)/communication/_components/communication-sidebar-static";
 import AppSidebarSearch from "./app-sidebar-search";
 
 const data = {
@@ -53,6 +55,12 @@ const data = {
             title: "Candidates",
             url: "/candidates",
             icon: Users,
+            isActive: false,
+        },
+        {
+            title: "Communication",
+            url: "/communication",
+            icon: Mail,
             isActive: false,
         },
         {
@@ -125,7 +133,6 @@ export function AppSidebar({needToCreateOrgInDb,...props }: React.ComponentProps
                                             }}
                                             onClick={() => {
                                                 router.push(`${item.url}`)
-                                                // setActiveItem(item)
                                                 setOpen(true)
                                             }}
                                             isActive={activeItem.title === item.title}
@@ -167,6 +174,8 @@ export function AppSidebar({needToCreateOrgInDb,...props }: React.ComponentProps
                                 <ApplicationsSidebar/>
                             ) : activeItem.title === "Candidates" ? (
                                 <CandidatesSidebar/>
+                            ) : activeItem.title === "Communication" ? (
+                                <CommunicationSidebarStatic />
                             ) : activeItem.title === "Reports" ? (
                                 <ReportsSidebar/>
                             ) : activeItem.title === "Trash" ? (
