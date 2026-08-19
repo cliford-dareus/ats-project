@@ -3,8 +3,15 @@ import { newInterviewSchema } from "@/zod";
 import { db } from "@/drizzle/db";
 import { interviews } from "@/drizzle/schema";
 import { CACHE_TAGS, revalidateDbCache } from "@/lib/cache";
+import { eq } from "drizzle-orm";
 
 export const create_interview_db = async (data: z.infer<typeof newInterviewSchema>, orgId: string) => {
+    // check if aplication already has an interview
+    const existingInterview = await db.select().from(interviews).where(eq(interviews.applications_id, data.applicationId));
+    if (existingInterview.length > 0) {
+        throw new Error("Application already has an interview");
+    }
+
     await db.insert(interviews).values({
         applications_id: data.applicationId,
         locations: data.location,
@@ -21,7 +28,7 @@ export const create_interview_db = async (data: z.infer<typeof newInterviewSchem
         id: String(data.applicationId),
         orgId: orgId,
     });
-    
+
     revalidateDbCache({
         tag: CACHE_TAGS.applications,
         id: String(data.job_id),

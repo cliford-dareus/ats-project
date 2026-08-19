@@ -25,12 +25,10 @@ const Card = ({ data, handleDragStart, stage, jobDetails }: Props) => {
     const [activeTrigger, setActiveTrigger] = useState<TriggerTask[]>([]);
 
     const hasActiveTrigger = activeTrigger.length > 0 &&
-    activeTrigger.some(task => new Date(task.triggerTime).getTime() > Date.now());
+        activeTrigger.some(task => new Date(task.triggerTime).getTime() > Date.now());
 
-    const hasScheduledInterview = data.interviews?.length > 0 &&
-    data.interviews.some(interview => new Date(interview.start_at).getTime() > Date.now());
-
-    console.log(data.interviews, hasScheduledInterview);
+    const hasScheduledInterview = data.interviews?.start_at != null &&
+        new Date(data.interviews.start_at) > new Date();;
     useEffect(() => {
         const filteredTasks = tasks.filter(task => task.application_id === data.id);
         setActiveTrigger(filteredTasks);
@@ -51,7 +49,7 @@ const Card = ({ data, handleDragStart, stage, jobDetails }: Props) => {
                     <div className="relative flex-shrink-0">
                         <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-sm ring-1 ring-slate-100">
                             <Avatar className="w-8 h-8">
-                                <AvatarImage src="https://github.com/shadcn.png"/>
+                                <AvatarImage src="https://github.com/shadcn.png" />
                                 <AvatarFallback>CN</AvatarFallback>
                             </Avatar>
                         </div>
@@ -91,23 +89,22 @@ const Card = ({ data, handleDragStart, stage, jobDetails }: Props) => {
                                 onClick={() => setIsOpen(true)}
                                 className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 rounded-md text-[9px] font-bold hover:bg-amber-100 transition-colors">
                                 <Calendar size={10} />
-                                SCHEDULING
+                                NEED SCHEDULING
                             </button>
                         )}
-                        
+
                         {hasScheduledInterview && (
                             <button
                                 className={cn("flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 rounded-md text-[9px] font-bold hover:bg-amber-100 transition-colors",
-                                    // TODO: an application/applicant can only have one interview at a time
-                                    data.interviews?.some(interview => interview.status === "AWAITING_FEEDBACK") && "bg-yellow-50 text-yellow-700",
-                                    data.interviews?.some(interview => interview.status === "COMPLETE") && "bg-green-50 text-green-700"
+                                    data.interviews?.status === "AWAITING_FEEDBACK" && "bg-yellow-50 text-yellow-700",
+                                    data.interviews?.status === "COMPLETE" && "bg-green-50 text-green-700"
                                 )}>
                                 <Calendar size={10} />
-                                SCHEDULED
+                                {data.interviews?.status}
                             </button>
                         )}
                     </div>
-                    
+
                     <p className="text-[10px] font-medium text-slate-400">
                         {getTimeElapsed(data.updated_at)}d ago
                     </p>

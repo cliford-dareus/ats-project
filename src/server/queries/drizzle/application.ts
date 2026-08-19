@@ -274,7 +274,7 @@ export const get_application_by_id = async (applicationId: number, orgId: string
         ],
     });
 
-    return cacheFn(applicationId);
+    return cacheFn(applicationId, orgId);
 };
 
 export const get_all_applications = async (filter: z.infer<typeof filterApplicationsSchema>) => {
@@ -330,7 +330,7 @@ export const get_applications_stages_db = async () => {
         .leftJoin(applications, eq(applications.current_stage_id, stages.id));
 };
 
-export const get_application_by_id_db = async (applicationId: number) => {
+export const get_application_by_id_db = async (applicationId: number, orgId: string) => {
     return db
         .select({
             id: applications.id,
@@ -360,7 +360,7 @@ export const get_application_by_id_db = async (applicationId: number) => {
         .leftJoin(candidates, eq(candidates.id, applications.candidate))
         .leftJoin(interviews, eq(interviews.applications_id, applications.id))
         .leftJoin(stages, eq(applications.current_stage_id, stages.id))
-        .where(eq(applications.id, applicationId));
+        .where(and(eq(applications.id, applicationId), eq(applications.organization, orgId)));
 };
 
 export const get_all_applications_db = async (filter: z.infer<typeof filterApplicationsSchema>) => {
@@ -466,7 +466,7 @@ export const get_job_all_applications_db = async (jobId: number) => {
                     ...row.candidate,
                     attachments: [],
                 },
-                interviews: [],
+                interviews: row.interview  ?? null,
                 stage: row.stage ? row.stage.stage_name : "",
             };
         }
@@ -479,14 +479,6 @@ export const get_job_all_applications_db = async (jobId: number) => {
             )
         ) {
             acc[appId].candidate.attachments.push(row.attachment);
-        }
-
-        // Add unique interviews
-        if (
-            row.interview &&
-            !acc[appId].interviews.find((i: any) => i.id === row?.interview?.id)
-        ) {
-            acc[appId].interviews.push(row.interview);
         }
 
         return acc;

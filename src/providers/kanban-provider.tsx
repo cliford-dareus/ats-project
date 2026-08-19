@@ -1,8 +1,8 @@
 'use client';
 
-import React, {createContext, useContext, useState} from 'react';
-import {StageTrigger, TriggerTask} from "@/plugins/smart-trigger/types";
-import {get_all_tasks_action} from "@/server/actions/application_actions";
+import React, { createContext, useContext, useState } from 'react';
+import { StageTrigger, TriggerTask } from "@/plugins/smart-trigger/types";
+import { get_all_tasks_action } from "@/server/actions/application_actions";
 
 type KanbanContextType = {
     tasks: TriggerTask[];
@@ -24,7 +24,7 @@ type Member = {
 
 const KanbanContext = createContext<KanbanContextType | undefined>(undefined);
 
-export function KanbanProvider({children, initialTriggers = [], initialStages = [], initialOrgMembers = []}: {
+export function KanbanProvider({ children, initialTriggers = [], initialStages = [], initialOrgMembers = [] }: {
     children: React.ReactNode;
     initialTriggers?: StageTrigger[];
     initialStages?: any[];
