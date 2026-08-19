@@ -8,6 +8,7 @@ interface NoteInterface extends mongoose.Document {
     updated_at: Date;
     note_id: string;
     note_type: string;
+    channel: 'Email' | 'SMS' | 'Internal Note';
 };
 
 const NoteSchema = new mongoose.Schema<NoteInterface>({
@@ -16,6 +17,7 @@ const NoteSchema = new mongoose.Schema<NoteInterface>({
     note_id: { type: String, required: true },
     note_type: { type: String, required: true },
     created_by: { type: String, required: true },
+    channel: { type: String, enum: ['Email', 'SMS', 'Internal Note'], required: true },
     author: { type: Date, default: Date.now },
     updated_at: { type: Date, default: Date.now },
 });

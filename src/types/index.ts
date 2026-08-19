@@ -104,13 +104,49 @@ export type CandidateDetailsType = {
     references: CandidateReference[];
 };
 
-export type InterviewResponseType = {
-    
-};
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared types
 // ─────────────────────────────────────────────────────────────────────────────
+
+export interface ThreadItem {
+    _id: string;
+    candidate_id: string;
+    candidate_name: string;
+    candidate_email: string;
+    candidate_avatar: string;
+    candidate_role: string;
+    candidate_status: typeof CANDIDATE_STATUS._type;
+    last_message: string;
+    last_timestamp: string;
+    unread_count: number;
+    starred: boolean;
+    messages: MessageItem[];
+}
+
+export interface MessageItem {
+    _id: string;
+    authorName: string;
+    authorAvatar?: string;
+    text: string;
+    timestamp: string;
+    sender: 'candidate' | 'recruiter' | 'team' | 'system';
+    channel: 'Email' | 'SMS' | 'Internal Note';
+    read?: boolean;
+}
+
+export type EmailTemplateDTO = {
+    _id: string;
+    templateId: string;
+    name: string;
+    subject: string;
+    body: string;
+    isDefault?: boolean;
+    isSystem?: boolean;
+    organizationId: string;
+    createdAt?: string;
+    updatedAt?: string;
+};
+
 export type InterviewType = {
     id: number,
     application_id: number,
@@ -143,7 +179,7 @@ export interface ApplicationType {
     resume_score_model: string | null;
 
     candidate: CandidateType;
-    interviews: InterviewType[];
+    interviews: InterviewType | null;
     attachments: { id: number; file_name: string; file_type: string; file_url: string }[]
 };
 

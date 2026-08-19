@@ -1,97 +1,108 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { Mail } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import { FileText, Mail, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CommunicationInbox from "./communication-inbox";
 import CommunicationTemplates from "./communication-templates";
 import ComposeEmailDialog from "./compose-email-dialog";
 import {
-  CommunicationLogDTO,
-  EmailTemplateDTO,
+    EmailTemplateDTO,
 } from "@/server/actions/communication-actions";
+import { CustomTabsTrigger, Tabs, TabsContent, TabsList } from "@/components/ui/tabs";
+import { CandidateType, ThreadItem } from "@/types";
 
 type Props = {
-  templates: EmailTemplateDTO[];
-  systemTemplates: Array<{
-    templateId: string;
-    name: string;
-    subject: string;
-    body: string;
-    isSystem?: boolean;
-  }>;
-  logs: CommunicationLogDTO[];
+    templates: EmailTemplateDTO[];
+    systemTemplates: {
+        templateId: string;
+        name: string;
+        subject: string;
+        body: string;
+        isSystem?: boolean;
+    }[];
+    logs: ThreadItem[];
+    candidates: CandidateType[];
 };
 
+type TabValue = "inbox" | "templates";
+const DEFAULT_TAB: TabValue = "inbox";
+
 const CommunicationPageClient = ({
-  templates,
-  systemTemplates,
-  logs,
+    templates,
+    systemTemplates,
+    logs,
+    candidates
 }: Props) => {
-  const router = useRouter();
-  const [view, setView] = useState<"inbox" | "templates">("inbox");
-  const [composeOpen, setComposeOpen] = useState(false);
+    const pathname = usePathname();
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const [activeTab, setActiveTab] = useState<TabValue>(DEFAULT_TAB);
+    const [composeOpen, setComposeOpen] = useState(false);
 
-  const refresh = () => router.refresh();
+    const refresh = () => router.refresh();
 
-  return (
-    <div className="p-6 space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Mail className="h-6 w-6" />
-            <h1 className="text-2xl font-bold tracking-tight">Communication</h1>
-          </div>
-          <p className="text-muted-foreground text-sm">
-            Inbox of sent messages and reusable email templates for your hiring
-            pipeline.
-          </p>
+    const handleTabChange = useCallback((value: string) => {
+        const newPath = value === DEFAULT_TAB
+            ? pathname
+            : `${pathname}?tab=${value}`;
+        router.push(newPath);
+    }, [pathname, router]);
+
+    useEffect(() => {
+        const tabParam = searchParams.get('tab') as TabValue;
+        setActiveTab(tabParam || DEFAULT_TAB);
+    }, [searchParams]);
+
+    return (
+        <div className="space-y-6">
+            <Tabs className="px-0 h-full w-full" defaultValue="overview" value={activeTab}
+                onValueChange={handleTabChange}>
+                <div className="flex items-center justify-between border-b border-zinc-200 pb-4">
+                    <TabsList className="bg-transparent rounded-none p-0 border-b w-full justify-start">
+                        {[
+                            { id: 'inbox', label: 'Inbox', icon: User },
+                            { id: 'templates', label: 'Templates', icon: FileText },
+                        ].map((tab) => (
+                            <CustomTabsTrigger
+                                key={tab.id}
+                                className="px-4 flex items-center gap-4 py-2 rounded-lg text-xs font-bold transition-all text-[10px] uppercase tracking-widest"
+                                value={tab.id}
+                            >
+                                <tab.icon size={18} />
+                                <p>{tab.label}</p>
+                            </CustomTabsTrigger>
+                        ))}
+                    </TabsList>
+
+                    <Button onClick={() => setComposeOpen(true)}>Compose</Button>
+                </div>
+                
+                <TabsContent value="inbox">
+                    <CommunicationInbox logs={logs} />
+                </TabsContent>
+                
+                <TabsContent value="templates">
+                    <CommunicationTemplates
+                        templates={templates}
+                        systemTemplates={systemTemplates}
+                        onRefresh={refresh}
+                    />
+                </TabsContent>
+
+            </Tabs>
+
+            <ComposeEmailDialog
+                open={composeOpen}
+                onOpenChange={setComposeOpen}
+                templates={templates}
+                systemTemplates={systemTemplates}
+                onSent={refresh}
+                candidates={candidates}
+            />
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex rounded-lg border p-1 bg-muted/40">
-            <Button
-              size="sm"
-              variant={view === "inbox" ? "default" : "ghost"}
-              onClick={() => setView("inbox")}
-            >
-              Inbox
-              <span className="ml-2 text-xs opacity-70">{logs.length}</span>
-            </Button>
-            <Button
-              size="sm"
-              variant={view === "templates" ? "default" : "ghost"}
-              onClick={() => setView("templates")}
-            >
-              Templates
-              <span className="ml-2 text-xs opacity-70">
-                {templates.length}
-              </span>
-            </Button>
-          </div>
-          <Button onClick={() => setComposeOpen(true)}>Compose</Button>
-        </div>
-      </div>
-
-      {view === "inbox" ? (
-        <CommunicationInbox logs={logs} />
-      ) : (
-        <CommunicationTemplates
-          templates={templates}
-          systemTemplates={systemTemplates}
-          onRefresh={refresh}
-        />
-      )}
-
-      <ComposeEmailDialog
-        open={composeOpen}
-        onOpenChange={setComposeOpen}
-        templates={templates}
-        systemTemplates={systemTemplates}
-        onSent={refresh}
-      />
-    </div>
-  );
+    );
 };
 
 export default CommunicationPageClient;

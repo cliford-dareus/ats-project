@@ -24,6 +24,7 @@ export const noteSchema = z.object({
     text: z.string().min(1).max(1000),
     note_id: z.string().min(1),
     note_type: z.string().min(1).max(100),
+    candidate_id: z.number(),
     type: z.enum(NOTE_ENUM).optional(),
 });
 
@@ -32,9 +33,10 @@ type Props = {
     setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
     parent_id: number;
     parent_type: string;
+    candidate_id: number;
 };
 
-const CreateNoteModal = ({ parent_id, parent_type, isOpen, setIsOpen }: Props) => {
+const CreateNoteModal = ({ parent_id, parent_type, isOpen, setIsOpen, candidate_id }: Props) => {
     const form = useForm<z.infer<typeof noteSchema>>({
         resolver: zodResolver(noteSchema),
         defaultValues: {
@@ -47,7 +49,7 @@ const CreateNoteModal = ({ parent_id, parent_type, isOpen, setIsOpen }: Props) =
 
     const addNote = async (data: z.infer<typeof noteSchema>) => {
         try {
-            const response = await create_note({ ...data });
+            const response = await create_note({ ...data, candidate_id });
             console.log(response);
         } catch (error) {
             console.log(error);

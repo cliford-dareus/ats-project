@@ -10,6 +10,7 @@ import { auth } from "@clerk/nextjs/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { CACHE_TAGS, revalidateDbCache } from "@/lib/cache";
+import Thread from "@/models/threads";
 
 type CompletedNotes = {
     note_text: string;
@@ -24,7 +25,7 @@ export const create_note = async (unsafeData: z.infer<typeof noteSchema>) => {
     try {
         await mongodb();
 
-        const { userId } = await auth();
+        const { userId, orgId } = await auth();
         const { success, data } = await noteSchema.spa(unsafeData);
         const canCreate = await canCreateJob(userId);
 
@@ -33,7 +34,29 @@ export const create_note = async (unsafeData: z.infer<typeof noteSchema>) => {
             return { error: true, message: "There was an error creating your the notes" }
         };
 
-        await Note.create({ ...data, created_by: user[0].id });
+        const createdNote = await Note.create({ ...data, channel: 'Internal Note', created_by: user[0].id });
+
+        // check if the candidate alreagy has a thread with the organization
+        const existingThread = await Thread.findOne({
+            organization: orgId,
+            candidate_id: data.candidate_id,
+        });
+
+        if (existingThread) {
+            // add the note to the existing thread
+            await Thread.updateOne(
+                { _id: existingThread._id },
+                { $push: { notes: createdNote._id } },
+            );
+
+        } else {
+            // create a new thread
+            await Thread.create({
+                organization: orgId,
+                candidateId: data.candidate_id,
+                notes: [createdNote._id],
+            });
+        }
 
         revalidateDbCache({
             tag: CACHE_TAGS.applications,
@@ -50,7 +73,7 @@ export const get_candidate_notes = async (parent_id: string) => {
     try {
         await mongodb();
         const completeNotes: CompletedNotes[] = [];
-        
+
         const notes = await Note.find({ note_parent_id: parent_id });
         for (const note of notes) {
             const copy = { ...note._doc };
