@@ -16,6 +16,7 @@ import { sendEmail } from "@/lib/resend";
 import { CANDIDATE_STATUS } from "@/zod";
 import { SYSTEM_TEMPLATES } from "@/lib/constant";
 import { EmailTemplateDTO, ThreadItem } from "@/types";
+import Thread from "@/models/threads";
 
 export type CommunicationLogDTO = {
     _id: string;
@@ -48,10 +49,12 @@ export type newCommunicationThread = {
 };
 
 export type newCommunicationLog = {
+    to?: string;
     body: string;
     subject: string;
-    to: string;
     toName?: string;
+    mode?: 'reply' | 'internal';
+    threadId?: string;
     candidateId?: number;
     candidateName?: string;
     candidateEmail?: string;
@@ -61,9 +64,6 @@ export type newCommunicationLog = {
     templateId?: string;
 };
 
-function applyPlaceholders(text: string, vars: Record<string, string | undefined>) {
-    return text.replace(/\{\{(\w+)\}\}/g, (_, key) => vars[key] ?? `{{${key}}}`);
-}
 
 export async function fetchCommunicationPageData() {
     const [templatesRaw, threads] = await Promise.all([
@@ -122,73 +122,29 @@ export async function sendManualEmailAction(input: newCommunicationLog) {
     const { orgId, userId } = await auth();
     if (!orgId || !userId) throw new Error("Unauthorized");
 
-    const to = input.to.trim();
-    const subject = input.subject.trim();
-    const body = input.body.trim();
+    const payload = {
+        to: input.to,
+        subject: input.subject,
+        body: input.body,
+        mode: input.mode,
+        threadId: input.threadId,
+        candidateId: input.candidateId,
+        candidateName: input.candidateName,
+        candidateEmail: input.candidateEmail,
+        candidateAvatar: input.candidateAvatar,
+        candidateRole: input.candidateRole,
+        candidateStatus: input.candidateStatus,
+    };
 
-    if (!to || !subject || !body) {
-        throw new Error("To, subject, and body are required");
-    }
-
-    // Prefer org-configured Resend key when available; fall back to env.
-    // e.g. const apiKey = (await getOrgResendKey(orgId)) || process.env.RESEND_API_KEY;
-    const apiKey = process.env.RESEND_API_KEY;
-    const fromAddress =
-        process.env.RESEND_FROM_EMAIL || "recruiting@aplico.online";
-    const companyName = process.env.COMPANY_NAME || "Talent Team";
-
-    const html = body
-        .split("\n")
-        .map((line) => `<p style="margin:0 0 12px;line-height:1.6">${line || "&nbsp;"}</p>`)
-        .join("");
-
-    let resendId: string | undefined;
-    let status: "sent" | "failed" = "sent";
-    let error: string | undefined;
-
-    if (apiKey) {
-        try {
-            const result = await sendEmail({
-                apiKey,
-                from: `${companyName} <${fromAddress}>`,
-                to,
-                subject,
-                html: `<div style="font-family:system-ui,sans-serif;color:#18181b;max-width:560px">${html}</div>`,
-                tags: [
-                    { name: "event", value: "manual" },
-                    { name: "org", value: orgId },
-                ],
-            });
-            resendId = result.id;
-        } catch (e) {
-            status = "failed";
-            error = e instanceof Error ? e.message : "Failed to send email";
-        }
-    } else if (process.env.NODE_ENV === "production") {
-        // No key configured in production.
-        status = "failed";
-        error = "Email service not configured";
-    } else {
-        // Dev / no key: still log so the inbox works locally.
-        status = "sent";
-        resendId = `local_${createId()}`;
-    }
-
-    await create_communication_log({
-        ...input,
-        text: body,
-        status,
-        resendId,
-        channel: 'Email'
-    });
+    const result = await create_communication_log(payload, orgId, userId);
 
     revalidatePath("/communication");
 
-    if (status === "failed") {
-        throw new Error(error || "Failed to send email");
+    if (result.error) {
+        throw new Error(result.error);
     }
 
-    return { success: true, resendId };
+    return { success: true, thread:result.thread };
 }
 
 export async function seedSystemTemplatesAction() {

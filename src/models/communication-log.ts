@@ -32,7 +32,7 @@ const CommunicationLogSchema = new mongoose.Schema<CommunicationLogInterface>(
         authorAvatar: { type: String },
         text: { type: String, required: true },
         channel: { type: String, required: true },
-        read: { type: Boolean },
+        read: { type: Boolean, default: false },
         error: { type: String },
     },
     { timestamps: true }

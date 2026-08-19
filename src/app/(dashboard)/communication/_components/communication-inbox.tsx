@@ -1,12 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
     Mail,
     Search,
     CheckCircle2,
-    XCircle,
-    Clock,
     Inbox,
     Star,
     Users,
@@ -18,19 +16,31 @@ import {
     Send,
     Loader2,
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { formatDistanceToNow } from "date-fns";
-import { cn } from "@/lib/utils";
-import { ThreadItem } from "@/types";
+import { applyPlaceholders, cn } from "@/lib/utils";
+import { EmailTemplateDTO, ThreadItem } from "@/types";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { sendManualEmailAction } from "@/server/actions/communication-actions";
 
 type Props = {
     logs: ThreadItem[];
+    templates: EmailTemplateDTO[];
+    systemTemplates: {
+        name: string;
+        body: string;
+        subject: string;
+        templateId: string;
+        isSystem?: boolean;
+    }[];
 };
 
-const CommunicationInbox = ({ logs }: Props) => {
+const CommunicationInbox = ({ logs, templates, systemTemplates, }: Props) => {
+    // Local, mutable copy of the threads so we can do optimistic updates.
+    // Re-syncs whenever the parent gives us a fresh `logs` prop (e.g. after a refetch).
+    const [threads, setThreads] = useState<ThreadItem[]>(logs);
+    useEffect(() => {
+        setThreads(logs);
+    }, [logs]);
+
     const [activeThreadId, setActiveThreadId] = useState<string>(logs[0]?._id || '');
     const [filterFolder, setFilterFolder] = useState<'all' | 'unread' | 'starred' | 'team'>('all');
     const [searchQuery, setSearchQuery] = useState('');
@@ -39,16 +49,49 @@ const CommunicationInbox = ({ logs }: Props) => {
     const [messageText, setMessageText] = useState('');
     const [selectedTemplate, setSelectedTemplate] = useState<string>('');
     const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+
+    const [isSending, setIsSending] = useState(false);
     const [deliveryStatus, setDeliveryStatus] = useState<string | null>(null);
+    const [sendError, setSendError] = useState<string | null>(null);
+
+    const allTemplates = useMemo(() => {
+        const custom = templates.map((t) => ({
+            key: `custom:${t._id}`,
+            label: t.name,
+            subject: t.subject,
+            body: t.body,
+            templateId: t.templateId,
+        }));
+        const system = systemTemplates.map((t) => ({
+            key: `system:${t.templateId}`,
+            label: `${t.name} (system)`,
+            subject: t.subject,
+            body: t.body,
+            templateId: t.templateId,
+        }));
+        return [...custom, ...system];
+    }, [templates, systemTemplates]);
+
+    // Apply Template
+    const handleApplyTemplate = (templateId: string) => {
+        const tmpl = allTemplates.find(t => t.templateId === templateId);
+        if (tmpl && activeThread) {
+            setMessageText(applyPlaceholders(tmpl.body, {
+                candidateName: activeThread.candidate_name,
+                candidateRole: activeThread.candidate_role
+            }));
+            setSelectedTemplate(templateId);
+        }
+    };
 
     // Active Selected Thread
     const activeThread = useMemo(() => {
-        return logs.find(t => t._id === activeThreadId);
-    }, [logs, activeThreadId]);
+        return threads.find(t => t._id === activeThreadId);
+    }, [threads, activeThreadId]);
 
     // Filtered threads list
     const filteredThreads = useMemo(() => {
-        return logs.filter(t => {
+        return threads.filter(t => {
             const matchesSearch = t.candidate_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 t.candidate_role.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 t.last_message.toLowerCase().includes(searchQuery.toLowerCase());
@@ -60,7 +103,7 @@ const CommunicationInbox = ({ logs }: Props) => {
             if (filterFolder === 'team') return t.messages.some(m => m.sender === 'team');
             return true;
         });
-    }, [logs, searchQuery, filterFolder]);
+    }, [threads, searchQuery, filterFolder]);
 
     // Toggle Star
     // const handleToggleStar = (threadId: string) => {
@@ -71,9 +114,67 @@ const CommunicationInbox = ({ logs }: Props) => {
     //         return t;
     //     }));
     // };
-    //
-    const handleSendMessage = async () => {
 
+    const handleSendMessage = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        const text = messageText.trim();
+        if (!text || !activeThread || isSending) return;
+
+        setIsSending(true);
+        setSendError(null);
+        setDeliveryStatus(null);
+
+        // Build an optimistic message so the UI feels instant.
+        const tempId = `temp-${Date.now()}`;
+        const optimisticMessage = {
+            _id: tempId,
+            text,
+            authorName: 'You', // TODO: swap in the real logged-in user's name
+            sender: composerMode === 'reply' ? 'recruiter' : 'team',
+            channel: composerMode === 'reply' ? 'Email' : 'Internal Note',
+            timestamp: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
+        } as ThreadItem['messages'][number];
+
+        const threadId = activeThread._id;
+        setThreads(prev => prev.map(t => t._id === threadId
+            ? {
+                ...t,
+                messages: [...t.messages, optimisticMessage],
+                last_message: text,
+                last_timestamp: 'Just now',
+            }
+            : t
+        ));
+
+        setMessageText('');
+
+        try {
+            await sendManualEmailAction({
+                body: text,
+                threadId: threadId,
+                mode: composerMode,
+                subject: composerMode === 'reply' ? 'Reply to Candidate' : 'Internal Note',
+            });
+
+            setDeliveryStatus(
+                composerMode === 'reply'
+                    ? `Email sent to ${activeThread.candidate_name}`
+                    : 'Internal note posted'
+            );
+            setTimeout(() => setDeliveryStatus(null), 4000);
+        } catch (err) {
+            // Roll back the optimistic message and give the user their draft back.
+            setThreads(prev => prev.map(t => t._id === threadId
+                ? { ...t, messages: t.messages.filter(m => m._id !== tempId) }
+                : t
+            ));
+            setMessageText(text);
+            setSendError((err as Error)?.message || 'Something went wrong sending your message.');
+        } finally {
+            setIsSending(false);
+        }
     };
 
     return (
@@ -140,20 +241,22 @@ const CommunicationInbox = ({ logs }: Props) => {
                                     className={cn(
                                         "p-4 cursor-pointer transition-colors relative group flex items-start gap-3",
                                         isSelected
-                                            ? "bg-primary border-l-4 border-primary/40 text-white"
+                                            ? "bg-teal-100 border-l-4 border-primary text-white"
                                             : "hover:bg-zinc-100/60 bg-white"
                                     )}
                                 >
-                                    <img
-                                        src={thread.candidate_avatar}
-                                        alt={thread.candidate_name}
-                                        className="w-10 h-10 rounded-2xl object-cover ring-2 ring-zinc-100 flex-shrink-0"
-                                        referrerPolicy="no-referrer"
-                                    />
+                                    <Avatar>
+                                        <AvatarImage
+                                            src={thread.candidate_avatar}
+                                            alt={thread.candidate_name}
+                                            className="w-10 h-10 rounded-2xl object-cover ring-2 ring-zinc-100 flex-shrink-0"
+                                            referrerPolicy="no-referrer" />
+                                        <AvatarFallback>CN</AvatarFallback>
+                                    </Avatar>
 
                                     <div className="flex-1 min-w-0 space-y-1">
                                         <div className="flex items-center justify-between">
-                                            <h4 className={cn("text-xs font-bold truncate", isSelected ? "text-brand-900" : "text-zinc-900")}>
+                                            <h4 className={cn("text-xs font-bold truncate", isSelected ? "text-primary" : "text-zinc-900")}>
                                                 {thread.candidate_name}
                                             </h4>
                                             <span className="text-[10px] text-zinc-400 font-medium flex-shrink-0">
@@ -161,7 +264,7 @@ const CommunicationInbox = ({ logs }: Props) => {
                                             </span>
                                         </div>
 
-                                        <p className="text-[11px] font-semibold text-primary/70 truncate">
+                                        <p className="text-[11px] font-semibold text-primary truncate">
                                             {thread.candidate_role}
                                         </p>
 
@@ -176,7 +279,7 @@ const CommunicationInbox = ({ logs }: Props) => {
 
                                             <div className="flex items-center gap-1.5">
                                                 {thread.unread_count > 0 && (
-                                                    <span className="w-2 h-2 rounded-full bg-primary/60" />
+                                                    <span className="w-2 h-2 rounded-full bg-teal-500" />
                                                 )}
                                                 <button
                                                     onClick={(e) => {
@@ -208,12 +311,15 @@ const CommunicationInbox = ({ logs }: Props) => {
                     {/* Thread Header Bar */}
                     <div className="p-6 border-b border-zinc-200 flex flex-wrap items-center justify-between gap-4 bg-white sticky top-0 z-10">
                         <div className="flex items-center gap-4">
-                            <img
-                                src={activeThread.candidateAvatar}
-                                alt={activeThread.candidateName}
-                                className="w-12 h-12 rounded-2xl object-cover ring-2 ring-zinc-100"
-                                referrerPolicy="no-referrer"
-                            />
+                            <Avatar>
+                                <AvatarImage
+                                    src={activeThread.candidate_avatar}
+                                    alt={activeThread.candidate_name}
+                                    className="w-12 h-12 rounded-2xl object-cover ring-2 ring-zinc-100"
+                                    referrerPolicy="no-referrer"
+                                />
+                                <AvatarFallback>CN</AvatarFallback>
+                            </Avatar>
                             <div>
                                 <div className="flex items-center gap-2">
                                     <h3 className="text-base font-bold text-zinc-900 tracking-tight">{activeThread.candidate_name}</h3>
@@ -252,7 +358,7 @@ const CommunicationInbox = ({ logs }: Props) => {
                         {activeThread.messages.map((msg) => {
                             const isCandidate = msg.sender === 'candidate';
                             const isInternalNote = msg.sender === 'team';
-                            console.log(msg);
+
                             return (
                                 <div
                                     key={msg?._id}
@@ -277,13 +383,13 @@ const CommunicationInbox = ({ logs }: Props) => {
                                                     ? "bg-amber-200 text-amber-800"
                                                     : isCandidate
                                                         ? "bg-zinc-100 text-zinc-600"
-                                                        : "bg-primary/20 text-white"
+                                                        : "bg-teal-500 text-white"
                                             )}>
                                                 {msg.channel}
                                             </span>
                                         </div>
-                                        <span className={isCandidate || isInternalNote ? "text-zinc-400 font-normal" : "text-primary/20 font-normal"}>
-                                            {msg.timestamp}
+                                        <span className={isCandidate || isInternalNote ? "text-zinc-400 font-normal" : "text-teal-100 font-normal"}>
+                                            {new Date(msg.createdAt).toLocaleString()}
                                         </span>
                                     </div>
 
@@ -341,13 +447,13 @@ const CommunicationInbox = ({ logs }: Props) => {
                                     {/* Template Dropdown */}
                                     <select
                                         value={selectedTemplate}
-                                        // onChange={(e) => handleApplyTemplate(e.target.value)}
+                                        onChange={(e) => handleApplyTemplate(e.target.value)}
                                         className="bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-1.5 text-xs font-bold text-zinc-700 focus:outline-none cursor-pointer"
                                     >
                                         <option value="">Insert Email Template...</option>
-                                        {/*{templates.map(t => (
-                                            <option key={t.id} value={t.id}>{t.label}</option>
-                                        ))}*/}
+                                        {allTemplates.map(t => (
+                                            <option key={t.key} value={t.templateId}>{t.label}</option>
+                                        ))}
                                     </select>
 
                                     {/* AI Magic Draft Button */}

@@ -119,8 +119,8 @@ const CommunicationTemplates = ({
                         <Card
                             key={tpl._id}
                             className={`cursor-pointer transition-colors ${preview && "_id" in preview && preview._id === tpl._id
-                                    ? "border-primary/40 bg-primary/5"
-                                    : "hover:bg-muted/40"
+                                ? "border-primary/40 bg-primary/5"
+                                : "hover:bg-muted/40"
                                 }`}
                             onClick={() => setPreview(tpl)}
                         >
@@ -172,10 +172,10 @@ const CommunicationTemplates = ({
                         <Card
                             key={tpl.templateId}
                             className={`cursor-pointer transition-colors ${preview &&
-                                    !("_id" in preview) &&
-                                    preview.templateId === tpl.templateId
-                                    ? "border-primary/40 bg-primary/5"
-                                    : "hover:bg-muted/40"
+                                !("_id" in preview) &&
+                                preview.templateId === tpl.templateId
+                                ? "border-primary/40 bg-primary/5"
+                                : "hover:bg-muted/40"
                                 }`}
                             onClick={() => setPreview(tpl)}
                         >

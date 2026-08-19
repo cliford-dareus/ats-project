@@ -132,6 +132,7 @@ export interface MessageItem {
     sender: 'candidate' | 'recruiter' | 'team' | 'system';
     channel: 'Email' | 'SMS' | 'Internal Note';
     read?: boolean;
+    createdAt: string;
 }
 
 export type EmailTemplateDTO = {

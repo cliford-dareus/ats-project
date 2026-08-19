@@ -319,3 +319,7 @@ export const getPriorityColor = (priority: string) => {
             return 'bg-gray-500';
     }
 };
+
+export const applyPlaceholders = (text: string, vars: Record<string, string | undefined>) => {
+    return text.replace(/\{\{(\w+)\}\}/g, (_, key) => vars[key] ?? `{{${key}}}`);
+}

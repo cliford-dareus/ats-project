@@ -5,8 +5,12 @@ import { usersTable } from "@/drizzle/schema";
 import mongodb from "@/lib/mongodb";
 import CommunicationLog from "@/models/communication-log";
 import Thread from "@/models/threads";
+import { newCommunicationLog } from "@/server/actions/communication-actions";
 import { auth } from "@clerk/nextjs/server";
+import { Types } from "mongoose";
 import { and, eq } from "drizzle-orm";
+
+const { ObjectId } = Types;
 
 export async function get_communication_threads(limit = 50) {
     await mongodb();
@@ -51,53 +55,114 @@ export async function getCommunicationLogById(id: string) {
     return JSON.parse(JSON.stringify(log));
 }
 
-export async function create_communication_log(data) {
+export async function create_communication_log(data: newCommunicationLog, orgId: string, userId: string) {
     await mongodb();
 
-    const { orgId, userId } = await auth();
-    if (!orgId || !userId) throw new Error("Unauthorized");
+    const mode = data.mode ?? "reply";
+    const text = data.body?.trim();
 
-    // check if the candidate alreagy has a thread with the organization
-    const existingThread = await Thread.findOne({
-        organization: orgId,
-        candidate_id: data.candidate_id,
-    });
-
-    const author = await db.select().from(usersTable).where(and(eq(usersTable.id, userId), eq(usersTable.organization, orgId)));
-
-    const createdLog = await CommunicationLog.create({
-        organizationId: orgId,
-        sender: userId,
-        authorName: author[0]?.name,
-        authorAvatar: author[0]?.avatar ?? "",
-        ...data,
-    });
+    if (!text) {
+        return { error: "Message body is required" };
+    }
 
     let thread;
-    if (existingThread) {
-        thread = await Thread.findByIdAndUpdate(
-            existingThread._id,
-            {
-                $push: { messages: createdLog._id },
-                $inc: { unread_count: 1 },
-                $set: { last_message: data.body, last_message_at: new Date() },
-            },
-            { new: true },
-        );
+    if (data.threadId) {
+        if (!ObjectId.isValid(data.threadId)) {
+            return { error: "Invalid thread id" };
+        }
+
+        thread = await Thread.findById(data.threadId);
+
+        if (!thread) {
+            return { error: "Thread not found" };
+        }
+
+        // Tenant isolation: make sure this thread actually belongs to the caller's org
+        if (String(thread.organization_id) !== String(orgId)) {
+            return { error: "Not authorized to access this thread" };
+        }
     } else {
+        if (!data.candidateEmail) {
+            return { error: "candidateEmail is required to start a new thread" };
+        }
+
         thread = await Thread.create({
-            organization_id: orgId,
+            candidate_name: data.candidateName ?? "",
+            candidate_email: data.candidateEmail,
+            candidate_avatar: data.candidateAvatar ?? "",
+            candidate_role: data.candidateRole ?? "",
+            candidate_status: data.candidateStatus ?? "",
             candidate_id: data.candidateId,
-            candidate_name: data.candidateName,
-            candidate_avatar: data.candidateAvatar,
-            candidate_role: data.candidateRole,
-            candidate_status: data.candidateStatus,
-            last_message: data.body,
-            last_message_at: new Date(),
-            unread_count: 1,
-            messages: [createdLog._id],
+            organization_id: orgId,
+            messages: [],
         });
     }
 
-    return { log: createdLog, thread };
+    console.log("THREAD", thread);
+    // Get author name from data or database
+    const authorName = thread.candidateName || "You";
+    const message: Record<string, any> = {
+        authorName,
+        authorAvatar: data.candidateAvatar,
+        text: data.body.trim(),
+        sender: mode === 'reply' ? 'recruiter' : 'team',
+        channel: mode === 'reply' ? 'Email' : 'Internal Note',
+        organizationId: orgId,
+    };
+
+    if (mode === "reply") {
+        const to = data?.to?.trim();
+        const subject = data?.subject?.trim();
+
+        // Prefer org-configured Resend key when available; fall back to env.
+        // e.g. const apiKey = (await getOrgResendKey(orgId)) || process.env.RESEND_API_KEY;
+        const apiKey = null;
+        const fromAddress = process.env.RESEND_FROM_EMAIL || "recruiting@aplico.online";
+        const companyName = process.env.COMPANY_NAME || "Talent Team";
+
+        const html = text
+            .split("\n")
+            .map((line) => `<p style="margin:0 0 12px;line-height:1.6">${line || "&nbsp;"}</p>`)
+            .join("");
+
+        let resend_id: string | undefined;
+        let status: "sent" | "failed" | "pending";
+        let error: string | undefined;
+
+        if (apiKey) {
+            try {
+                // resend email
+            } catch (e) {
+                error = e instanceof Error ? e.message : String(e);
+                status = "failed";
+            }
+        } else if (process.env.NODE_ENV === "production" && !apiKey) {
+            status = "failed";
+            error = "No Resend API key configured";
+        } else {
+            // DEV: use local timestamp as resend_id for development
+            status = "sent";
+            resend_id = `local-${new Date().toISOString()}`;
+        }
+    }
+    
+    const createdMessage = await CommunicationLog.create({ ...message });
+
+    // Persist the message either way (email reply or internal note)
+    const updateResult = await Thread.findOneAndUpdate(
+        { _id: new ObjectId(thread._id) },
+        {
+            $push: { messages: createdMessage._id } as any,
+            $set: {
+                last_message: message.text,
+                last_timestamp: message.createdAt,
+                // A reply from the team clears the thread's unread state;
+                // adjust if your unread logic differs.
+                unread_count: 0,
+            },
+        },
+        { returnDocument: "after" }
+    );
+
+    return { thread: updateResult.value };
 }

@@ -7,19 +7,16 @@ import { Button } from "@/components/ui/button";
 import CommunicationInbox from "./communication-inbox";
 import CommunicationTemplates from "./communication-templates";
 import ComposeEmailDialog from "./compose-email-dialog";
-import {
-    EmailTemplateDTO,
-} from "@/server/actions/communication-actions";
 import { CustomTabsTrigger, Tabs, TabsContent, TabsList } from "@/components/ui/tabs";
-import { CandidateType, ThreadItem } from "@/types";
+import { CandidateType, EmailTemplateDTO, ThreadItem } from "@/types";
 
 type Props = {
     templates: EmailTemplateDTO[];
     systemTemplates: {
-        templateId: string;
         name: string;
-        subject: string;
         body: string;
+        subject: string;
+        templateId: string;
         isSystem?: boolean;
     }[];
     logs: ThreadItem[];
@@ -80,7 +77,7 @@ const CommunicationPageClient = ({
                 </div>
                 
                 <TabsContent value="inbox">
-                    <CommunicationInbox logs={logs} />
+                    <CommunicationInbox logs={logs} templates={templates} systemTemplates={systemTemplates} />
                 </TabsContent>
                 
                 <TabsContent value="templates">
@@ -90,7 +87,6 @@ const CommunicationPageClient = ({
                         onRefresh={refresh}
                     />
                 </TabsContent>
-
             </Tabs>
 
             <ComposeEmailDialog
