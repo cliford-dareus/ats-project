@@ -15,6 +15,13 @@
       "when": 1779151002905,
       "tag": "0001_sour_guardian",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1787282747132,
+      "tag": "0002_serious_silverclaw",
+      "breakpoints": true
     }
   ]
 }

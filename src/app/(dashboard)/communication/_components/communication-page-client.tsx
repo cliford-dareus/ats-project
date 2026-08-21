@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { FileText, Mail, User } from "lucide-react";
+import { FileText, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CommunicationInbox from "./communication-inbox";
 import CommunicationTemplates from "./communication-templates";
@@ -27,10 +27,10 @@ type TabValue = "inbox" | "templates";
 const DEFAULT_TAB: TabValue = "inbox";
 
 const CommunicationPageClient = ({
-    templates,
-    systemTemplates,
     logs,
-    candidates
+    candidates,
+    templates,
+    systemTemplates
 }: Props) => {
     const pathname = usePathname();
     const router = useRouter();
@@ -75,11 +75,25 @@ const CommunicationPageClient = ({
 
                     <Button onClick={() => setComposeOpen(true)}>Compose</Button>
                 </div>
-                
+
                 <TabsContent value="inbox">
-                    <CommunicationInbox logs={logs} templates={templates} systemTemplates={systemTemplates} />
+                    <CommunicationInbox logs={logs} templates={templates} systemTemplates={systemTemplates} users={[{
+                        id: "user_abc",
+                        name: "Cliford Dareus",
+                        username: "cliford",
+                        email: "cliford@example.com",
+                        image_url: null,
+                    },
+                    {
+                        id: "user_xyz",
+                        name: "Sarah Chen",
+                        username: "sarah",
+                        email: "sarah@example.com",
+                        image_url: null,
+                    },
+                    ]} />
                 </TabsContent>
-                
+
                 <TabsContent value="templates">
                     <CommunicationTemplates
                         templates={templates}

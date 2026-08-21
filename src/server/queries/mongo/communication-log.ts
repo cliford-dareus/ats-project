@@ -98,16 +98,20 @@ export async function create_communication_log(data: newCommunicationLog, orgId:
         });
     }
 
-    console.log("THREAD", thread);
-    // Get author name from data or database
-    const authorName = thread.candidateName || "You";
+    // Get author name from database
+    const author = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+    const authorName = author[0]?.name || "Unknown";
+    const authorAvatar = author[0]?.image_url;
+
     const message: Record<string, any> = {
         authorName,
-        authorAvatar: data.candidateAvatar,
+        authorAvatar,
         text: data.body.trim(),
         sender: mode === 'reply' ? 'recruiter' : 'team',
         channel: mode === 'reply' ? 'Email' : 'Internal Note',
         organizationId: orgId,
+        mentions: data.mentions.length > 0 ? data.mentions : [],
+        mentionedUserIds: data.mentions.map(m => m.userId) ?? [],
     };
 
     if (mode === "reply") {
@@ -145,7 +149,7 @@ export async function create_communication_log(data: newCommunicationLog, orgId:
             resend_id = `local-${new Date().toISOString()}`;
         }
     }
-    
+
     const createdMessage = await CommunicationLog.create({ ...message });
 
     // Persist the message either way (email reply or internal note)

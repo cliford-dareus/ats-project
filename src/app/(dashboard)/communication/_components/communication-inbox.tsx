@@ -20,6 +20,11 @@ import { applyPlaceholders, cn } from "@/lib/utils";
 import { EmailTemplateDTO, ThreadItem } from "@/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { sendManualEmailAction } from "@/server/actions/communication-actions";
+import {
+    MentionTextarea,
+    type MentionRef,
+    type MentionUser,
+} from "@/components/mentions-text-area";
 
 type Props = {
     logs: ThreadItem[];
@@ -31,9 +36,10 @@ type Props = {
         templateId: string;
         isSystem?: boolean;
     }[];
+    users: MentionUser[];
 };
 
-const CommunicationInbox = ({ logs, templates, systemTemplates, }: Props) => {
+const CommunicationInbox = ({ logs, templates, systemTemplates, users }: Props) => {
     // Local, mutable copy of the threads so we can do optimistic updates.
     // Re-syncs whenever the parent gives us a fresh `logs` prop (e.g. after a refetch).
     const [threads, setThreads] = useState<ThreadItem[]>(logs);
@@ -41,18 +47,24 @@ const CommunicationInbox = ({ logs, templates, systemTemplates, }: Props) => {
         setThreads(logs);
     }, [logs]);
 
+    const [messageText, setMessageText] = useState('');
+    const [mentions, setMentions] = useState<MentionRef[]>([]);
+
+    const onChange = (e: string) => {
+        setMessageText(e);
+    };
+
     const [activeThreadId, setActiveThreadId] = useState<string>(logs[0]?._id || '');
     const [filterFolder, setFilterFolder] = useState<'all' | 'unread' | 'starred' | 'team'>('all');
     const [searchQuery, setSearchQuery] = useState('');
 
     const [composerMode, setComposerMode] = useState<'reply' | 'internal'>('reply');
-    const [messageText, setMessageText] = useState('');
     const [selectedTemplate, setSelectedTemplate] = useState<string>('');
-    const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+    const [isGeneratingAi,] = useState(false);
 
     const [isSending, setIsSending] = useState(false);
     const [deliveryStatus, setDeliveryStatus] = useState<string | null>(null);
-    const [sendError, setSendError] = useState<string | null>(null);
+    const [, setSendError] = useState<string | null>(null);
 
     const allTemplates = useMemo(() => {
         const custom = templates.map((t) => ({
@@ -156,6 +168,7 @@ const CommunicationInbox = ({ logs, templates, systemTemplates, }: Props) => {
                 threadId: threadId,
                 mode: composerMode,
                 subject: composerMode === 'reply' ? 'Reply to Candidate' : 'Internal Note',
+                mentions: mentions,
             });
 
             setDeliveryStatus(
@@ -178,7 +191,7 @@ const CommunicationInbox = ({ logs, templates, systemTemplates, }: Props) => {
     };
 
     return (
-        <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[700px]">
+        <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden grid grid-cols-1 grid-rows-1 lg:grid-cols-12 min-h-[700px] h-[calc(100vh_-_235px)]">
             {/* LEFT COLUMN: Threads List & Folder Filters (4 Cols) */}
             <div className="lg:col-span-4 border-r border-zinc-200 flex flex-col bg-zinc-50/40">
 
@@ -210,7 +223,7 @@ const CommunicationInbox = ({ logs, templates, systemTemplates, }: Props) => {
                             return (
                                 <button
                                     key={folder.id}
-                                    onClick={() => setFilterFolder(folder.id as any)}
+                                    onClick={() => setFilterFolder(folder.id as 'starred' | 'all' | 'unread' | 'team')}
                                     className={cn(
                                         "flex-1 py-1.5 px-2 rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1",
                                         isActive
@@ -306,7 +319,7 @@ const CommunicationInbox = ({ logs, templates, systemTemplates, }: Props) => {
 
             {/* MIDDLE COLUMN: Active Conversation & Reply Center (8 Cols) */}
             {activeThread ? (
-                <div className="lg:col-span-8 flex flex-col bg-white">
+                <div className="lg:col-span-8 flex-1 flex flex-col bg-white">
 
                     {/* Thread Header Bar */}
                     <div className="p-6 border-b border-zinc-200 flex flex-wrap items-center justify-between gap-4 bg-white sticky top-0 z-10">
@@ -354,7 +367,7 @@ const CommunicationInbox = ({ logs, templates, systemTemplates, }: Props) => {
                     </div>
 
                     {/* Conversation Messages Feed */}
-                    <div className="flex-1 p-6 overflow-y-auto space-y-4 bg-zinc-50/30">
+                    <div className="p-6 overflow-y-scroll h-[50%] space-y-4 bg-zinc-50/30">
                         {activeThread.messages.map((msg) => {
                             const isCandidate = msg.sender === 'candidate';
                             const isInternalNote = msg.sender === 'team';
@@ -481,10 +494,15 @@ const CommunicationInbox = ({ logs, templates, systemTemplates, }: Props) => {
 
                         {/* Form & Textarea */}
                         <form onSubmit={handleSendMessage} className="space-y-3">
-                            <textarea
-                                rows={4}
+                            <MentionTextarea
                                 value={messageText}
-                                onChange={(e) => setMessageText(e.target.value)}
+                                setValue={setMessageText}
+                                onChange={onChange}
+                                mentions={mentions}
+                                onMentionsChange={(m) => {
+                                    setMentions(m);
+                                }}
+                                users={users}
                                 placeholder={
                                     composerMode === 'reply'
                                         ? `Type your email response to ${activeThread.candidate_name}...`

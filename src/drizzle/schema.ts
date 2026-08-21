@@ -17,7 +17,7 @@ export const organization = mysqlTable('organization', {
 
 export const organization_relation = relations(organization, ({ many }) => ({
     departments: many(departments),
-    users: many(usersTable),
+    members: many(organization_member),
     job_listings: many(job_listings),
     automation_rules: many(automation_rules)
 }));
@@ -52,17 +52,40 @@ export const orgToDepartment_relations = relations(org_to_department, ({ one }) 
 }));
 
 export const usersTable = mysqlTable('users_table', {
-    id: varchar({ length: 255 }).primaryKey(),
+    id: varchar({ length: 255 }).primaryKey(), // Clerk user id
     name: varchar({ length: 255 }).notNull(),
-    age: int().notNull(),
     email: varchar({ length: 255 }).notNull().unique(),
-    organization: varchar({ length: 255 }).notNull(),
+    image_url: varchar('image_url', { length: 512 }),
+    username: varchar({ length: 64 }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
 });
 
-export const usersTable_relations = relations(usersTable, ({ many, one }) => ({
+export const usersTable_relations = relations(usersTable, ({ many }) => ({
     assignments: many(stages),
+    memberships: many(organization_member),
+}));
+
+export const organization_member = mysqlTable('organization_member', {
+    id: int().primaryKey().autoincrement(),
+    user_id: varchar('user_id', { length: 255 }).notNull()
+        .references(() => usersTable.id, { onDelete: 'cascade' }),
+    organization_id: varchar('organization_id', { length: 255 }).notNull()
+        .references(() => organization.clerk_id, { onDelete: 'cascade' }),
+    role: varchar({ length: 64 }).notNull().default('org:member'),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+}, (t) => ({
+    uniqueUserOrg: unique("unique_user_org").on(t.user_id, t.organization_id),
+    orgIdx: index('org_members_org_idx').on(t.organization_id),
+}));
+
+export const organization_members_relations = relations(organization_member, ({ one }) => ({
+    user: one(usersTable, {
+        fields: [organization_member.user_id],
+        references: [usersTable.id],
+    }),
     organization: one(organization, {
-        fields: [usersTable.organization],
+        fields: [organization_member.organization_id],
         references: [organization.clerk_id],
     }),
 }));

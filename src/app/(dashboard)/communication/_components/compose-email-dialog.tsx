@@ -25,7 +25,6 @@ import {
     sendManualEmailAction,
 } from "@/server/actions/communication-actions";
 import { CandidateType, EmailTemplateDTO } from "@/types";
-import { Card, CardContent } from "@/components/ui/card";
 
 type Props = {
     open: boolean;

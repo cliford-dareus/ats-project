@@ -12,11 +12,9 @@ import {
     create_communication_log,
     get_communication_threads,
 } from "@/server/queries/mongo/communication-log";
-import { sendEmail } from "@/lib/resend";
 import { CANDIDATE_STATUS } from "@/zod";
 import { SYSTEM_TEMPLATES } from "@/lib/constant";
 import { EmailTemplateDTO, ThreadItem } from "@/types";
-import Thread from "@/models/threads";
 
 export type CommunicationLogDTO = {
     _id: string;
@@ -62,6 +60,7 @@ export type newCommunicationLog = {
     candidateRole?: string;
     candidateStatus?: typeof CANDIDATE_STATUS._type | null;
     templateId?: string;
+    mentions: { userId: string; name: string }[];
 };
 
 
@@ -81,6 +80,37 @@ export async function fetchCommunicationPageData() {
 };
 
 export const create_communication_thread = async (data: newCommunicationThread) => { };
+
+export async function sendManualEmailAction(input: newCommunicationLog) {
+    const { orgId, userId } = await auth();
+    if (!orgId || !userId) throw new Error("Unauthorized");
+
+    const payload = {
+        to: input.to,
+        subject: input.subject,
+        body: input.body,
+        mode: input.mode,
+        threadId: input.threadId,
+        candidateId: input.candidateId,
+        candidateName: input.candidateName,
+        candidateEmail: input.candidateEmail,
+        candidateAvatar: input.candidateAvatar,
+        candidateRole: input.candidateRole,
+        candidateStatus: input.candidateStatus,
+        mentions: input.mentions,
+    };
+
+    const result = await create_communication_log(payload, orgId, userId);
+
+    revalidatePath("/communication");
+
+    if (result.error) {
+        throw new Error(result.error);
+    }
+
+    return { success: true, thread: result.thread };
+}
+
 
 // TEMPLATES
 export async function upsertEmailTemplateAction(data: {
@@ -116,35 +146,6 @@ export async function deleteEmailTemplateAction(id: string) {
     await deleteEmailTemplate(id);
     revalidatePath("/communication");
     return { success: true };
-}
-
-export async function sendManualEmailAction(input: newCommunicationLog) {
-    const { orgId, userId } = await auth();
-    if (!orgId || !userId) throw new Error("Unauthorized");
-
-    const payload = {
-        to: input.to,
-        subject: input.subject,
-        body: input.body,
-        mode: input.mode,
-        threadId: input.threadId,
-        candidateId: input.candidateId,
-        candidateName: input.candidateName,
-        candidateEmail: input.candidateEmail,
-        candidateAvatar: input.candidateAvatar,
-        candidateRole: input.candidateRole,
-        candidateStatus: input.candidateStatus,
-    };
-
-    const result = await create_communication_log(payload, orgId, userId);
-
-    revalidatePath("/communication");
-
-    if (result.error) {
-        throw new Error(result.error);
-    }
-
-    return { success: true, thread:result.thread };
 }
 
 export async function seedSystemTemplatesAction() {

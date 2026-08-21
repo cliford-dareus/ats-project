@@ -20,6 +20,13 @@ interface CommunicationLogInterface extends mongoose.Document {
     channel: 'Email' | 'SMS' | 'Internal Note';
     read?: boolean;
     error?: string;
+    mentions: {
+        userId: string,      // Clerk id
+        name: string,        // snapshot at write time
+        start: number,       // optional: index in text
+        end: number,
+    }[],
+    mentionedUserIds: string[],
     createdAt: Date;
     updatedAt: Date;
 }
@@ -34,6 +41,8 @@ const CommunicationLogSchema = new mongoose.Schema<CommunicationLogInterface>(
         channel: { type: String, required: true },
         read: { type: Boolean, default: false },
         error: { type: String },
+        mentions: { type: [] },
+        mentionedUserIds: { type: [] },
     },
     { timestamps: true }
 );
