@@ -98,10 +98,6 @@ export const add_department_in_organization = async (data: z.infer<typeof depart
 
         const deps = await trx.select().from(departments);
 
-        // if (org.length === 0 || deps.length === 0) {
-        //     trx.rollback();
-        // };
-
         for (const item of data.departments) {
             const department = deps.find(x => x.name.toLowerCase() === item.toLowerCase());
             if (department) {
@@ -156,6 +152,64 @@ export const get_organization_by_id = async (org_id: string) => {
 
 export const get_organization_by_id_db = async (org_id: string) => {
     return db.select().from(organization).where(eq(organization.clerk_id, org_id));
+};
+
+export type GeneralSettingsUpdate = {
+    name: string;
+    locations: string;
+    phone: string;
+    email: string;
+    primary_color: string;
+    font_family: string;
+    subdomain: string;
+};
+
+export const update_organization_general_settings = async (
+    orgId: string,
+    data: GeneralSettingsUpdate
+) => {
+    // If subdomain changed, ensure uniqueness
+    const current = await db
+        .select({
+            subdomain: organization.subdomain,
+        })
+        .from(organization)
+        .where(eq(organization.clerk_id, orgId))
+        .limit(1);
+
+    if (!current.length) {
+        throw new Error("Organization not found");
+    }
+
+    if (data.subdomain !== current[0].subdomain) {
+        const taken = await db
+            .select({ id: organization.clerk_id })
+            .from(organization)
+            .where(eq(organization.subdomain, data.subdomain))
+            .limit(1);
+
+        if (taken.length > 0) {
+            throw new Error("This career-page subdomain is already taken");
+        }
+    }
+
+    await db
+        .update(organization)
+        .set({
+            name: data.name,
+            locations: data.locations,
+            phone: data.phone,
+            email: data.email,
+            primary_color: data.primary_color,
+            font_family: data.font_family,
+            subdomain: data.subdomain,
+        })
+        .where(eq(organization.clerk_id, orgId));
+
+    revalidateDbCache({ tag: CACHE_TAGS.organizations, id: orgId });
+    revalidateDbCache({ tag: CACHE_TAGS.organizations });
+
+    return { success: true };
 };
 
 export const get_all_departments = async () => {
