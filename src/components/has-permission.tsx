@@ -1,6 +1,6 @@
-import { auth } from "@clerk/nextjs/server";
-import { AwaitedReactNode } from "react";
+import { hasPermission } from "@/server/permissions";
 import { NoPermissionCard } from "./no-permission-card";
+import type { Permission } from "@/lib/permissions";
 
 export async function HasPermission({
   permission,
@@ -8,14 +8,16 @@ export async function HasPermission({
   fallbackText,
   children,
 }: {
-  permission: (userId: string | null) => Promise<boolean>
-  renderFallback?: boolean
-  fallbackText?: string
-  children: AwaitedReactNode
+  permission: Permission;
+  renderFallback?: boolean;
+  fallbackText?: string;
+  children: React.ReactNode;
 }) {
-  const { userId } = await auth()
-  const hasPermission = await permission(userId)
-  if (hasPermission) return children
-  if (renderFallback) return <NoPermissionCard>{fallbackText}</NoPermissionCard>
-  return null
-};
+  const allowed = await hasPermission(permission);
+
+  if (allowed) return children;
+  if (renderFallback) {
+    return <NoPermissionCard>{fallbackText}</NoPermissionCard>;
+  }
+  return null;
+}
