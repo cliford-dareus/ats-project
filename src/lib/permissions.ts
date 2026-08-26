@@ -36,7 +36,7 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     "interview:schedule",
     "report:view",
   ],
-  "org:viewer": [
+  "org:member": [
     "job:view",
     "report:view",
   ],

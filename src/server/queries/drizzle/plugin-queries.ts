@@ -112,7 +112,7 @@ export const deleteJobAutomationRule = async (jobId: number, ruleId: string, org
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AutomationRules
+// PLUGINS QUERIES
 // ─────────────────────────────────────────────────────────────────────────────
 export async function db_get_org_plugin_state(orgId: string): Promise<OrgPluginState> {
     const record = await db_get_organization_plugins(orgId);

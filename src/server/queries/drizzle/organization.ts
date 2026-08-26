@@ -1,9 +1,10 @@
-import { db } from "@/drizzle/db";
-import { departments, org_to_department, organization } from "@/drizzle/schema";
-import { eq, sql } from "drizzle-orm";
-import { CACHE_TAGS, dbCache, getGlobalTag, getIdTag, revalidateDbCache } from "@/lib/cache";
-import { departmentSchema, organizationSchema } from "@/zod";
 import { z } from "zod";
+import { db } from "@/drizzle/db";
+import { eq, sql } from "drizzle-orm";
+import { GeneralSettingsUpdate } from "@/types";
+import { departmentSchema, organizationSchema } from "@/zod";
+import { departments, org_to_department, organization } from "@/drizzle/schema";
+import { CACHE_TAGS, dbCache, getGlobalTag, getIdTag, revalidateDbCache } from "@/lib/cache";
 
 export const create_organization = async (data: z.infer<typeof organizationSchema>) => {
     const result = await db.insert(organization).values({
@@ -42,9 +43,9 @@ export const update_organization_plugins = async (orgId: string, pluginId: strin
             .update(organization)
             .set({ plugins: updatedPlugins })
             .where(eq(organization.clerk_id, orgId));
-        
+
         revalidateDbCache({ tag: CACHE_TAGS.organizations, id: orgId });
-        
+
         return { message: "Success" };
     } catch (error) {
         console.error('Error toggling plugin:', error);
@@ -66,17 +67,17 @@ export const toggle_organization_plugin = async (orgId: string, enabled: boolean
         const updatedEnabled = enabled
             ? [...new Set([...pluginsData.enabled, pluginId])] // install extension
             : pluginsData.enabled.filter((id: string) => id !== pluginId); // uninstall extension
-        
+
         const updatedSettings = enabled
             ? { ...pluginsData.settings, [pluginId]: { ...pluginsData.settings[pluginId], ...config, active: true } }
             : { ...pluginsData.settings, [pluginId]: { ...pluginsData.settings[pluginId], active: false } };
-        
+
         const updatedPlugins = {
             ...pluginsData,
             enabled: updatedEnabled,
             settings: updatedSettings,
         };
-        
+
         await db
             .update(organization)
             .set({ plugins: updatedPlugins })
@@ -154,20 +155,7 @@ export const get_organization_by_id_db = async (org_id: string) => {
     return db.select().from(organization).where(eq(organization.clerk_id, org_id));
 };
 
-export type GeneralSettingsUpdate = {
-    name: string;
-    locations: string;
-    phone: string;
-    email: string;
-    primary_color: string;
-    font_family: string;
-    subdomain: string;
-};
-
-export const update_organization_general_settings = async (
-    orgId: string,
-    data: GeneralSettingsUpdate
-) => {
+export const update_organization_general_settings = async (orgId: string, data: GeneralSettingsUpdate) => {
     // If subdomain changed, ensure uniqueness
     const current = await db
         .select({

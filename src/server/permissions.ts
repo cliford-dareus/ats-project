@@ -31,7 +31,22 @@ export const canCreateJob = () => hasPermission("job:create");
 export const canEditJob = () => hasPermission("job:edit");
 export const canDeleteJob = () => hasPermission("job:delete");
 
+export const canCreateCandidate = () => hasPermission("candidate:create");
+export const canEditCandidate = () => hasPermission("candidate:edit");
 export const canEvaluateCandidate = () => hasPermission("candidate:evaluate");
+
+export const canMoveApplication = () => hasPermission("application:move");
+
+export const canScheduleInterview = () => hasPermission("interview:schedule");
+// export const canManageInterviews = () => hasPermission("interview:manage");
+
+// export const canManageOrganizations = () => hasPermission("organization:manage");
+
+export const canGenerateReport = () => hasPermission("report:generate");
+export const canViewReport = () => hasPermission("report:view");
+
+export const canInviteMember = () => hasPermission("member:invite");
+export const canManageMember = () => hasPermission("member:manage")
 
 // ── Auth guard helper ─────────────────────────────────────────────────────────
 export const getAuthOrThrow = async () => {

@@ -37,7 +37,7 @@ type AddTaskToQueueActionParams = {
 // MOVE LATER
 export const add_task_to_queue_action = async (unsafeData: AddTaskToQueueActionParams) => {
     const { userId } = await auth();
-    const canCreate = await canCreateJob(userId);
+    const canCreate = await canCreateJob();
 
     if (!userId || !canCreate) {
         return { error: true, message: "There was an error creating your product" }
@@ -118,9 +118,7 @@ import {getOrgPluginState} from "@/server/actions/plugin-actions";
 // }
 
 // ── Convenience: just the flags (for lightweight feature-gating checks) ───────
-export async function getEnabledPluginFlags(
-    orgId: string
-): Promise<Record<string, boolean>> {
+export async function getEnabledPluginFlags(orgId: string): Promise<Record<string, boolean>> {
     const { flags } = await getOrgPluginState(orgId);
     return flags;
 };

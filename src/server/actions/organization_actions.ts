@@ -13,29 +13,13 @@ import {
     toggle_organization_plugin,
     update_organization_general_settings,
 } from "../queries";
-import { departmentSchema, inviteMemberSchema, organizationSchema } from "@/zod";
-
-export const generalSettingsSchema = z.object({
-    name: z.string().min(2, "Company name is required").max(100),
-    locations: z.string().min(2, "Headquarters / location is required").max(255),
-    phone: z.string().min(7, "Phone number is required").max(40),
-    email: z.string().email("Enter a valid company email"),
-    primary_color: z.string().min(2).max(40),
-    font_family: z.enum(["sans", "serif", "mono"]),
-    subdomain: z
-        .string()
-        .min(3, "Subdomain must be at least 3 characters")
-        .max(63)
-        .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use lowercase letters, numbers, and hyphens only"),
-});
-
-export type GeneralSettingsInput = z.infer<typeof generalSettingsSchema>;
+import { departmentSchema, GeneralSettingsInput, generalSettingsSchema, inviteMemberSchema, organizationSchema } from "@/zod";
 
 export const create_organization_invite = async (unsafeData: z.infer<typeof inviteMemberSchema>) => {
     const client = await clerkClient();
     const { userId } = await auth();
     const { success, data } = await inviteMemberSchema.spa(unsafeData);
-    const canCreate = await canCreateJob(userId);
+    const canCreate = await canCreateJob("");
 
     if (!canCreate || !success || !userId) {
         throw new Error("You are not authorized to create an organization");
@@ -144,7 +128,7 @@ export const update_general_settings_action = async (unsafeData: GeneralSettings
 
     // Prefer admin for org-wide settings; fall back to existing canCreateJob gate
     const isAdmin = orgRole === "org:admin";
-    const canCreate = await canCreateJob(userId);
+    const canCreate = await canCreateJob("");
     if (!isAdmin && !canCreate) {
         throw new Error("You do not have permission to update organization settings");
     }

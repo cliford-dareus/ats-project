@@ -32,7 +32,7 @@ const AvailableExtensions = ({ orgId, installed }: { orgId: string, installed: I
                     <div key={plugin.id} className="bg-zinc-50/50 p-6 rounded-2xl border border-zinc-100 transition-all hover:bg-white hover:border-zinc-200 shadow-sm relative group">
                         <div className="flex justify-between items-start mb-4">
                             <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", plugin.providerColor)}>
-                                <PluginIcon name={plugin?.icon} className={cn("w-6 h-6", plugin.providerColor)} />
+                                <PluginIcon name={plugin?.icon as string} className={cn("w-6 h-6", plugin.providerColor)} />
                             </div>
                             <button
                                 onClick={() => onInstall(plugin.id)}

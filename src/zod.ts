@@ -319,3 +319,20 @@ export const inviteMemberSchema = z.object({
     role: z.string(),
     redirectUrl: z.string()
 });
+
+
+export const generalSettingsSchema = z.object({
+    name: z.string().min(2, "Company name is required").max(100),
+    locations: z.string().min(2, "Headquarters / location is required").max(255),
+    phone: z.string().min(7, "Phone number is required").max(40),
+    email: z.string().email("Enter a valid company email"),
+    primary_color: z.string().min(2).max(40),
+    font_family: z.enum(["sans", "serif", "mono"]),
+    subdomain: z
+        .string()
+        .min(3, "Subdomain must be at least 3 characters")
+        .max(63)
+        .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use lowercase letters, numbers, and hyphens only"),
+});
+
+export type GeneralSettingsInput = z.infer<typeof generalSettingsSchema>;

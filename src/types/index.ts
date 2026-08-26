@@ -282,6 +282,16 @@ export interface CandidateWithDetails {
     scoreCard: string[] | null;
 };
 
+export type GeneralSettingsUpdate = {
+    name: string;
+    locations: string;
+    phone: string;
+    email: string;
+    primary_color: string;
+    font_family: string;
+    subdomain: string;
+};
+
 export interface FormErrors {
     [key: string]: string | undefined;
 };
