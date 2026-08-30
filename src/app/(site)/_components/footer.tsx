@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Command } from "lucide-react";
 import { MARKETING_NAV, PRODUCT_NAME, ROOT_DOMAIN } from "@/lib/marketing";
 
- const Footer = () => {
+const Footer = () => {
   const year = new Date().getFullYear();
 
   return (
