@@ -1,23 +1,21 @@
-import { currentUser, auth } from "@clerk/nextjs/server";
-import Header from "./_components/header";
-import { redirect } from "next/navigation";
+import { auth } from "@clerk/nextjs/server";
+import MarketingHeader from "./_components/header";
+import Footer from "./_components/footer";
 
-const Layout = async ({ children }: { children: React.ReactNode }) => {
-    // Cache the user object to avoid unnecessary re-fetches
-    const user = await currentUser();
-    const { orgId,  } = await auth();
-    
-    if(user && orgId) {
-        redirect("/dashboard")
-    }
+const MarketingLayout = async ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
+  const { userId } = await auth();
 
-    return (
-        <div className="flex min-h-screen flex-col">
-            <Header user={user} orgId={orgId!} />
-            <main className="flex-1">{children}</main>
-            {/* <Footer /> */}
-        </div>
-    );
+  return (
+    <div className="flex min-h-screen flex-col bg-white text-zinc-900">
+      <MarketingHeader is_signed_in={!!userId} />
+      <main className="flex-1">{children}</main>
+      <Footer />
+    </div>
+  );
 };
 
-export default Layout;
+export default MarketingLayout;
