@@ -15,11 +15,11 @@ export const organization = mysqlTable('organization', {
     theme: json('theme'),
 });
 
-export const organization_relation = relations(organization, ({ many }) => ({
+export const organization_relations = relations(organization, ({ many }) => ({
     departments: many(departments),
     members: many(organization_member),
     job_listings: many(job_listings),
-    automation_rules: many(automation_rules)
+    automation_rules: many(automation_rules),
 }));
 
 export const departments = mysqlTable('departments', {
@@ -27,7 +27,7 @@ export const departments = mysqlTable('departments', {
     name: varchar({ length: 255 }).notNull(),
 });
 
-export const department_relation = relations(departments, ({ many }) => ({
+export const departments_relations = relations(departments, ({ many }) => ({
     job_listings: many(job_listings),
     org_links: many(org_to_department),
 }));
@@ -37,10 +37,10 @@ export const org_to_department = mysqlTable('org_to_department', {
     department_id: int('department_id').notNull().references(() => departments.id),
     organization_id: varchar({ length: 255 }).notNull().references(() => organization.clerk_id),
 }, (table) => ({
-    uniqueOrgDept: unique('unique_org_dept').on(table.department_id, table.organization_id),
+    unique_org_dept: unique('unique_org_dept').on(table.department_id, table.organization_id),
 }));
 
-export const orgToDepartment_relations = relations(org_to_department, ({ one }) => ({
+export const org_to_department_relations = relations(org_to_department, ({ one }) => ({
     department: one(departments, {
         fields: [org_to_department.department_id],
         references: [departments.id],
@@ -51,38 +51,53 @@ export const orgToDepartment_relations = relations(org_to_department, ({ one }) 
     }),
 }));
 
-export const usersTable = mysqlTable('users_table', {
-    id: varchar({ length: 255 }).primaryKey(), // Clerk user id
-    name: varchar({ length: 255 }).notNull(),
-    email: varchar({ length: 255 }).notNull().unique(),
-    image_url: varchar('image_url', { length: 512 }),
-    username: varchar({ length: 64 }),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
-});
+export const users_table = mysqlTable(
+    'users_table',
+    {
+        id: varchar({ length: 255 }).primaryKey(), // Clerk user id
+        name: varchar({ length: 255 }).notNull(),
+        email: varchar({ length: 255 }).notNull().unique(),
+        image_url: varchar('image_url', { length: 512 }),
+        username: varchar({ length: 64 }),
+        created_at: timestamp('created_at').defaultNow().notNull(),
+        updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+    },
+    (table) => ({
+        username_idx: index('users_username_idx').on(table.username),
+    })
+);
 
-export const usersTable_relations = relations(usersTable, ({ many }) => ({
+/** @deprecated Use `users_table` — kept as alias so existing imports keep working during migration */
+export const usersTable = users_table;
+
+export const users_table_relations = relations(users_table, ({ many }) => ({
     assignments: many(stages),
     memberships: many(organization_member),
 }));
 
-export const organization_member = mysqlTable('organization_member', {
-    id: int().primaryKey().autoincrement(),
-    user_id: varchar('user_id', { length: 255 }).notNull()
-        .references(() => usersTable.id, { onDelete: 'cascade' }),
-    organization_id: varchar('organization_id', { length: 255 }).notNull()
-        .references(() => organization.clerk_id, { onDelete: 'cascade' }),
-    role: varchar({ length: 64 }).notNull().default('org:member'),
-    created_at: timestamp('created_at').defaultNow().notNull(),
-}, (t) => ({
-    uniqueUserOrg: unique("unique_user_org").on(t.user_id, t.organization_id),
-    orgIdx: index('org_members_org_idx').on(t.organization_id),
-}));
+export const organization_member = mysqlTable(
+    'organization_member',
+    {
+        id: int().primaryKey().autoincrement(),
+        user_id: varchar('user_id', { length: 255 })
+            .notNull()
+            .references(() => users_table.id, { onDelete: 'cascade' }),
+        organization_id: varchar('organization_id', { length: 255 })
+            .notNull()
+            .references(() => organization.clerk_id, { onDelete: 'cascade' }),
+        role: varchar({ length: 64 }).notNull().default('org:member'),
+        created_at: timestamp('created_at').defaultNow().notNull(),
+    },
+    (t) => ({
+        unique_user_org: unique('unique_user_org').on(t.user_id, t.organization_id),
+        org_idx: index('org_members_org_idx').on(t.organization_id),
+    })
+);
 
-export const organization_members_relations = relations(organization_member, ({ one }) => ({
-    user: one(usersTable, {
+export const organization_member_relations = relations(organization_member, ({ one }) => ({
+    user: one(users_table, {
         fields: [organization_member.user_id],
-        references: [usersTable.id],
+        references: [users_table.id],
     }),
     organization: one(organization, {
         fields: [organization_member.organization_id],
@@ -106,20 +121,23 @@ export const job_listings = mysqlTable('job_listing', {
     updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
 });
 
-export const job_listingsRelations = relations(job_listings, ({ many, one }) => ({
+export const job_listings_relations = relations(job_listings, ({ many, one }) => ({
     stages: many(stages),
     candidates: many(candidates),
     job_to_technologies: many(job_technologies),
     departments: one(departments, {
         fields: [job_listings.department],
-        references: [departments.id]
+        references: [departments.id],
     }),
     organization: one(organization, {
         fields: [job_listings.organization],
-        references: [organization.clerk_id]
+        references: [organization.clerk_id],
     }),
-    automation: many(automation_rules)
+    automation: many(automation_rules),
 }));
+
+/** @deprecated Use `job_listings_relations` */
+export const job_listingsRelations = job_listings_relations;
 
 export const technologies = mysqlTable('technologies', {
     id: int('id').primaryKey().autoincrement(),
@@ -137,16 +155,19 @@ export const job_technologies = mysqlTable('job_technologies', {
     technology_id: int().notNull().references(() => technologies.id, { onDelete: 'cascade' }),
 });
 
-export const job_technology_relation = relations(job_technologies, ({ one }) => ({
-    job_id: one(job_listings, {
+export const job_technologies_relations = relations(job_technologies, ({ one }) => ({
+    job: one(job_listings, {
         fields: [job_technologies.job_id],
-        references: [job_listings.id]
+        references: [job_listings.id],
     }),
-    technology_id: one(technologies, {
+    technology: one(technologies, {
         fields: [job_technologies.technology_id],
-        references: [technologies.id]
+        references: [technologies.id],
     }),
 }));
+
+/** @deprecated Use `job_technologies_relations` */
+export const job_technology_relation = job_technologies_relations;
 
 export const stages = mysqlTable('stages', {
     id: int('id').primaryKey().autoincrement(),
@@ -155,23 +176,26 @@ export const stages = mysqlTable('stages', {
     stage_order_id: int().notNull(),
     color: varchar({ length: 255 }),
     need_schedule: boolean().default(true),
-    assign_to: varchar({ length: 255 }).references(() => usersTable.id, { onDelete: 'set null' }),
+    assign_to: varchar({ length: 255 }).references(() => users_table.id, { onDelete: 'set null' }),
 }, (table) => ({
-    jobStageUnique: index("job_stage_unique").on(table.job_id, table.stage_name),
-    jobIdx: index("stages_job_idx").on(table.job_id),
+    job_stage_unique: index("job_stage_unique").on(table.job_id, table.stage_name),
+    stages_job_idx: index("stages_job_idx").on(table.job_id),
 }));
 
-export const stagesRelations = relations(stages, ({ one, many }) => ({
+export const stages_relations = relations(stages, ({ one, many }) => ({
     applications: many(applications),
-    jobId: one(job_listings, {
+    job: one(job_listings, {
         fields: [stages.job_id],
         references: [job_listings.id],
     }),
-    assign_to: one(usersTable, {
+    assign_to: one(users_table, {
         fields: [stages.assign_to],
-        references: [usersTable.id]
+        references: [users_table.id],
     }),
 }));
+
+/** @deprecated Use `stages_relations` */
+export const stagesRelations = stages_relations;
 
 export const automation_rules = mysqlTable('automation_rule', {
     id: varchar('id', { length: 30 }).primaryKey().$defaultFn(() => `AUT-${createId()}`).notNull(),
@@ -185,13 +209,13 @@ export const automation_rules = mysqlTable('automation_rule', {
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
 }, (table) => ({
-    jobIdx: index("job_automation_index").on(table.job_id),
-    orgIdx: index("org_automation_index").on(table.org_id)
+    job_automation_index: index("job_automation_index").on(table.job_id),
+    org_automation_index: index("org_automation_index").on(table.org_id),
 }));
 
 export const automation_rules_relations = relations(automation_rules, ({ one }) => ({
     job: one(job_listings, { fields: [automation_rules.job_id], references: [job_listings.id] }),
-    organization: one(organization, { fields: [automation_rules.org_id], references: [organization.clerk_id] })
+    organization: one(organization, { fields: [automation_rules.org_id], references: [organization.clerk_id] }),
 }));
 
 export const candidates = mysqlTable('candidate', {
@@ -222,7 +246,7 @@ export const attachments = mysqlTable('attachments', {
     file_name: varchar({ length: 255 }).notNull(),
     file_url: varchar({ length: 255 }).notNull(),
     candidate_id: int().notNull().references(() => candidates.id, { onDelete: 'cascade' }),
-    attachment_type: mysqlEnum('attachment_type', ['RESUME', 'COVER_LETTER', 'OFFER_LETTER', "OTHER"])
+    attachment_type: mysqlEnum('attachment_type', ['RESUME', 'COVER_LETTER', 'OFFER_LETTER', "OTHER"]),
 });
 
 export const attachments_relations = relations(attachments, ({ one }) => ({
@@ -239,8 +263,7 @@ export const applications = mysqlTable('applications', {
     organization: varchar({ length: 255 }).notNull(),
     subdomain: varchar({ length: 255 }).notNull(),
 
-    // ── Resume score ─────────────────────────────────────────────────────────
-    resume_score: int("resume_score"),          // 0-100
+    resume_score: int("resume_score"),
     resume_score_fit: int("resume_score_fit"),
     resume_score_skills: int("resume_score_skills"),
     resume_score_exp: int("resume_score_experience"),
@@ -251,13 +274,12 @@ export const applications = mysqlTable('applications', {
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
 }, (table) => ({
-    // Fast lookup + sorting per stage
-    stagePositionIdx: index("stage_position_idx").on(
+    stage_position_idx: index("stage_position_idx").on(
         table.current_stage_id,
         table.position_in_stage
     ),
-    jobIdx: index("applications_job_idx").on(table.job_id),
-    candidateIdx: index("candidate_idx").on(table.candidate),
+    applications_job_idx: index("applications_job_idx").on(table.job_id),
+    candidate_idx: index("candidate_idx").on(table.candidate),
 }));
 
 export const applications_relations = relations(applications, ({ one, many }) => ({
@@ -287,16 +309,26 @@ export const interviews = mysqlTable('interviews', {
 
 export const interviews_relations = relations(interviews, ({ one }) => ({
     score: one(score_cards),
-    application: one(applications, { fields: [interviews.applications_id], references: [applications.id] })
+    application: one(applications, {
+        fields: [interviews.applications_id],
+        references: [applications.id],
+    }),
 }));
 
-export const score_cards = mysqlTable('scoresCards', {
+export const score_cards = mysqlTable('score_cards', {
     id: int('id').primaryKey().autoincrement(),
     interviews_id: int().references(() => interviews.id, { onDelete: 'cascade' }),
     interviewer: varchar({ length: 255 }).notNull(),
     overall_recommendations: mysqlEnum('overall_recommendations', ["DEFINITELY_NO", "NO", "YES", "STRONG_YES", "NO_DECISION"]).default("NO_DECISION"),
 });
 
-export const scoresCards_relation = relations(score_cards, ({ one }) => ({
-    interviews: one(interviews, { fields: [score_cards.interviews_id], references: [interviews.id] }),
+export const score_cards_relations = relations(score_cards, ({ one }) => ({
+    interviews: one(interviews, {
+        fields: [score_cards.interviews_id],
+        references: [interviews.id],
+    }),
 }));
+
+/** @deprecated Use `score_cards` / `score_cards_relations` */
+export const scoresCards = score_cards;
+export const scoresCards_relation = score_cards_relations;
