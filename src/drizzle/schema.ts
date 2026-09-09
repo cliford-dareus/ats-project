@@ -54,7 +54,7 @@ export const org_to_department_relations = relations(org_to_department, ({ one }
 export const users_table = mysqlTable(
     'users_table',
     {
-        id: varchar({ length: 255 }).primaryKey(), // Clerk user id
+        id: varchar({ length: 255 }).primaryKey(),
         name: varchar({ length: 255 }).notNull(),
         email: varchar({ length: 255 }).notNull().unique(),
         image_url: varchar('image_url', { length: 512 }),
@@ -67,7 +67,6 @@ export const users_table = mysqlTable(
     })
 );
 
-/** @deprecated Use `users_table` — kept as alias so existing imports keep working during migration */
 export const usersTable = users_table;
 
 export const users_table_relations = relations(users_table, ({ many }) => ({
@@ -136,7 +135,6 @@ export const job_listings_relations = relations(job_listings, ({ many, one }) =>
     automation: many(automation_rules),
 }));
 
-/** @deprecated Use `job_listings_relations` */
 export const job_listingsRelations = job_listings_relations;
 
 export const technologies = mysqlTable('technologies', {
@@ -166,7 +164,6 @@ export const job_technologies_relations = relations(job_technologies, ({ one }) 
     }),
 }));
 
-/** @deprecated Use `job_technologies_relations` */
 export const job_technology_relation = job_technologies_relations;
 
 export const stages = mysqlTable('stages', {
@@ -194,7 +191,6 @@ export const stages_relations = relations(stages, ({ one, many }) => ({
     }),
 }));
 
-/** @deprecated Use `stages_relations` */
 export const stagesRelations = stages_relations;
 
 export const automation_rules = mysqlTable('automation_rule', {
@@ -293,19 +289,40 @@ export const applications_relations = relations(applications, ({ one, many }) =>
     }),
 }));
 
-export const interviews = mysqlTable('interviews', {
-    id: int('id').primaryKey().autoincrement(),
-    applications_id: int().references(() => applications.id, { onDelete: 'cascade' }),
-    locations: varchar({ length: 255 }).notNull(),
-    start_at: timestamp('start_at'),
-    end_at: timestamp('end_at'),
-    type: mysqlEnum('type', ['VIDEO', 'PHONE', 'ONSITE']),
-    organization: varchar({ length: 255 }).notNull(),
-    link: varchar({ length: 255 }),
-    status: mysqlEnum('status', ['SCHEDULE', 'AWAITING_FEEDBACK', 'COMPLETE']),
-    created_at: timestamp('created_at').defaultNow().notNull(),
-    updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
-});
+export const interviews = mysqlTable(
+    'interviews',
+    {
+        id: int('id').primaryKey().autoincrement(),
+        applications_id: int().references(() => applications.id, { onDelete: 'cascade' }),
+        locations: varchar({ length: 255 }).notNull(),
+        start_at: timestamp('start_at'),
+        end_at: timestamp('end_at'),
+        type: mysqlEnum('type', ['VIDEO', 'PHONE', 'ONSITE']),
+        organization: varchar({ length: 255 }).notNull(),
+        link: varchar({ length: 255 }),
+        status: mysqlEnum('status', ['SCHEDULE', 'AWAITING_FEEDBACK', 'COMPLETE', 'HOLD_PENDING']).default('SCHEDULE'),
+        // Smart Interview Holds
+        hold_token: varchar('hold_token', { length: 64 }),
+        hold_status: mysqlEnum('hold_status', [
+            'NONE',
+            'TENTATIVE',
+            'CONFIRMED',
+            'DECLINED',
+            'EXPIRED',
+            'RELEASED',
+        ]).default('NONE'),
+        hold_expires_at: timestamp('hold_expires_at'),
+        calendar_event_id: varchar('calendar_event_id', { length: 255 }),
+        calendar_owner_id: varchar('calendar_owner_id', { length: 255 }),
+        interviewer_ids: json('interviewer_ids').$type<string[]>().default([]),
+        created_at: timestamp('created_at').defaultNow().notNull(),
+        updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+    },
+    (table) => ({
+        hold_token_idx: unique('interviews_hold_token_uid').on(table.hold_token),
+        org_idx: index('interviews_org_idx').on(table.organization),
+    })
+);
 
 export const interviews_relations = relations(interviews, ({ one }) => ({
     score: one(score_cards),
@@ -329,6 +346,5 @@ export const score_cards_relations = relations(score_cards, ({ one }) => ({
     }),
 }));
 
-/** @deprecated Use `score_cards` / `score_cards_relations` */
 export const scoresCards = score_cards;
 export const scoresCards_relation = score_cards_relations;
