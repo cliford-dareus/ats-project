@@ -5,8 +5,10 @@
 @layer base {
     :root {
         /* ====================== Base ====================== */
-        --background: 210 20% 98%; /* #FCFDFC - Very light bg */
-        --foreground: 0 0% 7%; /* #0B0A0A - Almost black text */
+        --background: 210 20% 98%;
+        /* #FCFDFC - Very light bg */
+        --foreground: 0 0% 7%;
+        /* #0B0A0A - Almost black text */
 
         /* ====================== Cards & Surfaces ====================== */
         --card: 0 0% 100%;
@@ -15,11 +17,13 @@
         --popover-foreground: 0 0% 7%;
 
         /* ====================== Primary (Teal) ====================== */
-        --primary: 182 51% 38%; /* #2F8D8F */
+        --primary: 182 51% 38%;
+        /* #2F8D8F */
         --primary-foreground: 0 0% 100%;
 
         /* ====================== Accent (Coral) ====================== */
-        --accent: 8 95% 64%; /* #FA614B */
+        --accent: 8 95% 64%;
+        /* #FA614B */
         --accent-foreground: 0 0% 100%;
 
         /* ====================== Secondary / Muted ====================== */
@@ -35,7 +39,8 @@
         /* ====================== Borders & Inputs ====================== */
         --border: 214 32% 91%;
         --input: 214 32% 91%;
-        --ring: 182 51% 38%; /* Matches primary */
+        --ring: 182 51% 38%;
+        /* Matches primary */
 
         /* ====================== Sidebar (Light version) ====================== */
         --sidebar-background: 210 20% 98%;
@@ -55,14 +60,20 @@
         --warning-foreground: 0 0% 100%;
 
         /* ====================== Charts ====================== */
-        --chart-1: 182 51% 38%; /* Primary Teal */
-        --chart-2: 8 95% 64%; /* Coral */
-        --chart-3: 0 0% 7%; /* Dark */
-        --chart-4: 142 71% 45%;/* Success Green */
-        --chart-5: 38 92% 50%; /* Warm Yellow/Orange */
+        --chart-1: 182 51% 38%;
+        /* Primary Teal */
+        --chart-2: 8 95% 64%;
+        /* Coral */
+        --chart-3: 0 0% 7%;
+        /* Dark */
+        --chart-4: 142 71% 45%;
+        /* Success Green */
+        --chart-5: 38 92% 50%;
+        /* Warm Yellow/Orange */
 
         /* ====================== Radius ====================== */
-        --radius: 0.625rem; /* Slightly rounded (modern feel) */
+        --radius: 0.625rem;
+        /* Slightly rounded (modern feel) */
     }
 
     .dark {
@@ -112,6 +123,7 @@
 }
 
 @layer utilities {
+
     /* Hide scrollbar for Chrome, Safari and Opera */
     .no-scrollbar::-webkit-scrollbar {
         display: none;
@@ -119,7 +131,9 @@
 
     /* Hide scrollbar for IE, Edge and Firefox */
     .no-scrollbar {
-        -ms-overflow-style: none; /* IE and Edge */
-        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none;
+        /* IE and Edge */
+        scrollbar-width: none;
+        /* Firefox */
     }
 }
