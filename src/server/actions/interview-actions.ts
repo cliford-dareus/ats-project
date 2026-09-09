@@ -29,8 +29,21 @@ const holdSchema = z.object({
   location: z.string().min(1),
   interviewer_ids: z.array(z.string()).optional(),
   interviewer_emails: z.array(z.string().email()).optional(),
-  hold_hours: z.number().min(1).max(168).optional(), // up to 7 days
+  hold_hours: z.number().min(1).max(168).optional(),
 });
+
+function hold_public_base_url() {
+  if (process.env.NEXT_PUBLIC_MARKETING_URL) {
+    return process.env.NEXT_PUBLIC_MARKETING_URL.replace(/\/$/, "");
+  }
+  if (process.env.NEXT_PUBLIC_ROOT_DOMAIN) {
+    return `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}`;
+  }
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+  }
+  return "";
+}
 
 export const create_interview_action = async (
   unsafeData: z.infer<typeof newInterviewSchema>
@@ -48,11 +61,6 @@ export const create_interview_action = async (
   return await create_interview_db(data, orgId);
 };
 
-/**
- * Smart Interview Hold
- * Places a tentative opaque event on the scheduler's Google Calendar,
- * stores a secure token, and returns a candidate confirmation URL.
- */
 export const create_interview_hold_action = async (
   unsafeData: z.infer<typeof holdSchema>
 ) => {
@@ -60,7 +68,9 @@ export const create_interview_hold_action = async (
   const parsed = holdSchema.safeParse(unsafeData);
 
   if (!userId || !orgId || !parsed.success) {
-    throw new Error(parsed.success ? "Unauthorized" : parsed.error.issues[0]?.message);
+    throw new Error(
+      parsed.success ? "Unauthorized" : parsed.error.issues[0]?.message
+    );
   }
 
   const allowed = await canScheduleInterview();
@@ -101,13 +111,7 @@ export const create_interview_hold_action = async (
     orgId
   );
 
-  const root =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
-    process.env.NEXT_PUBLIC_ROOT_DOMAIN
-      ? `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}`
-      : "";
-
-  const confirm_url = `${root}/interview/hold/${hold.hold_token}`;
+  const confirm_url = `${hold_public_base_url()}/interview/hold/${hold.hold_token}`;
 
   return {
     success: true as const,
@@ -118,7 +122,6 @@ export const create_interview_hold_action = async (
   };
 };
 
-/** Candidate confirms the held slot (public — token is the credential). */
 export const confirm_interview_hold_action = async (token: string) => {
   if (!token || token.length < 16) {
     return { success: false as const, error: "Invalid link" };
@@ -130,7 +133,11 @@ export const confirm_interview_hold_action = async (token: string) => {
   }
 
   if (row.hold_status === "CONFIRMED") {
-    return { success: true as const, already: true as const, message: "Already confirmed" };
+    return {
+      success: true as const,
+      already: true as const,
+      message: "Already confirmed",
+    };
   }
 
   if (row.hold_status !== "TENTATIVE") {
@@ -176,7 +183,6 @@ export const confirm_interview_hold_action = async (token: string) => {
   };
 };
 
-/** Candidate declines — releases the calendar slot. */
 export const decline_interview_hold_action = async (token: string) => {
   if (!token || token.length < 16) {
     return { success: false as const, error: "Invalid link" };
