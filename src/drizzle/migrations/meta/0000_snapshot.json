@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "9e0154d6-8a7b-4c43-b42f-a2f9f2303500",
+  "id": "1a555612-3c08-4520-ae2d-590b673c816e",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "applications": {
@@ -63,6 +63,55 @@
           "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false
+        },
+        "resume_score": {
+          "name": "resume_score",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "resume_score_fit": {
+          "name": "resume_score_fit",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "resume_score_skills": {
+          "name": "resume_score_skills",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "resume_score_experience": {
+          "name": "resume_score_experience",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "resume_score_summary": {
+          "name": "resume_score_summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "resume_scored_at": {
+          "name": "resume_scored_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "resume_score_model": {
+          "name": "resume_score_model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "created_at": {
@@ -579,10 +628,55 @@
         },
         "status": {
           "name": "status",
-          "type": "enum('SCHEDULE','AWAITING_FEEDBACK','COMPLETE')",
+          "type": "enum('SCHEDULE','AWAITING_FEEDBACK','COMPLETE','HOLD_PENDING')",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'SCHEDULE'"
+        },
+        "hold_token": {
+          "name": "hold_token",
+          "type": "varchar(64)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "hold_status": {
+          "name": "hold_status",
+          "type": "enum('NONE','TENTATIVE','CONFIRMED','DECLINED','EXPIRED','RELEASED')",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'NONE'"
+        },
+        "hold_expires_at": {
+          "name": "hold_expires_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "calendar_event_id": {
+          "name": "calendar_event_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "calendar_owner_id": {
+          "name": "calendar_owner_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "interviewer_ids": {
+          "name": "interviewer_ids",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "('[]')"
         },
         "created_at": {
           "name": "created_at",
@@ -602,7 +696,15 @@
           "default": "(now())"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "interviews_org_idx": {
+          "name": "interviews_org_idx",
+          "columns": [
+            "organization"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {
         "interviews_applications_id_applications_id_fk": {
           "name": "interviews_applications_id_applications_id_fk",
@@ -626,7 +728,14 @@
           ]
         }
       },
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "interviews_hold_token_uid": {
+          "name": "interviews_hold_token_uid",
+          "columns": [
+            "hold_token"
+          ]
+        }
+      },
       "checkConstraint": {}
     },
     "job_listing": {
@@ -980,8 +1089,105 @@
       },
       "checkConstraint": {}
     },
-    "scoresCards": {
-      "name": "scoresCards",
+    "organization_member": {
+      "name": "organization_member",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "role": {
+          "name": "role",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'org:member'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        }
+      },
+      "indexes": {
+        "org_members_org_idx": {
+          "name": "org_members_org_idx",
+          "columns": [
+            "organization_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "organization_member_user_id_users_table_id_fk": {
+          "name": "organization_member_user_id_users_table_id_fk",
+          "tableFrom": "organization_member",
+          "tableTo": "users_table",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "organization_member_organization_id_organization_clerk_id_fk": {
+          "name": "organization_member_organization_id_organization_clerk_id_fk",
+          "tableFrom": "organization_member",
+          "tableTo": "organization",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "clerk_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "organization_member_id": {
+          "name": "organization_member_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "unique_user_org": {
+          "name": "unique_user_org",
+          "columns": [
+            "user_id",
+            "organization_id"
+          ]
+        }
+      },
+      "checkConstraint": {}
+    },
+    "score_cards": {
+      "name": "score_cards",
       "columns": {
         "id": {
           "name": "id",
@@ -1004,6 +1210,14 @@
           "notNull": true,
           "autoincrement": false
         },
+        "decision": {
+          "name": "decision",
+          "type": "enum('ADVANCE IMMEDIATELY','REJECT IMMEDIATELY','NO_DECISION')",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'NO_DECISION'"
+        },
         "overall_recommendations": {
           "name": "overall_recommendations",
           "type": "enum('DEFINITELY_NO','NO','YES','STRONG_YES','NO_DECISION')",
@@ -1015,9 +1229,9 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "scoresCards_interviews_id_interviews_id_fk": {
-          "name": "scoresCards_interviews_id_interviews_id_fk",
-          "tableFrom": "scoresCards",
+        "score_cards_interviews_id_interviews_id_fk": {
+          "name": "score_cards_interviews_id_interviews_id_fk",
+          "tableFrom": "score_cards",
           "tableTo": "interviews",
           "columnsFrom": [
             "interviews_id"
@@ -1030,8 +1244,8 @@
         }
       },
       "compositePrimaryKeys": {
-        "scoresCards_id": {
-          "name": "scoresCards_id",
+        "score_cards_id": {
+          "name": "score_cards_id",
           "columns": [
             "id"
           ]
@@ -1205,13 +1419,6 @@
           "notNull": true,
           "autoincrement": false
         },
-        "age": {
-          "name": "age",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
         "email": {
           "name": "email",
           "type": "varchar(255)",
@@ -1219,15 +1426,47 @@
           "notNull": true,
           "autoincrement": false
         },
-        "organization": {
-          "name": "organization",
-          "type": "varchar(255)",
+        "image_url": {
+          "name": "image_url",
+          "type": "varchar(512)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "username": {
+          "name": "username",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": "(now())"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "(now())"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "users_username_idx": {
+          "name": "users_username_idx",
+          "columns": [
+            "username"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {
         "users_table_id": {

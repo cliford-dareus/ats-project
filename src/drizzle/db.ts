@@ -1,9 +1,9 @@
-import {config} from "dotenv";
-import {drizzle} from 'drizzle-orm/mysql2';
+import { config } from "dotenv";
+import { drizzle } from 'drizzle-orm/mysql2';
 import mysql from 'mysql2/promise';
 import * as schema from "./schema";
 
-config({path: ".env"}); // or .env.local
+config({ path: ".env" }); // or .env.local
 
 declare global {
     // eslint-disable-next-line no-var
@@ -24,7 +24,7 @@ function createDatabaseConnection() {
             rejectUnauthorized: false,
         }
     });
-    return drizzle(pool, {schema, mode: "default"});
+    return drizzle(pool, { schema, mode: "default" });
 }
 
 // export const queries = drizzle(process.env.DATABASE_URL!);

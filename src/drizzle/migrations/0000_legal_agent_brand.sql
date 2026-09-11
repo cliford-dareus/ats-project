@@ -7,6 +7,13 @@ CREATE TABLE `applications` (
 	`position_in_stage` int NOT NULL DEFAULT 0,
 	`organization` varchar(255) NOT NULL,
 	`subdomain` varchar(255) NOT NULL,
+	`resume_score` int,
+	`resume_score_fit` int,
+	`resume_score_skills` int,
+	`resume_score_experience` int,
+	`resume_score_summary` text,
+	`resume_scored_at` timestamp,
+	`resume_score_model` text,
 	`created_at` timestamp NOT NULL DEFAULT (now()),
 	`updated_at` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
 	CONSTRAINT `applications_id` PRIMARY KEY(`id`)
@@ -69,10 +76,17 @@ CREATE TABLE `interviews` (
 	`type` enum('VIDEO','PHONE','ONSITE'),
 	`organization` varchar(255) NOT NULL,
 	`link` varchar(255),
-	`status` enum('SCHEDULE','AWAITING_FEEDBACK','COMPLETE'),
+	`status` enum('SCHEDULE','AWAITING_FEEDBACK','COMPLETE','HOLD_PENDING') DEFAULT 'SCHEDULE',
+	`hold_token` varchar(64),
+	`hold_status` enum('NONE','TENTATIVE','CONFIRMED','DECLINED','EXPIRED','RELEASED') DEFAULT 'NONE',
+	`hold_expires_at` timestamp,
+	`calendar_event_id` varchar(255),
+	`calendar_owner_id` varchar(255),
+	`interviewer_ids` json DEFAULT ('[]'),
 	`created_at` timestamp NOT NULL DEFAULT (now()),
 	`updated_at` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
-	CONSTRAINT `interviews_id` PRIMARY KEY(`id`)
+	CONSTRAINT `interviews_id` PRIMARY KEY(`id`),
+	CONSTRAINT `interviews_hold_token_uid` UNIQUE(`hold_token`)
 );
 --> statement-breakpoint
 CREATE TABLE `job_listing` (
@@ -122,12 +136,23 @@ CREATE TABLE `organization` (
 	CONSTRAINT `organization_subdomain_unique` UNIQUE(`subdomain`)
 );
 --> statement-breakpoint
-CREATE TABLE `scoresCards` (
+CREATE TABLE `organization_member` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`user_id` varchar(255) NOT NULL,
+	`organization_id` varchar(255) NOT NULL,
+	`role` varchar(64) NOT NULL DEFAULT 'org:member',
+	`created_at` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `organization_member_id` PRIMARY KEY(`id`),
+	CONSTRAINT `unique_user_org` UNIQUE(`user_id`,`organization_id`)
+);
+--> statement-breakpoint
+CREATE TABLE `score_cards` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`interviews_id` int,
 	`interviewer` varchar(255) NOT NULL,
+	`decision` enum('ADVANCE IMMEDIATELY','REJECT IMMEDIATELY','NO_DECISION') DEFAULT 'NO_DECISION',
 	`overall_recommendations` enum('DEFINITELY_NO','NO','YES','STRONG_YES','NO_DECISION') DEFAULT 'NO_DECISION',
-	CONSTRAINT `scoresCards_id` PRIMARY KEY(`id`)
+	CONSTRAINT `score_cards_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
 CREATE TABLE `stages` (
@@ -151,9 +176,11 @@ CREATE TABLE `technologies` (
 CREATE TABLE `users_table` (
 	`id` varchar(255) NOT NULL,
 	`name` varchar(255) NOT NULL,
-	`age` int NOT NULL,
 	`email` varchar(255) NOT NULL,
-	`organization` varchar(255) NOT NULL,
+	`image_url` varchar(512),
+	`username` varchar(64),
+	`created_at` timestamp NOT NULL DEFAULT (now()),
+	`updated_at` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
 	CONSTRAINT `users_table_id` PRIMARY KEY(`id`),
 	CONSTRAINT `users_table_email_unique` UNIQUE(`email`)
 );
@@ -169,7 +196,9 @@ ALTER TABLE `job_technologies` ADD CONSTRAINT `job_technologies_job_id_job_listi
 ALTER TABLE `job_technologies` ADD CONSTRAINT `job_technologies_technology_id_technologies_id_fk` FOREIGN KEY (`technology_id`) REFERENCES `technologies`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `org_to_department` ADD CONSTRAINT `org_to_department_department_id_departments_id_fk` FOREIGN KEY (`department_id`) REFERENCES `departments`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `org_to_department` ADD CONSTRAINT `org_to_department_organization_id_organization_clerk_id_fk` FOREIGN KEY (`organization_id`) REFERENCES `organization`(`clerk_id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE `scoresCards` ADD CONSTRAINT `scoresCards_interviews_id_interviews_id_fk` FOREIGN KEY (`interviews_id`) REFERENCES `interviews`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `organization_member` ADD CONSTRAINT `organization_member_user_id_users_table_id_fk` FOREIGN KEY (`user_id`) REFERENCES `users_table`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `organization_member` ADD CONSTRAINT `organization_member_organization_id_organization_clerk_id_fk` FOREIGN KEY (`organization_id`) REFERENCES `organization`(`clerk_id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `score_cards` ADD CONSTRAINT `score_cards_interviews_id_interviews_id_fk` FOREIGN KEY (`interviews_id`) REFERENCES `interviews`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `stages` ADD CONSTRAINT `stages_job_id_job_listing_id_fk` FOREIGN KEY (`job_id`) REFERENCES `job_listing`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `stages` ADD CONSTRAINT `stages_assign_to_users_table_id_fk` FOREIGN KEY (`assign_to`) REFERENCES `users_table`(`id`) ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX `stage_position_idx` ON `applications` (`current_stage_id`,`position_in_stage`);--> statement-breakpoint
@@ -177,5 +206,8 @@ CREATE INDEX `applications_job_idx` ON `applications` (`job_id`);--> statement-b
 CREATE INDEX `candidate_idx` ON `applications` (`candidate`);--> statement-breakpoint
 CREATE INDEX `job_automation_index` ON `automation_rule` (`job_id`);--> statement-breakpoint
 CREATE INDEX `org_automation_index` ON `automation_rule` (`org_id`);--> statement-breakpoint
+CREATE INDEX `interviews_org_idx` ON `interviews` (`organization`);--> statement-breakpoint
+CREATE INDEX `org_members_org_idx` ON `organization_member` (`organization_id`);--> statement-breakpoint
 CREATE INDEX `job_stage_unique` ON `stages` (`job_id`,`stage_name`);--> statement-breakpoint
-CREATE INDEX `stages_job_idx` ON `stages` (`job_id`);
+CREATE INDEX `stages_job_idx` ON `stages` (`job_id`);--> statement-breakpoint
+CREATE INDEX `users_username_idx` ON `users_table` (`username`);

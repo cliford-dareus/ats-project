@@ -54,10 +54,10 @@ export default function MarketingHeader({ is_signed_in = false }: Props) {
                     ) : (
                         <>
                             <Button variant="ghost" asChild className="rounded-xl">
-                                <Link href="/sign-in">Sign in</Link>
+                                <Link href={`${app_url}/sign-in`}>Sign in</Link>
                             </Button>
                             <Button asChild className="rounded-xl bg-zinc-900 hover:bg-zinc-800">
-                                <Link href="/sign-up">Start free</Link>
+                                <Link href={`${app_url}/sign-up`}>Start free</Link>
                             </Button>
                         </>
                     )}

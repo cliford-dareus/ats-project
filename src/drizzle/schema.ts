@@ -336,6 +336,7 @@ export const score_cards = mysqlTable('score_cards', {
     id: int('id').primaryKey().autoincrement(),
     interviews_id: int().references(() => interviews.id, { onDelete: 'cascade' }),
     interviewer: varchar({ length: 255 }).notNull(),
+    decision: mysqlEnum('decision', ["ADVANCE IMMEDIATELY", "REJECT IMMEDIATELY", "NO_DECISION"]).default("NO_DECISION"),
     overall_recommendations: mysqlEnum('overall_recommendations', ["DEFINITELY_NO", "NO", "YES", "STRONG_YES", "NO_DECISION"]).default("NO_DECISION"),
 });
 
