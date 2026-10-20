@@ -22,5 +22,8 @@ const EmailTemplateSchema = new mongoose.Schema<EmailTemplateInterface>({
     organizationId: { type: String, required: true },
 }, { timestamps: true });
 
+// templateId is the stable key used by system flows (interview_hold, interview_invite, …)
+EmailTemplateSchema.index({ organizationId: 1, templateId: 1 }, { unique: true });
+
 const EmailTemplate = mongoose.models.EmailTemplate || mongoose.model('EmailTemplate', EmailTemplateSchema);
 export default EmailTemplate;

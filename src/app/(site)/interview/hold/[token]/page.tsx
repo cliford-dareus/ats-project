@@ -6,7 +6,11 @@ import HoldResponseClient from "./_components/hold-response-client";
 export const metadata: Metadata = {
   title: "Confirm interview | Applico",
   robots: { index: false, follow: false },
+  // Keep the bearer token out of Referer headers sent to third parties
+  referrer: "no-referrer",
 };
+
+export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{ token: string }>;

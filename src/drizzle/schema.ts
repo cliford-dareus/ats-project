@@ -300,7 +300,7 @@ export const interviews = mysqlTable(
         type: mysqlEnum('type', ['VIDEO', 'PHONE', 'ONSITE']),
         organization: varchar({ length: 255 }).notNull(),
         link: varchar({ length: 255 }),
-        status: mysqlEnum('status', ['SCHEDULE', 'AWAITING_FEEDBACK', 'COMPLETE', 'HOLD_PENDING']).default('SCHEDULE'),
+        status: mysqlEnum('status', ['SCHEDULE', 'AWAITING_FEEDBACK', 'COMPLETE', 'HOLD_PENDING', 'CANCELLED']).default('SCHEDULE'),
         // Smart Interview Holds
         hold_token: varchar('hold_token', { length: 64 }),
         hold_status: mysqlEnum('hold_status', [
@@ -312,6 +312,7 @@ export const interviews = mysqlTable(
             'RELEASED',
         ]).default('NONE'),
         hold_expires_at: timestamp('hold_expires_at'),
+        hold_email_sent_at: timestamp('hold_email_sent_at'),
         calendar_event_id: varchar('calendar_event_id', { length: 255 }),
         calendar_owner_id: varchar('calendar_owner_id', { length: 255 }),
         interviewer_ids: json('interviewer_ids').$type<string[]>().default([]),
@@ -321,6 +322,8 @@ export const interviews = mysqlTable(
     (table) => ({
         hold_token_idx: unique('interviews_hold_token_uid').on(table.hold_token),
         org_idx: index('interviews_org_idx').on(table.organization),
+        hold_expiry_idx: index('interviews_hold_expiry_idx').on(table.hold_status, table.hold_expires_at),
+        application_idx: index('interviews_application_idx').on(table.applications_id),
     })
 );
 

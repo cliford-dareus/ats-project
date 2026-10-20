@@ -15,6 +15,17 @@ export function get_app_url() {
     return `https://app.${ROOT_DOMAIN}`;
 }
 
+/** Public marketing origin (apex). Hosts candidate-facing pages like /interview/hold/[token]. */
+export function get_marketing_url() {
+    if (process.env.NEXT_PUBLIC_MARKETING_URL) {
+        return process.env.NEXT_PUBLIC_MARKETING_URL.replace(/\/$/, "");
+    }
+    if (process.env.NODE_ENV === "development") {
+        return `http://${process.env.NEXT_PUBLIC_LOCAL_DOMAIN ?? "aplico.localhost"}:3000`;
+    }
+    return `https://${ROOT_DOMAIN}`;
+}
+
 export const MARKETING_NAV = [
     { href: "/features", label: "Features" },
     { href: "/pricing", label: "Pricing" },

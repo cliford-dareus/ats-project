@@ -9,12 +9,13 @@ import {
 } from "@/server/actions/interview-actions";
 
 type Details = {
-  candidate_name: string | null;
+  candidate_first_name: string | null;
+  company_name: string | null;
   job_name: string | null;
   start_at: Date | string | null;
   end_at: Date | string | null;
   type: string | null;
-  locations: string | null;
+  location: string | null;
   hold_status: string | null;
   hold_expires_at: Date | string | null;
   expired: boolean;
@@ -30,6 +31,7 @@ function formatRange(start: Date | string | null, end: Date | string | null) {
     day: "numeric",
     year: "numeric",
   });
+  // Rendered in the candidate's local timezone
   const st = s.toLocaleTimeString(undefined, {
     hour: "numeric",
     minute: "2-digit",
@@ -93,13 +95,13 @@ const HoldResponseClient = ({
     <div className="w-full max-w-lg rounded-3xl border border-zinc-200 bg-white shadow-xl shadow-zinc-200/50 overflow-hidden">
       <div className="bg-zinc-900 px-6 py-5 text-white">
         <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
-          Smart interview hold
+          {details.company_name ? `${details.company_name} · ` : ""}Interview hold
         </p>
         <h1 className="mt-1 text-xl font-bold tracking-tight">
           {details.job_name || "Interview"}
         </h1>
         <p className="mt-1 text-sm text-zinc-400">
-          Hi {details.candidate_name || "there"} — confirm to lock this slot.
+          Hi {details.candidate_first_name || "there"} — confirm to lock this slot.
         </p>
       </div>
 
@@ -124,7 +126,7 @@ const HoldResponseClient = ({
               </p>
               <p className="text-sm font-semibold text-zinc-900">
                 {details.type || "—"}
-                {details.locations ? ` · ${details.locations}` : ""}
+                {details.location ? ` · ${details.location}` : ""}
               </p>
             </div>
           </div>
