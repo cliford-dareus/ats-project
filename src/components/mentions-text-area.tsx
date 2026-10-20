@@ -19,7 +19,12 @@ export type MentionUser = {
 export type MentionRef = {
     userId: string;
     name: string;
+    username?: string | null;
 };
+
+/** The token inserted into the text for a user (and matched server-side). */
+export const mention_handle = (user: { username?: string | null; name: string }) =>
+    user.username || user.name;
 
 type Props = {
     value: string;
@@ -43,6 +48,8 @@ export function MentionTextarea({
     mentions,
     onMentionsChange,
     className = "",
+    rows = 3,
+    disabled = false,
 }: Props) {
     // const [value, setValue] = useState("");
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -100,7 +107,7 @@ export function MentionTextarea({
 
             const before = value.slice(0, mentionStart);
             const after = value.slice(textareaRef.current.selectionStart);
-            const mentionText = `@${user.username} `;
+            const mentionText = `@${mention_handle(user)} `;
 
             const newValue = before + mentionText + after;
             setValue(newValue);
@@ -109,7 +116,7 @@ export function MentionTextarea({
             // Dedupe by userId
             const nextMentions = [
                 ...mentions.filter((m) => m.userId !== user.id),
-                { userId: user.id, name: user.name },
+                { userId: user.id, name: user.name, username: user.username ?? null },
             ];
             onMentionsChange(nextMentions);
 
@@ -126,7 +133,7 @@ export function MentionTextarea({
                 }
             });
         },
-        [mentionStart, value, onChange]
+        [mentionStart, value, onChange, setValue, mentions, onMentionsChange]
     );
 
     // Keyboard navigation
@@ -184,7 +191,9 @@ export function MentionTextarea({
                 onChange={handleChange}
                 onKeyDown={handleKeyDown}
                 placeholder={placeholder}
-                rows={2}
+                rows={rows}
+                disabled={disabled}
+                aria-label="Note"
                 className="w-full resize-y rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
             />
 
@@ -219,7 +228,7 @@ export function MentionTextarea({
                             <div className="min-w-0 flex-1">
                                 <div className="truncate font-medium">{user.name}</div>
                                 <div className="truncate text-xs text-gray-500">
-                                    @{user.username}
+                                    @{mention_handle(user)}
                                 </div>
                             </div>
                         </li>
