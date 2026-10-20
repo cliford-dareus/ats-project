@@ -6,10 +6,7 @@ import { db } from "@/drizzle/db";
 import { applications, candidates, interviews, job_listings } from "@/drizzle/schema";
 import { CACHE_TAGS, revalidateDbCache } from "@/lib/cache";
 
-export const create_interview_db = async (
-    data: z.infer<typeof newInterviewSchema>,
-    orgId: string
-) => {
+export const create_interview_db = async (data: z.infer<typeof newInterviewSchema>,orgId: string) => {
     const existingInterview = await db
         .select()
         .from(interviews)
@@ -57,10 +54,7 @@ export type CreateHoldInput = {
     hold_hours?: number; // default 48
 };
 
-export const create_interview_hold_db = async (
-    data: CreateHoldInput,
-    orgId: string
-) => {
+export const create_interview_hold_db = async (data: CreateHoldInput, orgId: string) => {
     const existing = await db
         .select({ id: interviews.id })
         .from(interviews)
