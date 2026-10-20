@@ -1,36 +1,25 @@
-import { db } from "@/drizzle/db";
-import { organization } from "@/drizzle/schema";
-import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
+import { check_organization_subdomain } from "@/server/queries/drizzle/organization";
+import { subdomainSchema } from "@/zod";
+import { client_ip, rate_limit } from "@/lib/rate-limit";
 
 export async function GET(req: NextRequest) {
-    const subdomain = req.nextUrl.searchParams.get("subdomain");
-
-    if (!subdomain || subdomain.length < 3) {
-        return NextResponse.json(
-            { error: "Subdomain must be at least 3 characters" },
-            { status: 400 }
-        );
+    const limited = await rate_limit(`subdomain-check:${await client_ip()}`, 60, 60);
+    if (!limited.ok) {
+        return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 
-    // Basic validation
-    if (!/^[a-z0-9-]+$/.test(subdomain)) {
+    const parsed = subdomainSchema.safeParse(req.nextUrl.searchParams.get("subdomain") ?? "");
+    if (!parsed.success) {
         return NextResponse.json(
-            { error: "Subdomain can only contain lowercase letters, numbers, and hyphens" },
+            { error: parsed.error.issues[0]?.message ?? "Invalid subdomain", available: false },
             { status: 400 }
         );
     }
 
     try {
-        // Check if subdomain already exists in your database
-        const existingOrg = await db.select()
-            .from(organization)
-            .where(eq(organization.subdomain, subdomain.toLowerCase()))
-            .limit(1);
-
-        const available = existingOrg.length === 0;
-
-        return NextResponse.json({ available });
+        const existing = await check_organization_subdomain(parsed.data);
+        return NextResponse.json({ available: existing.length === 0 });
     } catch (error) {
         console.error("Subdomain check error:", error);
         return NextResponse.json(

@@ -60,8 +60,17 @@ export function revalidateDbCache({
     id?: string
     orgId?: string
 }) {
-    revalidateTag(getGlobalTag(tag))
-    if (userId) revalidateTag(getUserTag(userId, tag))
-    if (id) revalidateTag(getIdTag(id, tag))
-    if (orgId) revalidateTag(getOrgTag(orgId, tag))
+    const tags: string[] = [getGlobalTag(tag)]
+    if (userId) tags.push(getUserTag(userId, tag))
+    if (id) tags.push(getIdTag(id, tag))
+    if (orgId) tags.push(getOrgTag(orgId, tag))
+
+    for (const t of tags) {
+        try {
+            revalidateTag(t)
+        } catch {
+            // Outside a Next.js request (BullMQ worker / scripts) there is no
+            // incremental cache to invalidate; entries expire via `revalidate`.
+        }
+    }
 }

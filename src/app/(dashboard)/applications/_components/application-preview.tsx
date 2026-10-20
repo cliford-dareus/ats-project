@@ -94,8 +94,8 @@ const ApplicationPreview = ({ data, applications }: Props) => {
         try {
             if (!currentApplication || !stage_name) return;
 
-            const stage = await get_stage_by_name_action(stage_name);
-            if (!stage || !Array.isArray(stage)) {
+            const stage = await get_stage_by_name_action(stage_name, Number(currentApplication.job_id));
+            if (!stage || !Array.isArray(stage) || stage.length === 0) {
                 alert("Stage not found");
                 return;
             }

@@ -5,6 +5,7 @@ interface TriggerInterface extends mongoose.Document {
     stages: string;
     type: string;
     application_id: number;
+    organization_id: string;
     triggerTime: Date;
     status: string;
 };
@@ -14,6 +15,8 @@ const TriggerSchema = new mongoose.Schema<TriggerInterface>({
     stages: { type: String, required: true},
     type: { type: String, required: true},
     application_id: { type: Number, required: true},
+    // Tenant scope. Older documents may lack it and are simply not returned.
+    organization_id: { type: String, index: true },
     triggerTime: { type: Date, required: true },
     status: { type: String, default: 'pending' }, // 'pending', 'executed', 'canceled'
 });

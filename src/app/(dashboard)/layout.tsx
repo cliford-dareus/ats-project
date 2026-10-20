@@ -10,10 +10,7 @@ import OrganizationSwitcher from "@/components/organization_switcher";
 import { redirect } from "next/navigation";
 import AuthDropdown from "@/components/auth-dropdown";
 import Provider from "@/providers/providers";
-import { db } from "@/drizzle/db";
-import { organization } from "@/drizzle/schema";
-import { eq } from "drizzle-orm";
-import { create_organization_action } from "@/server/actions/organization_actions";
+import { ensure_organization_row } from "@/server/queries/drizzle/organization";
 
 type Props = {
     children: React.ReactNode;
@@ -33,15 +30,12 @@ const Layout = async ({ children }: Props) => {
     }
 
     const { orgId, orgSlug } = await auth();
-    if (!orgId || !orgSlug) {
+    if (!orgId) {
         return redirect("/onboarding");
     }
 
-    const org = await db.select().from(organization).where(eq(organization.clerk_id, orgId));
-    if (org.length == 0) {
-        const org_name = orgSlug?.split("-")[0];
-        await create_organization_action({ clerk_id: orgId, name: org_name, subdomain: org_name.toLowerCase() });
-    }
+    // Session org is authoritative; make sure its local row exists.
+    await ensure_organization_row(orgId, orgSlug ?? "", orgSlug ?? "");
 
     return (
         <div className="min-h-screen">

@@ -1,4 +1,4 @@
-"use server";
+// Server-only query module (deliberately not "use server"). Callers must check org ownership.
 
 import { db } from "@/drizzle/db";
 import { candidates } from "@/drizzle/schema";

@@ -1,17 +1,16 @@
-import { ArrowRight, Building, Building2, Plus } from "lucide-react";
-import { redirect, useRouter } from "next/navigation";
+"use client";
+
+import { ArrowRight, Building2, Mail, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useOrganizationList } from "@clerk/nextjs";
 import OnboardingLayout from "./onboarding-layout";
 
-const Organization = ({ userId }: { userId: string }) => {
+const Organization = (_props: { userId: string }) => {
     const router = useRouter();
-    const suggestedOrgs = [
-        { id: 'org-1', name: 'Design Studio', domain: 'designstudio.com' },
-        { id: 'org-2', name: 'TechFlow', domain: 'techflow.io' }
-    ];
-
-    if (!userId) {
-        redirect("/signin");
-    };
+    const { userInvitations } = useOrganizationList({
+        userInvitations: { status: "pending" },
+    });
+    const pendingCount = userInvitations?.count ?? 0;
 
     return (
         <OnboardingLayout
@@ -20,29 +19,25 @@ const Organization = ({ userId }: { userId: string }) => {
             icon={Building2}
         >
             <div className="space-y-6">
-                <div className="space-y-3">
-                    <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest ml-1">Suggested for you</p>
-                    <div className="grid gap-3">
-                        {suggestedOrgs.map(org => (
-                            <button
-                                key={org.id}
-                                // onClick={() => onSelectOrg(org.id, org.name)}
-                                className="flex items-center justify-between p-4 bg-white border border-zinc-200 rounded-2xl hover:border-brand-500 hover:bg-brand-50/30 transition-all group"
-                            >
-                                <div className="flex items-center gap-4 text-left">
-                                    <div className="w-10 h-10 bg-zinc-100 rounded-xl flex items-center justify-center">
-                                        <Building className="w-5 h-5 text-zinc-400" />
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-zinc-900 group-hover:text-brand-700">{org.name}</p>
-                                        <p className="text-xs text-zinc-500">{org.domain}</p>
-                                    </div>
-                                </div>
-                                <ArrowRight className="w-5 h-5 text-zinc-300 group-hover:text-brand-500 transform group-hover:translate-x-1 transition-all" />
-                            </button>
-                        ))}
+                <button
+                    onClick={() => router.push("/onboarding?step=join")}
+                    className="w-full flex items-center justify-between p-4 bg-white border border-zinc-200 rounded-2xl hover:border-brand-500 hover:bg-brand-50/30 transition-all group"
+                >
+                    <div className="flex items-center gap-4 text-left">
+                        <div className="w-10 h-10 bg-zinc-100 rounded-xl flex items-center justify-center">
+                            <Mail className="w-5 h-5 text-zinc-400" />
+                        </div>
+                        <div>
+                            <p className="font-bold text-zinc-900 group-hover:text-brand-700">Join with an invitation</p>
+                            <p className="text-xs text-zinc-500">
+                                {pendingCount > 0
+                                    ? `${pendingCount} pending invitation${pendingCount === 1 ? "" : "s"}`
+                                    : "Your team admin invites you by email"}
+                            </p>
+                        </div>
                     </div>
-                </div>
+                    <ArrowRight className="w-5 h-5 text-zinc-300 group-hover:text-brand-500 transform group-hover:translate-x-1 transition-all" />
+                </button>
 
                 <div className="relative">
                     <div className="absolute inset-0 flex items-center">
@@ -65,5 +60,4 @@ const Organization = ({ userId }: { userId: string }) => {
     );
 };
 
-// onClick = {() => router.push("/onboarding?step=join")}
 export default Organization;

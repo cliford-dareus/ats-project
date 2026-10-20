@@ -18,6 +18,7 @@ const CreateOrganization = () => {
     const [slug, setSlug] = useState("");
     const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         async function checkAvailability() {
@@ -55,18 +56,22 @@ const CreateOrganization = () => {
     const onCreated = useCallback(async () => {
         if (!isValid || !createOrganization) return;
 
+        setError(null);
         startCreateTransaction(async () => {
             try {
                 const newOrg = await createOrganization({ name: displayName || slug });
 
                 await setActive({ organization: newOrg.id });
 
-                // this will handle in the webhook 'organization.created'
-                await create_organization_action({
+                const result = await create_organization_action({
                     clerk_id: newOrg.id,
                     name: newOrg.name,
                     subdomain: slug.toLowerCase(),
                 });
+                if (!result.success) {
+                    setError(result.error);
+                    return;
+                }
 
                 const newSearchParams = new URLSearchParams(searchParams);
                 newSearchParams.set("step", "department");
@@ -75,8 +80,7 @@ const CreateOrganization = () => {
 
                 router.push(`/onboarding?${newSearchParams.toString()}`);
             } catch (err) {
-                console.error("Failed to create organization:", err);
-                // TODO: Show toast error
+                setError(err instanceof Error ? err.message : "Failed to create organization");
             }
         });
     }, [isValid, createOrganization, displayName, slug, setActive, searchParams, router]);
@@ -115,7 +119,7 @@ const CreateOrganization = () => {
                     </div>
 
                     <span className="font-mono text-emerald-600 font-medium">
-                        .youratshub.com
+                        .{process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "aplico.online"}
                     </span>
                 </div>
 
@@ -126,6 +130,7 @@ const CreateOrganization = () => {
                         <p className="text-green-600">✓ This URL is available!</p>}
                     {isAvailable === false &&
                         <p className="text-red-600">✗ Sorry, that name is taken.</p>}
+                    {error && <p className="text-red-600">{error}</p>}
                 </div>
 
                 <div className="flex gap-3 pt-2">

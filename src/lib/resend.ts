@@ -1,4 +1,4 @@
-"use server";
+// Server/worker-only. Deliberately NOT "use server" (would expose an open mail relay).
 
 import { Resend } from "resend";
 
@@ -23,6 +23,7 @@ export const sendEmail = async (params: SendEmailParams) => {
         subject: params.subject,
         html: params.html,
         replyTo: params.replyTo,
+        tags: params.tags,
     });
 
     if (error) throw new Error(error.message);
