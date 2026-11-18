@@ -6,16 +6,11 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import OnboardingLayout from "./onboarding-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { create_organization_invite } from "@/server/actions/organization_actions";
 
 type Props = {
     orgId: string | null;
     orgName: string | null;
-};
-
-type EmailPayload = {
-    email: string;
-    orgId: string;
-    orgName: string;
 };
 
 // TODO: collect  an array of invitees and
@@ -29,15 +24,12 @@ const InviteMember = ({ orgId, orgName }: Props) => {
     const [isCreatePending, startCreateTransaction] = useTransition();
     const [email, setEmail] = useState<string>("");
 
+    // Sends a real Clerk organization invitation via the server action — the
+    // single invite path. The action uses the session orgId only (never the
+    // client-supplied orgId) and requires the member:invite permission.
+    // The invitation email goes out immediately.
     const onComplete = async () => {
         startCreateTransaction(async () => {
-            const emailPayload = {
-                email: email,
-                orgId: orgId,
-                orgName: orgName,
-                subject: "Organization Invite",
-            } as EmailPayload;
-
             if (!email || !orgId || !orgName) {
                 inputRef.current?.focus();
                 alert("Please fill in all fields");
@@ -45,16 +37,16 @@ const InviteMember = ({ orgId, orgName }: Props) => {
             };
 
             try {
-                const response = await fetch("/api/organization/invite", {
-                    method: "POST",
-                    body: JSON.stringify(emailPayload)
+                const invitationId = await create_organization_invite({
+                    organizationId: orgId,
+                    emailAddress: email,
                 });
-                if (!response.ok) return
-                const resend_result = await response.json();
-                // Toast the user about email being sent
-                setInvitees((prev) => [...prev, { email, id: resend_result }]);
+                setInvitees((prev) => [...prev, { email, id: invitationId }]);
+                setEmail("");
+                router.push(`/onboarding?step=success&orgId=${orgId}&orgName=${orgName}`);
             } catch (e) {
                 console.error(e);
+                alert("Could not send the invitation. Please try again.");
             }
         });
     };
@@ -84,7 +76,7 @@ const InviteMember = ({ orgId, orgName }: Props) => {
                 </div>
 
                 <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 flex items-center gap-3 italic text-zinc-500 text-xs text-center border-dashed">
-                    Invitations will be sent as soon as you finish your setup.
+                    The invitation email is sent immediately.
                 </div>
 
                 <div className="flex gap-3 pt-2">

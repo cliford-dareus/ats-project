@@ -28,7 +28,7 @@ const Onboarding = ({ userId }: Props) => {
                 {step === "create" && <CreateOrganization  />}
                 {step === "department" && <AddOrganizationDepartment orgId={orgId} orgName={orgName} />}
                 {step === "invite" && <InviteMember orgId={orgId} orgName={orgName} />}
-                {step === "join" && <JoinOrganization userId={userId} />}
+                {step === "join" && <JoinOrganization />}
                 {step === "success" && <Success orgId={orgId} />}
             </AnimatePresence>
         </div>

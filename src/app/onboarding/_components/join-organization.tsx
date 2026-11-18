@@ -1,85 +1,41 @@
 "use client";
 
-// import { useDebounce } from "@/hooks/use-debounce";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, Users } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useTransition } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { useOrganizationList } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 import OnboardingLayout from "./onboarding-layout";
 
-const inviteeForm = z.object({
-    orgId: z.string()
-});
-
-const JoinOrganization = ({ userId }: { userId: string }) => {
+// Joining an organization is by invitation only: an org admin invites the
+// user by email (a Clerk organization invitation, sent via the
+// create_organization_invite server action), and the invitee accepts from
+// the email link. There is intentionally no endpoint that lets a signed-in
+// user add themselves to an arbitrary org — the previous
+// /api/organization/join route did exactly that and was removed.
+const JoinOrganization = () => {
     const router = useRouter();
-    const inputRef = useRef<HTMLInputElement | null>(null);
-    const searchParams = useSearchParams();
-    const [, startCreateTransaction] = useTransition();
-    const { createOrganization, setActive } = useOrganizationList();
-
-    useForm<z.infer<typeof inviteeForm>>({
-        resolver: zodResolver(inviteeForm),
-        defaultValues: {
-            orgId: "",
-        },
-    });
-
-    const onJoin = async (data: z.infer<typeof inviteeForm>) => {
-        startCreateTransaction(async () => {
-            try {
-                if (createOrganization) {
-                    const result = await fetch(`api/organization/join/?orgId=${data.orgId}`, {
-                        method: "POST"
-                    });
-                    console.log("result", result, userId);
-                    if (!result.ok) {
-                        throw new Error("Failed to join organization");
-                    };
-
-                    const organization = await result.json();
-                    await setActive({ organization: data.orgId });
-                    const newSearchParams = new URLSearchParams(searchParams);
-                    newSearchParams.set("step", "success");
-                    newSearchParams.set("orgId", organization.id);
-                    router.push(`/onboarding?${newSearchParams.toString()}`);
-                }
-            } catch (error) {
-                console.error(error);
-            };
-        });
-    };
-
-    useEffect(() => {
-        inputRef.current?.focus();
-    }, []);
 
     return (
         <OnboardingLayout
             title={`Join an Organization`}
-            subtitle="You're about to join this organization. An admin might need to approve your request."
+            subtitle="Joining is by invitation — an admin of the organization invites you by email."
             icon={Users}
         >
             <div className="space-y-6">
                 <div className="p-6 bg-brand-50 rounded-[32px] border border-brand-100 text-center space-y-2">
-                    <p className="text-brand-600 text-sm font-bold">Request Access</p>
-                    <p className="text-brand-400 text-xs">A notification will be sent to the team owner.</p>
+                    <p className="text-brand-600 text-sm font-bold">Ask an admin to invite you</p>
+                    <p className="text-brand-400 text-xs">Once they send the invitation, accept it from the email and you&apos;ll be added to their organization.</p>
                 </div>
                 <div className="flex gap-3">
                     <button
-                        // onClick={onBack}
+                        onClick={() => router.push("/onboarding?step=organization")}
                         className="p-4 bg-zinc-100 text-zinc-600 rounded-2xl hover:bg-zinc-200 transition-all"
                     >
                         <ArrowLeft className="w-6 h-6" />
                     </button>
                     <button
-                        onClick={() => onJoin({ orgId: inputRef.current?.value ?? "" })}
+                        onClick={() => router.push("/onboarding?step=create")}
                         className="flex-1 py-4 bg-zinc-900 text-white rounded-2xl font-bold hover:bg-zinc-800 transition-all"
                     >
-                        Continue to Dashboard
+                        Create an Organization Instead
                     </button>
                 </div>
             </div>

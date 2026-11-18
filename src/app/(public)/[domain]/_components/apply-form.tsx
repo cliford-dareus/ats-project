@@ -17,6 +17,7 @@ import { motion } from "motion/react";
 import ProgressSteps from "./progess";
 import { cn } from "@/lib/utils";
 import { create_application_action } from "@/server/actions/application_actions";
+import { fire_public_trigger_action } from "@/server/actions/trigger-actions";
 import { applicationSchema } from "@/zod";
 
 type FormValues = z.infer<typeof applicationSchema>;
@@ -116,7 +117,10 @@ const ApplyForm = ({ jobId, subdomain }: { jobId: number; subdomain: string }) =
                 return;
             }
 
-            void fireTrigger({
+            // Fire-and-forget: the server action validates the event, resolves the
+            // org from the subdomain and verifies job/candidate ownership before
+            // enqueueing. A failed integration must never block the applicant.
+            void fire_public_trigger_action({
                 event: {
                     type: "candidate_applied",
                     candidateId: String(response?.candidate_id),
@@ -251,30 +255,5 @@ const ApplyForm = ({ jobId, subdomain }: { jobId: number; subdomain: string }) =
         </div>
     );
 };
-
-// ── Trigger caller ────────────────────────────────────────────────────────────
-// Calls the main app's trigger route from the public careers subdomain.
-// Uses NEXT_PUBLIC_API_URL so it works from any subdomain.
-// Errors are swallowed — a failed integration should never block the applicant.
-async function fireTrigger(body: { event: unknown; context: unknown }) {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
-    try {
-        const res = await fetch(`${apiUrl}/api/trigger/public`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "x-trigger-secret": process.env.NEXT_PUBLIC_INTERNAL_TRIGGER_SECRET!,
-            },
-            body: JSON.stringify(body),
-        });
-
-        if (!res.ok) {
-            console.warn("[Trigger] Integration dispatch failed:", res.status);
-        }
-    } catch (err) {
-        // Network failure — don't surface to the applicant
-        console.warn("[Trigger] Integration dispatch error:", err);
-    }
-}
 
 export default ApplyForm;

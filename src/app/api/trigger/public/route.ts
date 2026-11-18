@@ -1,12 +1,14 @@
-//   Called exclusively from the (public) career page group:
-//   bridge.apliko.com  →  POST https://app.apliko.com/api/ats/trigger/public
-//   hisgra.apliko.com  →  POST https://app.apliko.com/api/ats/trigger/public
+//   Kept for EXTERNAL career pages that cannot call a server action.
+//   The in-app public career pages now dispatch via the
+//   fire_public_trigger_action server action instead — no secret in the browser.
 //
 //   Auth: shared secret via x-trigger-secret header (no Clerk — public pages have no session)
 //   Scope: candidate_applied + resume_uploaded only — the two events a public page can fire
+//   Rate limit: 30 req/min per IP (in-memory, per process)
 // ─────────────────────────────────────────────────────────────────────────────
 
 import {enqueueTrigger} from "@/lib/enqueue-trigger";
+import { check_rate_limit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -65,6 +67,22 @@ const RequestSchema = z.object({
 });
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+// In-memory per-IP rate limit (shared helper, no new deps). 30 requests/minute
+// is far above legitimate application traffic for one IP and slows
+// secret-guessing and trigger spam. Buckets live per server process and reset
+// on redeploy — good enough for this low-volume endpoint; move to Redis if
+// multi-instance.
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 30;
+
+function isRateLimited(req: NextRequest): boolean {
+    const forwarded = req.headers.get("x-forwarded-for");
+    const ip = forwarded?.split(",")[0]?.trim()
+        || req.headers.get("x-real-ip")
+        || "unknown";
+    return !check_rate_limit(`trigger-public:${ip}`, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS);
+}
+
 function verifySecret(req: NextRequest): boolean {
     if (!TRIGGER_SECRET) {
         console.error("[trigger/public] INTERNAL_TRIGGER_SECRET is not set");
@@ -150,6 +168,14 @@ export async function OPTIONS(req: NextRequest) {
 // ── POST ──────────────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
     const cors = corsHeaders(req);
+
+    // ── 0. Rate limit (before auth, so it also slows secret-guessing) ─────────
+    if (isRateLimited(req)) {
+        return NextResponse.json(
+            { error: "Too many requests" },
+            { status: 429, headers: { ...cors, "Retry-After": "60" } },
+        );
+    }
 
     // ── 1. Origin check ────────────────────────────────────────────────────────
     if (!verifyOrigin(req)) {

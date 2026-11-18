@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { uploadResumeToR2 } from "@/lib/upload-file-to-r2";
 import { db } from "@/drizzle/db";
 import { candidates } from "@/drizzle/schema";
+import { canEditCandidate } from "@/server/permissions";
 import mongodb from "@/lib/mongodb";
 import Attachment from "@/models/attachments";
 
@@ -29,6 +30,14 @@ export async function POST(req: Request) {
     const { userId, orgId } = await auth();
     if (!userId || !orgId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Uploading an attachment mutates candidate data
+    if (!(await canEditCandidate())) {
+      return NextResponse.json(
+        { error: "You do not have permission to upload attachments" },
+        { status: 403 }
+      );
     }
 
     await mongodb();
@@ -61,7 +70,9 @@ export async function POST(req: Request) {
       );
     }
 
-    if (file.type && !ALLOWED_MIME.has(file.type)) {
+    // MIME type is required and must be allowlisted — an empty file.type
+    // previously skipped this check entirely.
+    if (!file.type || !ALLOWED_MIME.has(file.type)) {
       return NextResponse.json(
         { error: "Unsupported file type" },
         { status: 400 }
@@ -91,13 +102,17 @@ export async function POST(req: Request) {
       );
     }
 
-    const fileUrl = await uploadResumeToR2(file, candidate.name);
+    const fileUrl = await uploadResumeToR2(file, candidate.name, {
+      orgId,
+      candidateId,
+    });
 
     await Attachment.create({
       file_name: file.name.slice(0, 255),
       file_url: fileUrl,
       candidate_id: candidateId,
       attachment_type: attachmentType,
+      organization_id: orgId,
     });
 
     return NextResponse.json({ success: true, file_url: fileUrl });

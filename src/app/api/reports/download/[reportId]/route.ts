@@ -1,22 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
+import { canViewReport } from '@/server/permissions';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { reportId: string } }
+  { params }: { params: Promise<{ reportId: string }> }
 ) {
   try {
-    const { userId } = await auth();
-    
-    if (!userId) {
+    const { userId, orgId } = await auth();
+
+    if (!userId || !orgId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { reportId } = params;
+    if (!(await canViewReport())) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
-    if (!reportId) {
-      return NextResponse.json({ 
-        error: 'Report ID is required' 
+    const { reportId } = await params;
+
+    // Report ids are generated server-side (<type>_<timestamp>.pdf); reject
+    // anything else so the id can't smuggle path traversal or odd input
+    // into a future file lookup.
+    if (!reportId || !/^[A-Za-z0-9._-]+$/.test(reportId) || reportId.includes('..')) {
+      return NextResponse.json({
+        error: 'Invalid report ID'
       }, { status: 400 });
     }
 

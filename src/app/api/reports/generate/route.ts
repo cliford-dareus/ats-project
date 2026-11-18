@@ -1,13 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { generateReport } from '@/server/actions/reports-actions';
+import { canGenerateReport, canViewReport } from '@/server/permissions';
+
+// Report types the UI can request (see report-generator.tsx). Anything else
+// is rejected — reportType is interpolated into the download URL downstream.
+const REPORT_TYPES = new Set([
+    'executive-summary',
+    'detailed-analytics',
+    'pipeline-report',
+    'source-analysis',
+]);
 
 export async function POST(request: NextRequest) {
     try {
-        const { userId } = await auth();
+        const { userId, orgId } = await auth();
 
-        if (!userId) {
+        if (!userId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        if (!(await canGenerateReport())) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
         const body = await request.json();
@@ -17,6 +31,12 @@ export async function POST(request: NextRequest) {
         if (!reportType || !dateRange || !dateRange.from || !dateRange.to) {
             return NextResponse.json({
                 error: 'Missing required fields: reportType, dateRange'
+            }, { status: 400 });
+        }
+
+        if (typeof reportType !== 'string' || !REPORT_TYPES.has(reportType)) {
+            return NextResponse.json({
+                error: 'Invalid reportType'
             }, { status: 400 });
         }
 
@@ -58,10 +78,14 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
     try {
-        const { userId } = await auth();
+        const { userId, orgId } = await auth();
 
-        if (!userId) {
+        if (!userId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        if (!(await canViewReport())) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
         // Get report history (mock data for now)

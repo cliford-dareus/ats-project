@@ -254,7 +254,7 @@ export async function POST(request: NextRequest) {
 
     revalidateDbCache({
       tag: CACHE_TAGS.candidates,
-      id: orgId,
+      orgId: orgId,
     });
 
     return NextResponse.json({
