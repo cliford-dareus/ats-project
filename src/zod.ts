@@ -107,6 +107,10 @@ export const applicationSchema = z.object({
     }),
 });
 
+// Form values for the public apply flow — shared by ApplyForm and its step
+// components so their react-hook-form props stay in sync with the schema.
+export type ApplicationFormValues = z.infer<typeof applicationSchema>;
+
 export const applicationFormSchema = z.object({
     personalInfo: personalInfoSchema,
     workExperience: z.array(experienceSchema).min(1, "At least one experience item is required"),
@@ -141,7 +145,8 @@ export const updateApplicationSchema = z.object({
 export const updateApplicationStageSchema = z.object({
     applicationId: z.number(),
     new_stage_id: z.number(),
-    organization: z.string(),
+    // Server-derived from the session org — accepted but ignored when sent.
+    organization: z.string().optional(),
 });
 
 export const moveAndReorderApplicationSchema = z.object({
@@ -158,8 +163,9 @@ export const newCandidateFormSchema = z.object({
     phone: z.string(),
     location: z.string(),
     resume: z.string().optional(),
-    organization: z.string(),
-    subdomain: z.string(),
+    // Server-derived from the session org — accepted but ignored when sent.
+    organization: z.string().optional(),
+    subdomain: z.string().optional(),
 });
 
 export const updateCandidateSchema = z.object({
@@ -312,12 +318,16 @@ export const organizationSchema = z.object({
     subdomain: z.string().min(3).max(100),
 });
 
+// Only organizationId + emailAddress come from the client. inviterUserId,
+// role and redirectUrl are server-derived by create_organization_invite
+// (session user, hardcoded "org:member", Clerk default redirect) and are
+// optional here so callers can't spoof them.
 export const inviteMemberSchema = z.object({
     organizationId: z.string(),
-    inviterUserId: z.string(),
-    emailAddress: z.string(),
-    role: z.string(),
-    redirectUrl: z.string()
+    inviterUserId: z.string().optional(),
+    emailAddress: z.string().email(),
+    role: z.string().optional(),
+    redirectUrl: z.string().optional()
 });
 
 

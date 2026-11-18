@@ -84,7 +84,7 @@ const data = {
     ]
 };
 
-export function AppSidebar({needToCreateOrgInDb,...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const pathname = usePathname();
     const {setOpen} = useSidebar();
     const router = useRouter();

@@ -3,8 +3,22 @@ import { Card } from "@/components/ui/card";
 import { CheckCircle2, Plus, Trash2, Upload, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { FormInput } from "../fields";
+import type { RefObject } from "react";
+import type { FieldArrayWithId, FieldErrors, UseFieldArrayAppend, UseFieldArrayRemove, UseFormRegister } from "react-hook-form";
+import type { ApplicationFormValues } from "@/zod";
 
-const ReferencesForm = ({ register, errors, refFields, appendRef, removeRef, fileInputRef, resumeName, handleFileUpload }) => {
+type Props = {
+    register: UseFormRegister<ApplicationFormValues>;
+    errors: FieldErrors<ApplicationFormValues>;
+    refFields: FieldArrayWithId<ApplicationFormValues, "references", "id">[];
+    appendRef: UseFieldArrayAppend<ApplicationFormValues, "references">;
+    removeRef: UseFieldArrayRemove;
+    fileInputRef: RefObject<HTMLInputElement | null>;
+    resumeName: string | null;
+    handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+};
+
+const ReferencesForm = ({ register, errors, refFields, appendRef, removeRef, fileInputRef, resumeName, handleFileUpload }: Props) => {
     return (
         <motion.div
             key="step4"

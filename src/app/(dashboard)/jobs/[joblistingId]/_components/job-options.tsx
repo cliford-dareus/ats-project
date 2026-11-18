@@ -91,7 +91,9 @@ const JobOptions = ({data, stages, job_id}: Props) => {
                             {openStage === stage.stage_name &&
                                 <div className="w-full border p-4 flex flex-col gap-4">
                                     <div className='flex'>
-                                        {JSON.parse(stage.trigger).map((trigger: TriggerResponseType) => (
+                                        {/* The stages table has no trigger column, so stages
+                                            loaded from the DB carry no serialized triggers. */}
+                                        {(stage.trigger ? JSON.parse(stage.trigger) : []).map((trigger: TriggerResponseType) => (
                                             <div key={trigger.id}>{trigger.action_type}</div>
                                         ))}
                                     </div>

@@ -15,7 +15,6 @@ function Calendar({
   showOutsideDays = true,
   ...props
 }: CalendarProps) {
-  // @ts-ignore
     return (
     <DayPicker
       showOutsideDays={showOutsideDays}
@@ -61,12 +60,14 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        IconLeft: ({ className, ...props }) => (
-          <ChevronLeft className={cn("h-4 w-4", className)} {...props} />
-        ),
-        IconRight: ({ className, ...props }) => (
-          <ChevronRight className={cn("h-4 w-4", className)} {...props} />
-        ),
+        // react-day-picker v9 replaced IconLeft/IconRight with a single
+        // Chevron component that takes an orientation.
+        Chevron: ({ className, orientation, ...props }) => {
+          if (orientation === "left") {
+            return <ChevronLeft className={cn("h-4 w-4", className)} {...props} />
+          }
+          return <ChevronRight className={cn("h-4 w-4", className)} {...props} />
+        },
       }}
       {...props}
     />

@@ -49,7 +49,7 @@ export const columns: ColumnDef<CandidatesResponseType>[] = [
                 {row.original.name}
             </h4>
             <p className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest mt-1">
-                {row.original.candidate_email}
+                {row.original.email}
             </p>
         </div>
       </div>

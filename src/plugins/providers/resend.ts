@@ -8,6 +8,7 @@
 //   5. resume-score-report        score_updated           → internal scorecard email to recruiter
 
 import ApplicationConfirmationTemplate from "@/emails/application_submitted_template";
+import { createElement } from "react";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Integration 1 — Application Confirmation
@@ -20,6 +21,7 @@ class ApplicationConfirmationIntegration implements ATSIntegration {
     readonly icon = "📨";
     readonly description = "Sends a branded confirmation email to the candidate immediately after they apply.";
     readonly latency = "realtime" as const;
+    readonly to = "candidate";
 
     constructor(
         readonly providerId: string,
@@ -63,19 +65,24 @@ class ApplicationConfirmationIntegration implements ATSIntegration {
         //         `, "#111");
 
         const applicationSubmittedProps = {
-            candidateName: candidate.name,
-            jobTitle: job?.job_name,
+            candidateName: candidate.name ?? "there",
+            jobTitle: job?.job_name ?? "open",
             companyName: job?.job_subdomain,
             companyLogoUrl: "",
-            applicationId: 1,         // Optional reference number
+            // Reference number from the trigger context when the apply flow
+            // provided one (the template renders it only when present).
+            applicationId: context.settings.applicationId != null ? String(context.settings.applicationId) : undefined,
             expectedResponseTime: "",    // e.g. "within 7-10 business days"
             senderName: "",
             senderTitle: ""
         };
 
-        console.log(`[Registry] Processing integration ${this.id} for provider ${this.providerId} with event ${event.type} and apiKey=${this.apiKey}`);
+        // NOTE: never log the API key — it used to be interpolated here in full.
+        console.log(`[Registry] Processing integration ${this.id} for provider ${this.providerId} with event ${event.type}`);
 
-        const html = await render(React.createElement(ApplicationConfirmationTemplate), applicationSubmittedProps || {})
+        // Props go to the template element — render()'s second argument is
+        // render options, not component props.
+        const html = await render(createElement(ApplicationConfirmationTemplate, applicationSubmittedProps))
 
         const { id } = await sendEmail({
             apiKey: this.apiKey,
@@ -85,7 +92,7 @@ class ApplicationConfirmationIntegration implements ATSIntegration {
             html,
             tags: [
                 { name: "event", value: "candidate_applied" },
-                { name: "org", value: context.organizationId },
+                { name: "org", value: context.organization_id },
                 { name: "candidate", value: candidate.name! },
             ],
         });

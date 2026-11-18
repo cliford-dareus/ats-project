@@ -1,17 +1,31 @@
 import { db } from "@/drizzle/db";
-import { applications, attachments, candidates, interviews, orgToDepartment_relations } from "@/drizzle/schema";
+import { applications, attachments, candidates, interviews } from "@/drizzle/schema";
 import { and, eq, inArray, sql, SQL } from "drizzle-orm";
 import { CACHE_TAGS, dbCache, getGlobalTag, getIdTag, getOrgTag, revalidateDbCache } from "@/lib/cache";
 import { filterCandidateSchema, newCandidateFormSchema, updateCandidateSchema } from "@/zod";
 import { z } from "zod";
 
-export const create_candidate = async (data: z.infer<typeof newCandidateFormSchema>) => {
+// organization/subdomain are required here — the action always fills them
+// from the session org before calling.
+export const create_candidate = async (data: z.infer<typeof newCandidateFormSchema> & { organization: string; subdomain: string }) => {
+    // `resume` is a form field, not a candidates column — keep it out of the
+    // insert (it maps to cv_path below).
+    const { resume, ...candidateData } = data;
     const [candidate] = await db.insert(candidates)
         .values({
-            ...data,
-            cv_path: data.resume as string,
+            ...candidateData,
+            // Resume is optional for dashboard quick-add (attach later);
+            // cv_path is NOT NULL so default to an empty string.
+            cv_path: resume ?? "",
             organization: data.organization,
             subdomain: data.subdomain,
+            // The quick-add form collects a single free-text location, not a
+            // postal address — but address/city/state/zip_code are NOT NULL,
+            // so default them the same way as cv_path.
+            address: "",
+            city: "",
+            state: "",
+            zip_code: "",
         })
         .$returningId();
     
@@ -23,7 +37,7 @@ export const create_candidate = async (data: z.infer<typeof newCandidateFormSche
     return candidate;
 };
 
-export const update_candidate = async (data: z.infer<typeof updateCandidateSchema>) => {
+export const update_candidate = async (data: z.infer<typeof updateCandidateSchema>, orgId: string) => {
     await db.update(candidates)
         .set({
             ...(data.name && { name: data.name }),
@@ -35,18 +49,19 @@ export const update_candidate = async (data: z.infer<typeof updateCandidateSchem
             // ...(data.profession && { profession: data.profession }),
             ...(data.subdomain && { subdomain: data.subdomain }),
         })
-        .where(eq(candidates.id, data.id))
+        // Org-scoped: a candidate from another org is never updated.
+        .where(and(eq(candidates.id, data.id), eq(candidates.organization, orgId)))
 
     revalidateDbCache({
         tag: CACHE_TAGS.candidates,
         id: String(data.id),
-        orgId: String(data.organization),
+        orgId: orgId,
     });
 };
 
 export const delete_candidate = async (id: number, orgId: string) => {
     await db.delete(candidates)
-        .where(eq(candidates.id, id))
+        .where(and(eq(candidates.id, id), eq(candidates.organization, orgId)))
 
     revalidateDbCache({
         tag: CACHE_TAGS.candidates,
@@ -73,10 +88,12 @@ export const get_candidate_by_id = async (unsafedata: number, orgId: string) => 
             getOrgTag(orgId, CACHE_TAGS.candidates),
         ]
     });
-    return cacheFn(unsafedata);
+    // orgId is passed through to the DB query (and becomes part of the
+    // unstable_cache key via the args), not just used for cache tags.
+    return cacheFn(unsafedata, orgId);
 };
 
-export const get_candidate_by_id_db = async (unsafedata: number) => {
+export const get_candidate_by_id_db = async (unsafedata: number, orgId: string) => {
     const [
         candidate,
         application,
@@ -84,10 +101,43 @@ export const get_candidate_by_id_db = async (unsafedata: number) => {
         interview,
         // scoreCard,
     ] = await Promise.all([
-        db.select().from(candidates).where(eq(candidates.id, unsafedata)),
-        db.select().from(applications).where(eq(applications.candidate, unsafedata)),
-        db.select().from(attachments).where(eq(attachments.candidate_id, unsafedata)),
-        db.select().from(interviews).where(eq(interviews.applications_id, unsafedata)),
+        db.select().from(candidates).where(and(eq(candidates.id, unsafedata), eq(candidates.organization, orgId))),
+        db.select().from(applications).where(and(eq(applications.candidate, unsafedata), eq(applications.organization, orgId))),
+        // Attachments carry no org column — scope them through their candidate.
+        // Columns are selected explicitly so the join keeps the row shape.
+        db.select({
+            id: attachments.id,
+            file_name: attachments.file_name,
+            file_url: attachments.file_url,
+            candidate_id: attachments.candidate_id,
+            attachment_type: attachments.attachment_type,
+        })
+            .from(attachments)
+            .innerJoin(candidates, eq(candidates.id, attachments.candidate_id))
+            .where(and(eq(attachments.candidate_id, unsafedata), eq(candidates.organization, orgId))),
+        // Interviews belong to applications, not candidates — join through the
+        // candidate's applications so the review page shows this candidate's
+        // interviews (matching applications_id against the candidate id
+        // returned whatever interview happened to share the numeric id).
+        db.select({
+            id: interviews.id,
+            applications_id: interviews.applications_id,
+            locations: interviews.locations,
+            start_at: interviews.start_at,
+            end_at: interviews.end_at,
+            type: interviews.type,
+            organization: interviews.organization,
+            link: interviews.link,
+            status: interviews.status,
+            hold_status: interviews.hold_status,
+            hold_expires_at: interviews.hold_expires_at,
+            interviewer_ids: interviews.interviewer_ids,
+            created_at: interviews.created_at,
+            updated_at: interviews.updated_at,
+        })
+            .from(interviews)
+            .innerJoin(applications, eq(applications.id, interviews.applications_id))
+            .where(and(eq(applications.candidate, unsafedata), eq(applications.organization, orgId))),
         // db.select().from(scoreCards).where(eq(scoreCards.interviews_id, unsafedata)),
     ]);
 

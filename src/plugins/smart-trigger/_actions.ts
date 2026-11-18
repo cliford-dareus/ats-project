@@ -10,7 +10,8 @@ import { render } from "@react-email/components";
 import React from "react";
 import mongodb from "@/lib/mongodb";
 import EmailTemplate from "@/models/email-templates";
-// import { getTemplateById } from "@/lib/templates";
+import { getTemplateById } from "@/lib/templates";
+import { db_get_organization_plugins } from "@/server/queries/drizzle/plugin-queries";
 
 interface SmartTriggerJobData {
     application_id: number;
@@ -47,6 +48,10 @@ export const executeSmartMoveAction = async (jobData: SmartTriggerJobData) => {
         .where(eq(applications.id, application_id))
         .limit(1);
     if (!application) throw new Error(`Application ${application_id} not found`);
+
+    // candidate is a nullable FK — a candidate-less application has no one
+    // to evaluate the location condition against.
+    if (!application.candidate) throw new Error(`Application ${application_id} has no candidate`);
 
     const [candidate] = await db.select()
         .from(candidates)
@@ -103,12 +108,23 @@ export const executeSmartEmailAction = async (jobData: SmartTriggerJobData) => {
     // Convert React component to HTML string
     const html = await render(React.createElement(template?.component, savedProps || {}));
 
-    // Send email
+    // Send email — a sender address is required; without one Resend would
+    // reject the send, so fail here with a clear error instead.
+    const from = config?.email?.from;
+    if (!from) throw new Error(`Smart trigger email for application ${candidateId} has no sender address`);
+
+    // Prefer the org-configured Resend key (decrypted, server-only), falling
+    // back to the env key — same as manual email sends.
+    const plugins = await db_get_organization_plugins(application.organization);
+    const apiKey = plugins.settings?.["resend"]?.credentials?.apiKey || process.env.RESEND_API_KEY;
+    if (!apiKey) throw new Error(`Smart trigger email for application ${candidateId} has no Resend API key configured`);
+
     const result = await sendEmail({
+        apiKey,
         to: email,
         subject: config?.email?.subject as string,
         html,
-        from: config?.email?.from,
+        from,
     });
     if (!result) throw new Error(`Failed to send email to ${email}`);
 };

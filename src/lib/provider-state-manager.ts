@@ -24,10 +24,15 @@ export class ProviderStateManager extends EventEmitter {
 
     private isEqual(a: PluginAuthState | undefined, b: PluginAuthState): boolean {
         if (!a) return false;
-        return a.status === b.status &&
-            a.token === b.token &&
-            a.userId === b.userId &&
-            a.error === b.error; // add other fields as needed
+        if (a.status !== b.status || a.error !== b.error) return false;
+        if (a.credentials === b.credentials) return true;
+        if (!a.credentials || !b.credentials) return false;
+        const aKeys = Object.keys(a.credentials);
+        const bKeys = Object.keys(b.credentials);
+        return (
+            aKeys.length === bKeys.length &&
+            aKeys.every((key) => a.credentials?.[key] === b.credentials?.[key])
+        );
     }
 
     getAllStates(): ReadonlyMap<string, PluginAuthState> {

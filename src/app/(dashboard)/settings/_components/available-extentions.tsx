@@ -15,8 +15,9 @@ const AvailableExtensions = ({ orgId, installed }: { orgId: string, installed: I
 
     const onInstall = async (pluginId: string) => {
         startTransition(async () => {
-            const pluginConfig = available.find((plugin) => plugin.id === pluginId)?.config
-            await toggle_organization_plugin_action(orgId, true, pluginId, pluginConfig)
+            // Manifest entries carry no per-plugin config — the action's
+            // config argument is optional and defaults to undefined.
+            await toggle_organization_plugin_action(orgId, true, pluginId)
         });
     };
 

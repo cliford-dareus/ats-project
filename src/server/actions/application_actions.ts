@@ -1,20 +1,24 @@
 'use server';
 
 import {
-    create_application, get_all_applications,
+    create_application, create_application_for_candidate_db, get_all_applications,
     get_application_by_id, get_job_all_applications,
     getTasks, move_application_and_reorder_db,
     update_application,
     update_application_stage
 } from "@/server/queries";
 import { auth } from "@clerk/nextjs/server";
-import { canCreateJob } from "@/server/permissions";
+import { canEditApplication, canMoveApplication, canViewApplication, requirePermission } from "@/server/permissions";
 import { z } from "zod";
-import { applicationFormSchema, filterApplicationsSchema, updateApplicationSchema, updateApplicationStageSchema } from "@/zod";
+import { applicationFormSchema, filterApplicationsSchema, moveAndReorderApplicationSchema, updateApplicationSchema, updateApplicationStageSchema } from "@/zod";
 
+// NOTE: intentionally NOT permission-gated — this is the public apply
+// path (src/app/(public)/[domain]/_components/apply-form.tsx), called by
+// unauthenticated applicants. The dashboard "Add Applicant" modal uses
+// create_application_for_candidate_action instead (session-gated).
+// Do not add a session permission check here without splitting the two flows.
 export const create_application_action = async (unsafeData: z.infer<typeof applicationFormSchema>) => {
     const { success, data } = await applicationFormSchema.spa(unsafeData);
-    // const canCreate = await canCreateJob(userId);
 
     if (!success) {
         throw new Error("There was an error");
@@ -23,44 +27,66 @@ export const create_application_action = async (unsafeData: z.infer<typeof appli
     return await create_application(data);
 };
 
-export const update_application_action = async (unsafeData: z.infer<typeof updateApplicationSchema>) => {
-    const { userId } = await auth();
-    const { success, data } = await updateApplicationSchema.spa(unsafeData);
-    const canCreate = await canCreateJob(userId);
+// Dashboard-only quick-add: application for an existing candidate.
+// Session-gated (application:create) — unlike create_application_action,
+// which also serves the public apply form.
+export const create_application_for_candidate_action = async (unsafeData: { jobId: number; candidateId: number }) => {
+    const { userId, orgId } = await auth();
+    const parsed = await z.object({
+        jobId: z.number().int().positive(),
+        candidateId: z.number().int().positive(),
+    }).spa(unsafeData);
 
-    if (!success || !userId || !canCreate) {
+    if (!userId || !orgId || !parsed.success) {
+        return { success: false as const, message: "Invalid application data" };
+    }
+    await requirePermission("application:create");
+
+    return await create_application_for_candidate_db(parsed.data.jobId, parsed.data.candidateId, orgId);
+};
+
+export const update_application_action = async (unsafeData: z.infer<typeof updateApplicationSchema>) => {
+    const { userId, orgId } = await auth();
+    const { success, data } = await updateApplicationSchema.spa(unsafeData);
+    const allowed = await canEditApplication();
+
+    if (!success || !userId || !orgId || !allowed) {
         return { error: true, message: "There was an error updating your application" }
     }
 
-    return await update_application(data);
+    return await update_application(data, orgId);
 };
 
 export const update_application_stage_action = async (unsafeData: z.infer<typeof updateApplicationStageSchema>) => {
-    const { userId } = await auth();
+    const { userId, orgId } = await auth();
     const { success, data } = await updateApplicationStageSchema.spa(unsafeData);
+    const allowed = await canMoveApplication();
 
-    if (!userId || !success) {
+    if (!userId || !orgId || !success || !allowed) {
         return { error: true, message: "There was an error updating application stage" }
     }
 
-    return await update_application_stage(data);
+    return await update_application_stage(data, orgId);
 };
 
 export const get_all_applications_action = async (unsafeData: z.infer<typeof filterApplicationsSchema>) => {
-    const { userId } = await auth();
+    const { userId, orgId } = await auth();
     const { success, data } = await filterApplicationsSchema.spa(unsafeData);
+    const allowed = await canViewApplication();
 
-    if (!userId || !success) {
+    if (!userId || !orgId || !success || !allowed) {
         return { error: true, message: "There was an error retrieving applications" }
     }
 
-    return await get_all_applications(data);
+    // Never trust a client-supplied organization filter — always the session org.
+    return await get_all_applications({ ...data, organization: orgId });
 };
 
 export const get_application_by_id_action = async (applicationId: number) => {
     const { userId, orgId } = await auth();
+    const allowed = await canViewApplication();
 
-    if (!userId || !orgId) {
+    if (!userId || !orgId || !allowed) {
         return { error: true, message: "There was an error retrieving application" }
     }
 
@@ -69,22 +95,25 @@ export const get_application_by_id_action = async (applicationId: number) => {
 
 export const get_job_all_applications_action = async (jobId: number) => {
     const { userId } = await auth();
+    const allowed = await canViewApplication();
 
-    if (!userId) {
-        return { error: true, message: "There was an error updating application stage" }
+    if (!userId || !allowed) {
+        return { error: true, message: "There was an error retrieving job applications" }
     }
 
     return await get_job_all_applications(jobId);
 };
 
-export const moveApplicationAndReorder = async (unsafeData) => {
-    // const {userId} = await auth();
-    // const {success, data} = await candidateForm.spa(unsafeData);
-    // const canCreate = await canCreateJob(userId);
-    //
-    // if (!userId || !success ||  !canCreate) {
-    //     return { error: true, message: ""}
-    // };
+export const moveApplicationAndReorder = async (unsafeData: z.infer<typeof moveAndReorderApplicationSchema>) => {
+    const { userId } = await auth();
+    if (!userId) {
+        return { success: false, error: "Unauthorized" };
+    }
+
+    const allowed = await canMoveApplication();
+    if (!allowed) {
+        return { success: false, error: "Missing permission: application:move" };
+    }
 
     return await move_application_and_reorder_db(unsafeData)
 };
@@ -93,11 +122,15 @@ export const moveApplicationAndReorder = async (unsafeData) => {
 // };
 
 export const get_all_tasks_action = async () => {
-    const { userId } = await auth();
+    const { userId, orgId } = await auth();
+    // Tasks are the smart-trigger queue for applications on the kanban board;
+    // reading them is an application read. (The sibling write,
+    // add_task_to_queue_action, requires application:move.)
+    const allowed = await canViewApplication();
 
-    if (!userId) {
-        return { error: true, message: "There was an error retrieving applications" }
+    if (!userId || !orgId || !allowed) {
+        return { error: true, message: "There was an error retrieving tasks" }
     }
 
-    return await getTasks();
+    return await getTasks(orgId);
 };

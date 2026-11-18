@@ -7,9 +7,8 @@ const nextConfig: NextConfig = {
     eslint: {
         ignoreDuringBuilds: true,
     },
-    typescript: {
-        ignoreBuildErrors: true,
-    },
+    // Type errors now fail the build: `npx tsc --noEmit` is clean
+    // (was 110 errors before the Nov 18 type-fix pass).
 };
 
 export default nextConfig;

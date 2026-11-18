@@ -43,6 +43,9 @@ export interface ATSIntegration {
     readonly description: string;
     readonly icon: string;
     readonly latency: "realtime" | "async" | "batch";
+    // Display label for who receives this integration's output
+    // (e.g. "candidate") — shown in the settings integrations list.
+    readonly to?: string;
 
     getSupportedTriggers(): SmartTrigger[];
     execute(event: TriggerEvent, context: ATSContext): Promise<ATSIntegrationResult>;

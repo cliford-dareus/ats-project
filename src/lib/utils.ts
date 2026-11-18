@@ -1,7 +1,7 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { UseFormReturn } from "react-hook-form";
-import { ApplicationResponseType, CandidateExperience, CandidatesResponseType, JobExperience } from "@/types";
+import { ApplicationResponseType, CandidateExperience, CandidatesResponseType, JobExperienceType } from "@/types";
 import {
     differenceInDays, differenceInMonths,
     differenceInWeeks,
@@ -119,7 +119,8 @@ export const createNewSearchParam = (params: Record<string, string | string[] | 
 
 export const groupByDay = (data: CandidatesResponseType[] | ApplicationResponseType[]) => {
     return data.reduce((acc, curr) => {
-        const createdAt = new Date(curr.created_at);
+        // Candidates carry created_at; applications carry apply_date.
+        const createdAt = new Date("created_at" in curr ? curr.created_at : curr.apply_date);
         const date = createdAt.toISOString().split("T")[0];
 
         if (!acc[date]) {
@@ -223,11 +224,11 @@ export function getRangeOption(range?: string, from?: string, to?: string) {
     return RANGE_OPTIONS[range as keyof typeof RANGE_OPTIONS]
 };
 
-export const getApplicationMatch = (candidate_id: number, jobSkills: JobExperience[], experience: CandidateExperience[]) => {
+export const getApplicationMatch = (candidate_id: number, jobSkills: JobExperienceType[], experience: CandidateExperience[]) => {
     const candidateMap = new Map<string, number>();
     experience.forEach((item) => {
         const skill = item.position.trim();
-        const years = Number(item.totalExperience) || 0;
+        const years = Number(item.total_experience) || 0;
         candidateMap.set(skill, Math.max(years, candidateMap.get(skill) ?? 0));
     });
 

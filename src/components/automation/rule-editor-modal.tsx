@@ -10,6 +10,7 @@ import { Dispatch, SetStateAction } from "react";
 import { ATSIntegration } from "@/lib/plugin-interfaces";
 import { Button } from "../ui/button";
 import { BriefcaseBusiness } from "lucide-react";
+import { JOB_STAGES } from "@/zod";
 
 const RuleEditorModal = ({
     isOpen,
@@ -60,8 +61,8 @@ const RuleEditorModal = ({
                     <div>
                         <Label>WHEN</Label>
                         <Select
-                            value={draft.trigger?.toStage ?? ""}
-                            onValueChange={v => update({ trigger: { ...draft.trigger, toStage: v } as AutomationRule["trigger"] })}
+                            value={draft.trigger?.event === "stage_changed" ? draft.trigger.toStage : ""}
+                            onValueChange={v => update({ trigger: { event: "stage_changed", toStage: JOB_STAGES.parse(v) } })}
                         >
                             <SelectTrigger>
                                 <SelectValue />

@@ -116,7 +116,8 @@ const ComposeEmailDialog = ({
                     candidateId: selectedCandidate?.id,
                     candidateName: selectedCandidate?.name,
                     candidateEmail: selectedCandidate?.email,
-                    candidateAvatar: selectedCandidate?.avatar ?? "hhhhsjhds.png",
+                    // Candidates have no avatar field — the server defaults
+                    // the thread avatar to "default-avatar.png".
                     candidateRole: selectedCandidate?.role ?? "Soft",
                     candidateStatus: selectedCandidate?.status ?? "ACTIVE",
                     templateId: selected?.templateId,

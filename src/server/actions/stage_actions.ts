@@ -1,30 +1,44 @@
 'use server';
 
 import { auth } from "@clerk/nextjs/server";
-import { canCreateJob } from "@/server/permissions";
+import { canEditJob, canMoveApplication, canViewJob, hasPermission } from "@/server/permissions";
 import { get_stage_by_name } from "@/server/queries/drizzle/stages";
+import { JOB_STAGES } from "@/zod";
 import { TriggerAction } from "@/plugins/smart-trigger/types";
 import { addTaskToQueue } from "../queries";
 
 export const get_stage_by_name_action = async (stageName: string) => {
     const { userId } = await auth();
-    if (!userId) {
-        return { error: true, message: "There was an error creating your product" }
+    const allowed = await canViewJob();
+    if (!userId || !allowed) {
+        return { error: true, message: "There was an error retrieving the stage" }
     }
 
-    return await get_stage_by_name(stageName);
+    // stage_name is a MySQL enum — validate before querying so an arbitrary
+    // string can't reach the DB layer (the caller treats a non-array
+    // result as "Stage not found").
+    const parsed = JOB_STAGES.safeParse(stageName);
+    if (!parsed.success) {
+        return { error: true, message: "Stage not found" }
+    }
+
+    return await get_stage_by_name(parsed.data);
 };
 
-export const add_trigger_to_stage_action = async (stageId: number, action: TriggerAction) => {
+export const add_trigger_to_stage_action = async () => {
     const { userId } = await auth();
-    // const {success, data} = await candidateForm.spa(unsafeData);
-    const canCreate = await canCreateJob(userId);
+    // Stages belong to jobs — configuring a stage trigger is a job edit.
+    const allowed = await canEditJob();
 
-    if (!userId || !canCreate) {
-        return { error: true, message: "There was an error creating your product" }
+    if (!userId || !allowed) {
+        return { error: true, message: "There was an error adding the trigger to the stage" }
     }
 
-    return await add_trigger_to_stage(stageId, action);
+    // NOTE: stage triggers are not implemented — the query in
+    // queries/drizzle/stages.ts is commented out (no `triggers` table in the
+    // schema) and this action has no callers. Fail loudly instead of calling
+    // a function that does not exist.
+    return { error: true, message: "Stage triggers are not implemented yet" };
 };
 
 type AddTaskToQueueActionParams = {
@@ -37,16 +51,24 @@ type AddTaskToQueueActionParams = {
 // MOVE LATER
 export const add_task_to_queue_action = async (unsafeData: AddTaskToQueueActionParams) => {
     const { userId } = await auth();
-    const canCreate = await canCreateJob();
+    // Fired as part of moving an application between stages (smart-trigger lifecycle).
+    const allowed = await canMoveApplication();
 
-    if (!userId || !canCreate) {
-        return { error: true, message: "There was an error creating your product" }
+    if (!userId || !allowed) {
+        return { error: true, message: "There was an error adding the task to the queue" }
     }
 
     return await addTaskToQueue(unsafeData);
 };
 
 export const verifyResend = async (apiKey: string): Promise<{ success: boolean; message: string; error?: unknown }> => {
+    // Plugin credential setup is plugin management (admin-only). Called from
+    // the client-side Resend provider auth flow, so a session is present.
+    const allowed = await hasPermission("plugin:manage");
+    if (!allowed) {
+        return { success: false, message: "Missing permission: plugin:manage" };
+    }
+
     try {
         const resend = new Resend(apiKey);
 

@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { RecrutmentFunnel } from "./dashboard";
+import { RecruitmentFunnel } from "./dashboard";
 import { useMemo, useState } from "react";
 import {
     ChartContainer,
@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/u
 import { JOB_ENUM } from "@/zod";
 
 interface Props {
-    data: RecrutmentFunnel[];
+    data: RecruitmentFunnel[];
     totalApplications: number;
     className?: string;
 };

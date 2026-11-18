@@ -1,8 +1,7 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { TABLE_HEADER } from './constant';
-import { applyPlugin } from 'jspdf-autotable';
-applyPlugin(jsPDF);
+import autoTable from 'jspdf-autotable';
 
 export interface ReportData {
     title: string;
@@ -94,11 +93,10 @@ export class PDFGenerator {
         this.currentY += fontSize * 0.6;
     };
 
-    private addTable(table: string, rows: string[][]) {
+    private addTable(headers: string[], rows: string[][]) {
         this.checkPageBreak(30);
         const cellHeight = 8;
         const lineHeight = 4;
-        const headers = TABLE_HEADER[table];
         const tableWidth = this.pageWidth - 2 * this.margin;
         const cellWidth = tableWidth / headers.length;
         const columnWidths = Array(headers.length).fill(cellWidth);
@@ -271,7 +269,9 @@ export class PDFGenerator {
 
         this.addHeader("Job")
         this.addSection("Table name")
-        this.pdf.autoTable({
+        // jspdf-autotable v3 types the standalone function (doc, options) —
+        // the jsPDF prototype method has no type declaration in this version.
+        autoTable(this.pdf, {
             head: [headers],
             body: rows,
             startY: this.currentY,

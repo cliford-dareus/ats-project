@@ -3,27 +3,37 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "lucide-react";
-import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { useEffect, useState } from "react";
 
 
 type Props = {
     apiKey: string;
+    /** Masked stored key (•••• + last 4) for display while connected.
+     *  The full key is never sent to the browser. */
+    maskedKey?: string;
     onApiKeyChange: (apiKey: string) => void;
     auth: {
         status: "authenticated" | "unauthenticated" | "authenticating" | "error";
         error?: string;
     };
-    onConnect: () => void;
+    onConnect: (apiKey: string) => void;
     onDisconnect: () => void;
     pluginId: string;
 }
 
-const ApiKeySection = ({ apiKey, onApiKeyChange, auth, onConnect, onDisconnect, pluginId }: Props) => {
+const ApiKeySection = ({ apiKey, maskedKey, onApiKeyChange, auth, onConnect, onDisconnect, pluginId }: Props) => {
     const [show, setShow] = useState(false);
     const [localKey, setLocalKey] = useState(apiKey);
     const isConnected = auth.status === "authenticated";
     const isLoading = auth.status === "authenticating";
+
+    // Keep the input in sync when the parent clears its key state
+    // (after a save, or on disconnect) so a stale typed key doesn't
+    // reappear in the input.
+    useEffect(() => {
+        setLocalKey(apiKey);
+    }, [apiKey]);
 
     return (
         <section className="bg-card overflow-hidden rounded-md mb-3 border">
@@ -33,7 +43,7 @@ const ApiKeySection = ({ apiKey, onApiKeyChange, auth, onConnect, onDisconnect, 
                 </div>
 
                 <div className="text-[11px] mt-0.5" >
-                    Your API key is stored encrypted and never exposed to the client
+                    Your API key is encrypted at rest (AES-256-GCM) and never sent back to the browser — only the last 4 characters are shown
                 </div>
             </div>
 
@@ -52,9 +62,9 @@ const ApiKeySection = ({ apiKey, onApiKeyChange, auth, onConnect, onDisconnect, 
                     <div style={{ flex: 1, position: "relative" }}>
                         <Input
                             type={show ? "text" : "password"}
-                            value={isConnected ? "re_••••••••••••••••••••••••" : localKey}
+                            value={isConnected ? (maskedKey ?? "••••••••") : localKey}
                             onChange={(v) => setLocalKey(v.target.value)}
-                            placeholder="re_live_••••••••••••••••••"
+                            placeholder={pluginId === "google" ? "AIza••••••••••••••••••••••••••" : "re_live_••••••••••••••••••"}
                             disabled={isConnected}
                         />
                         {!isConnected && (
@@ -81,7 +91,7 @@ const ApiKeySection = ({ apiKey, onApiKeyChange, auth, onConnect, onDisconnect, 
                         </Button>
                     ) : (
                         <Button
-                            onClick={() => { onApiKeyChange(localKey); onConnect(); }}
+                            onClick={() => { onApiKeyChange(localKey); onConnect(localKey); }}
                             disabled={!localKey.trim() || isLoading}
                             style={{
                                 padding: "9px 18px", borderRadius: 6,
@@ -128,7 +138,7 @@ const ApiKeySection = ({ apiKey, onApiKeyChange, auth, onConnect, onDisconnect, 
                                 "Not connected"}
                 </span>
                 {isConnected && (
-                    <Badge className="" color="#10b981" bg="#0d1a14">ACTIVE</Badge>
+                    <Badge style={{ color: "#10b981", backgroundColor: "#0d1a14" }}>ACTIVE</Badge>
                 )}
             </div>
         </section>

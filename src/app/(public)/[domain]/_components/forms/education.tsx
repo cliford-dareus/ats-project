@@ -3,8 +3,18 @@ import { Card } from "@/components/ui/card";
 import { GraduationCap, Plus, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { FormInput } from "../fields";
+import type { FieldArrayWithId, FieldErrors, UseFieldArrayAppend, UseFieldArrayRemove, UseFormRegister } from "react-hook-form";
+import type { ApplicationFormValues } from "@/zod";
 
-const EducationForm = ({ register, errors, eduFields, appendEdu, removeEdu }) => {
+type Props = {
+    register: UseFormRegister<ApplicationFormValues>;
+    errors: FieldErrors<ApplicationFormValues>;
+    eduFields: FieldArrayWithId<ApplicationFormValues, "education", "id">[];
+    appendEdu: UseFieldArrayAppend<ApplicationFormValues, "education">;
+    removeEdu: UseFieldArrayRemove;
+};
+
+const EducationForm = ({ register, errors, eduFields, appendEdu, removeEdu }: Props) => {
     return (
         <motion.div
             key="step3"

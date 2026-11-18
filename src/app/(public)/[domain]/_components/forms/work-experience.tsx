@@ -3,9 +3,19 @@ import { Card } from "@/components/ui/card";
 import { Briefcase, Plus, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { FormCheckbox, FormInput, FormTextarea } from "../fields";
+import type { FieldArrayWithId, FieldErrors, UseFieldArrayAppend, UseFieldArrayRemove, UseFormGetValues, UseFormRegister } from "react-hook-form";
+import type { ApplicationFormValues } from "@/zod";
 
+type Props = {
+    register: UseFormRegister<ApplicationFormValues>;
+    errors: FieldErrors<ApplicationFormValues>;
+    expFields: FieldArrayWithId<ApplicationFormValues, "workExperience", "id">[];
+    appendExp: UseFieldArrayAppend<ApplicationFormValues, "workExperience">;
+    removeExp: UseFieldArrayRemove;
+    getValues: UseFormGetValues<ApplicationFormValues>;
+};
 
-const WorkExperienceForm = ({ register, errors, expFields, appendExp, removeExp, getValues }) => {
+const WorkExperienceForm = ({ register, errors, expFields, appendExp, removeExp, getValues }: Props) => {
     return (
         <motion.div
             key="step2"

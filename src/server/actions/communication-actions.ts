@@ -5,16 +5,20 @@ import { revalidatePath } from "next/cache";
 import { createId } from "@paralleldrive/cuid2";
 import {
     deleteEmailTemplate,
+    ensure_default_templates,
     getEmailTemplates,
     saveEmailTemplate,
 } from "@/server/queries/mongo/email-templates";
 import {
     create_communication_log,
+    create_communication_thread as create_communication_thread_query,
     get_communication_threads,
 } from "@/server/queries/mongo/communication-log";
 import { CANDIDATE_STATUS } from "@/zod";
 import { SYSTEM_TEMPLATES } from "@/lib/constant";
 import { EmailTemplateDTO, ThreadItem } from "@/types";
+import { requirePermission } from "@/server/permissions";
+import type { Types } from "mongoose";
 
 export type CommunicationLogDTO = {
     _id: string;
@@ -43,7 +47,7 @@ export type newCommunicationThread = {
     last_message: string;
     unread_count: number;
     starred: boolean;
-    messages: mongoose.Schema.Types.ObjectId[];
+    messages: Types.ObjectId[];
 };
 
 export type newCommunicationLog = {
@@ -60,11 +64,13 @@ export type newCommunicationLog = {
     candidateRole?: string;
     candidateStatus?: typeof CANDIDATE_STATUS._type | null;
     templateId?: string;
-    mentions: { userId: string; name: string }[];
+    // Optional: compose flows send without mentions; defaults to [] server-side.
+    mentions?: { userId: string; name: string }[];
 };
 
 
 export async function fetchCommunicationPageData() {
+    await requirePermission("communication:view");
     const [templatesRaw, threads] = await Promise.all([
         getEmailTemplates(),
         get_communication_threads(50),
@@ -79,11 +85,18 @@ export async function fetchCommunicationPageData() {
     };
 };
 
-export const create_communication_thread = async (data: newCommunicationThread) => { };
+export const create_communication_thread = async (data: Omit<newCommunicationThread, "organization_id">) => {
+    const { orgId } = await auth();
+    if (!orgId) throw new Error("Unauthorized");
+
+    // Session org wins — the caller never supplies the organization.
+    return create_communication_thread_query({ ...data, organization_id: orgId });
+};
 
 export async function sendManualEmailAction(input: newCommunicationLog) {
     const { orgId, userId } = await auth();
     if (!orgId || !userId) throw new Error("Unauthorized");
+    await requirePermission("communication:send");
 
     const payload = {
         to: input.to,
@@ -97,7 +110,7 @@ export async function sendManualEmailAction(input: newCommunicationLog) {
         candidateAvatar: input.candidateAvatar,
         candidateRole: input.candidateRole,
         candidateStatus: input.candidateStatus,
-        mentions: input.mentions,
+        mentions: input.mentions ?? [],
     };
 
     const result = await create_communication_log(payload, orgId, userId);
@@ -122,6 +135,7 @@ export async function upsertEmailTemplateAction(data: {
 }) {
     const { orgId } = await auth();
     if (!orgId) throw new Error("Unauthorized");
+    await requirePermission("communication:manage");
 
     if (!data.name.trim() || !data.subject.trim() || !data.body.trim()) {
         throw new Error("Name, subject, and body are required");
@@ -142,6 +156,7 @@ export async function upsertEmailTemplateAction(data: {
 export async function deleteEmailTemplateAction(id: string) {
     const { orgId } = await auth();
     if (!orgId) throw new Error("Unauthorized");
+    await requirePermission("communication:manage");
 
     await deleteEmailTemplate(id);
     revalidatePath("/communication");
@@ -151,20 +166,11 @@ export async function deleteEmailTemplateAction(id: string) {
 export async function seedSystemTemplatesAction() {
     const { orgId } = await auth();
     if (!orgId) throw new Error("Unauthorized");
+    await requirePermission("communication:manage");
 
-    const existingRaw = await getEmailTemplates();
-    const existing: EmailTemplateDTO[] = JSON.parse(existingRaw || "[]");
-    const existingIds = new Set(existing.map((t) => t.templateId));
-
-    for (const tpl of SYSTEM_TEMPLATES) {
-        if (existingIds.has(tpl.templateId)) continue;
-        await saveEmailTemplate({
-            name: tpl.name,
-            subject: tpl.subject,
-            body: tpl.body,
-            templateId: tpl.templateId,
-        });
-    }
+    // Idempotent upserts — only templates the org lacks are inserted.
+    // (Templates are also lazily seeded on first read; this is the manual re-seed.)
+    await ensure_default_templates(orgId);
 
     revalidatePath("/communication");
     return { success: true };

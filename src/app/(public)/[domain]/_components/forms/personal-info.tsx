@@ -2,8 +2,15 @@ import { User } from "lucide-react";
 import { motion } from "framer-motion";
 import { FormInput } from "../fields";
 import { Card } from "@/components/ui/card";
+import type { FieldErrors, UseFormRegister } from "react-hook-form";
+import type { ApplicationFormValues } from "@/zod";
 
-const PersonalInfoForm = ({ register, errors }) => {
+type Props = {
+    register: UseFormRegister<ApplicationFormValues>;
+    errors: FieldErrors<ApplicationFormValues>;
+};
+
+const PersonalInfoForm = ({ register, errors }: Props) => {
     return (
         <motion.div
             key="step1"

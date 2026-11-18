@@ -1,12 +1,14 @@
 import "dotenv/config";
 import {Worker, type Job} from "bullmq";
 import redis from "@/lib/redis";
-import {TriggerJobData} from "@/lib/queue";
+import {QueueJobData} from "@/lib/queue";
 import {automationEngine} from "@/lib/automation-engine";
 import {pluginRegistry} from "@/lib/plugin-registry";
 import {initializePluginSystemForWorker} from "@/lib/initialize-plugins.server";
 import {db_save_resume_score} from "@/server/queries";
 import {db_get_job_automation_rules} from "@/server/queries/drizzle/plugin-queries";
+import {get_stale_holds_db, mark_hold_expired_db} from "@/server/queries/drizzle/interview";
+import {releaseCalendarHold} from "@/server/google-calenda";
 
 interface ScorePayload {
     score: number;
@@ -14,10 +16,19 @@ interface ScorePayload {
     summary: string;
 }
 
-const worker = new Worker<TriggerJobData>(
+const worker = new Worker<QueueJobData>(
     'aplico_queue',
 
-    async (job : Job<TriggerJobData>) => {
+    async (job : Job<QueueJobData>) => {
+        // Legacy smart-trigger jobs carry a different payload (no `event`)
+        // and have no processor — the smart-trigger executor was never wired
+        // into this worker. Skip them instead of crashing on the missing
+        // `event`/`context` (previously every such job failed).
+        if (!("event" in job.data)) {
+            console.warn(`[Worker] Ignoring legacy smart_trigger job ${job.id} (no processor)`);
+            return;
+        }
+
         const { event, context } = job.data;
         const org_id  = context.organization_id;
         const job_id  = context.job?.job_id;
@@ -54,7 +65,7 @@ const worker = new Worker<TriggerJobData>(
             console.log("[trigger/public] fired_resume_score:", fired_resume_score);
 
             if (fired_resume_score.result.success) {
-                await db_save_resume_score({...payload, applicationId: context.settings.applicationId as number, model: fired_resume_score.result.metadata.model})
+                await db_save_resume_score({...payload, applicationId: context.settings.applicationId as number, model: fired_resume_score.result.metadata?.model ?? "unknown"})
             }
 
             // ── 4. Run automation rules ─────────────────────────────────────────────
@@ -81,6 +92,62 @@ const worker = new Worker<TriggerJobData>(
     },
     { connection: redis, concurrency: 5 }
 );
+
+// ── Interview hold expiry sweep ───────────────────────────────────────────────
+// Runs on an interval (no BullMQ repeatable job — the sweep stays independent
+// of the trigger queue): expires stale tentative holds AND releases their
+// Google Calendar holds. A hold is only marked EXPIRED once its calendar
+// event is released (or the release can't be retried); transient calendar
+// failures leave the hold TENTATIVE so the next sweep retries it.
+// Cadence: every 15 minutes, plus once at startup. Uses worker-safe DB
+// helpers only (no Next cache revalidation — unavailable in this process).
+const HOLD_SWEEP_INTERVAL_MS = 15 * 60 * 1000;
+let hold_sweep_running = false;
+
+async function expire_stale_holds_sweep() {
+    if (hold_sweep_running) return;
+    hold_sweep_running = true;
+    try {
+        const stale = await get_stale_holds_db();
+        if (stale.length === 0) return;
+
+        let expired = 0;
+        let deferred = 0;
+
+        for (const row of stale) {
+            try {
+                if (row.calendar_event_id && row.calendar_owner_id) {
+                    const released = await releaseCalendarHold({
+                        clerkUserId: row.calendar_owner_id,
+                        eventId: row.calendar_event_id,
+                    });
+                    if (!released.success && released.retryable) {
+                        console.error(`[Worker] Hold ${row.id}: calendar release failed, will retry next sweep: ${released.error}`);
+                        deferred += 1;
+                        continue; // leave TENTATIVE so the next sweep retries
+                    }
+                    if (!released.success) {
+                        console.error(`[Worker] Hold ${row.id}: calendar release failed permanently (${released.error}); marking expired anyway.`);
+                    }
+                }
+                await mark_hold_expired_db(row.id);
+                expired += 1;
+            } catch (err) {
+                console.error(`[Worker] Hold ${row.id}: expiry sweep failed:`, err);
+                deferred += 1;
+            }
+        }
+
+        console.log(`[Worker] Hold expiry sweep: ${expired} expired, ${deferred} deferred.`);
+    } catch (err) {
+        console.error("[Worker] Hold expiry sweep failed:", err);
+    } finally {
+        hold_sweep_running = false;
+    }
+}
+
+expire_stale_holds_sweep();
+setInterval(expire_stale_holds_sweep, HOLD_SWEEP_INTERVAL_MS);
 
 // ── Lifecycle logging ─────────────────────────────────────────────────────────
 worker.on("completed", (job) => {

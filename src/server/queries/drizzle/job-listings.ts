@@ -5,6 +5,7 @@ import {
     interviews,
     job_listings,
     job_technologies,
+    organization,
     stages,
     technologies,
 } from "@/drizzle/schema";
@@ -20,7 +21,7 @@ import {
 } from "@/lib/cache";
 import { z } from "zod";
 import { filterJobSchema, jobFormSchema, updateJobListingSchema } from "@/zod";
-import { ApplicationType, CandidateType, JobListingType } from "@/types";
+import { ApplicationType, CandidateType, InterviewType, JobListingType } from "@/types";
 
 type Technology = typeof technologies.$inferSelect;
 
@@ -28,8 +29,19 @@ interface FilterInterface extends z.infer<typeof filterJobSchema> {
     organization: string;
 };
 
-export const create_job_listing = async (data: z.infer<typeof jobFormSchema>) => {
+export const create_job_listing = async (data: z.infer<typeof jobFormSchema>, opts?: { status?: "OPEN" | "CLOSED" | "DRAFT" | "ARCHIVED" | "PENDING" }) => {
     return await db.transaction(async (trx) => {
+        // Resolve the org's subdomain from its Clerk id — never hardcode it
+        // (every job previously got subdomain "bridge" regardless of org).
+        const [org] = await trx
+            .select({ subdomain: organization.subdomain })
+            .from(organization)
+            .where(eq(organization.clerk_id, data.jobInfo.organization))
+            .limit(1);
+        if (!org) {
+            throw new Error("Organization not found for job creation");
+        }
+
         // ── Job ──────────────────────────────────────────────────────────────
         const [inserted_job] = await trx
             .insert(job_listings)
@@ -42,7 +54,8 @@ export const create_job_listing = async (data: z.infer<typeof jobFormSchema>) =>
                 description: data.jobInfo.job_description,
                 department: Number(data.jobInfo.department),
                 organization: data.jobInfo.organization,
-                subdomain: "bridge",
+                subdomain: org.subdomain,
+                ...(opts?.status ? { status: opts.status } : {}),
             })
             .$returningId();
 
@@ -254,7 +267,10 @@ export const get_job_by_id_db = async (jobId: number, org_id: string): Promise<J
                 position_in_stage: row.application.position_in_stage ?? null,
                 current_stage_id: row.stage?.id ?? null,
                 organization: row.application.organization ?? null,
-                interviews: [],
+                // ApplicationType carries a single interview (the kanban card
+                // and get_job_all_applications_db both treat it as singular);
+                // the first joined row wins, same as the other query.
+                interviews: null,
                 attachments: [],
 
                 // ── Resume score ─────────────────────────────────────────────────
@@ -288,11 +304,25 @@ export const get_job_by_id_db = async (jobId: number, org_id: string): Promise<J
         };
 
         // ── Interviews (belong to application, not candidate) ─────────────────────
+        // Singular on ApplicationType: keep the first interview for the
+        // application. The row's applications_id maps to the DTO's
+        // application_id; the rest of the columns line up with InterviewType.
         if (row.interview?.id) {
             const seen = interviewSets.get(row.application.id)!;
             if (!seen.has(row.interview.id)) {
                 seen.add(row.interview.id);
-                application.interviews.push(row.interview);
+                application.interviews ??= {
+                    id: row.interview.id,
+                    application_id: row.interview.applications_id,
+                    start_at: row.interview.start_at,
+                    end_at: row.interview.end_at,
+                    locations: row.interview.locations,
+                    type: row.interview.type,
+                    status: row.interview.status,
+                    link: row.interview.link,
+                    hold_status: row.interview.hold_status,
+                    hold_expires_at: row.interview.hold_expires_at,
+                } satisfies InterviewType;
             }
         }
 

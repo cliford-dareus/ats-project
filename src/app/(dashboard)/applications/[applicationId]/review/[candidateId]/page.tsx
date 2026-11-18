@@ -12,6 +12,7 @@ import {
     MessageSquare,
     Download,
     ExternalLink,
+    MapPin,
     ArrowLeft,
     CheckCircle,
     XCircle,
@@ -45,14 +46,66 @@ type Props = {
     }
 };
 
+const INTERVIEW_STATUS_LABELS: Record<string, string> = {
+    SCHEDULE: "Scheduled",
+    AWAITING_FEEDBACK: "Awaiting Feedback",
+    COMPLETE: "Completed",
+    HOLD_PENDING: "Hold Pending",
+};
+
+/** The interview fields the review page renders (see get_candidate_by_id_db). */
+type ReviewInterview = {
+    start_at: Date | string | null;
+    end_at: Date | string | null;
+    type: string | null;
+    locations: string;
+    link: string | null;
+    status: string | null;
+    hold_status: string | null;
+};
+
+/** Hold-aware status label, mirroring application-interview-card. */
+function interview_status_label(interview: ReviewInterview): string {
+    switch (interview.hold_status) {
+        case "TENTATIVE": return "Awaiting candidate";
+        case "CONFIRMED": return "Confirmed";
+        case "DECLINED": return "Declined";
+        case "EXPIRED": return "Hold expired";
+        case "RELEASED": return "Hold released";
+        default: {
+            if (interview.status) {
+                return INTERVIEW_STATUS_LABELS[interview.status] ?? interview.status;
+            }
+            return "Scheduled";
+        }
+    }
+}
+
+function format_interview_datetime(value: Date | string | null | undefined): string {
+    if (!value) return "Not scheduled";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "Not scheduled";
+    return `${date.toLocaleDateString()} at ${date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+}
+
+/** Duration in minutes, derived from the stored start/end times. */
+function interview_duration_minutes(interview: ReviewInterview): number | null {
+    if (!interview.start_at || !interview.end_at) return null;
+    const minutes = Math.round(
+        (new Date(interview.end_at).getTime() - new Date(interview.start_at).getTime()) / 60000
+    );
+    return minutes > 0 ? minutes : null;
+}
+
 const Page = async ({ params }: Props) => {
     const { applicationId, candidateId } = await params;
 
     const applicationResult = await get_application_by_id_action(Number(applicationId));
     const candidateResult = await get_candidate_by_id_action(Number(candidateId));
 
-    // Handle error cases
-    if (!candidateResult || 'error' in candidateResult || !applicationResult || 'error' in applicationResult) {
+    // Handle error cases — a candidate from another org now reads as
+    // "not found" (the query is org-scoped), same as a missing candidate.
+    if (!candidateResult || 'error' in candidateResult || !candidateResult.candidate || !applicationResult || 'error' in applicationResult) {
         return (
             <div className="p-4">
                 <div className="text-center py-8">
@@ -73,7 +126,11 @@ const Page = async ({ params }: Props) => {
     const applications = candidateResult.application || [];
     const interviews = candidateResult.interview || [];
     const attachments = candidateResult.attachment || [];
-    const scoreCards = candidateResult.scoreCard || [];
+    // Score cards aren't loaded by get_candidate_by_id (the query has that
+    // select commented out), so the notes history is always empty until the
+    // query is wired up. Kept explicit rather than reading a field the
+    // query doesn't return.
+    const scoreCards: never[] = [];
 
     return (
         <div className="p-6 max-w-7xl mx-auto">
@@ -130,13 +187,13 @@ const Page = async ({ params }: Props) => {
                                 </div>
                                 <div className="flex items-center gap-3">
                                     <Badge
-                                        variant={candidate?.status === 'Active' ? 'default' : candidate?.status === 'Hired' ? 'secondary' : 'destructive'}
+                                        variant={candidate?.status === 'ACTIVE' ? 'default' : candidate?.status === 'HIRED' ? 'secondary' : 'destructive'}
                                         className="w-fit"
                                     >
-                                        {candidate?.status === 'Active' && <CheckCircle size={14} className="mr-1" />}
-                                        {candidate?.status === 'Rejected' && <XCircle size={14} className="mr-1" />}
-                                        {candidate?.status === 'Hired' && <Star size={14} className="mr-1" />}
-                                        {candidate?.status || 'Active'}
+                                        {candidate?.status === 'ACTIVE' && <CheckCircle size={14} className="mr-1" />}
+                                        {candidate?.status === 'REJECTED' && <XCircle size={14} className="mr-1" />}
+                                        {candidate?.status === 'HIRED' && <Star size={14} className="mr-1" />}
+                                        {candidate?.status || 'ACTIVE'}
                                     </Badge>
                                     <Badge variant="outline">
                                         <Briefcase size={14} className="mr-1" />
@@ -324,8 +381,8 @@ const Page = async ({ params }: Props) => {
                                         <div>
                                             <label className="text-sm font-medium text-gray-700">Status</label>
                                             <p className="mt-1">
-                                                <Badge variant={candidate?.status === 'Active' ? 'default' : 'secondary'}>
-                                                    {candidate?.status || 'Active'}
+                                                <Badge variant={candidate?.status === 'ACTIVE' ? 'default' : 'secondary'}>
+                                                    {candidate?.status || 'ACTIVE'}
                                                 </Badge>
                                             </p>
                                         </div>
@@ -536,7 +593,7 @@ const Page = async ({ params }: Props) => {
                                                     </div>
                                                     <div>
                                                         <label className="font-medium text-gray-700">Status</label>
-                                                        <p className="text-gray-900">{candidate?.status || 'Active'}</p>
+                                                        <p className="text-gray-900">{candidate?.status || 'ACTIVE'}</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -571,34 +628,57 @@ const Page = async ({ params }: Props) => {
                             <CardContent>
                                 <div className="space-y-4">
                                     {interviews.length > 0 ? (
-                                        interviews.map((interview: any, index: number) => (
-                                            <div key={index} className="border rounded-lg p-6">
-                                                <div className="flex justify-between items-start mb-4">
-                                                    <div>
-                                                        <h3 className="font-semibold text-lg">Interview #{index + 1}</h3>
-                                                        <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
-                                                            <div className="flex items-center gap-1">
-                                                                <Calendar size={14} />
-                                                                <span>Scheduled: {new Date(interview.scheduled_at || '').toLocaleDateString()}</span>
+                                        interviews.map((interview: ReviewInterview, index: number) => {
+                                            const duration = interview_duration_minutes(interview);
+                                            const hold_released = ["DECLINED", "EXPIRED", "RELEASED"].includes(
+                                                interview.hold_status ?? "NONE"
+                                            );
+                                            return (
+                                                <div key={index} className="border rounded-lg p-6">
+                                                    <div className="flex justify-between items-start mb-4">
+                                                        <div>
+                                                            <h3 className="font-semibold text-lg">Interview #{index + 1}</h3>
+                                                            <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-gray-600">
+                                                                <div className="flex items-center gap-1">
+                                                                    <Calendar size={14} />
+                                                                    <span>Scheduled: {format_interview_datetime(interview.start_at)}</span>
+                                                                </div>
+                                                                {duration !== null && (
+                                                                    <div className="flex items-center gap-1">
+                                                                        <Clock size={14} />
+                                                                        <span>Duration: {duration} minutes</span>
+                                                                    </div>
+                                                                )}
                                                             </div>
-                                                            <div className="flex items-center gap-1">
-                                                                <Clock size={14} />
-                                                                <span>Duration: {interview.duration || '60'} minutes</span>
+                                                            <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-gray-600">
+                                                                {interview.type && (
+                                                                    <span>Type: {interview.type}</span>
+                                                                )}
+                                                                {interview.locations && (
+                                                                    <div className="flex items-center gap-1">
+                                                                        <MapPin size={14} />
+                                                                        <span>{interview.locations}</span>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         </div>
+                                                        <Badge variant={interview.status === 'COMPLETE' ? 'default' : 'secondary'}>
+                                                            {interview_status_label(interview)}
+                                                        </Badge>
                                                     </div>
-                                                    <Badge variant={interview.status === 'completed' ? 'default' : 'secondary'}>
-                                                        {interview.status || 'Scheduled'}
-                                                    </Badge>
+                                                    {interview.link && !hold_released && (
+                                                        <a
+                                                            href={interview.link}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
+                                                        >
+                                                            Join meeting <ExternalLink size={14} />
+                                                        </a>
+                                                    )}
                                                 </div>
-                                                {interview.feedback && (
-                                                    <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                                                        <h4 className="font-medium mb-2">Feedback</h4>
-                                                        <p className="text-sm text-gray-700">{interview.feedback}</p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))
+                                            );
+                                        })
                                     ) : (
                                         <div className="text-center py-12">
                                             <Calendar size={48} className="mx-auto text-gray-400 mb-4" />

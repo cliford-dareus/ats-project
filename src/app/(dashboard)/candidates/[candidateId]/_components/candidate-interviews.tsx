@@ -55,7 +55,9 @@ const CandidateInterviews = ({ data }: Props) => {
                                 {item.status} Interview
                             </span>
                             <span className="text-xs font-bold text-zinc-500">
-                                {format(item.date, 'MM/dd/yyyy')} at {format(item.time, 'HH:mm')}
+                                {item.start_at
+                                    ? `${format(item.start_at, 'MM/dd/yyyy')} at ${format(item.start_at, 'HH:mm')}`
+                                    : "Date to be confirmed"}
                             </span>
                         </div>
 

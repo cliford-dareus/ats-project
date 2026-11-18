@@ -1,7 +1,8 @@
 import { Webhook } from "svix";
 import { headers } from "next/headers";
-import { WebhookEvent } from "@clerk/nextjs/server";
+import { WebhookEvent, OrganizationMembershipJSON } from "@clerk/nextjs/server";
 import { assignAdminRoleToFirstUser } from "@/lib/assignAdminRole";
+import { delete_organization_data } from "@/server/organization-deletion";
 import { organization_member, users_table } from "@/drizzle/schema";
 import { db } from "@/drizzle/db";
 import { and, eq } from "drizzle-orm";
@@ -84,6 +85,17 @@ export async function POST(req: Request) {
             break;
         }
 
+        case "organization.deleted": {
+            // Clerk deleted the org — remove all of its data (MySQL + Mongo)
+            // so no orphaned rows survive. The deletes are idempotent and
+            // scoped to this org id, so a Clerk retry after a partial
+            // failure is safe; if this throws, the 500 lets Clerk retry.
+            if (evt.data.id) {
+                await delete_organization_data(evt.data.id);
+            }
+            break;
+        }
+
         case "organizationMembership.created": {
             await upsert_organization_membership(evt.data);
             break;
@@ -115,11 +127,12 @@ export async function POST(req: Request) {
     return new Response("", { status: 200 });
 }
 
+// The membership webhook payload — typed directly as OrganizationMembershipJSON.
+// (Extract<WebhookEvent, { type: ... }> collapses to never here because Clerk
+// declares the membership event as one object type whose `type` is the union
+// of all three membership event names, not a union of three object types.)
 async function upsert_organization_membership(
-    data: Extract<
-        WebhookEvent,
-        { type: "organizationMembership.created" | "organizationMembership.updated" }
-    >["data"]
+    data: OrganizationMembershipJSON
 ) {
     const user_id = data?.public_user_data?.user_id;
     const organization_id = data?.organization?.id;

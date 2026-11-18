@@ -141,7 +141,7 @@ const StepTwoForm = () => {
 
             {/* Previous Steps Summary */}
             <div className="flex flex-col relative">
-                <SidePreview />
+                <SidePreview departments={[]} />
                 {/* Action Buttons */}
                 <div className="w-full flex items-center justify-between absolute bottom-4">
                     <Button variant="outline" type="button" onClick={() => window.history.back()}>

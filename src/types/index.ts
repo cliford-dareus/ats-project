@@ -61,7 +61,9 @@ export type StageResponseType = {
     assign_to: string | null
     color: string | null;
     need_schedule: boolean | null;
-    trigger: string;
+    // The stages table has no trigger column — present only when a caller
+    // attaches serialized smart-trigger actions. Always guard before parsing.
+    trigger?: string;
 };
 
 export type TriggerResponseType = {
@@ -87,10 +89,10 @@ export type OpenJobResponseType = {
     type: typeof JOB_TYPE._type | null,
     subdomain: string,
     organization: string,
-    status: string,
-    created_by: number,
-    created_at: string,
-    updated_at: string,
+    status: typeof JOB_STATUS._type | null,
+    created_by: string,
+    created_at: Date,
+    updated_at: Date,
     department: string | null,
 };
 
@@ -150,13 +152,18 @@ export type EmailTemplateDTO = {
 
 export type InterviewType = {
     id: number,
-    application_id: number,
-    start_at: Date,
-    end_at: Date,
+    // The interviews table names this column applications_id (nullable FK);
+    // the DTO keeps the application_id name — map at the query boundary.
+    application_id: number | null,
+    start_at: Date | null,
+    end_at: Date | null,
     locations: string;
-    type: "VIDEO" | "PHONE" | "ONSITE";
-    status: "SCHEDULE" | "COMPLETE" | "AWAITING_FEEDBACK";
-    link?: string;
+    type: "VIDEO" | "PHONE" | "ONSITE" | null;
+    status: "SCHEDULE" | "COMPLETE" | "AWAITING_FEEDBACK" | "HOLD_PENDING" | null;
+    link?: string | null;
+    // Smart interview holds (nullable when the interview was scheduled directly)
+    hold_status?: "NONE" | "TENTATIVE" | "CONFIRMED" | "DECLINED" | "EXPIRED" | "RELEASED" | null;
+    hold_expires_at?: Date | string | null;
 };
 
 export interface ApplicationType {
@@ -181,7 +188,8 @@ export interface ApplicationType {
 
     candidate: CandidateType;
     interviews: InterviewType | null;
-    attachments: { id: number; file_name: string; file_type: string; file_url: string }[]
+    // Matches the attachments table row (attachment_type, not file_type).
+    attachments: { id: number; file_name: string; file_url: string; candidate_id: number; attachment_type: "RESUME" | "COVER_LETTER" | "OFFER_LETTER" | "OTHER" | null }[]
 };
 
 export type JobListingWithCandidatesType = {
@@ -312,6 +320,9 @@ export type NoteType = {
     created_at: Date;
     updated_at: Date;
     author: string;
+    created_by?: string;
+    organization_id?: string;
+    mentions?: { userId: string; name: string; username?: string }[];
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -395,10 +406,22 @@ export interface SmartTrigger {
 
 // ── Integration result ────────────────────────────────────────────────────────
 export interface ATSIntegrationResult {
-    success: boolean;
-    data?: unknown;
+    success: boolean;    data?: unknown;
     error?: string;
     metadata?: Record<string, string>;
+};
+
+// ── A trigger that fired — returned by the plugin registry dispatch so the
+// UI can render toasts + an activity log ───────────────────────────────────────
+export interface FiredTrigger {
+    integrationId: string;
+    integrationName: string;
+    icon: string;
+    provider: string;
+    providerColor: string;
+    candidateName: string;
+    result: ATSIntegrationResult;
+    at: Date;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

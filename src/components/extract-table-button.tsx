@@ -14,14 +14,23 @@ type Props = {
 };
 
 const ExtractFileButton = ({ file_name, data }: Props) => {
-    const get_table_rows = <T extends Record<string, any>>(data: T[], headers: (keyof T)[]): string[][] => {
+    // Untyped rows on purpose: the rows are one of three response shapes and
+    // the headers are looked up by table name, so keys are resolved
+    // dynamically (lowercased) at runtime.
+    const get_table_rows = (data: Record<string, unknown>[], headers: string[]): string[][] => {
         return data.map(item => {
             return headers.map(k => {
-                const key = k.toString().toLocaleLowerCase()
-                if (typeof item[key] === "object") {
-                    return new Intl.DateTimeFormat('en-US').format(new Date(item[key]))
+                const key = k.toLowerCase()
+                const value = item[key];
+                if (value instanceof Date) {
+                    return new Intl.DateTimeFormat('en-US').format(value)
                 }
-                return String(item[key] ?? '')
+                // Null cells used to format as the epoch (new Date(null)) —
+                // keep that so exported tables don't change.
+                if (value === null) {
+                    return new Intl.DateTimeFormat('en-US').format(new Date(0))
+                }
+                return String(value ?? '')
             }
             );
         })

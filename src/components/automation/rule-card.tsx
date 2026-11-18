@@ -43,7 +43,10 @@ const RuleCard = ({ rule, onSave, onDelete, stages, installedIntegrations }: {
     const actionMeta = ACTION_TYPES.find(a => a.type === draft.action.type);
     const delayMeta = DELAY_PRESETS.find(d => d.value === draft.delay.value && d.unit === draft.delay.unit)
         ?? { label: `After ${draft.delay.value} ${draft.delay.unit}` };
-    const stageMeta = stages.find(s => s.stage_name === draft.trigger?.toStage);
+    // Only the stage_changed trigger variant carries a toStage — narrow
+    // on the discriminant before reading it.
+    const triggerStage = draft.trigger?.event === "stage_changed" ? draft.trigger.toStage : undefined;
+    const stageMeta = stages.find(s => s.stage_name === triggerStage);
 
     const update = (patch: Partial<AutomationRule>) => setDraft(d => ({ ...d, ...patch, updatedAt: new Date().toISOString() }));
 
@@ -80,7 +83,7 @@ const RuleCard = ({ rule, onSave, onDelete, stages, installedIntegrations }: {
                             <div className="text-[10px] text-slate-400">
                                 <span className="inline-flex items-center gap-1 uppercase">
                                     <Move size={12} className="inline-block align-middle mr-1" />
-                                    {stageMeta?.stage_name ?? draft.trigger?.toStage}
+                                    {stageMeta?.stage_name ?? triggerStage}
                                 </span>
                             </div>
                         </div>

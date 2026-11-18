@@ -66,7 +66,7 @@ const AutomationGroup = ({ stage, rules, onSave, onDelete, onAdd, installedInteg
                         className="px-1 pb-2"
                     >
                         <div className="flex flex-col mt-4">
-                            {rules.filter(r => r.trigger?.toStage === stage.stage_name).map(r => (
+                            {rules.filter(r => r.trigger?.event === "stage_changed" && r.trigger.toStage === stage.stage_name).map(r => (
                                 <RuleCard
                                     installedIntegrations={installedIntegrations}
                                     stages={stages}

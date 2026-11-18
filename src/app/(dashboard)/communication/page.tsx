@@ -6,13 +6,19 @@ import { eq } from "drizzle-orm";
 import { candidates } from "@/drizzle/schema";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/drizzle/db";
+import { get_org_members_action } from "@/server/actions/organization_actions";
 
 
 const CommunicationPage = async () => {
     const { templates, systemTemplates, threads } = await fetchCommunicationPageData();
-    
+
     const { orgId } = await auth();
-    const all_candidates = await db.select().from(candidates).where(eq(candidates.organization, orgId));
+    // No session org (e.g. signed-out render) — no candidates to list.
+    const all_candidates = orgId
+        ? await db.select().from(candidates).where(eq(candidates.organization, orgId))
+        : [];
+    // Real org members for the @mention picker (replaces the hardcoded demo users).
+    const users = await get_org_members_action();
     return (
         <div className="container mx-auto py-6 px-4 overflow-auto">
             <div className="max-w-7xl mx-auto">
@@ -45,6 +51,7 @@ const CommunicationPage = async () => {
                     systemTemplates={systemTemplates}
                     logs={threads}
                     candidates={all_candidates}
+                    users={users}
                 />
             </div>
         </div>

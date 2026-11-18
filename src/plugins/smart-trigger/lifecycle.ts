@@ -1,14 +1,12 @@
 import { StageResponseType } from "@/types";
 import { get_job_listings_stages_action } from "@/server/actions/job-listings-actions";
-import { add_task_to_queue_action } from "@/server/actions/stage_actions";
+import { add_task_to_queue_action, getEnabledPluginFlags } from "@/server/actions/stage_actions";
 import { StageTrigger, TriggerAction } from "@/plugins/smart-trigger/types";
-import { getEnabledPlugins } from "@/lib/plugins-registry";
 
 export const smartTriggerLifecycle = {
     isEnabled: async (orgId: string): Promise<boolean> => {
-        const plugins = await getEnabledPlugins(orgId);
-        console.log(plugins);
-        return plugins.smart_triggers === true;
+        const flags = await getEnabledPluginFlags(orgId);
+        return flags.smart_triggers === true;
     },
 
     activate: async (context: any) => {
@@ -62,10 +60,15 @@ export const smartTriggerLifecycle = {
 
     parseTriggerResponse: (stageData: StageResponseType): StageTrigger => {
         try {
+            // The stages table has no trigger column, so stages loaded from
+            // the DB carry no serialized actions — treat as no triggers.
+            const actions = stageData.trigger
+                ? JSON.parse(stageData.trigger) as TriggerAction[]
+                : [];
             return {
                 id: String(stageData.id),
                 stage: stageData.stage_name,
-                actions: JSON.parse(stageData.trigger) as TriggerAction[]
+                actions,
             };
         } catch (error) {
             console.error(`Failed to parse trigger for stage ${stageData.id}:`, error);

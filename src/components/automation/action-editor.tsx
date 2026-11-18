@@ -12,7 +12,7 @@ const ActionEditor = ({ action, onChange, stages, installedIntegrations }: {
     stages: StageResponseType[];
     installedIntegrations: ATSIntegration[];
 }) => {
-    const update = (patch) => onChange({ ...action, ...patch });
+    const update = (patch: Record<string, unknown>) => onChange({ ...action, ...patch });
 
     const recipientOptions = [
         { value: "candidate", label: "Candidate" },

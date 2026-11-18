@@ -36,7 +36,7 @@ export const PipelineDemo: React.FC<TourProps> = ({ onOpenDemo }) => {
         setTimeout(() => setToastMessage(null), 3500);
     };
 
-    const handleMoveCandidate = (candidateId: string, targetStage) => {
+    const handleMoveCandidate = (candidateId: string, targetStage: string) => {
         setCandidates((prev) =>
             prev.map((c) => {
                 if (c.id === candidateId) {
@@ -209,10 +209,14 @@ export const PipelineDemo: React.FC<TourProps> = ({ onOpenDemo }) => {
                                                     </span>
                                                 </div>
                                                 {stage.id === 'screening' && (
-                                                    <Sparkles className="w-3.5 h-3.5 text-amber-500" title="Automated AI Scoring Active" />
+                                                    <span title="Automated AI Scoring Active">
+                                                        <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                                                    </span>
                                                 )}
                                                 {stage.id === 'interview_hold' && (
-                                                    <CalendarCheck className="w-3.5 h-3.5 text-blue-500" title="Auto Calendar Holds" />
+                                                    <span title="Auto Calendar Holds">
+                                                        <CalendarCheck className="w-3.5 h-3.5 text-blue-500" />
+                                                    </span>
                                                 )}
                                             </div>
 

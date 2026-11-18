@@ -6,10 +6,11 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useAuthenticateProvider, useProviderAuthState } from "@/hooks/use-plugin-registry";
 import { ATSIntegration } from "@/lib/plugin-interfaces";
+import type { OrgPluginSettings, PluginAuthState } from "@/types";
 import { pluginRegistry } from "@/lib/plugin-registry";
-import { Badge } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { SetStateAction, useEffect, useState } from "react";
-import { ConfigProps } from "./shared/types";
+import { ConfigProps, mask_key_for_display } from "./shared/types";
 import ApiKeySection from "./shared/api-key-section";
 
 
@@ -18,11 +19,15 @@ const ResendConfig = ({ pluginId, onSave, settings }: ConfigProps) => {
     const auth = useProviderAuthState("resend");
     const isConnected = auth.status === "authenticated";
 
+    // apiKey holds ONLY a key the user typed this session (pending save).
+    // The stored key is never sent to the browser — settings carries a
+    // masked value (•••• + last 4), shown for display only.
     const [apiKey, setApiKey] = useState("");
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
-    const [domains, setDomains] = useState([]);
+    const [domains, setDomains] = useState<{ name: string }[]>([]);
     const [domainsLoading, ] = useState(false);
+    const maskedKey = mask_key_for_display(settings?.credentials?.apiKey);
 
     const provider = pluginRegistry.getProvider(pluginId);
     const INTERGRATIONS = provider?.getIntegrations();
@@ -42,25 +47,58 @@ const ResendConfig = ({ pluginId, onSave, settings }: ConfigProps) => {
     });
 
     useEffect(() => {
-        if (settings?.credentials?.apiKey) {
-            setApiKey(settings.credentials.apiKey);
+        // NOTE: the stored API key is intentionally NOT hydrated into
+        // apiKey state — settings carries only a masked value, and a masked
+        // value must never be treated as (or re-saved as) a key.
+        // Hydrate the sender config from stored settings so saving doesn't
+        // wipe values the user didn't touch this session.
+        const stored = settings?.config;
+        if (stored) {
+            const fromAddress = typeof stored.fromAddress === "string" ? stored.fromAddress : "";
+            const [alias, domain] = fromAddress.includes("@") ? fromAddress.split("@") : ["", ""];
+            setConfig((prev) => ({
+                ...prev,
+                companyName: typeof stored.companyName === "string" ? stored.companyName : prev.companyName,
+                fromAlias: alias || prev.fromAlias,
+                fromDomain: domain || prev.fromDomain,
+                hiringManagerEmail: typeof stored.hiringManagerEmail === "string" ? stored.hiringManagerEmail : prev.hiringManagerEmail,
+                recruiterEmail: typeof stored.recruiterEmail === "string" ? stored.recruiterEmail : prev.recruiterEmail,
+                offerSigningUrl: typeof stored.offerSigningUrl === "string" ? stored.offerSigningUrl : prev.offerSigningUrl,
+            }));
         }
     }, [settings]);
 
-    const handleConnect = async () => {
+    const handleConnect = async (key?: string) => {
+        // The key comes from ApiKeySection — the parent's apiKey state is
+        // still stale at click time (setState hasn't re-rendered yet).
+        const apiKeyToUse = (key ?? apiKey).trim();
+        if (!apiKeyToUse) return;
         try {
-            await authenticate("resend", { apiKey: apiKey });
+            await authenticate("resend", { apiKey: apiKeyToUse });
             // auth.status is now "authenticated" — badge updates automatically
             // because authenticate() calls pluginRegistry.stateManager.setState()
             // which triggers useSyncExternalStore re-renders everywhere
+            // Persist the verified credentials for the session org.
+            // (Encrypted server-side on save; the parent adopts the masked
+            // settings the server returns.)
+            await onSave({ ...settings, active: true, credentials: { apiKey: apiKeyToUse } });
+            setApiKey("");
         } catch (e) {
             // auth.status is now "error", auth.error has the message
+            console.error(e);
         }
     };
 
-    const handleDisconnect = () => {
-        setDomains([]);
-        setApiKey("");
+    const handleDisconnect = async () => {
+        try {
+            setDomains([]);
+            setApiKey("");
+            await pluginRegistry.getProvider("resend")?.deauthenticate();
+            // Clear the stored credentials for the session org.
+            await onSave({ ...settings, active: false, credentials: {} });
+        } catch (e) {
+            console.error("Failed to disconnect Resend", e);
+        }
     };
 
     // const loadDomains = async (key) => {
@@ -82,10 +120,31 @@ const ResendConfig = ({ pluginId, onSave, settings }: ConfigProps) => {
     const handleSave = async () => {
         setSaving(true);
         try {
-            // Real: await savePluginSettings("resend", { credentials: { apiKey }, config, enabledIntegrations })
-            await new Promise(r => setTimeout(r, 700));
+            const fromAddress = config.fromAlias && config.fromDomain
+                ? `${config.fromAlias}@${config.fromDomain}`
+                : undefined;
+            // Only send credentials when the user typed a NEW key — otherwise
+            // omit them and the server preserves the stored (encrypted) key.
+            const next_settings: OrgPluginSettings = {
+                ...settings,
+                active: true,
+                config: {
+                    ...config,
+                    ...(fromAddress ? { fromAddress } : {}),
+                },
+                enabledIntegrations,
+            };
+            if (apiKey.trim()) {
+                next_settings.credentials = { apiKey: apiKey.trim() };
+            } else {
+                delete next_settings.credentials;
+            }
+            await onSave(next_settings);
+            setApiKey("");
             setSaved(true);
             setTimeout(() => setSaved(false), 2500);
+        } catch (e) {
+            console.error("Failed to save Resend settings", e);
         } finally {
             setSaving(false);
         }
@@ -169,6 +228,7 @@ const ResendConfig = ({ pluginId, onSave, settings }: ConfigProps) => {
                     {/* Sections */}
                     <ApiKeySection
                         apiKey={apiKey}
+                        maskedKey={maskedKey}
                         onApiKeyChange={setApiKey}
                         auth={auth}
                         onConnect={handleConnect}
@@ -203,8 +263,24 @@ export default ResendConfig;
 // ─────────────────────────────────────────────────────────────────────────────
 // Sender config
 // ─────────────────────────────────────────────────────────────────────────────
-//@ts-expect-error
-const SenderSection = ({ config, onChange, domains, domainsLoading, auth, }) => {
+type SenderConfig = {
+    companyName: string;
+    fromAlias: string;
+    fromDomain: string;
+    hiringManagerEmail: string;
+    recruiterEmail: string;
+    offerSigningUrl: string;
+};
+
+type SenderSectionProps = {
+    config: SenderConfig;
+    onChange: (config: SenderConfig) => void;
+    domains: { name: string }[];
+    domainsLoading: boolean;
+    auth: PluginAuthState;
+};
+
+const SenderSection = ({ config, onChange, domains, domainsLoading, auth }: SenderSectionProps) => {
     const isConnected = auth.status === "authenticated";
     // const domainOptions = domains.length > 0
     //     ? domains
@@ -235,7 +311,7 @@ const SenderSection = ({ config, onChange, domains, domainsLoading, auth, }) => 
                     </label>
                     <Input
                         value={config.companyName}
-                        onChange={v => onChange({ ...config, companyName: v })}
+                        onChange={e => onChange({ ...config, companyName: e.target.value })}
                         placeholder="Acme Corp"
                     />
                     {!isConnected && auth.status !== "error" && (
@@ -333,7 +409,7 @@ const SenderSection = ({ config, onChange, domains, domainsLoading, auth, }) => 
                     </label>
                     <Input
                         value={config.hiringManagerEmail}
-                        onChange={v => onChange({ ...config, hiringManagerEmail: v })}
+                        onChange={e => onChange({ ...config, hiringManagerEmail: e.target.value })}
                         placeholder="manager@acme.com"
                         type="email"
 
@@ -362,7 +438,7 @@ const SenderSection = ({ config, onChange, domains, domainsLoading, auth, }) => 
                     </label>
                     <Input
                         value={config.recruiterEmail}
-                        onChange={v => onChange({ ...config, recruiterEmail: v })}
+                        onChange={e => onChange({ ...config, recruiterEmail: e.target.value })}
                         placeholder="recruiter@acme.com"
                         type="email"
 
@@ -392,7 +468,7 @@ const SenderSection = ({ config, onChange, domains, domainsLoading, auth, }) => 
                 </label>
                 <Input
                     value={config.offerSigningUrl}
-                    onChange={v => onChange({ ...config, offerSigningUrl: v })}
+                    onChange={e => onChange({ ...config, offerSigningUrl: e.target.value })}
                     placeholder="https://app.docusign.com/sign/…"
 
                 />
@@ -427,6 +503,7 @@ function IntegrationsSection({ enabled, onChange, isConnected, intergrations }: 
         stage_changed: { color: "#0ea5e9", bg: "#0c1a2e" },
         interview_scheduled: { color: "#8b5cf6", bg: "#1a0d2e" },
         offer_extended: { color: "#f59e0b", bg: "#1f1500" },
+        resume_uploaded: { color: "#2dd4bf", bg: "#0d1f1c" },
         score_updated: { color: "#10b981", bg: "#0d1a14" },
     };
 
@@ -472,8 +549,10 @@ function IntegrationsSection({ enabled, onChange, isConnected, intergrations }: 
                                     }}>
                                         {intg.name}
                                     </span>
-                                    <Badge color={tc.color} style={{ backgroundColor: tc.bg }}>{trigger}</Badge>
-                                    <Badge className="text-[]" color="#4b5563" bg="#0a0a0a">→ {intg.to}</Badge>
+                                    <Badge style={{ color: tc.color, backgroundColor: tc.bg }}>{trigger}</Badge>
+                                    {intg.to && (
+                                        <Badge style={{ color: "#4b5563", backgroundColor: "#0a0a0a" }}>→ {intg.to}</Badge>
+                                    )}
                                 </div>
                                 <div style={{ fontSize: 11, color: "#374151", fontFamily: "monospace", lineHeight: 1.5 }}>
                                     {intg.description}

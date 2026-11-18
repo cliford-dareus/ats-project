@@ -1,9 +1,18 @@
-import { Textarea } from "@/components/ui/textarea";
+import { FormTextarea } from "../fields";
 import { Briefcase, FileText, GraduationCap, User, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
+import type { Dispatch, SetStateAction } from "react";
+import type { UseFormGetValues, UseFormRegister } from "react-hook-form";
+import type { ApplicationFormValues } from "@/zod";
 
-const ReviewForm = ({ register, setCurrentStep, getValues }) => {
+type Props = {
+    register: UseFormRegister<ApplicationFormValues>;
+    setCurrentStep: Dispatch<SetStateAction<number>>;
+    getValues: UseFormGetValues<ApplicationFormValues>;
+};
+
+const ReviewForm = ({ register, setCurrentStep, getValues }: Props) => {
     return (
         <motion.div
             key="step5"
@@ -53,7 +62,7 @@ const ReviewForm = ({ register, setCurrentStep, getValues }) => {
                         {getValues("workExperience").map((exp, i) => (
                             <div key={i} className="text-sm">
                                 <p className="font-bold">{exp.position}</p>
-                                <p className="text-zinc-500">{exp.company} • {exp.startDate} to {exp.current ? 'Present' : exp.endDate}</p>
+                                <p className="text-zinc-500">{exp.company} • {exp.start_date} to {exp.current ? 'Present' : exp.end_date}</p>
                             </div>
                         ))}
                     </div>
@@ -67,8 +76,8 @@ const ReviewForm = ({ register, setCurrentStep, getValues }) => {
                     <div className="space-y-4">
                         {getValues("education").map((edu, i) => (
                             <div key={i} className="text-sm">
-                                <p className="font-bold">{edu.degree} in {edu.fieldOfStudy}</p>
-                                <p className="text-zinc-500">{edu.school} • Graduated {edu.graduationDate}</p>
+                                <p className="font-bold">{edu.degree} in {edu.field_of_study}</p>
+                                <p className="text-zinc-500">{edu.school} • Graduated {edu.graduation_date}</p>
                             </div>
                         ))}
                     </div>
@@ -93,7 +102,7 @@ const ReviewForm = ({ register, setCurrentStep, getValues }) => {
                     <div className="flex items-center justify-between mb-4 border-bottom pb-2">
                         <h3 className="font-bold flex items-center gap-2"><FileText className="h-4 w-4" /> Additional</h3>
                     </div>
-                    <Textarea
+                    <FormTextarea
                         label="Anything else you'd like us to know?"
                         placeholder="Cover letter or additional details..."
                         {...register("additionalInfo.coverLetter")}
