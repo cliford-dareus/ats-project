@@ -67,6 +67,8 @@ const ScheduleInterviewModal = ({
     const [isScheduling, setIsScheduling] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [holdLink, setHoldLink] = useState<string | null>(null);
+    const [holdEmailSent, setHoldEmailSent] = useState(false);
+    const [holdEmail, setHoldEmail] = useState<string | null>(null);
 
     const form = useForm<z.infer<typeof interviewScheduleSchema>>({
         resolver: zodResolver(interviewScheduleSchema),
@@ -88,6 +90,8 @@ const ScheduleInterviewModal = ({
         setIsScheduling(true);
         setError(null);
         setHoldLink(null);
+        setHoldEmailSent(false);
+        setHoldEmail(null);
 
         const startDateTime = new Date(`${data.date}T${data.time}:00Z`);
         const endDateTime = new Date(
@@ -119,6 +123,8 @@ const ScheduleInterviewModal = ({
                 });
 
                 setHoldLink(res.confirm_url);
+                setHoldEmailSent(res.email_sent ?? false);
+                setHoldEmail(candidateEmail);
                 return;
             }
 
@@ -171,6 +177,8 @@ const ScheduleInterviewModal = ({
                 if (!open) {
                     setHoldLink(null);
                     setError(null);
+                    setHoldEmailSent(false);
+                    setHoldEmail(null);
                 }
             }}
         >
@@ -202,6 +210,17 @@ const ScheduleInterviewModal = ({
                                 decline or the hold expires, the slot is released.
                             </p>
                         </div>
+                        {holdEmailSent && holdEmail ? (
+                            <p className="text-xs text-zinc-500 leading-relaxed">
+                                Confirmation email sent to {holdEmail} — the link below is a
+                                backup if needed.
+                            </p>
+                        ) : (
+                            <p className="text-xs text-zinc-500 leading-relaxed">
+                                We couldn&apos;t email the candidate automatically — send them
+                                the link below.
+                            </p>
+                        )}
                         <div className="flex gap-2">
                             <Input readOnly value={holdLink} className="text-xs rounded-xl" />
                             <Button type="button" variant="outline" onClick={copyLink} className="rounded-xl shrink-0">
