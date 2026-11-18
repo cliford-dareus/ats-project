@@ -281,7 +281,7 @@ export const GenerateFieldButton = ({ candidate_id, field_name }: { candidate_id
             setLoading(true);
             await generate_missing_fields(candidate_id, [field_name]);
         } catch (error) {
-            alert(error?.message || 'Failed to generate field');
+            alert(error instanceof Error ? error.message : 'Failed to generate field');
         } finally {
             setLoading(false);
         }

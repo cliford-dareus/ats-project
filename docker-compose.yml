@@ -1,4 +1,64 @@
+# Local infra: MySQL, MongoDB, Redis. When running the app via Compose, point
+# the app's env vars at these service hostnames, e.g.:
+#   DATABASE_URL=mysql://root:applico_dev@mysql:3306/applico
+#   MONGODB_URI=mongodb://mongo:27017/applico
+#   REDIS_URL=redis://redis:6379
+# (Local `npm run dev` outside Compose keeps using 127.0.0.1 values in .env.)
 services:
+  mysql:
+    image: mysql:8.4
+    container_name: applico-mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-applico_dev}
+      MYSQL_DATABASE: ${DB_NAME:-applico}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-applico_dev}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  mongo:
+    image: mongo:7
+    container_name: applico-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  redis:
+    image: redis:7-alpine
+    container_name: applico-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   nextjs:
     build:
       context: .
@@ -17,6 +77,13 @@ services:
       - .env
     networks:
       - app-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 #    healthcheck:
 #      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health || exit 1"]
 #      interval: 30s
@@ -39,7 +106,12 @@ services:
     networks:
       - app-network
     depends_on:
-      - nextjs
+      nextjs:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   socket:
     build:
@@ -68,3 +140,8 @@ services:
 networks:
   app-network:
     driver: bridge
+
+volumes:
+  mysql-data:
+  mongo-data:
+  redis-data:

@@ -290,6 +290,7 @@ const CandidatePreview = ({ data, candidates }: Props) => {
                         parent_type="canditates"
                         parent_id={currentCandidate?.id}
                         selectedId={currentCandidate?.id}
+                        candidate_id={currentCandidate?.id}
                     />
                 </div>
             </div>

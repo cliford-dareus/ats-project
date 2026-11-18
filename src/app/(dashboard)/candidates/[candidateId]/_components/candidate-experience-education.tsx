@@ -33,7 +33,7 @@ const CandidateExperienceAndEducation = ({ data, experience, education }: Props)
                                     <div className="flex flex-wrap items-center justify-between gap-2">
                                         <h4 className="font-bold text-sm text-zinc-900">{exp.position}</h4>
                                         <span className="text-xs font-bold text-zinc-500 bg-white px-2.5 py-1 rounded-lg border border-zinc-200">
-                                            {exp.startDate} - {exp.endDate}
+                                            {exp.start_date} - {exp.end_date}
                                         </span>
                                     </div>
                                     <p className="text-xs font-bold text-brand-700">{exp.company}</p>
@@ -56,7 +56,7 @@ const CandidateExperienceAndEducation = ({ data, experience, education }: Props)
                                 <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center border border-zinc-200 text-zinc-600">
                                     <GraduationCap className="w-5 h-5" />
                                 </div>
-                                <p className="text-xs font-bold text-zinc-800">{edu.degree} in {edu.fieldOfStudy} - {edu.school}</p>
+                                <p className="text-xs font-bold text-zinc-800">{edu.degree} in {edu.field_of_study} - {edu.school}</p>
                             </div>
                         ))}
                     </div>

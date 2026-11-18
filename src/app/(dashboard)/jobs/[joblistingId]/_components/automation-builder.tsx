@@ -5,7 +5,7 @@ import AutomationGroup from "./automation-group";
 import { JOB_STAGES } from "@/zod";
 import { z } from "zod";
 import { automationEngine } from "@/lib/automation-engine";
-import {deleteJobAutomationRule, saveJobAutomationRule} from "@/server/actions/job-listings-actions";
+import {deleteJobAutomationRule, saveJobAutomationRule} from "@/server/actions/plugin-actions";
 
 const newRule = (job_id: number, stage_name: z.infer<typeof JOB_STAGES>, event_type: AutomationTriggerOn['event']): AutomationRule => {
     return {

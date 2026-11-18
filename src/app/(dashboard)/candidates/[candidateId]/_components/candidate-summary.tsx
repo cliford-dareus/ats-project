@@ -157,7 +157,7 @@ const CandidateSummary = ({ data, softSkills, technicalSkills, resumeSummary }: 
                     </div>
                 </div>
                 
-                <InternalNoteSection parent_type="candidate" parent_id={candidate.id} selectedId={candidate.id} />
+                <InternalNoteSection parent_type="candidate" parent_id={candidate.id} selectedId={candidate.id} candidate_id={candidate.id} />
             </div>
 
         </div>

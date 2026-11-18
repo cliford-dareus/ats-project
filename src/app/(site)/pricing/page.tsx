@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { Check, Sparkles, ArrowRight, ShieldCheck } from 'lucide-react';
 
 const PLANS = [
@@ -129,12 +130,12 @@ const PricingPage = () => {
                             </ul>
                         </div>
 
-                        <button
-                            onClick={() => onOpenDemo('trial')}
-                            className="w-full py-3 px-4 rounded-xl border border-slate-300 font-bold text-xs text-slate-800 bg-white hover:bg-slate-50 transition-colors shadow-xs"
+                        <Link
+                            href="/sign-up"
+                            className="w-full py-3 px-4 rounded-xl border border-slate-300 font-bold text-xs text-slate-800 bg-white hover:bg-slate-50 transition-colors shadow-xs text-center block"
                         >
                             Start 14-Day Free Trial
-                        </button>
+                        </Link>
                     </div>
 
                     {/* Plan 2: Growth (Featured) */}

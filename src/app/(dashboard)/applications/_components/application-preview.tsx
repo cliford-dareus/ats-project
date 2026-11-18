@@ -52,6 +52,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { update_application_stage_action } from "@/server/actions/application_actions";
 import { get_stage_by_name_action } from "@/server/actions/stage_actions";
+import { useHasPermission } from "@/lib/use-permission";
 
 type Props = {
     data: ApplicationResponseType;
@@ -59,6 +60,8 @@ type Props = {
 };
 
 const ApplicationPreview = ({ data, applications }: Props) => {
+    const hasPermission = useHasPermission();
+    const canMove = hasPermission("application:move");
     const [currentApplication, setCurrentApplication] =
         React.useState<ApplicationResponseType | null>(null);
     const router = useRouter();
@@ -231,6 +234,7 @@ const ApplicationPreview = ({ data, applications }: Props) => {
                                 Advance Stage
                             </button>
                             <div className="flex">
+                                {canMove && (
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <button className="px-4 py-2 bg-primary text-white text-[10px] font-bold rounded-l-lg uppercase tracking-widest flex items-center gap-2 hover:bg-brand-primary/90 transition-colors">
@@ -263,6 +267,7 @@ const ApplicationPreview = ({ data, applications }: Props) => {
                                         </DropdownMenuRadioGroup>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
+                                )}
 
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -397,6 +402,7 @@ const ApplicationPreview = ({ data, applications }: Props) => {
                         parent_type="application"
                         parent_id={currentApplication?.id}
                         selectedId={currentApplication?.id}
+                        candidate_id={currentApplication?.candidate_id}
                     />
                 </div>
             </div>
