@@ -169,7 +169,7 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
                     key_accomplishments: [],
                 });
 
-                revalidateDbCache({ tag: CACHE_TAGS.candidates });
+                revalidateDbCache({ tag: CACHE_TAGS.candidates, orgId: existingSubdomain[0].id });
             }
         }
 
@@ -227,7 +227,7 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
     }
 };
 
-export const update_application = async (data: z.infer<typeof updateApplicationSchema>) => {
+export const update_application = async (data: z.infer<typeof updateApplicationSchema>, orgId: string) => {
     await db
         .update(applications)
         .set({
@@ -236,34 +236,110 @@ export const update_application = async (data: z.infer<typeof updateApplicationS
             ...(data.candidate !== undefined && { candidate: data.candidate }),
             ...(data.can_contact !== undefined && { can_contact: data.can_contact }),
             ...(data.position_in_stage !== undefined && { position_in_stage: data.position_in_stage }),
-            ...(data.organization !== undefined && { organization: data.organization }),
+            // NOTE: organization is deliberately NOT updatable here — allowing
+            // it would let a caller move an application into another org.
             ...(data.subdomain !== undefined && { subdomain: data.subdomain }),
         })
-        .where(eq(applications.id, data.applicationId));
+        // Org-scoped: an application from another org is never updated.
+        .where(and(eq(applications.id, data.applicationId), eq(applications.organization, orgId)));
 
     revalidateDbCache({
         tag: CACHE_TAGS.candidates,
         id: String(data.candidate),
-        orgId: String(data.organization),
+        orgId,
     });
     revalidateDbCache({
         tag: CACHE_TAGS.applications,
         id: String(data.applicationId),
-        orgId: String(data.organization),
+        orgId,
     });
 };
 
-export const update_application_stage = async (data: z.infer<typeof updateApplicationStageSchema>) => {
+export const update_application_stage = async (data: z.infer<typeof updateApplicationStageSchema>, orgId: string) => {
     await db
         .update(applications)
         .set({ current_stage_id: data.new_stage_id })
-        .where(eq(applications.id, data.applicationId));
+        // Org-scoped: an application from another org is never moved.
+        .where(and(eq(applications.id, data.applicationId), eq(applications.organization, orgId)));
 
     revalidateDbCache({
         tag: CACHE_TAGS.applications,
         id: String(data.applicationId),
-        orgId: String(data.organization),
+        orgId,
     });
+};
+
+// ── Dashboard quick-add ───────────────────────────────────────────────────────
+// Creates an application for an EXISTING candidate (no resume parsing, no
+// public-form payload). Used by the dashboard "Add Applicant" modal — the
+// public apply flow uses create_application instead. Everything is verified
+// against the session org: job, candidate, and the Applied stage.
+export const create_application_for_candidate_db = async (jobId: number, candidateId: number, orgId: string) => {
+    const [job] = await db
+        .select({ id: job_listings.id, subdomain: job_listings.subdomain })
+        .from(job_listings)
+        .where(and(eq(job_listings.id, jobId), eq(job_listings.organization, orgId)))
+        .limit(1);
+    if (!job) {
+        return { success: false as const, message: "Job not found" };
+    }
+
+    const [candidate] = await db
+        .select({ id: candidates.id })
+        .from(candidates)
+        .where(and(eq(candidates.id, candidateId), eq(candidates.organization, orgId)))
+        .limit(1);
+    if (!candidate) {
+        return { success: false as const, message: "Candidate not found" };
+    }
+
+    const existing = await db
+        .select({ id: applications.id })
+        .from(applications)
+        .where(and(eq(applications.job_id, jobId), eq(applications.candidate, candidateId)))
+        .limit(1);
+    if (existing.length > 0) {
+        return { success: false as const, message: "Candidate already has an application for this job" };
+    }
+
+    const [appliedStage] = await db
+        .select()
+        .from(stages)
+        .where(
+            and(
+                eq(stages.job_id, jobId),
+                eq(stages.stage_order_id, 0),
+                eq(stages.stage_name, "Applied"),
+            ),
+        )
+        .limit(1);
+    if (!appliedStage) {
+        return { success: false as const, message: "Applied stage not found for this job" };
+    }
+
+    const [application] = await db
+        .insert(applications)
+        .values({
+            organization: orgId,
+            job_id: jobId,
+            candidate: candidateId,
+            current_stage_id: appliedStage.id,
+            subdomain: job.subdomain,
+        })
+        .$returningId();
+
+    revalidateDbCache({
+        tag: CACHE_TAGS.applications,
+        id: String(application.id),
+        orgId,
+    });
+    revalidateDbCache({
+        tag: CACHE_TAGS.candidates,
+        id: String(candidateId),
+        orgId,
+    });
+
+    return { success: true as const, application_id: application.id };
 };
 
 export const get_application_by_id = async (applicationId: number, orgId: string) => {
@@ -302,20 +378,19 @@ export const get_job_all_applications = async (jobId: number, orgId?: string) =>
     return cacheFn(jobId);
 };
 
-export const get_application_stage = async () => {
+export const get_application_stage = async (orgId: string) => {
     const cacheFn = dbCache(get_applications_stages_db, {
-        keyParts: ["stages", String(jobId), orgId ?? ""],
+        keyParts: ["stages", orgId],
         tags: [
-            getIdTag(String(jobId), CACHE_TAGS.stages),
             getGlobalTag(CACHE_TAGS.stages),
-            ...(orgId ? [getOrgTag(orgId, CACHE_TAGS.stages)] : []),
+            getOrgTag(orgId, CACHE_TAGS.stages),
         ],
     });
 
-    return cacheFn();
+    return cacheFn(orgId);
 };
 
-export const get_applications_stages_db = async () => {
+export const get_applications_stages_db = async (orgId: string) => {
     return db
         .select({
             color: stages.color,
@@ -327,7 +402,10 @@ export const get_applications_stages_db = async () => {
             ),
         })
         .from(stages)
-        .leftJoin(applications, eq(applications.current_stage_id, stages.id));
+        // stages carry no org column — scope via their job.
+        .innerJoin(job_listings, eq(stages.job_id, job_listings.id))
+        .leftJoin(applications, eq(applications.current_stage_id, stages.id))
+        .where(eq(job_listings.organization, orgId));
 };
 
 export const get_application_by_id_db = async (applicationId: number, orgId: string) => {

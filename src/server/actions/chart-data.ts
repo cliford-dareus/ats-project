@@ -14,10 +14,10 @@ import { startOfDay } from "date-fns";
 
 // TODO: BE DRYER
 export const get_chart_data_action = async (createdAfter: Date | null, createdBefore: Date | null) => {
-    const { userId } = await auth()
-    if (userId == null) return null
+    const { userId, orgId } = await auth()
+    if (userId == null || orgId == null) return null
 
-    const result = await getChartData(createdAfter, createdBefore)
+    const result = await getChartData(orgId, createdAfter, createdBefore)
     const { array, format } = getChartDateArray(createdAfter || startOfDay(result[0].date as string),
         createdBefore || new Date())
 
@@ -38,10 +38,10 @@ export const get_chart_data_action = async (createdAfter: Date | null, createdBe
 };
 
 export const get_open_job_chart_data_action = async (createdAfter: Date | null, createdBefore: Date | null) => {
-    const { userId } = await auth()
-    if (userId == null) return null
+    const { userId, orgId } = await auth()
+    if (userId == null || orgId == null) return null
 
-    const result = await getOpenJobChartData(createdAfter, createdBefore)
+    const result = await getOpenJobChartData(orgId, createdAfter, createdBefore)
     const { array, format } = getChartDateArray(createdAfter || startOfDay(result[0].date as string),
         createdBefore || new Date())
 
@@ -62,10 +62,10 @@ export const get_open_job_chart_data_action = async (createdAfter: Date | null, 
 };
 
 export const get_application_chart_data_action = async (createdAfter: Date | null, createdBefore: Date | null) => {
-    const { userId } = await auth()
+    const { userId, orgId } = await auth()
 
-    if (userId == null) return null
-    const result = await getApplicationChartData(createdAfter, createdBefore)
+    if (userId == null || orgId == null) return null
+    const result = await getApplicationChartData(orgId, createdAfter, createdBefore)
     const { array, format } = getChartDateArray(createdAfter || startOfDay(result[0].date as string),
         createdBefore || new Date())
 
@@ -86,24 +86,24 @@ export const get_application_chart_data_action = async (createdAfter: Date | nul
 };
 
 export const get_interview_chart_data_action = async (createdAfter: Date | null, createdBefore: Date | null) => {
-    const { userId } = await auth()
+    const { userId, orgId } = await auth()
 
-    if (userId == null) return null
-    return await getInterviewChartData(createdAfter, createdBefore)
+    if (userId == null || orgId == null) return null
+    return await getInterviewChartData(orgId, createdAfter, createdBefore)
 };
 
 export const get_candidate_chart_data_action = async (createdAfter: Date | null, createdBefore: Date | null) => {
-    const { userId } = await auth()
+    const { userId, orgId } = await auth()
 
-    if (userId == null) return null
-    return await getCandidateChartData(createdAfter, createdBefore)
+    if (userId == null || orgId == null) return null
+    return await getCandidateChartData(orgId, createdAfter, createdBefore)
 };
 
 export const get_hired_candidate_chart_data_action = async (createdAfter: Date | null, createdBefore: Date | null) => {
-    const { userId } = await auth();
+    const { userId, orgId } = await auth();
 
-    if (userId == null) return null
-    const result = await getHiredCandidateChartData(createdAfter, createdBefore)
+    if (userId == null || orgId == null) return null
+    const result = await getHiredCandidateChartData(orgId, createdAfter, createdBefore)
 
     const { array, format } = getChartDateArray(createdAfter || startOfDay(result[0].date as string),
         createdBefore || new Date())
