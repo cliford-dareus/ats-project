@@ -18,10 +18,12 @@ import {
     and,
 } from "drizzle-orm";
 import { subDays, subMonths } from "date-fns";
+import { requirePermission } from "@/server/permissions";
 
 export async function getReportData() {
     const { orgId } = await auth();
     if (!orgId) throw new Error("Unauthorized");
+    await requirePermission("report:view");
 
     const now = new Date();
     const last30Days = subDays(now, 30);
@@ -246,6 +248,7 @@ export async function getReportData() {
 export async function generateReport(reportType: string, dateRange: { from: Date; to: Date }) {
     const { orgId } = await auth();
     if (!orgId) throw new Error("Unauthorized");
+    await requirePermission("report:generate");
 
     // This would generate specific reports based on type
 

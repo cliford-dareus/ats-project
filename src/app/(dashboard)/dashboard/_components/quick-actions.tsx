@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { UpcomingInterview } from './dashboard';
+import { Permission } from "@/lib/permissions";
+import { useHasPermission } from "@/lib/use-permission";
 
 interface QuickAction {
     title: string;
@@ -21,31 +23,36 @@ interface QuickAction {
     href: string;
     color: string;
     badge?: string;
+    permission?: Permission;
 };
 
 const QuickActions = ({}: {upcomingInterviews?: UpcomingInterview[]}) => {
-    const actions: QuickAction[] = [
+    const hasPermission = useHasPermission();
+    const allActions: QuickAction[] = [
         {
             title: "Post New Job",
             description: "Create a new job listing",
             icon: Plus,
             href: "/jobs/new",
             color: "bg-blue-500 hover:bg-blue-600",
-            badge: "Popular"
+            badge: "Popular",
+            permission: "job:create"
         },
         {
             title: "Add Candidate",
             description: "Add a new candidate to the system",
             icon: Users,
             href: "/candidates/new",
-            color: "bg-green-500 hover:bg-green-600"
+            color: "bg-green-500 hover:bg-green-600",
+            permission: "candidate:create"
         },
         {
             title: "Schedule Interview",
             description: "Schedule interviews with candidates",
             icon: Calendar,
             href: "/interviews/new",
-            color: "bg-purple-500 hover:bg-purple-600"
+            color: "bg-purple-500 hover:bg-purple-600",
+            permission: "interview:schedule"
         },
         {
             title: "View Applications",
@@ -53,23 +60,28 @@ const QuickActions = ({}: {upcomingInterviews?: UpcomingInterview[]}) => {
             icon: FileText,
             href: "/applications",
             color: "bg-orange-500 hover:bg-orange-600",
-            badge: "12 pending"
+            badge: "12 pending",
+            permission: "application:view"
         },
         {
             title: "Bulk Import",
             description: "Import candidates from CSV",
             icon: Upload,
             href: "/candidates/import",
-            color: "bg-indigo-500 hover:bg-indigo-600"
+            color: "bg-indigo-500 hover:bg-indigo-600",
+            permission: "candidate:create"
         },
         {
             title: "Reports",
             description: "Generate recruitment reports",
             icon: Download,
             href: "/reports",
-            color: "bg-pink-500 hover:bg-pink-600"
+            color: "bg-pink-500 hover:bg-pink-600",
+            permission: "report:view"
         }
     ];
+
+    const actions = allActions.filter((action) => !action.permission || hasPermission(action.permission));
 
     return (
         <div className="col-span-1">

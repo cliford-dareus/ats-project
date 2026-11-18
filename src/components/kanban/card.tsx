@@ -11,6 +11,7 @@ import { Calendar, Clock, ExternalLink, GripVertical } from "lucide-react";
 import { TriggerTask } from "@/plugins/smart-trigger/types";
 import { useKanbanContext } from "@/providers/kanban-provider";
 import ScheduleInterviewModal from "@/components/modal/schedule-interview-modal";
+import { useHasPermission } from "@/lib/use-permission";
 
 type Props = {
     data: ApplicationType;
@@ -21,6 +22,9 @@ type Props = {
 
 const Card = ({ data, handleDragStart, stage, jobDetails }: Props) => {
     const { tasks } = useKanbanContext();
+    const hasPermission = useHasPermission();
+    const canMove = hasPermission("application:move");
+    const canSchedule = hasPermission("interview:schedule");
     const [isOpen, setIsOpen] = useState(false);
     const [activeTrigger, setActiveTrigger] = useState<TriggerTask[]>([]);
 
@@ -41,7 +45,7 @@ const Card = ({ data, handleDragStart, stage, jobDetails }: Props) => {
             <motion.div
                 layout
                 layoutId={String(data.id)}
-                draggable="true"
+                draggable={canMove}
                 onDragStart={(e: never) => handleDragStart(e, data.id!)}
                 className="group cursor-grab active:cursor-grabbing bg-white border border-slate-200 rounded-[10px] p-4 shadow-sm hover:shadow-md"
             >
@@ -84,7 +88,7 @@ const Card = ({ data, handleDragStart, stage, jobDetails }: Props) => {
                             }`}>
                             {stage.stage_name}
                         </span>
-                        {stage.need_schedule && !hasScheduledInterview && (
+                        {stage.need_schedule && !hasScheduledInterview && canSchedule && (
                             <button
                                 onClick={() => setIsOpen(true)}
                                 className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 rounded-md text-[9px] font-bold hover:bg-amber-100 transition-colors">

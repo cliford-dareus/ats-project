@@ -2,10 +2,14 @@ import React, { useState } from "react";
 import { DeleteIcon, EditIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CandidatesResponseType } from "@/types";
+import { useHasPermission } from "@/lib/use-permission";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-expect-error
 const RowAction = ({ row, table }) => {
+    const hasPermission = useHasPermission();
+    const canEdit = hasPermission("candidate:edit");
+    const canDelete = hasPermission("candidate:delete");
     const candidate = row.original as CandidatesResponseType;
     const meta = table.options.meta;
     const validRow = meta?.validRows[row.id];
@@ -17,20 +21,24 @@ const RowAction = ({ row, table }) => {
 
     return (
         <div className="flex items-center gap-2">
-            <Button
-                disabled={disableSubmit}
-                variant="ghost"
-                onClick={() => setIsEditJobOpen(true)}
-            >
-            <EditIcon size={18} />
-            </Button>
-            <Button
-                disabled={disableSubmit}
-                variant="ghost"
-                onClick={() => setIsDeleteJobOpen(true)}
-            >
-                <DeleteIcon size={18} />
-            </Button>
+            {canEdit && (
+                <Button
+                    disabled={disableSubmit}
+                    variant="ghost"
+                    onClick={() => setIsEditJobOpen(true)}
+                >
+                <EditIcon size={18} />
+                </Button>
+            )}
+            {canDelete && (
+                <Button
+                    disabled={disableSubmit}
+                    variant="ghost"
+                    onClick={() => setIsDeleteJobOpen(true)}
+                >
+                    <DeleteIcon size={18} />
+                </Button>
+            )}
         </div>
     );
 };

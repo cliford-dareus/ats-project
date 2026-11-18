@@ -21,6 +21,7 @@ import JobTabs from "@/app/(dashboard)/jobs/[joblistingId]/_components/Job-tabs"
 import { KanbanProvider } from "@/providers/kanban-provider";
 import { get_job_all_applications_action } from "@/server/actions/application_actions";
 import { cn, getStatusColor } from "@/lib/utils";
+import { HasPermission } from "@/components/has-permission";
 
 type Props = {
     params: Promise<{
@@ -92,19 +93,21 @@ const Page = async ({ params }: Props) => {
                     </div>
 
                     <div className="flex items-center gap-4">
-                        <Dialog>
-                            <DialogTrigger asChild>
-                                <Button className="px-4 !py-2 border rounded-lg text-[10px] uppercase tracking-widest font-bold text-white transition-all flex items-center gap-2">
-                                    Add Applicant
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                                <CreateApplicationModal
-                                    job={singleJob as JobListingType}
-                                    candidates={candidates as CandidatesResponseType[]}
-                                />
-                            </DialogContent>
-                        </Dialog>
+                        <HasPermission permission="application:create">
+                            <Dialog>
+                                <DialogTrigger asChild>
+                                    <Button className="px-4 !py-2 border rounded-lg text-[10px] uppercase tracking-widest font-bold text-white transition-all flex items-center gap-2">
+                                        Add Applicant
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <CreateApplicationModal
+                                        job={singleJob as JobListingType}
+                                        candidates={candidates as CandidatesResponseType[]}
+                                    />
+                                </DialogContent>
+                            </Dialog>
+                        </HasPermission>
                     </div>
                 </div>
 

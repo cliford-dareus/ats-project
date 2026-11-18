@@ -50,6 +50,7 @@ import {
 import JobQuickViewCard from "@/components/job-quick-view-card";
 import { update_application_stage_action } from "@/server/actions/application_actions";
 import { Button } from "@/components/ui/button";
+import { useHasPermission } from "@/lib/use-permission";
 
 type Props = {
     job: JobListingType;
@@ -57,6 +58,8 @@ type Props = {
 };
 
 const JobCandidate = ({ job, stages }: Props) => {
+    const hasPermission = useHasPermission();
+    const canMove = hasPermission("application:move");
     const applications = job.applications as unknown as ApplicationType[];
     const [selectedCandidates, setSelectedCandidates] = useState<number[]>([]);
     const [selectedApplications, setSelectedApplications] = useState<ApplicationType>();
@@ -268,6 +271,7 @@ const JobCandidate = ({ job, stages }: Props) => {
                                             <MessageSquare size={14} />
                                         </Button>
                                         
+                                        {canMove && (
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                                 <button className="px-4 py-2 bg-primary text-white text-[10px] font-bold rounded-lg uppercase tracking-widest flex items-center gap-2 hover:bg-brand-primary/90 transition-colors">
@@ -298,6 +302,7 @@ const JobCandidate = ({ job, stages }: Props) => {
                                                 </DropdownMenuRadioGroup>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
+                                        )}
                                     </div>
                                 </div>
 

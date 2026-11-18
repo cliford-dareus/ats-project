@@ -30,11 +30,15 @@ export const requirePermission = async (permission: Permission) => {
 export const canCreateJob = () => hasPermission("job:create");
 export const canEditJob = () => hasPermission("job:edit");
 export const canDeleteJob = () => hasPermission("job:delete");
+export const canViewJob = () => hasPermission("job:view");
 
 export const canCreateCandidate = () => hasPermission("candidate:create");
 export const canEditCandidate = () => hasPermission("candidate:edit");
 export const canEvaluateCandidate = () => hasPermission("candidate:evaluate");
+export const canViewCandidate = () => hasPermission("candidate:view");
 
+export const canViewApplication = () => hasPermission("application:view");
+export const canEditApplication = () => hasPermission("application:edit");
 export const canMoveApplication = () => hasPermission("application:move");
 
 export const canScheduleInterview = () => hasPermission("interview:schedule");

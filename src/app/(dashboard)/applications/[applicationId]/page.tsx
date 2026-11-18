@@ -94,6 +94,7 @@ const Page = async ({ params }: Props) => {
                                     parent_type='application'
                                     parent_id={applicationResult.id}
                                     selectedId={applicationResult.id}
+                                    candidate_id={applicationResult.candidate_id}
                                 />
                             </div>
                         </div>

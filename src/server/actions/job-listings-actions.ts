@@ -12,7 +12,7 @@ import {
 import {auth} from "@clerk/nextjs/server";
 import {redirect} from "next/navigation";
 import {jobFormSchema, filterJobSchema, updateJobListingSchema} from "@/zod";
-import {assertJobBelongsToOrg, canCreateJob, getAuthOrThrow} from "@/server/permissions";
+import {assertJobBelongsToOrg, canViewJob, getAuthOrThrow, requirePermission} from "@/server/permissions";
 
 const jobIdSchema = z.number();
 
@@ -23,8 +23,7 @@ export const create_job_action = async (unsafeData: z.infer<typeof jobFormSchema
     //     return { error: true, message: "There was an error creating your product" }
     // }
 
-    // const {userId} = await auth();
-    // await canCreateJob(userId);
+    await requirePermission("job:create");
     console.log('Job created:');
 
     const {id} = await create_job_listing(unsafeData);
@@ -32,6 +31,7 @@ export const create_job_action = async (unsafeData: z.infer<typeof jobFormSchema
 };
 
 export const update_job_action = async (unsafeData: z.infer<typeof updateJobListingSchema>) => {
+    await requirePermission("job:edit");
     const {success, data} = await updateJobListingSchema.spa(unsafeData);
     if (!success) {
         return {error: true, message: "There was an error updating your product"}
@@ -45,6 +45,7 @@ export const update_job_action = async (unsafeData: z.infer<typeof updateJobList
 };
 
 export const delete_job_action = async (unsafeData: z.infer<typeof jobIdSchema>) => {
+    await requirePermission("job:delete");
     const {success, data} = await jobIdSchema.spa(unsafeData);
     if (!success) {
         return {error: true, message: "There was an error updating your product"}
@@ -59,6 +60,7 @@ export const delete_job_action = async (unsafeData: z.infer<typeof jobIdSchema>)
 
 export const get_all_job_listings_action = async (unsafeData: z.infer<typeof filterJobSchema>) => {
     const {userId} = await getAuthOrThrow();
+    await requirePermission("job:view");
     const {success, data} = await filterJobSchema.spa(unsafeData);
 
     if (!success || !userId) {
@@ -70,6 +72,7 @@ export const get_all_job_listings_action = async (unsafeData: z.infer<typeof fil
 
 export const get_job_by_id_action = async (unsafeData: z.infer<typeof jobIdSchema>) => {
     const {userId, orgId} = await getAuthOrThrow();
+    await requirePermission("job:view");
     const jobId = jobIdSchema.parse(unsafeData);
 
     if (!jobId || !userId) {
@@ -82,10 +85,10 @@ export const get_job_by_id_action = async (unsafeData: z.infer<typeof jobIdSchem
 export const get_job_listings_stages_action = async (unsafeData: z.infer<typeof jobIdSchema>) => {
     const {userId} = await auth();
     const jobId = jobIdSchema.parse(unsafeData);
-    const canCreate = await canCreateJob(userId);
+    const allowed = await canViewJob();
 
-    if (!userId || !canCreate || !jobId) {
-        return {error: true, message: "There was an error creating your product"}
+    if (!userId || !allowed || !jobId) {
+        return {error: true, message: "There was an error retrieving job stages"}
     }
 
     return await get_job_listings_stages(jobId);
