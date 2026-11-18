@@ -37,7 +37,12 @@ export function KanbanProvider({ children, initialTriggers = [], initialStages =
 
     const fetchApplicationTasks = async () => {
         const tasks = await get_all_tasks_action();
-        const parsedTasks = JSON.parse(tasks as string) as { tasks: TriggerTask[] };
+        // The action returns an error object (not JSON) when the session is
+        // missing or lacks application:view — don't JSON.parse that.
+        if (typeof tasks !== "string") {
+            return;
+        }
+        const parsedTasks = JSON.parse(tasks) as { tasks: TriggerTask[] };
         setTasks(parsedTasks.tasks);
     };
 

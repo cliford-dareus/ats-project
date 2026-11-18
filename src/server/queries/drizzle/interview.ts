@@ -139,12 +139,30 @@ export const get_interview_by_hold_token = async (token: string) => {
     return rows[0] ?? null;
 };
 
-export const mark_hold_confirmed_db = async (interviewId: number, orgId: string) => {
+export const get_interview_by_application_db = async (applicationId: number) => {
+    const rows = await db
+        .select({ id: interviews.id })
+        .from(interviews)
+        .where(eq(interviews.applications_id, applicationId))
+        .limit(1);
+
+    return rows[0] ?? null;
+};
+
+export const mark_hold_confirmed_db = async (
+    interviewId: number,
+    orgId: string,
+    updates?: { calendar_event_id?: string; link?: string }
+) => {
     await db
         .update(interviews)
         .set({
             hold_status: "CONFIRMED",
             status: "SCHEDULE",
+            ...(updates?.calendar_event_id
+                ? { calendar_event_id: updates.calendar_event_id }
+                : {}),
+            ...(updates?.link ? { link: updates.link } : {}),
         })
         .where(
             and(
@@ -161,12 +179,15 @@ export const mark_hold_released_db = async (
     orgId: string,
     hold_status: "DECLINED" | "EXPIRED" | "RELEASED"
 ) => {
+    // Only the hold outcome changes. The interview status stays HOLD_PENDING:
+    // a declined/expired/released hold was never confirmed, so it must not
+    // read as SCHEDULE — SCHEDULE-filtered queries (upcoming interviews,
+    // alerts) would otherwise surface a dead hold as a live interview.
+    // This matches mark_hold_expired_db, which likewise leaves status alone;
+    // the outcome lives in hold_status, which the UI keys off.
     await db
         .update(interviews)
-        .set({
-            hold_status,
-            status: "SCHEDULE", // residual row; UI treats non-TENTATIVE holds carefully
-        })
+        .set({ hold_status })
         .where(
             and(
                 eq(interviews.id, interviewId),
@@ -177,10 +198,10 @@ export const mark_hold_released_db = async (
     revalidateDbCache({ tag: CACHE_TAGS.applications, orgId });
 };
 
-/** Mark expired tentative holds (call from cron / worker). */
-export const expire_stale_holds_db = async () => {
+/** Tentative holds past their expiry. Worker-safe: plain select, no cache calls. */
+export const get_stale_holds_db = async () => {
     const now = new Date();
-    const stale = await db
+    return db
         .select({
             id: interviews.id,
             organization: interviews.organization,
@@ -193,13 +214,28 @@ export const expire_stale_holds_db = async () => {
                 eq(interviews.hold_status, "TENTATIVE"),
                 lt(interviews.hold_expires_at, now)
             )
-        );
+        )
+        .limit(100);
+};
+
+/**
+ * Mark one hold expired. Worker-safe: no Next cache revalidation
+ * (revalidateTag is unavailable outside the Next runtime — see
+ * db_save_resume_score, which skips revalidation for the same reason).
+ */
+export const mark_hold_expired_db = async (interviewId: number) => {
+    await db
+        .update(interviews)
+        .set({ hold_status: "EXPIRED" })
+        .where(eq(interviews.id, interviewId));
+};
+
+/** Mark expired tentative holds (call from cron / worker). */
+export const expire_stale_holds_db = async () => {
+    const stale = await get_stale_holds_db();
 
     for (const row of stale) {
-        await db
-            .update(interviews)
-            .set({ hold_status: "EXPIRED" })
-            .where(eq(interviews.id, row.id));
+        await mark_hold_expired_db(row.id);
     }
 
     return stale;

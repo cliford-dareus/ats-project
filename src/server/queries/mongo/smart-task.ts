@@ -1,11 +1,14 @@
-"use server";
-
+// NOTE: intentionally NO 'use server' here. These helpers must only be
+// reachable through the permission-checked server actions in
+// `src/server/actions/*` (get_all_tasks_action, add_task_to_queue_action).
+// Adding the directive would expose getTasks/addTaskToQueue as public RPC
+// endpoints, bypassing those gates.
 import { taskQueue } from "@/lib/queue";
 import mongodb from "@/lib/mongodb";
 import Trigger from "@/models/trigger";
 import { TriggerAction } from "@/plugins/smart-trigger/types";
 import { milliseconds } from "date-fns";
-import { candidates } from "@/drizzle/schema";
+import { applications, candidates } from "@/drizzle/schema";
 import { db } from "@/drizzle/db";
 import { eq } from "drizzle-orm";
 
@@ -56,9 +59,19 @@ export const addTaskToQueue = async ({ applicationId, action, jobId, stageName }
     }, { delay: delayMs });
 };
 
-export const getTasks = async () => {
+export const getTasks = async (org_id: string) => {
     await mongodb();
-    const tasks = await Trigger.find({});
+    // Triggers carry no org field — scope through their application, which
+    // belongs to exactly one org. Never return cross-org triggers.
+    const orgApplications = await db
+        .select({ id: applications.id })
+        .from(applications)
+        .where(eq(applications.organization, org_id));
+    const applicationIds = orgApplications.map((row) => row.id);
+    if (applicationIds.length === 0) {
+        return JSON.stringify({ tasks: [] });
+    }
+    const tasks = await Trigger.find({ application_id: { $in: applicationIds } });
     return JSON.stringify({ tasks });
 };
 

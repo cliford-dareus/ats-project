@@ -4,7 +4,6 @@ import { CandidatesResponseType } from "@/types";
 import CandidatesList from "@/app/(dashboard)/candidates/_components/candidates-list";
 // import { LucideSortAsc } from "lucide-react";
 // import ExtractFileButton from "@/components/extract-table-button";
-// import UploadCandidateResume from "@/components/modal/upload-candidate-resume";
 import { CANDIDATE_STATUS } from "@/zod";
 import { auth } from "@clerk/nextjs/server";
 import ListPageTop from "@/components/list-page-top";

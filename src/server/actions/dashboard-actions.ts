@@ -33,23 +33,26 @@ export async function getDashboardMetrics() {
     const startOfLastMonth = startOfMonth(lastMonth);
     const endOfLastMonth = endOfMonth(lastMonth);
 
-    // Current month metrics
+    // Current month metrics — every query is scoped to the session org.
     const [
         totalApplicationsResult,
         totalCandidatesResult,
         activeJobsResult,
         hiredThisMonthResult
     ] = await Promise.all([
-        db.select({ count: count() }).from(applications),
-        db.select({ count: count() }).from(candidates),
+        db.select({ count: count() }).from(applications)
+            .where(eq(applications.organization, orgId)),
+        db.select({ count: count() }).from(candidates)
+            .where(eq(candidates.organization, orgId)),
         db.select({ count: count() })
             .from(job_listings)
-            .where(eq(job_listings.status, 'OPEN')),
+            .where(and(eq(job_listings.status, 'OPEN'), eq(job_listings.organization, orgId))),
         db.select({ count: count() })
             .from(candidates)
             .where(
                 and(
                     eq(candidates.status, 'HIRED'),
+                    eq(candidates.organization, orgId),
                     gte(candidates.updated_at, startOfThisMonth)
                 )
             )
@@ -65,6 +68,7 @@ export async function getDashboardMetrics() {
             .from(applications)
             .where(
                 and(
+                    eq(applications.organization, orgId),
                     gte(applications.created_at, startOfLastMonth),
                     lte(applications.created_at, endOfLastMonth)
                 )
@@ -73,6 +77,7 @@ export async function getDashboardMetrics() {
             .from(candidates)
             .where(
                 and(
+                    eq(candidates.organization, orgId),
                     gte(candidates.created_at, startOfLastMonth),
                     lte(candidates.created_at, endOfLastMonth)
                 )
@@ -82,6 +87,7 @@ export async function getDashboardMetrics() {
             .where(
                 and(
                     eq(candidates.status, 'HIRED'),
+                    eq(candidates.organization, orgId),
                     gte(candidates.updated_at, startOfLastMonth),
                     lte(candidates.updated_at, endOfLastMonth)
                 )
@@ -138,7 +144,10 @@ export async function getRecentActivity() {
         .from(applications)
         .innerJoin(candidates, eq(applications.candidate, candidates.id))
         .innerJoin(job_listings, eq(applications.job_id, job_listings.id))
-        .where(gte(applications.created_at, sevenDaysAgo))
+        .where(and(
+            eq(applications.organization, orgId),
+            gte(applications.created_at, sevenDaysAgo)
+        ))
         .orderBy(desc(applications.created_at))
         .limit(10);
 
@@ -154,6 +163,7 @@ export async function getRecentActivity() {
         .where(
             and(
                 eq(candidates.status, 'HIRED'),
+                eq(candidates.organization, orgId),
                 gte(candidates.updated_at, sevenDaysAgo)
             )
         )
@@ -169,7 +179,10 @@ export async function getRecentActivity() {
             type: sql<string>`'job_posted'`
         })
         .from(job_listings)
-        .where(gte(job_listings.created_at, sevenDaysAgo))
+        .where(and(
+            eq(job_listings.organization, orgId),
+            gte(job_listings.created_at, sevenDaysAgo)
+        ))
         .orderBy(desc(job_listings.created_at))
         .limit(5);
 
@@ -222,6 +235,7 @@ export async function getUpcomingInterviews() {
         .innerJoin(job_listings, eq(applications.job_id, job_listings.id))
         .where(
             and(
+                eq(interviews.organization, orgId),
                 gte(interviews.start_at, now),
                 lte(interviews.start_at, sevenDaysFromNow)
             )
@@ -258,7 +272,7 @@ export async function getJobPipelineData() {
         .from(job_listings)
         .leftJoin(stages, eq(job_listings.id, stages.job_id))
         .leftJoin(applications, eq(stages.id, applications.current_stage_id))
-        .where(eq(job_listings.status, 'PENDING'))
+        .where(and(eq(job_listings.status, 'PENDING'), eq(job_listings.organization, orgId)))
         .groupBy(job_listings.id, job_listings.name, stages.stage_name, stages.color, stages.stage_order_id)
         .orderBy(job_listings.id, stages.stage_order_id);
 
@@ -300,7 +314,10 @@ export async function getApplicationTrends() {
             count: count(applications.id)
         })
         .from(applications)
-        .where(gte(applications.created_at, thirtyDaysAgo))
+        .where(and(
+            eq(applications.organization, orgId),
+            gte(applications.created_at, thirtyDaysAgo)
+        ))
         .groupBy(sql`DATE(${applications.created_at})`)
         .orderBy(sql`DATE(${applications.created_at})`);
 
@@ -325,6 +342,7 @@ export async function getHiringTrends() {
         .where(
             and(
                 eq(candidates.status, 'HIRED'),
+                eq(candidates.organization, orgId),
                 gte(candidates.updated_at, thirtyDaysAgo)
             )
         )
@@ -346,13 +364,13 @@ export async function getTopPerformingJobs() {
             jobId: job_listings.id,
             jobTitle: job_listings.name,
             applicationCount: count(applications.id),
-            hiredCount: sql<number>`COUNT(CASE WHEN ${candidates.status} = 'Hired' THEN 1 END)`,
-            conversionRate: sql<number>`ROUND((COUNT(CASE WHEN ${candidates.status} = 'Hired' THEN 1 END) * 100.0 / COUNT(${applications.id})), 2)`
+            hiredCount: sql<number>`COUNT(CASE WHEN ${candidates.status} = 'HIRED' THEN 1 END)`,
+            conversionRate: sql<number>`ROUND((COUNT(CASE WHEN ${candidates.status} = 'HIRED' THEN 1 END) * 100.0 / COUNT(${applications.id})), 2)`
         })
         .from(job_listings)
         .leftJoin(applications, eq(job_listings.id, applications.job_id))
         .leftJoin(candidates, eq(applications.candidate, candidates.id))
-        .where(eq(job_listings.status, 'OPEN'))
+        .where(and(eq(job_listings.status, 'OPEN'), eq(job_listings.organization, orgId)))
         .groupBy(job_listings.id, job_listings.name)
         .orderBy(desc(count(applications.id)))
         .limit(10);
@@ -364,22 +382,6 @@ export async function getTopPerformingJobs() {
         hiredCount: job.hiredCount || 0,
         conversionRate: job.conversionRate || 0
     }));
-};
-
-export async function getSourceAnalytics() {
-    const { orgId } = await auth();
-    if (!orgId) throw new Error("Unauthorized");
-
-    // Mock data for now - in a real app, you'd have a source field in applications
-    const sourceData = [
-        { source: 'LinkedIn', applications: 145, hires: 23, conversionRate: 15.9 },
-        { source: 'Indeed', applications: 98, hires: 12, conversionRate: 12.2 },
-        { source: 'Company Website', applications: 76, hires: 18, conversionRate: 23.7 },
-        { source: 'Referrals', applications: 54, hires: 15, conversionRate: 27.8 },
-        { source: 'Other', applications: 32, hires: 4, conversionRate: 12.5 }
-    ];
-
-    return sourceData;
 };
 
 export async function getInterviewScheduleData() {
@@ -399,6 +401,7 @@ export async function getInterviewScheduleData() {
         .from(interviews)
         .where(
             and(
+                eq(interviews.organization, orgId),
                 gte(interviews.start_at, now),
                 lte(interviews.start_at, thirtyDaysFromNow)
             )
@@ -426,6 +429,7 @@ export async function getCandidateStatusDistribution() {
             count: count(candidates.id)
         })
         .from(candidates)
+        .where(eq(candidates.organization, orgId))
         .groupBy(candidates.status)
         .orderBy(desc(count(candidates.id)));
 
@@ -439,6 +443,8 @@ export async function getRecruitmentFunnel() {
     const { orgId } = await auth();
     if (!orgId) throw new Error("Unauthorized");
 
+    // stages has no org column — scope via its job (job_id is NOT NULL, so an
+    // inner join is safe).
     const funnelData = await db
         .select({
             stageName: stages.stage_name,
@@ -447,7 +453,9 @@ export async function getRecruitmentFunnel() {
             count: count(applications.id)
         })
         .from(stages)
+        .innerJoin(job_listings, eq(stages.job_id, job_listings.id))
         .leftJoin(applications, eq(stages.id, applications.current_stage_id))
+        .where(eq(job_listings.organization, orgId))
         .groupBy(stages.stage_name, stages.stage_order_id, stages.color)
         .orderBy(stages.stage_order_id);
 
@@ -491,21 +499,65 @@ export async function getRecruitmentFunnel() {
         { stage: typeof JOB_STAGES._type; count: number; conversion: number; stageColor: string }[]
 };
 
+/**
+ * Days from first application to hire for every HIRED candidate in the org.
+ * Hire time is candidates.updated_at (the flip to HIRED updates it) — the
+ * same proxy getDashboardMetrics/getHiringTrends already use. Returns []
+ * when nobody has been hired yet; callers handle the empty case rather than
+ * inventing a number.
+ */
+async function get_hire_durations_days(orgId: string): Promise<number[]> {
+    const hires = await db
+        .select({
+            applied_at: sql<Date>`MIN(${applications.created_at})`,
+            hired_at: candidates.updated_at,
+        })
+        .from(candidates)
+        .innerJoin(applications, eq(applications.candidate, candidates.id))
+        .where(
+            and(
+                eq(candidates.status, "HIRED"),
+                eq(candidates.organization, orgId),
+                eq(applications.organization, orgId)
+            )
+        )
+        .groupBy(candidates.id, candidates.updated_at);
+
+    return hires
+        .map((hire) => {
+            if (!hire.applied_at || !hire.hired_at) return null;
+            const days =
+                (new Date(hire.hired_at).getTime() -
+                    new Date(hire.applied_at).getTime()) /
+                (1000 * 60 * 60 * 24);
+            return days >= 0 ? days : null;
+        })
+        .filter((days): days is number => days !== null);
+}
+
 export async function getTimeToHireMetrics() {
     const { orgId } = await auth();
     if (!orgId) throw new Error("Unauthorized");
 
-    // This would require tracking application start and hire dates
-    // For now, return mock data
-    const timeToHireData = [
-        { range: '0-7 days', count: 5 },
-        { range: '8-14 days', count: 12 },
-        { range: '15-21 days', count: 18 },
-        { range: '22-30 days', count: 15 },
-        { range: '31+ days', count: 8 }
+    const durations = await get_hire_durations_days(orgId);
+
+    const buckets = [
+        { range: '0-7 days', count: 0 },
+        { range: '8-14 days', count: 0 },
+        { range: '15-21 days', count: 0 },
+        { range: '22-30 days', count: 0 },
+        { range: '31+ days', count: 0 }
     ];
 
-    return timeToHireData;
+    for (const days of durations) {
+        if (days <= 7) buckets[0].count++;
+        else if (days <= 14) buckets[1].count++;
+        else if (days <= 21) buckets[2].count++;
+        else if (days <= 30) buckets[3].count++;
+        else buckets[4].count++;
+    }
+
+    return buckets;
 };
 
 export async function getAllDashboardData() {
@@ -521,7 +573,6 @@ export async function getAllDashboardData() {
             applicationTrends,
             hiringTrends,
             topJobs,
-            sourceAnalytics,
             candidateDistribution,
             recruitmentFunnel
         ] = await Promise.all([
@@ -532,7 +583,6 @@ export async function getAllDashboardData() {
             getApplicationTrends(),
             getHiringTrends(),
             getTopPerformingJobs(),
-            getSourceAnalytics(),
             getCandidateStatusDistribution(),
             getRecruitmentFunnel()
         ]);
@@ -546,7 +596,6 @@ export async function getAllDashboardData() {
                 applicationTrends,
                 hiringTrends,
                 topJobs,
-                sourceAnalytics,
                 candidateDistribution,
                 recruitmentFunnel
             }
@@ -573,23 +622,35 @@ export async function getPerformanceMetrics() {
     ] = await Promise.all([
         db.select({ count: count() })
             .from(applications)
-            .where(gte(applications.created_at, thirtyDaysAgo)),
+            .where(and(
+                eq(applications.organization, orgId),
+                gte(applications.created_at, thirtyDaysAgo)
+            )),
 
         db.select({ count: count() })
             .from(interviews)
-            .where(gte(interviews.created_at, thirtyDaysAgo)),
+            .where(and(
+                eq(interviews.organization, orgId),
+                gte(interviews.created_at, thirtyDaysAgo)
+            )),
 
         db.select({ count: count() })
             .from(candidates)
             .where(
                 and(
                     eq(candidates.status, 'HIRED'),
+                    eq(candidates.organization, orgId),
                     gte(candidates.updated_at, thirtyDaysAgo)
                 )
             ),
 
-        // Mock average time to hire - in real app, calculate from application to hire dates
-        Promise.resolve([{ avgDays: 18.5 }])
+        // Real average time to hire: first application to HIRED status,
+        // same data as getTimeToHireMetrics. 0 when nobody has been hired yet.
+        get_hire_durations_days(orgId).then((durations) => [{
+            avgDays: durations.length > 0
+                ? Math.round((durations.reduce((sum, days) => sum + days, 0) / durations.length) * 10) / 10
+                : 0
+        }])
     ]);
 
     const totalApplications = totalApplicationsResult[0]?.count || 0;
@@ -643,6 +704,7 @@ export async function getQuickStats() {
             .from(applications)
             .where(
                 and(
+                    eq(applications.organization, orgId),
                     gte(applications.created_at, new Date(today.getFullYear(), today.getMonth(), today.getDate())),
                     lte(applications.created_at, today)
                 )
@@ -652,6 +714,7 @@ export async function getQuickStats() {
             .from(applications)
             .where(
                 and(
+                    eq(applications.organization, orgId),
                     gte(applications.created_at, new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate())),
                     lte(applications.created_at, yesterday)
                 )
@@ -659,12 +722,16 @@ export async function getQuickStats() {
 
         db.select({ count: count() })
             .from(applications)
-            .where(gte(applications.created_at, thisWeek)),
+            .where(and(
+                eq(applications.organization, orgId),
+                gte(applications.created_at, thisWeek)
+            )),
 
         db.select({ count: count() })
             .from(interviews)
             .where(
                 and(
+                    eq(interviews.organization, orgId),
                     gte(interviews.start_at, new Date(today.getFullYear(), today.getMonth(), today.getDate())),
                     lte(interviews.start_at, today)
                 )
@@ -684,44 +751,6 @@ export async function getQuickStats() {
             ? Math.round(((todayApplications[0]?.count || 0) - (yesterdayApplications[0]?.count || 0)) / (yesterdayApplications[0]?.count || 1) * 100)
             : 0
     };
-};
-
-export async function getTeamActivity() {
-    const { orgId } = await auth();
-    if (!orgId) throw new Error("Unauthorized");
-
-    // Mock team activity data - in real app, would track user actions
-    const teamActivity = [
-        {
-            id: '1',
-            userName: 'Sarah Johnson',
-            action: 'Reviewed application',
-            candidate: 'John Doe',
-            job: 'Software Engineer',
-            timestamp: new Date(Date.now() - 1000 * 60 * 15), // 15 minutes ago
-            avatar: null
-        },
-        {
-            id: '2',
-            userName: 'Mike Chen',
-            action: 'Scheduled interview',
-            candidate: 'Jane Smith',
-            job: 'Product Manager',
-            timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
-            avatar: null
-        },
-        {
-            id: '3',
-            userName: 'Emily Davis',
-            action: 'Posted new job',
-            candidate: null,
-            job: 'UX Designer',
-            timestamp: new Date(Date.now() - 1000 * 60 * 45), // 45 minutes ago
-            avatar: null
-        }
-    ];
-
-    return teamActivity;
 };
 
 export async function getAlerts() {
@@ -746,6 +775,7 @@ export async function getAlerts() {
         .innerJoin(job_listings, eq(applications.job_id, job_listings.id))
         .where(
             and(
+                eq(interviews.organization, orgId),
                 gte(interviews.start_at, now),
                 lte(interviews.start_at, tomorrow),
                 eq(interviews.status, 'SCHEDULE')
