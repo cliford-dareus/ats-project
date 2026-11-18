@@ -3,11 +3,12 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ── GET ───────────────────────────────────────────────────────────────────────
-import {automation_rules} from "@/drizzle/schema";
-import {AutomationRule, type InstalledPlugin, OrgPluginRecord, type OrgPluginState} from "@/types";
+import {automation_rules, organization} from "@/drizzle/schema";
+import {AutomationRule, type InstalledPlugin, OrgPluginRecord, type OrgPluginSettings, type OrgPluginState} from "@/types";
 import {db} from "@/drizzle/db";
 import {and, eq} from "drizzle-orm";
 import {AVAILABLE_PLUGINS} from "@/plugins/registry";
+import {decrypt_plugin_credentials, mask_plugin_settings} from "@/lib/plugin-encryption";
 
 export const db_get_job_automation_rules = async (jobId: number, orgId: string): Promise<AutomationRule[]> => {
     const rows = await db
@@ -114,8 +115,24 @@ export const deleteJobAutomationRule = async (jobId: number, ruleId: string, org
 // ─────────────────────────────────────────────────────────────────────────────
 // PLUGINS QUERIES
 // ─────────────────────────────────────────────────────────────────────────────
-export async function db_get_org_plugin_state(orgId: string): Promise<OrgPluginState> {
-    const record = await db_get_organization_plugins(orgId);
+//
+// Credentials in the `plugins` JSON column are stored ENCRYPTED at rest
+// (AES-256-GCM, `enc:v1:` prefix — see src/lib/plugin-encryption.ts).
+// Two read shapes exist and must not be confused:
+//
+//   • db_get_org_plugin_state / db_get_organization_plugins — SERVER-ONLY.
+//     Credentials are DECRYPTED (point of use): the BullMQ worker, the
+//     server-side plugin init, and server actions that send email with the
+//     org's Resend key. Never return these to the client.
+//   • db_get_org_plugin_state_for_client — CLIENT-FACING. Credentials are
+//     MASKED (`••••` + last 4). This is the only shape server actions may
+//     return to the browser.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const build_org_plugin_state = (
+    record: OrgPluginRecord,
+    transform_settings: (settings: OrgPluginSettings) => OrgPluginSettings,
+): OrgPluginState => {
     const enabled = record.enabled ?? [];
 
     const flags: Record<string, boolean>  = {};
@@ -129,11 +146,12 @@ export async function db_get_org_plugin_state(orgId: string): Promise<OrgPluginS
         if (isEnabled) {
             installed.push({
                 ...manifest,
-                settings: {
+                settings: transform_settings({
                     active:      true,
                     credentials: settings?.credentials ?? {},
                     config:      settings?.config      ?? {},
-                },
+                    enabledIntegrations: settings?.enabledIntegrations ?? {},
+                }),
             });
         }
     }
@@ -141,51 +159,58 @@ export async function db_get_org_plugin_state(orgId: string): Promise<OrgPluginS
     return { flags, installed };
 }
 
-export async function db_get_organization_plugins(orgId: string): Promise<OrgPluginRecord> {
-    // TODO: replace with real DB call
-    // For demo purposes, return a record with some plugins enabled
+// SERVER-ONLY: installed plugins with DECRYPTED credentials, for the worker
+// and server-side plugin init / email sends. Never return to the client.
+export async function db_get_org_plugin_state(orgId: string): Promise<OrgPluginState> {
+    const record = await db_get_organization_plugins(orgId);
+    return build_org_plugin_state(record, (settings) => settings);
+}
+
+// CLIENT-FACING: same shape, but credentials are MASKED (`••••` + last 4).
+// Masking tolerates undecryptable values (generic mask), so a key-rotation
+// mishap degrades the settings display instead of bricking the page.
+export async function db_get_org_plugin_state_for_client(orgId: string): Promise<OrgPluginState> {
+    const record = await db_get_organization_plugins_raw(orgId);
+    return build_org_plugin_state(record, mask_plugin_settings);
+}
+
+// Raw read of the organization's plugins JSON column
+// ({ enabled: string[], settings: Record<pluginId, OrgPluginSettings> }).
+// Credentials are returned AS STORED (encrypted `enc:v1:` values, or legacy
+// plaintext for keys that predate encryption). Server-only.
+export async function db_get_organization_plugins_raw(orgId: string): Promise<OrgPluginRecord> {
+    const [row] = await db
+        .select({ plugins: organization.plugins })
+        .from(organization)
+        .where(eq(organization.clerk_id, orgId))
+        .limit(1);
+
+    const stored = (row?.plugins ?? {}) as Partial<OrgPluginRecord>;
+
     return {
-        enabled: ["openai-scoring", "anthropic-screening", "calendly", "checkr", "resend", "google"],
-        settings: {
-            "openai-scoring": {
-                active: true,
-                credentials: { apiKey: process.env.OPENAI_API_KEY ?? "" },
-            },
-            "anthropic-screening": {
-                active: true,
-                credentials: { apiKey: process.env.ANTHROPIC_API_KEY ?? "" },
-            },
-            "calendly": {
-                active: true,
-                credentials: { oauthToken: process.env.CALENDLY_TOKEN ?? "" },
-                config: { eventSlug: "acme-corp/interview" },
-            },
-            "checkr": {
-                active: true,
-                credentials: { apiKey: process.env.CHECKR_API_KEY ?? "" },
-                config: { packageSlug: "checkr_standard" },
-            },
-            // "slack-notify": {
-            //   active:      true,
-            //   credentials: { webhookUrl: process.env.SLACK_WEBHOOK_URL ?? "" },
-            //   config:      { channel: "#hiring" },
-            // },
-            "resend": {
-                active: true,
-                credentials: { apiKey: process.env.RESEND_API_KEY ?? "" },
-                config: {
-                    fromAddress: "atscompany@resend.dev",
-                    companyName: "ATS Company",
-                    hiringManagerEmail: "hiringmanager@example.com",
-                    recruiterEmail: "sam@example.com",
-                    offerSigningUrl: "",
-                },
-            },
-            "google": {
-                active: true,
-                credentials: { apiKey: process.env.GOOGLE_GEMINI_API_KEY ?? "" },
-            }
-        },
+        enabled: Array.isArray(stored.enabled) ? stored.enabled : [],
+        settings: (stored.settings ?? {}) as Record<string, OrgPluginSettings>,
     };
+}
+
+// SERVER-ONLY point of use: same as the raw read, with credentials DECRYPTED.
+// Legacy plaintext values (no `enc:v1:` prefix) pass through unchanged.
+// Throws on undecryptable ciphertext (wrong key / tampered value) —
+// callers that send email or dispatch integrations must fail rather than
+// run with a garbage key.
+export async function db_get_organization_plugins(orgId: string): Promise<OrgPluginRecord> {
+    const record = await db_get_organization_plugins_raw(orgId);
+
+    const settings: Record<string, OrgPluginSettings> = {};
+    for (const [pluginId, plugin_settings] of Object.entries(record.settings ?? {})) {
+        settings[pluginId] = plugin_settings.credentials
+            ? {
+                  ...plugin_settings,
+                  credentials: decrypt_plugin_credentials(plugin_settings.credentials),
+              }
+            : plugin_settings;
+    }
+
+    return { ...record, settings };
 }
 

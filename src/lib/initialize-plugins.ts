@@ -2,8 +2,12 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Called ONCE on the client from PluginSystemProvider.
 // Receives pre-filtered InstalledPlugin[] from the server action
-// (only enabled + active plugins for this org, with their saved credentials).
-// TODO: Hash the credentials before saving
+// (only enabled + active plugins for this org). Credentials arrive MASKED
+// (•••• + last 4) — the browser never holds a usable key, so client-side
+// providers can only report auth status, never execute integrations.
+// Real keys live encrypted at rest (AES-256-GCM, see
+// src/lib/plugin-encryption.ts) and are decrypted server-side only, at the
+// point of use (BullMQ worker dispatch, server-action email sends).
 // ─────────────────────────────────────────────────────────────────────────────
 import { pluginRegistry } from "./plugin-registry";
 import type { InstalledPlugin } from "@/types";

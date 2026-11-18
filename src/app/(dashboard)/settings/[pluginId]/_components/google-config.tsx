@@ -1,50 +1,76 @@
 import { useAuthenticateProvider, useProviderAuthState } from "@/hooks/use-plugin-registry";
+import { pluginRegistry } from "@/lib/plugin-registry";
 import ApiKeySection from "./shared/api-key-section";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ConfigProps } from "./shared/types";
+import { ConfigProps, mask_key_for_display } from "./shared/types";
 
-const GoogleConfig = ({ pluginId, settings }: ConfigProps) => {
+const GoogleConfig = ({ pluginId, settings, onSave }: ConfigProps) => {
     const authenticate = useAuthenticateProvider();
     const auth = useProviderAuthState("google");
     const isConnected = auth.status === "authenticated";
 
+    // apiKey holds ONLY a key the user typed this session (pending save).
+    // The stored key is never sent to the browser — settings carries a
+    // masked value (•••• + last 4), shown for display only.
     const [apiKey, setApiKey] = useState("");
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
+    const maskedKey = mask_key_for_display(settings?.credentials?.apiKey);
 
-    useEffect(() => {
-        if (settings?.credentials?.apiKey) {
-            setApiKey(settings.credentials.apiKey);
-        }
-    }, [settings]);
-
-    const handleConnect = async () => {
+    const handleConnect = async (key?: string) => {
+        // The key comes from ApiKeySection — the parent's apiKey state is
+        // still stale at click time (setState hasn't re-rendered yet).
+        const apiKeyToUse = (key ?? apiKey).trim();
+        if (!apiKeyToUse) return;
         try {
-            await authenticate("google", { apiKey: apiKey });
+            await authenticate("google", { apiKey: apiKeyToUse });
             // auth.status is now "authenticated" — badge updates automatically
             // because authenticate() calls pluginRegistry.stateManager.setState()
             // which triggers useSyncExternalStore re-renders everywhere
+            // Persist the verified credentials for the session org.
+            // (Encrypted server-side on save; the parent adopts the masked
+            // settings the server returns.)
+            await onSave({ ...settings, active: true, credentials: { apiKey: apiKeyToUse } });
+            setApiKey("");
         } catch (e) {
-            // auth.status is now "error", auth.error has the 
+            // auth.status is now "error", auth.error has the
             const error = e as Error;
             console.error(error);
         }
     };
 
     const handleDisconnect = async () => {
-        setApiKey("");
-        await authenticate("google", { apiKey: apiKey });
+        try {
+            setApiKey("");
+            await pluginRegistry.getProvider("google")?.deauthenticate();
+            // Clear the stored credentials for the session org.
+            await onSave({ ...settings, active: false, credentials: {} });
+        } catch (e) {
+            console.error("Failed to disconnect Google", e);
+        }
     };
 
     // ── Save ───────────────────────────────────────────────────────────────────
     const handleSave = async () => {
         setSaving(true);
         try {
-            // Real: await savePluginSettings("resend", { credentials: { apiKey }, config, enabledIntegrations })
-            await new Promise(r => setTimeout(r, 700));
+            // Only send credentials when the user typed a NEW key — otherwise
+            // omit them and the server preserves the stored (encrypted) key.
+            // (Sending the masked display value back would be useless; the
+            // server also refuses to overwrite a stored key with a mask.)
+            const next_settings: typeof settings = { ...settings, active: true };
+            if (apiKey.trim()) {
+                next_settings.credentials = { apiKey: apiKey.trim() };
+            } else {
+                delete next_settings.credentials;
+            }
+            await onSave(next_settings);
+            setApiKey("");
             setSaved(true);
             setTimeout(() => setSaved(false), 2500);
+        } catch (e) {
+            console.error("Failed to save Google settings", e);
         } finally {
             setSaving(false);
         }
@@ -124,6 +150,7 @@ const GoogleConfig = ({ pluginId, settings }: ConfigProps) => {
                     {/* Sections */}
                     <ApiKeySection
                         apiKey={apiKey}
+                        maskedKey={maskedKey}
                         onApiKeyChange={setApiKey}
                         auth={auth}
                         onConnect={handleConnect}

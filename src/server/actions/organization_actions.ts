@@ -4,9 +4,9 @@ import { z } from "zod";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import {
-  canCreateJob,
   canInviteMember,
   hasPermission,
+  requirePermission,
 } from "../permissions";
 import {
   create_organization,
@@ -14,6 +14,8 @@ import {
   get_organization_by_id,
   update_organization_plugins,
   get_organization_by_subdomain,
+  check_organization_subdomain,
+  db_get_org_members,
   toggle_organization_plugin,
   update_organization_general_settings,
 } from "../queries";
@@ -24,6 +26,8 @@ import {
   inviteMemberSchema,
   organizationSchema,
 } from "@/zod";
+import { mask_org_plugin_record } from "@/lib/plugin-encryption";
+import type { OrgPluginRecord } from "@/types";
 
 export const create_organization_invite = async (
   unsafeData: z.infer<typeof inviteMemberSchema>
@@ -42,12 +46,17 @@ export const create_organization_invite = async (
     throw new Error("Cannot invite members to another organization");
   }
 
+  // Invitees land on onboarding after accepting (Clerk rejects an empty
+  // redirectUrl, so build a real app URL; override via NEXT_PUBLIC_APP_URL).
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL ??
+    `https://app.${process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "aplico.online"}`;
   const response = await client.organizations.createOrganizationInvitation({
     organizationId: orgId,
     inviterUserId: userId,
     emailAddress: data.emailAddress,
     role: "org:member",
-    redirectUrl: "",
+    redirectUrl: `${appUrl}/onboarding`,
   });
 
   return response.id;
@@ -71,9 +80,11 @@ export const add_department_in_organization = async (
 ) => {
   const { userId, orgId } = await auth();
   const { success, data } = await departmentSchema.spa(unsafeData);
-  const canCreate = await canCreateJob();
+  // Departments are org structure — managing them is a settings action,
+  // not a job action.
+  await requirePermission("settings:manage");
 
-  if (!userId || !orgId || !success || !canCreate) {
+  if (!userId || !orgId || !success) {
     throw new Error("You are not authorized to update departments");
   }
 
@@ -90,6 +101,11 @@ export const get_organization_by_subdomain_action = async (
 /**
  * Plugin reads always use the active Clerk organization from the session.
  * The optional `_clientOrgId` argument is ignored (kept for call-site compatibility).
+ *
+ * Credentials are MASKED (`••••` + last 4) before returning — this action
+ * is client-callable, so full keys must never leave the server here.
+ * Server-side consumers that need usable keys use
+ * db_get_organization_plugins (decrypted) directly.
  */
 export const get_organization_plugins = async (_clientOrgId?: string) => {
   const { userId, orgId } = await auth();
@@ -99,7 +115,8 @@ export const get_organization_plugins = async (_clientOrgId?: string) => {
   }
 
   const org = await get_organization_by_id(orgId);
-  return org[0]?.plugins || { enabled: [], settings: {} };
+  const plugins = (org[0]?.plugins ?? { enabled: [], settings: {} }) as OrgPluginRecord;
+  return mask_org_plugin_record(plugins);
 };
 
 /**
@@ -206,10 +223,31 @@ export const update_general_settings_action = async (
     throw new Error(parsed.error.issues[0]?.message ?? "Invalid settings");
   }
 
+  // Subdomain uniqueness: no OTHER org may hold this subdomain.
+  // (Defense-in-depth — update_organization_general_settings enforces the
+  // same check at the query layer, and the column has a unique constraint.)
+  const holders = await check_organization_subdomain(parsed.data.subdomain);
+  if (holders.some((h) => h.id !== orgId)) {
+    throw new Error("This career-page subdomain is already taken");
+  }
+
   await update_organization_general_settings(orgId, parsed.data);
 
   revalidatePath("/settings/general-settings");
   revalidatePath("/settings/organization");
 
   return { success: true };
+};
+
+/**
+ * Members of the session org, for @mention pickers.
+ * Session orgId only — the list is the membership join table, never client input.
+ */
+export const get_org_members_action = async () => {
+  const { userId, orgId } = await auth();
+  if (!userId || !orgId) {
+    throw new Error("Unauthorized");
+  }
+
+  return db_get_org_members(orgId);
 };

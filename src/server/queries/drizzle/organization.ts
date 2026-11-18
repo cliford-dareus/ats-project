@@ -1,10 +1,17 @@
 import { z } from "zod";
 import { db } from "@/drizzle/db";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { GeneralSettingsUpdate } from "@/types";
 import { departmentSchema, organizationSchema } from "@/zod";
-import { departments, org_to_department, organization } from "@/drizzle/schema";
+import { departments, org_to_department, organization, organization_member, users_table } from "@/drizzle/schema";
 import { CACHE_TAGS, dbCache, getGlobalTag, getIdTag, revalidateDbCache } from "@/lib/cache";
+import {
+    encrypt_org_plugin_record_credentials,
+    is_plugin_encryption_error,
+    mask_plugin_settings,
+    resolve_saved_plugin_credentials,
+} from "@/lib/plugin-encryption";
+import type { OrgPluginRecord, OrgPluginSettings } from "@/types";
 
 export const create_organization = async (data: z.infer<typeof organizationSchema>) => {
     const result = await db.insert(organization).values({
@@ -13,7 +20,7 @@ export const create_organization = async (data: z.infer<typeof organizationSchem
         subdomain: data.subdomain
     }).$returningId();
 
-    revalidateDbCache({ tag: CACHE_TAGS.organizations });
+    revalidateDbCache({ tag: CACHE_TAGS.organizations, orgId: data.clerk_id });
     return result;
 };
 
@@ -28,26 +35,71 @@ export const update_organization_plugins = async (orgId: string, pluginId: strin
             return { error: "Organization not found" };
         };
 
-        const pluginsData = result[0].plugins as { enabled: string[]; settings?: object };
-        const updatedSettings = settings ? settings : pluginsData.settings;
+        const pluginsData = result[0].plugins as OrgPluginRecord;
+        const existing_settings = (pluginsData.settings?.[pluginId] ?? {}) as OrgPluginSettings;
+        const incoming_settings = (settings ?? {}) as Partial<OrgPluginSettings>;
 
-        const updatedPlugins = {
+        // Credentials are resolved, never stored raw:
+        //  • absent in `incoming` → stored (encrypted) values preserved
+        //    (config-only saves, active toggles);
+        //  • masked echoes (`••••…`) → stored value preserved (the client
+        //    only ever sees masked values, so it echoes them back);
+        //  • new plaintext → AES-256-GCM encrypted — this THROWS when
+        //    PLUGIN_ENCRYPTION_KEY is missing/malformed, so a new key is
+        //    never stored plaintext (re-thrown below, not swallowed);
+        //  • empty object + active === false (disconnect) → cleared.
+        // Merging with the stored settings (instead of replacing them)
+        // also means a save can no longer wipe config/credentials the
+        // client didn't send.
+        const next_settings: OrgPluginSettings = {
+            ...existing_settings,
+            ...incoming_settings,
+            credentials: resolve_saved_plugin_credentials(
+                existing_settings.credentials,
+                incoming_settings.credentials,
+                { clear_on_empty: incoming_settings.active === false },
+            ),
+        };
+        if (next_settings.credentials === undefined) {
+            delete next_settings.credentials;
+        }
+
+        const updatedPlugins: OrgPluginRecord = {
             ...pluginsData,
             settings: {
                 ...pluginsData.settings,
-                [pluginId]: updatedSettings,
+                [pluginId]: next_settings,
             },
         };
 
+        // Lazy migration: one re-save re-encrypts any remaining legacy
+        // plaintext credentials across the whole org blob. Best-effort —
+        // a missing key must not block this save (the plugin being saved
+        // already threw above if IT needed the key).
+        let plugins_to_store = updatedPlugins;
+        try {
+            plugins_to_store = encrypt_org_plugin_record_credentials(updatedPlugins);
+        } catch (error) {
+            console.warn(
+                "[plugin-encryption] Lazy migration skipped for org plugin blob:",
+                error,
+            );
+        }
+
         await db
             .update(organization)
-            .set({ plugins: updatedPlugins })
+            .set({ plugins: plugins_to_store })
             .where(eq(organization.clerk_id, orgId));
 
         revalidateDbCache({ tag: CACHE_TAGS.organizations, id: orgId });
 
-        return { message: "Success" };
+        // Return the saved settings MASKED so the client can adopt them
+        // without a just-typed key lingering in browser state.
+        return { message: "Success", settings: mask_plugin_settings(next_settings) };
     } catch (error) {
+        // Encryption failures fail LOUDLY: re-throw so the server action
+        // surfaces the real reason instead of a generic error.
+        if (is_plugin_encryption_error(error)) throw error;
         console.error('Error toggling plugin:', error);
         return { error: "Internal server error" };
     }
@@ -63,7 +115,7 @@ export const toggle_organization_plugin = async (orgId: string, enabled: boolean
             return { error: "Organization not found" };
         }
 
-        const pluginsData = org[0].plugins as { enabled: string[]; settings: any };
+        const pluginsData = org[0].plugins as OrgPluginRecord;
         const updatedEnabled = enabled
             ? [...new Set([...pluginsData.enabled, pluginId])] // install extension
             : pluginsData.enabled.filter((id: string) => id !== pluginId); // uninstall extension
@@ -72,15 +124,29 @@ export const toggle_organization_plugin = async (orgId: string, enabled: boolean
             ? { ...pluginsData.settings, [pluginId]: { ...pluginsData.settings[pluginId], ...config, active: true } }
             : { ...pluginsData.settings, [pluginId]: { ...pluginsData.settings[pluginId], active: false } };
 
-        const updatedPlugins = {
+        const updatedPlugins: OrgPluginRecord = {
             ...pluginsData,
             enabled: updatedEnabled,
             settings: updatedSettings,
         };
 
+        // Toggle never introduces new credentials (install passes no
+        // config today; keys are only set via the encrypting save path),
+        // so this is just the lazy migration pass — best-effort, never
+        // blocks an install/uninstall when the key is unconfigured.
+        let plugins_to_store = updatedPlugins;
+        try {
+            plugins_to_store = encrypt_org_plugin_record_credentials(updatedPlugins);
+        } catch (error) {
+            console.warn(
+                "[plugin-encryption] Lazy migration skipped for org plugin blob:",
+                error,
+            );
+        }
+
         await db
             .update(organization)
-            .set({ plugins: updatedPlugins })
+            .set({ plugins: plugins_to_store })
             .where(eq(organization.clerk_id, orgId));
 
         revalidateDbCache({ tag: CACHE_TAGS.organizations, id: orgId });
@@ -119,7 +185,7 @@ export const add_department_in_organization = async (data: z.infer<typeof depart
             };
         };
 
-        revalidateDbCache({ tag: CACHE_TAGS.departments });
+        revalidateDbCache({ tag: CACHE_TAGS.departments, orgId: org[0].clerk_id });
     });
 };
 
@@ -195,7 +261,6 @@ export const update_organization_general_settings = async (orgId: string, data: 
         .where(eq(organization.clerk_id, orgId));
 
     revalidateDbCache({ tag: CACHE_TAGS.organizations, id: orgId });
-    revalidateDbCache({ tag: CACHE_TAGS.organizations });
 
     return { success: true };
 };
@@ -238,4 +303,45 @@ export const check_organization_subdomain = async (subdomain: string) => {
         .where(eq(organization.subdomain, subdomain));
 
     return existingSubdomain;
+};
+
+// ── Org members (for @mentions) ───────────────────────────────────────────────
+// Membership is the source of truth for who can be mentioned / notified:
+// only users with a row in organization_member for this org are returned.
+export const db_get_org_members = async (orgId: string) => {
+    return db
+        .select({
+            id: users_table.id,
+            name: users_table.name,
+            email: users_table.email,
+            username: users_table.username,
+            image_url: users_table.image_url,
+        })
+        .from(organization_member)
+        .innerJoin(users_table, eq(organization_member.user_id, users_table.id))
+        .where(eq(organization_member.organization_id, orgId))
+        .orderBy(users_table.name);
+};
+
+// Same as above, restricted to the given user ids — used to verify a
+// client-supplied mention list against real org membership.
+export const db_get_org_members_by_ids = async (orgId: string, userIds: string[]) => {
+    if (userIds.length === 0) return [];
+
+    return db
+        .select({
+            id: users_table.id,
+            name: users_table.name,
+            email: users_table.email,
+            username: users_table.username,
+            image_url: users_table.image_url,
+        })
+        .from(organization_member)
+        .innerJoin(users_table, eq(organization_member.user_id, users_table.id))
+        .where(
+            and(
+                eq(organization_member.organization_id, orgId),
+                inArray(organization_member.user_id, userIds),
+            ),
+        );
 };

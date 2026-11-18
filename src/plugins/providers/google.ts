@@ -51,6 +51,13 @@ class ResumeScoreIntegration implements ATSIntegration {
             return { success: false, error: "No resume file URL found" };
         }
 
+        // Server-only lib (R2 + Gemini with server credentials) — dynamically
+        // imported so the client-side plugin registry never bundles it. This
+        // runs in the BullMQ worker, where there is no user session; the
+        // plugin authenticates with its own API key from its installed
+        // settings, so no session auth applies here.
+        const { score_resume } = await import("@/server/resume-processing");
+
         const res = await score_resume(
             fileUrl,
             context.job?.job_name ?? "",
@@ -85,7 +92,7 @@ class ResumeScoreIntegration implements ATSIntegration {
 // ── Provider ──────────────────────────────────────────────────────────────────
 import { ATSIntegration, ATSPluginProvider } from "@/lib/plugin-interfaces";
 import { pluginRegistry } from "@/lib/plugin-registry";
-import { score_resume } from "@/server/actions/resume-actions";
+import { verifyGoogle } from "@/server/actions/plugin-actions";
 import { ATSContext, ATSIntegrationResult, InstalledPlugin, PluginAuthState, PluginCapability, SmartTrigger, TriggerEvent } from "@/types";
 
 export class GoogleProvider implements ATSPluginProvider {
@@ -115,12 +122,18 @@ export class GoogleProvider implements ATSPluginProvider {
         this.authState = { status: "authenticating" };
         pluginRegistry.stateManager.setState(this.id, this.authState);
         try {
-            // Validate key: fetch https://api.openai.com/v1/models
+            // Validate: GET https://generativelanguage.googleapis.com/v1beta/models
+            // (returns 200 if the Gemini key is valid). Previously this
+            // accepted ANY non-empty key without checking it — the stale
+            // comment even pointed at the OpenAI models endpoint.
+            const result = await verifyGoogle(credentials.apiKey);
+            if (!result.success) throw new Error(result.message);
+
             this.apiKey = credentials.apiKey;
             this.authState = { status: "authenticated", credentials };
             pluginRegistry.stateManager.setState(this.id, this.authState);
         } catch (e) {
-            this.authState = { status: "error", error: String(e) };
+            this.authState = { status: "error", error: (e as Error).message };
             pluginRegistry.stateManager.setState(this.id, this.authState);
             throw e;
         }
