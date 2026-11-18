@@ -9,6 +9,7 @@ import CommunicationTemplates from "./communication-templates";
 import ComposeEmailDialog from "./compose-email-dialog";
 import { CustomTabsTrigger, Tabs, TabsContent, TabsList } from "@/components/ui/tabs";
 import { CandidateType, EmailTemplateDTO, ThreadItem } from "@/types";
+import { MentionUser } from "@/components/mentions-text-area";
 
 type Props = {
     templates: EmailTemplateDTO[];
@@ -21,6 +22,7 @@ type Props = {
     }[];
     logs: ThreadItem[];
     candidates: CandidateType[];
+    users: MentionUser[];
 };
 
 type TabValue = "inbox" | "templates";
@@ -30,7 +32,8 @@ const CommunicationPageClient = ({
     logs,
     candidates,
     templates,
-    systemTemplates
+    systemTemplates,
+    users
 }: Props) => {
     const pathname = usePathname();
     const router = useRouter();
@@ -77,21 +80,7 @@ const CommunicationPageClient = ({
                 </div>
 
                 <TabsContent value="inbox">
-                    <CommunicationInbox logs={logs} templates={templates} systemTemplates={systemTemplates} users={[{
-                        id: "user_abc",
-                        name: "Cliford Dareus",
-                        username: "cliford",
-                        email: "cliford@example.com",
-                        image_url: null,
-                    },
-                    {
-                        id: "user_xyz",
-                        name: "Sarah Chen",
-                        username: "sarah",
-                        email: "sarah@example.com",
-                        image_url: null,
-                    },
-                    ]} />
+                    <CommunicationInbox logs={logs} templates={templates} systemTemplates={systemTemplates} users={users} />
                 </TabsContent>
 
                 <TabsContent value="templates">

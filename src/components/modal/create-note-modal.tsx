@@ -1,12 +1,12 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { create_note } from "@/server/queries/mongo/note";
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormField, FormItem, FormControl } from '../ui/form';
-import { Input } from '../ui/input';
 import { Command, Send } from "lucide-react";
+import { MentionTextarea, type MentionRef, type MentionUser } from "@/components/mentions-text-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
     Dialog,
@@ -26,6 +26,13 @@ export const noteSchema = z.object({
     note_type: z.string().min(1).max(100),
     candidate_id: z.number(),
     type: z.enum(NOTE_ENUM).optional(),
+    // Structured @mentions picked in the composer — re-verified against org
+    // membership server-side before they are persisted or notified.
+    mentions: z.array(z.object({
+        userId: z.string().min(1),
+        name: z.string().min(1),
+        username: z.string().optional(),
+    })).optional().default([]),
 });
 
 type Props = {
@@ -33,10 +40,13 @@ type Props = {
     setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
     parent_id: number;
     parent_type: string;
-    candidate_id: number;
+    candidate_id: number | undefined;
+    users: MentionUser[];
 };
 
-const CreateNoteModal = ({ parent_id, parent_type, isOpen, setIsOpen, candidate_id }: Props) => {
+const CreateNoteModal = ({ parent_id, parent_type, isOpen, setIsOpen, candidate_id, users }: Props) => {
+    const [mentions, setMentions] = useState<MentionRef[]>([]);
+
     const form = useForm<z.infer<typeof noteSchema>>({
         resolver: zodResolver(noteSchema),
         defaultValues: {
@@ -44,13 +54,23 @@ const CreateNoteModal = ({ parent_id, parent_type, isOpen, setIsOpen, candidate_
             note_id: parent_type + "_" + parent_id,
             note_type: parent_type,
             type: "NEUTRAL",
+            mentions: [],
         },
     });
 
     const addNote = async (data: z.infer<typeof noteSchema>) => {
+        if (candidate_id == null) {
+            console.error("Cannot create note: no candidate selected");
+            return;
+        }
         try {
-            const response = await create_note({ ...data, candidate_id });
+            const response = await create_note({ ...data, candidate_id, mentions });
             console.log(response);
+            if (typeof response === "string") {
+                form.reset();
+                setMentions([]);
+                setIsOpen(false);
+            }
         } catch (error) {
             console.log(error);
         }
@@ -66,8 +86,8 @@ const CreateNoteModal = ({ parent_id, parent_type, isOpen, setIsOpen, candidate_
                         <Command />
                     </div>
                     <div className="">
-                        <DialogTitle className="text-2xl uppercase">Edit Job</DialogTitle>
-                        <DialogDescription>Complete each step to create a candidate!</DialogDescription>
+                        <DialogTitle className="text-2xl uppercase">Add Note</DialogTitle>
+                        <DialogDescription>Leave an internal note. Type @ to mention a teammate.</DialogDescription>
                     </div>
                 </DialogHeader>
 
@@ -105,25 +125,27 @@ const CreateNoteModal = ({ parent_id, parent_type, isOpen, setIsOpen, candidate_
                                 render={({ field }) => (
                                     <FormItem className="flex-1">
                                         <FormControl>
-                                            <Input
-                                                type="text"
-                                                placeholder="Quick note..."
-                                                {...field}
-                                                className="w-full pl-4 pr-10 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
+                                            <MentionTextarea
+                                                value={field.value}
+                                                setValue={field.onChange}
+                                                onChange={field.onChange}
+                                                mentions={mentions}
+                                                onMentionsChange={setMentions}
+                                                users={users}
+                                                placeholder="Quick note... Type @ to mention someone"
+                                                className="w-full"
                                             />
                                         </FormControl>
                                     </FormItem>
                                 )}
                             />
+                            <button
+                                type="submit"
+                                className="shrink-0 self-start p-2 mt-1 text-brand-600 hover:bg-brand-50 rounded-lg transition-all disabled:opacity-30"
+                            >
+                                <Send className="w-4 h-4" />
+                            </button>
                         </div>
-
-                        <button
-                            type="submit"
-                            // disabled={!newNote.trim()}
-                            className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 text-brand-600 hover:bg-brand-50 rounded-lg transition-all disabled:opacity-30"
-                        >
-                            <Send className="w-3.5 h-3.5" />
-                        </button>
                     </form>
                 </Form>
             </DialogContent>

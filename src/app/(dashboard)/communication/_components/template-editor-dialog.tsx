@@ -15,9 +15,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Save } from "lucide-react";
 import {
-    EmailTemplateDTO,
     upsertEmailTemplateAction,
 } from "@/server/actions/communication-actions";
+import type { EmailTemplateDTO } from "@/types";
 
 type Props = {
     open: boolean;
@@ -74,8 +74,8 @@ const TemplateEditorDialog = ({
                         {template ? "Edit template" : "New template"}
                     </DialogTitle>
                     <DialogDescription>
-                        Templates support placeholders like {"{{"}}candidateName{"}}"},{" "}
-                        {"{{"}}jobTitle{"}}"}, {"{{"}}companyName{"}}"}.
+                        Templates support placeholders like {"{{candidateName}}"},{" "}
+                        {"{{jobTitle}}"}, {"{{companyName}}"}.
                     </DialogDescription>
                 </DialogHeader>
 

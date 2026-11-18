@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import PluginConfigClient from "./_components/provider-config-client";
-import { getOrgPluginState } from "@/server/actions/stage_actions";
+import { getOrgPluginState } from "@/server/actions/plugin-actions";
 
 type Props = {
     params: Promise<{ pluginId: string }>;

@@ -1,4 +1,20 @@
 // src/middleware.ts
+//
+// Host routing: the marketing site lives on the apex ({root}), the product on
+// app.{root}, and each org's public career page on {subdomain}.{root}.
+// App routes are only served (and auth-protected) on the app subdomain;
+// marketing hosts redirect them to app.{root}. Public APIs (/api/webhooks,
+// /api/trigger/public, /api/organization/check) work on every host.
+//
+// Local development hosts:
+//   - Marketing:  http://aplico.localhost:3000
+//   - App:        http://app.aplico.localhost:3000
+//   - Career page: http://<subdomain>.aplico.localhost:3000
+// Setup: add `127.0.0.1 aplico.localhost app.aplico.localhost` to /etc/hosts
+// (plus any career subdomains you want to test). The local root defaults to
+// `aplico.localhost` via NEXT_PUBLIC_LOCAL_DOMAIN; production uses
+// NEXT_PUBLIC_ROOT_DOMAIN (default `aplico.online`). Bare `localhost` /
+// 127.0.0.1 bypass host routing entirely (app routes are still auth-protected).
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -29,8 +45,6 @@ const isAppRoute = createRouteMatcher([
     "/api/candidates(.*)",
     "/api/reports(.*)",
     "/api/upload(.*)",
-    "/api/organization/invite(.*)",
-    "/api/organization/join(.*)",
     "/api/revalidate-db-cache(.*)",
 ]);
 
@@ -39,18 +53,6 @@ const isPublicApi = createRouteMatcher([
     "/api/webhooks(.*)",
     "/api/trigger/public(.*)",
     "/api/organization/check(.*)",
-]);
-
-/** Marketing / auth / public candidate pages */
-const isMarketingPath = createRouteMatcher([
-    "/",
-    "/features(.*)",
-    "/pricing(.*)",
-    "/about(.*)",
-    "/contact(.*)",
-    "/sign-in(.*)",
-    "/sign-up(.*)",
-    "/interview/hold(.*)",
 ]);
 
 type HostType =
@@ -63,7 +65,6 @@ function parseHost(req: NextRequest): HostType {
     const host = req.headers.get("host") ?? "";
     const hostname = host.split(":")[0].toLowerCase();
 
-    console.log("hostname", hostname);
     if (hostname === "localhost" || hostname === "127.0.0.1") {
         return { kind: "bare_local" };
     }
@@ -72,7 +73,6 @@ function parseHost(req: NextRequest): HostType {
         hostname === ROOT_DOMAIN || hostname.endsWith(`.${ROOT_DOMAIN}`);
     const isLocal =
         hostname === LOCAL_ROOT || hostname.endsWith(`.${LOCAL_ROOT}`);
-    console.log("isProd", isProd, "isLocal", isLocal);
     if (!isProd && !isLocal) {
         return { kind: "marketing", root: ROOT_DOMAIN };
     }
@@ -84,7 +84,6 @@ function parseHost(req: NextRequest): HostType {
     }
 
     const sub = hostname.slice(0, hostname.length - root.length - 1);
-    console.log("sub", sub);
 
     if (sub === APP_SUB) return { kind: "dashboard", root };
     if (RESERVED_SUBDOMAINS.has(sub)) return { kind: "marketing", root };
@@ -119,28 +118,12 @@ function redirectToAppSubdomain(req: NextRequest, root: string) {
     if (root === ROOT_DOMAIN && process.env.NODE_ENV === "production") {
         url.protocol = "https:";
     }
-    console.log("redirectToAppSubdomain", url.toString());
-
-    return withSecurityHeaders(NextResponse.redirect(url, 308));
-}
-
-/** Build https://{root}/path — sends app-subdomain visitors back to the marketing apex */
-function redirectToMarketingApex(req: NextRequest, root: string) {
-    const url = req.nextUrl.clone();
-    const port = resolvePort(req);
-
-    url.host = port ? `${root}:${port}` : root;
-    if (root === ROOT_DOMAIN && process.env.NODE_ENV === "production") {
-        url.protocol = "https:";
-    }
-    console.log("redirectToMarketingApex", url.toString());
 
     return withSecurityHeaders(NextResponse.redirect(url, 308));
 }
 
 export default clerkMiddleware(async (auth, req) => {
     const host = parseHost(req);
-    console.log("host", host);
     // Public APIs work on every host
     if (isPublicApi(req)) {
         return withSecurityHeaders(NextResponse.next());
@@ -160,12 +143,11 @@ export default clerkMiddleware(async (auth, req) => {
                 return withSecurityHeaders(NextResponse.next());
             }
             // Marketing/auth pages (sign-in, sign-up, pricing, etc.) don't
-            // live on app.*; send visitors back to the apex instead of
-            // looping on the app host. "/" is allowed through as a landing
-            // fallback so app.{root} never hard-404s.
-            // if (isMarketingPath(req) && req.nextUrl.pathname !== "/") {
-            //     return redirectToMarketingApex(req, host.root);
-            // }
+            // live on app.* — they currently pass through here rather than
+            // redirecting to the apex. A commented-out apex redirect was
+            // removed (Nov 2026): re-enabling it would change routing
+            // behavior (e.g. sign-in on app.* would bounce to the apex),
+            // so it needs a deliberate decision + testing, not a cleanup.
             return withSecurityHeaders(NextResponse.next());
         }
 

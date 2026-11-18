@@ -14,10 +14,11 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
     deleteEmailTemplateAction,
-    EmailTemplateDTO,
     seedSystemTemplatesAction,
 } from "@/server/actions/communication-actions";
+import type { EmailTemplateDTO } from "@/types";
 import TemplateEditorDialog from "./template-editor-dialog";
+import { useHasPermission } from "@/lib/use-permission";
 
 type SystemTemplate = {
     templateId: string;
@@ -38,6 +39,8 @@ const CommunicationTemplates = ({
     systemTemplates,
     onRefresh,
 }: Props) => {
+    const hasPermission = useHasPermission();
+    const canManage = hasPermission("communication:manage");
     const [editorOpen, setEditorOpen] = useState(false);
     const [editing, setEditing] = useState<EmailTemplateDTO | null>(null);
     const [preview, setPreview] = useState<
@@ -91,16 +94,18 @@ const CommunicationTemplates = ({
                         Manage reusable messages for invites, rejections, and follow-ups.
                     </p>
                 </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" onClick={handleSeed} disabled={pending}>
-                        <Sparkles size={16} className="mr-2" />
-                        Seed system templates
-                    </Button>
-                    <Button onClick={openCreate}>
-                        <Plus size={16} className="mr-2" />
-                        New template
-                    </Button>
-                </div>
+                {canManage && (
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={handleSeed} disabled={pending}>
+                            <Sparkles size={16} className="mr-2" />
+                            Seed system templates
+                        </Button>
+                        <Button onClick={openCreate}>
+                            <Plus size={16} className="mr-2" />
+                            New template
+                        </Button>
+                    </div>
+                )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-4">
@@ -135,31 +140,33 @@ const CommunicationTemplates = ({
                                             {tpl.subject}
                                         </p>
                                     </div>
-                                    <div className="flex gap-1 shrink-0">
-                                        <Button
-                                            size="icon"
-                                            variant="ghost"
-                                            className="h-8 w-8"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                openEdit(tpl);
-                                            }}
-                                        >
-                                            <Pencil size={14} />
-                                        </Button>
-                                        <Button
-                                            size="icon"
-                                            variant="ghost"
-                                            className="h-8 w-8 text-destructive"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDelete(tpl._id);
-                                            }}
-                                            disabled={pending}
-                                        >
-                                            <Trash2 size={14} />
-                                        </Button>
-                                    </div>
+                                    {canManage && (
+                                        <div className="flex gap-1 shrink-0">
+                                            <Button
+                                                size="icon"
+                                                variant="ghost"
+                                                className="h-8 w-8"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    openEdit(tpl);
+                                                }}
+                                            >
+                                                <Pencil size={14} />
+                                            </Button>
+                                            <Button
+                                                size="icon"
+                                                variant="ghost"
+                                                className="h-8 w-8 text-destructive"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDelete(tpl._id);
+                                                }}
+                                                disabled={pending}
+                                            >
+                                                <Trash2 size={14} />
+                                            </Button>
+                                        </div>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
@@ -192,18 +199,20 @@ const CommunicationTemplates = ({
                                             {tpl.subject}
                                         </p>
                                     </div>
-                                    <Button
-                                        size="icon"
-                                        variant="ghost"
-                                        className="h-8 w-8"
-                                        title="Copy as custom template"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            copyAsCustom(tpl);
-                                        }}
-                                    >
-                                        <Copy size={14} />
-                                    </Button>
+                                    {canManage && (
+                                        <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-8 w-8"
+                                            title="Copy as custom template"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                copyAsCustom(tpl);
+                                            }}
+                                        >
+                                            <Copy size={14} />
+                                        </Button>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>

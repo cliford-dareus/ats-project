@@ -19,6 +19,9 @@ interface CommunicationLogInterface extends mongoose.Document {
     text: string;
     channel: 'Email' | 'SMS' | 'Internal Note';
     read?: boolean;
+    // Delivery outcome for outbound email replies (unset for internal notes).
+    status?: "sent" | "failed" | "pending";
+    resend_id?: string;
     error?: string;
     mentions: {
         userId: string,      // Clerk id
@@ -40,6 +43,8 @@ const CommunicationLogSchema = new mongoose.Schema<CommunicationLogInterface>(
         text: { type: String, required: true },
         channel: { type: String, required: true },
         read: { type: Boolean, default: false },
+        status: { type: String, enum: ["sent", "failed", "pending"] },
+        resend_id: { type: String },
         error: { type: String },
         mentions: { type: [] },
         mentionedUserIds: { type: [] },

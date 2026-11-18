@@ -25,6 +25,7 @@ import {
     type MentionRef,
     type MentionUser,
 } from "@/components/mentions-text-area";
+import { useHasPermission } from "@/lib/use-permission";
 
 type Props = {
     logs: ThreadItem[];
@@ -40,6 +41,8 @@ type Props = {
 };
 
 const CommunicationInbox = ({ logs, templates, systemTemplates, users }: Props) => {
+    const hasPermission = useHasPermission();
+    const canSend = hasPermission("communication:send");
     // Local, mutable copy of the threads so we can do optimistic updates.
     // Re-syncs whenever the parent gives us a fresh `logs` prop (e.g. after a refetch).
     const [threads, setThreads] = useState<ThreadItem[]>(logs);
@@ -526,7 +529,7 @@ const CommunicationInbox = ({ logs, templates, systemTemplates, users }: Props) 
 
                                 <button
                                     type="submit"
-                                    disabled={!messageText.trim()}
+                                    disabled={!messageText.trim() || !canSend}
                                     className={cn(
                                         "px-6 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 shadow-md disabled:opacity-40",
                                         composerMode === 'reply'

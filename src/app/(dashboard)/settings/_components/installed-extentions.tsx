@@ -19,10 +19,14 @@ const InstalledExtensions = ({ installed, orgId }: InstalledExtensionsProps) => 
     const [isPending, startTransition] = useTransition();
 
 
-    const onToggleActive = async (pluginId: string, currentStatus: boolean) => {
+    const onToggleActive = async (plugin: InstalledPlugin, nextActive: boolean) => {
         startTransition(async () => {
             try {
-                await update_organization_plugins_action(orgId, !currentStatus, pluginId);
+                // Flip only the active flag — merge with the stored settings so
+                // credentials/config are preserved (passing a bare boolean here
+                // used to replace the whole settings object).
+                await update_organization_plugins_action(orgId, { ...plugin.settings, active: nextActive }, plugin.id);
+                router.refresh();
             } catch (error) {
                 console.error("Failed to toggle plugin status", error);
             }
@@ -36,6 +40,7 @@ const InstalledExtensions = ({ installed, orgId }: InstalledExtensionsProps) => 
             try {
                 // Assuming false removes it or deactivates it based on your backend logic
                 await toggle_organization_plugin_action(orgId, false, pluginId);
+                router.refresh();
             } catch (error) {
                 console.error("Failed to uninstall plugin", error);
             }
@@ -66,7 +71,7 @@ const InstalledExtensions = ({ installed, orgId }: InstalledExtensionsProps) => 
                             </div>
                             <div className="flex items-center gap-2">
                                 <button
-                                    onClick={() => onToggleActive(plugin.id, !plugin.settings.active)}
+                                    onClick={() => onToggleActive(plugin, !plugin.settings.active)}
                                     className={cn(
                                         "p-2 rounded-lg transition-all",
                                         plugin.settings.active ? "bg-zinc-100 text-zinc-600 hover:bg-zinc-200" : "bg-brand-50 text-brand-600 hover:bg-brand-100"

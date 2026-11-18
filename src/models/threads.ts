@@ -13,6 +13,7 @@ interface ThreadInterface extends mongoose.Document {
     unread_count: number;
     starred: boolean;
     messages: mongoose.Schema.Types.ObjectId[];
+    notes: mongoose.Schema.Types.ObjectId[];
 }
 
 const ThreadSchema = new mongoose.Schema<ThreadInterface>({
@@ -27,6 +28,7 @@ const ThreadSchema = new mongoose.Schema<ThreadInterface>({
     unread_count: { type: Number, default: 0 },
     starred: { type: Boolean, default: false },
     messages: [{ type: mongoose.Schema.Types.ObjectId, ref: "CommunicationLog" }],
+    notes: [{ type: mongoose.Schema.Types.ObjectId, ref: "Note" }],
 });
 
 ThreadSchema.index({ organization_id: 1, candidate_id: 1, createdAt: -1 });
