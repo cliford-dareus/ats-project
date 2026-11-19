@@ -25,8 +25,10 @@ const InternalNoteSection = ({ parent_type, parent_id, selectedId, candidate_id 
     useEffect(() => {
         const fetchInternalNotes = async () => {
             if (selectedId) {
-                const internalNotes = await get_application_notes({ id: selectedId, limit: 10, offset: 0 })
-                setInternalNotes(JSON.parse(internalNotes))
+                const response = await get_application_notes({ id: selectedId, limit: 10, offset: 0 })
+                const parsed = JSON.parse(response)
+                // get_application_notes returns { error: boolean, notes: NoteType[] }
+                setInternalNotes({ notes: parsed.notes || [] })
             }
         }
         fetchInternalNotes();

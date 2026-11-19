@@ -4,7 +4,7 @@ interface NoteInterface extends mongoose.Document {
     text: string;
     type: "POSITIVE" | "NEGATIVE" | "NEUTRAL";
     created_by: string;
-    author: Date;
+    author: string;
     created_at: Date;
     updated_at: Date;
     note_id: string;
@@ -29,7 +29,7 @@ const NoteSchema = new mongoose.Schema<NoteInterface>({
         username: { type: String },
     }],
     channel: { type: String, enum: ['Email', 'SMS', 'Internal Note'], required: true },
-    author: { type: Date, default: Date.now },
+    author: { type: String },
     created_at: { type: Date, default: Date.now },
     updated_at: { type: Date, default: Date.now },
 });

@@ -18,7 +18,7 @@ import { z } from "zod";
 type NoteMention = {
     userId: string;
     name: string;
-    username?: string;
+    username?: string | null;
 };
 
 type CompletedNotes = {
@@ -154,7 +154,7 @@ export const create_note = async (unsafeData: z.infer<typeof noteSchema>) => {
             return { error: true, message: "Unauthorized" };
         }
 
-        const { success, data } = await noteSchema.spa(unsafeData);
+        const { success, data } = await noteSchema.safeParse(unsafeData);
         // Notes attach to candidates — gate on candidate:edit. There is no
         // note-specific permission yet; do not use canCreateJob here.
         const canCreate = await canEditCandidate();
@@ -179,6 +179,7 @@ export const create_note = async (unsafeData: z.infer<typeof noteSchema>) => {
             organization_id: orgId,
             channel: 'Internal Note',
             created_by: user[0].id,
+            author: user[0].name,
         });
 
         // check if the candidate already has a thread with the organization
@@ -256,6 +257,12 @@ export const get_candidate_notes = async (parent_id: string) => {
         }).sort({ created_at: -1 });
         for (const note of notes) {
             const copy = { ...note._doc };
+            if (!copy.author) {
+                const user = await db.select().from(usersTable).where(eq(usersTable.id, note.created_by));
+                if (user.length) {
+                    copy.author = user[0].name;
+                }
+            }
             completeNotes.push(copy);
         }
         return JSON.stringify(completeNotes);
@@ -285,8 +292,12 @@ export const get_application_notes = async ({ id, limit, offset }: { id: number,
         const notes = await Note.find({ note_id: note_id }).limit(limit).skip(offset).sort({ created_at: -1 });
         for (const note of notes) {
             const copy = { ...note._doc };
-            const user = await db.select().from(usersTable).where(eq(usersTable.id, note.created_by))
-            copy.author = user[0].name;
+            if (!copy.author) {
+                const user = await db.select().from(usersTable).where(eq(usersTable.id, note.created_by));
+                if (user.length) {
+                    copy.author = user[0].name;
+                }
+            }
             completeNotes.push(copy);
         };
 

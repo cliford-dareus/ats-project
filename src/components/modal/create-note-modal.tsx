@@ -31,7 +31,7 @@ export const noteSchema = z.object({
     mentions: z.array(z.object({
         userId: z.string().min(1),
         name: z.string().min(1),
-        username: z.string().optional(),
+        username: z.string().nullable().optional(),
     })).optional().default([]),
 });
 
@@ -64,6 +64,7 @@ const CreateNoteModal = ({ parent_id, parent_type, isOpen, setIsOpen, candidate_
             return;
         }
         try {
+            // Use mentions from MentionTextarea state, not the form's default empty array
             const response = await create_note({ ...data, candidate_id, mentions });
             console.log(response);
             if (typeof response === "string") {
