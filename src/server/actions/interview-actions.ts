@@ -7,7 +7,7 @@ import { auth } from "@clerk/nextjs/server";
 import { newInterviewSchema } from "@/zod";
 import InterviewHoldTemplate from "@/emails/interview_hold_template";
 import { sendEmail } from "@/lib/resend";
-import { check_rate_limit, get_client_ip } from "@/lib/rate-limit";
+import { rate_limit, get_client_ip } from "@/lib/rate-limit";
 import {
     create_interview_db,
     create_interview_hold_db,
@@ -71,8 +71,8 @@ const HOLD_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 async function check_hold_action_rate_limit(token: string): Promise<boolean> {
     const ip = await get_client_ip();
     return (
-        check_rate_limit(`hold:ip:${ip}`, 60, HOLD_RATE_LIMIT_WINDOW_MS) &&
-        check_rate_limit(`hold:token:${token}`, 10, HOLD_RATE_LIMIT_WINDOW_MS)
+        await rate_limit(`hold:ip:${ip}`, 60, HOLD_RATE_LIMIT_WINDOW_MS) &&
+        await rate_limit(`hold:token:${token}`, 10, HOLD_RATE_LIMIT_WINDOW_MS)
     );
 }
 
@@ -481,7 +481,7 @@ export const get_hold_public_details_action = async (token: string) => {
     // invalid one 404s), so rate-limit them per IP; a limited load looks
     // exactly like an invalid token.
     const ip = await get_client_ip();
-    if (!check_rate_limit(`hold:page:${ip}`, 60, HOLD_RATE_LIMIT_WINDOW_MS)) {
+    if (!rate_limit(`hold:page:${ip}`, 60, HOLD_RATE_LIMIT_WINDOW_MS)) {
         return null;
     }
 
@@ -490,11 +490,12 @@ export const get_hold_public_details_action = async (token: string) => {
 
     return {
         candidate_name: row.candidate_name,
+        company_name: row.organization,
         job_name: row.job_name,
         start_at: row.start_at,
         end_at: row.end_at,
         type: row.type,
-        locations: row.locations,
+        location: row.locations,
         hold_status: row.hold_status,
         hold_expires_at: row.hold_expires_at,
         expired:

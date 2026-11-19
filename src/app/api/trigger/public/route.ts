@@ -8,7 +8,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import {enqueueTrigger} from "@/lib/enqueue-trigger";
-import { check_rate_limit } from "@/lib/rate-limit";
+import { rate_limit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -80,7 +80,7 @@ function isRateLimited(req: NextRequest): boolean {
     const ip = forwarded?.split(",")[0]?.trim()
         || req.headers.get("x-real-ip")
         || "unknown";
-    return !check_rate_limit(`trigger-public:${ip}`, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS);
+    return !rate_limit(`trigger-public:${ip}`, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS);
 }
 
 function verifySecret(req: NextRequest): boolean {

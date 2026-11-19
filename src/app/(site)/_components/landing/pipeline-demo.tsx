@@ -24,7 +24,7 @@ interface TourProps {
 
 export const PipelineDemo: React.FC<TourProps> = ({ onOpenDemo }) => {
     const [activeTab, setActiveTab] = useState<'pipeline' | 'screening' | 'holds' | 'emails'>('pipeline');
-    const [selectedJob, setSelectedJob] = useState(MOCK_JOBS[0]);
+    const [selectedJob, _] = useState(MOCK_JOBS[0]);
     const [candidates, setCandidates] = useState(INITIAL_CANDIDATES);
     const [selectedCandidate, setSelectedCandidate] = useState(INITIAL_CANDIDATES[0]);
     const [holdPlaced, setHoldPlaced] = useState(true);

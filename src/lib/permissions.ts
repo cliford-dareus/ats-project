@@ -24,7 +24,9 @@ export type Permission =
     | "plugin:manage"
     | "member:invite"
     | "member:manage"
-    | "member:view";
+    | "member:view"
+    | "note:create"
+    ;
 
 export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     "org:admin": [

@@ -9,11 +9,11 @@ const buckets = new Map<string, Bucket>();
 const MAX_BUCKETS = 10_000;
 
 /** Fixed-window rate limit. Returns true when the attempt is allowed. */
-export function check_rate_limit(
+export async function rate_limit(
     key: string,
     limit: number,
     window_ms: number
-): boolean {
+): Promise<boolean> {
     const now = Date.now();
     const bucket = buckets.get(key);
 

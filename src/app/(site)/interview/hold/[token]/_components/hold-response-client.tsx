@@ -9,7 +9,7 @@ import {
 } from "@/server/actions/interview-actions";
 
 type Details = {
-  candidate_first_name: string | null;
+  candidate_name: string | null;
   company_name: string | null;
   job_name: string | null;
   start_at: Date | string | null;
@@ -101,7 +101,7 @@ const HoldResponseClient = ({
           {details.job_name || "Interview"}
         </h1>
         <p className="mt-1 text-sm text-zinc-400">
-          Hi {details.candidate_first_name || "there"} — confirm to lock this slot.
+          Hi {details.candidate_name || "there"} — confirm to lock this slot.
         </p>
       </div>
 

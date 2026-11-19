@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { check_organization_subdomain } from "@/server/queries/drizzle/organization";
 import { subdomainSchema } from "@/zod";
-import { client_ip, rate_limit } from "@/lib/rate-limit";
+import { get_client_ip, rate_limit } from "@/lib/rate-limit";
 
 export async function GET(req: NextRequest) {
-    const limited = await rate_limit(`subdomain-check:${await client_ip()}`, 60, 60);
-    if (!limited.ok) {
+    const limited = await rate_limit(`subdomain-check:${await get_client_ip()}`, 60, 60);
+    if (!limited) {
         return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 

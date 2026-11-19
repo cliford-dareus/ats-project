@@ -343,4 +343,10 @@ export const generalSettingsSchema = z.object({
         .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use lowercase letters, numbers, and hyphens only"),
 });
 
+export const subdomainSchema = z
+    .string()
+    .min(3, "Subdomain must be at least 3 characters")
+    .max(63)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use lowercase letters, numbers, and hyphens only");
+
 export type GeneralSettingsInput = z.infer<typeof generalSettingsSchema>;
