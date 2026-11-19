@@ -3,6 +3,7 @@
 import { ArrowLeft, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import OnboardingLayout from "./onboarding-layout";
+import { Button } from "@/components/ui/button";
 
 // Joining an organization is by invitation only: an org admin invites the
 // user by email (a Clerk organization invitation, sent via the
@@ -20,23 +21,26 @@ const JoinOrganization = () => {
             icon={Users}
         >
             <div className="space-y-6">
-                <div className="p-6 bg-brand-50 rounded-[32px] border border-brand-100 text-center space-y-2">
-                    <p className="text-brand-600 text-sm font-bold">Ask an admin to invite you</p>
-                    <p className="text-brand-400 text-xs">Once they send the invitation, accept it from the email and you&apos;ll be added to their organization.</p>
+                <div className="p-6 bg-primary/10 rounded-[32px] border border-border text-center space-y-2">
+                    <p className="text-primary text-sm font-bold">Ask an admin to invite you</p>
+                    <p className="text-muted-foreground text-xs">Once they send the invitation, accept it from the email and you&apos;ll be added to their organization.</p>
                 </div>
                 <div className="flex gap-3">
-                    <button
+                    <Button
+                        variant="outline"
+                        size="icon"
                         onClick={() => router.push("/onboarding?step=organization")}
-                        className="p-4 bg-zinc-100 text-zinc-600 rounded-2xl hover:bg-zinc-200 transition-all"
+                        className="h-12 w-12 shrink-0 rounded-xl"
+                        aria-label="Back"
                     >
-                        <ArrowLeft className="w-6 h-6" />
-                    </button>
-                    <button
+                        <ArrowLeft className="w-5 h-5" />
+                    </Button>
+                    <Button
                         onClick={() => router.push("/onboarding?step=create")}
-                        className="flex-1 py-4 bg-zinc-900 text-white rounded-2xl font-bold hover:bg-zinc-800 transition-all"
+                        className="h-12 flex-1 rounded-xl text-base font-semibold"
                     >
                         Create an Organization Instead
-                    </button>
+                    </Button>
                 </div>
             </div>
         </OnboardingLayout>

@@ -2,11 +2,13 @@
 
 import { create_organization_action } from "@/server/actions/organization_actions";
 import { useOrganizationList } from "@clerk/nextjs";
-import { ArrowLeft, Plus } from "lucide-react";
+import { AlertCircle, ArrowLeft, CheckCircle2, Loader2, Plus, XCircle } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import OnboardingLayout from "./onboarding-layout";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ROOT_DOMAIN } from "@/lib/marketing";
 
 const CreateOrganization = () => {
     const router = useRouter();
@@ -63,24 +65,23 @@ const CreateOrganization = () => {
 
                 await setActive({ organization: newOrg.id });
 
-                const result = await create_organization_action({
+                // this will handle in the webhook 'organization.created'
+                await create_organization_action({
                     clerk_id: newOrg.id,
                     name: newOrg.name,
                     subdomain: slug.toLowerCase(),
                 });
-                if (!result.success) {
-                    setError(result.error);
-                    return;
-                }
 
                 const newSearchParams = new URLSearchParams(searchParams);
                 newSearchParams.set("step", "department");
                 newSearchParams.set("orgId", newOrg.id);
                 newSearchParams.set("orgName", newOrg.name);
+                newSearchParams.set("subdomain", slug.toLowerCase());
 
                 router.push(`/onboarding?${newSearchParams.toString()}`);
             } catch (err) {
-                setError(err instanceof Error ? err.message : "Failed to create organization");
+                console.error("Failed to create organization:", err);
+                setError("Something went wrong while creating your organization. Please try again.");
             }
         });
     }, [isValid, createOrganization, displayName, slug, setActive, searchParams, router]);
@@ -103,46 +104,74 @@ const CreateOrganization = () => {
             title="Create Organization"
             subtitle="Enter your organization name to get started."
             icon={Plus}
-            colorClass="bg-emerald-50 text-emerald-600"
         >
             <div className="space-y-6">
-                <div className="space-y-4 flex items-center gap-2">
-                    <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider ml-1">Company Name</label>
-                        <input
-                            type="text"
-                            placeholder="e.g. Acme Corp"
-                            value={displayName}
-                            onChange={handleInputChange}
-                            className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20"
-                        />
-                    </div>
-
-                    <span className="font-mono text-emerald-600 font-medium">
-                        .{process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "aplico.online"}
-                    </span>
+                <div className="space-y-1.5">
+                    <label htmlFor="company-name" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Company Name</label>
+                    <Input
+                        id="company-name"
+                        type="text"
+                        placeholder="e.g. Acme Corp"
+                        value={displayName}
+                        onChange={handleInputChange}
+                        className="h-12 rounded-xl"
+                    />
                 </div>
+
+                {slug.length > 0 && (
+                    <p className="text-sm text-muted-foreground">
+                        Your career page:{" "}
+                        <span className="font-mono text-foreground">
+                            {slug}.{ROOT_DOMAIN}
+                        </span>
+                    </p>
+                )}
 
                 {/* Status Indicator */}
-                <div className="mt-2 text-sm">
-                    {loading && <p className="text-gray-500">Checking availability...</p>}
-                    {isAvailable === true &&
-                        <p className="text-green-600">✓ This URL is available!</p>}
-                    {isAvailable === false &&
-                        <p className="text-red-600">✗ Sorry, that name is taken.</p>}
-                    {error && <p className="text-red-600">{error}</p>}
+                <div className="text-sm">
+                    {loading && (
+                        <p className="text-muted-foreground flex items-center gap-2">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Checking availability...
+                        </p>
+                    )}
+                    {isAvailable === true && (
+                        <p className="text-primary flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4" />
+                            This URL is available!
+                        </p>
+                    )}
+                    {isAvailable === false && (
+                        <p className="text-destructive flex items-center gap-2">
+                            <XCircle className="w-4 h-4" />
+                            Sorry, that name is taken.
+                        </p>
+                    )}
                 </div>
 
+                {error && (
+                    <p role="alert" className="text-sm text-destructive flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        {error}
+                    </p>
+                )}
+
                 <div className="flex gap-3 pt-2">
-                    <Button className="p-4 bg-zinc-100 text-zinc-600 rounded-2xl hover:bg-zinc-200 transition-all">
-                        <ArrowLeft className="w-6 h-6" />
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => router.push("/onboarding?step=organization")}
+                        className="h-12 w-12 shrink-0 rounded-xl"
+                        aria-label="Back"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
                     </Button>
                     <Button
                         onClick={onCreated}
-                        disabled={isCreatePending}
-                        className="flex-1 py-4 bg-zinc-900 text-white rounded-2xl font-bold hover:bg-zinc-800 disabled:opacity-50 transition-all"
+                        disabled={!isValid || isCreatePending}
+                        className="h-12 flex-1 rounded-xl text-base font-semibold"
                     >
-                        Create & Continue
+                        {isCreatePending ? "Creating..." : "Create & Continue"}
                     </Button>
                 </div>
             </div>

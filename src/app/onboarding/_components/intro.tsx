@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import OnboardingLayout from "./onboarding-layout";
+import { Button } from "@/components/ui/button";
 import { ArrowRight, Briefcase, Globe, Users, Zap } from "lucide-react";
 
 const Intro = () => {
@@ -9,8 +10,8 @@ const Intro = () => {
 
     return (
         <OnboardingLayout
-            title="Welcome to TalentPortal"
-            subtitle="The all-in-one platform to manage your recruitment pipeline and build your company culture."
+            title="Welcome to Applico"
+            subtitle="Hiring in sequence, not in chaos. Post jobs, track candidates, and schedule interviews — all in one place."
             icon={Zap}
         >
             <div className="space-y-4">
@@ -20,19 +21,19 @@ const Intro = () => {
                         { icon: Users, text: "Track candidates throughout the pipeline" },
                         { icon: Globe, text: "Build a beautiful career page in minutes" }
                     ].map((item, i) => (
-                        <div key={i} className="flex items-center gap-3 p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
-                            <item.icon className="w-5 h-5 text-zinc-400" />
-                            <span className="text-sm font-medium text-zinc-700">{item.text}</span>
+                        <div key={i} className="flex items-center gap-3 p-4 bg-muted rounded-2xl border border-border">
+                            <item.icon className="w-5 h-5 text-muted-foreground" />
+                            <span className="text-sm font-medium text-foreground">{item.text}</span>
                         </div>
                     ))}
                 </div>
-                <button
+                <Button
                     onClick={() => router.push("/onboarding?step=organization")}
-                    className="w-full py-4 bg-zinc-900 text-white rounded-2xl font-bold hover:bg-zinc-800 transition-all flex items-center justify-center gap-2 group"
+                    className="h-12 w-full rounded-xl text-base font-semibold group"
                 >
                     Get Started
                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </button>
+                </Button>
             </div>
         </OnboardingLayout>
     );

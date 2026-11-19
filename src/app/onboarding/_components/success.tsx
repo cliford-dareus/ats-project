@@ -1,17 +1,20 @@
-import { redirect, useRouter } from "next/navigation";
-import { useEffect, useTransition } from "react";
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import OnboardingLayout from "./onboarding-layout";
-import { CheckCircle2, Zap } from "lucide-react";
+import { Check, CheckCircle2, Copy, Globe } from "lucide-react";
+import { get_app_url, ROOT_DOMAIN } from "@/lib/marketing";
 
-const Success = ({ orgId }: { orgId: string | null }) => {
+type Props = {
+    orgId: string | null;
+    orgName: string | null;
+    subdomain: string | null;
+};
+
+const Success = ({ orgId, orgName, subdomain }: Props) => {
     const router = useRouter();
-    const [, startTransition] = useTransition();
-
-    const onFinish = () => {
-        startTransition(() => {
-            redirect(`http://app.localhost:3000/dashboard`);
-        });
-    };
+    const [copied, setCopied] = useState(false);
 
     useEffect(() => {
         if (!orgId) {
@@ -19,30 +22,65 @@ const Success = ({ orgId }: { orgId: string | null }) => {
         }
     }, [router, orgId]);
 
+    const careerUrl = subdomain ? `https://${subdomain}.${ROOT_DOMAIN}` : null;
+
+    const copyCareerUrl = async () => {
+        if (!careerUrl) return;
+        try {
+            await navigator.clipboard.writeText(careerUrl);
+            setCopied(true);
+        } catch {
+            setCopied(false);
+        }
+    };
+
     return (
         <OnboardingLayout
             title="You're all set!"
-            subtitle="Your organization is ready. Start by posting your first job opening."
+            subtitle={
+                orgName
+                    ? `${orgName} is ready. Start by posting your first job opening.`
+                    : "Your organization is ready. Start by posting your first job opening."
+            }
             icon={CheckCircle2}
-            colorClass="bg-emerald-50 text-emerald-600"
         >
             <div className="space-y-4">
-                <div className="w-full aspect-video bg-zinc-50 rounded-[32px] border border-zinc-100 flex items-center justify-center p-8 text-center relative overflow-hidden group">
-                    <div className="absolute inset-0 bg-gradient-to-br from-brand-500/5 to-transparent"></div>
-                    <div className="relative space-y-2">
-                        <div className="w-12 h-12 bg-white rounded-xl shadow-lg border border-zinc-100 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                            <Zap className="w-6 h-6 text-brand-500" />
+                {careerUrl && (
+                    <div className="p-4 bg-muted rounded-2xl border border-border space-y-2">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                            <Globe className="w-4 h-4" />
+                            Your career page
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <p className="flex-1 min-w-0 truncate text-sm font-medium text-foreground">
+                                {careerUrl}
+                            </p>
+                            <button
+                                type="button"
+                                onClick={copyCareerUrl}
+                                aria-label={copied ? "Copied" : "Copy career page URL"}
+                                className="h-9 w-9 shrink-0 inline-flex items-center justify-center rounded-lg border border-border bg-background text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                            >
+                                {copied ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4" />}
+                            </button>
                         </div>
-                        <p className="font-bold text-zinc-900">Get 10x more applicants</p>
-                        <p className="text-xs text-zinc-500">Share your career portal on LinkedIn and Twitter with one click.</p>
+                        <p className="text-xs text-muted-foreground">
+                            {copied ? "Copied to clipboard." : "Share this link so candidates can find your open roles."}
+                        </p>
                     </div>
-                </div>
-                <button
-                    onClick={onFinish}
-                    className="w-full py-4 bg-zinc-900 text-white rounded-2xl font-bold hover:bg-zinc-800 transition-all"
+                )}
+                <a
+                    href={`${get_app_url()}/dashboard`}
+                    className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-primary px-4 text-base font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
                 >
-                    Take me to Dashboard
-                </button>
+                    Go to Dashboard
+                </a>
+                <a
+                    href={`${get_app_url()}/jobs/new`}
+                    className="inline-flex h-12 w-full items-center justify-center rounded-xl border border-border bg-background px-4 text-base font-semibold text-foreground hover:bg-muted transition-colors"
+                >
+                    Post your first job
+                </a>
             </div>
         </OnboardingLayout>
     );

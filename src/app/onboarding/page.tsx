@@ -7,15 +7,16 @@ const Page = async () => {
     const { userId } = await auth();
 
     if (!userId) {
-        redirect("/signin");
+        redirect("/sign-in");
     }
 
     return (
-        <div className="h-screen w-full rounded-md relative antialiased">
-            <div className="flex-1 relative z-10 min-h-screen flex flex-col items-center justify-center p-6">
+        <div className="relative min-h-screen w-full bg-background antialiased">
+            {/* Subtle top glow, token-based so it works in light and dark mode */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-primary/[0.07] to-transparent" />
+            <div className="relative z-10 flex min-h-screen flex-col items-center justify-center p-6 py-12">
                 <Onboarding userId={userId} />
             </div>
-            {/*<BackgroundBeams />*/}
         </div>
     );
 };
