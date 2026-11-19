@@ -1,3 +1,4 @@
+"use server"
 // ─────────────────────────────────────────────────────────────────────────────
 // Resume processing — pure server-only logic (NOT server actions).
 //

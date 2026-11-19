@@ -1,6 +1,4 @@
-import { link } from "node:fs/promises";
 import { z } from "zod";
-
 export const JOB_STAGES = z.enum(['New Candidate', 'Screening', 'Phone Interview', 'Interview', 'Offer', 'Applied', 'Drafted'] as const);
 export const FILE_TYPES = ['RESUME', 'COVER_LETTER', 'OFFER_LETTER', "OTHER"] as const;
 
@@ -40,7 +38,7 @@ export const jobFormSchema = z.object({
         job_effective_date: z.date().optional(),
         job_agency: z.string().optional(),
     }),
-    userId: z.number().nullish(),
+    userId: z.string().nullish(),
 });
 
 export const updateJobListingSchema = z.object({

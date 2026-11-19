@@ -33,7 +33,7 @@ export const getAuthOrThrow = getAuthContext;
 export const hasPermission = async (permission: Permission): Promise<boolean> => {
     const { userId, orgId, orgRole } = await auth();
     if (!userId || !orgId) return false;
-    return role_has_permission(orgRole, permission);
+    return role_has_permission(orgRole!, permission);
 };
 
 /**
@@ -42,7 +42,7 @@ export const hasPermission = async (permission: Permission): Promise<boolean> =>
  */
 export const requirePermission = async (permission: Permission): Promise<OrgContext> => {
     const ctx = await getAuthContext();
-    if (!role_has_permission(ctx.orgRole, permission)) {
+    if (!await role_has_permission(ctx.orgRole!, permission)) {
         throw new AuthzError(`Missing permission: ${permission}`, 403);
     }
     return ctx;
@@ -56,7 +56,6 @@ export const canEditJob = () => hasPermission("job:edit");
 export const canDeleteJob = () => hasPermission("job:delete");
 export const canViewJob = () => hasPermission("job:view");
 
-export const canViewCandidate = () => hasPermission("candidate:view");
 export const canCreateCandidate = () => hasPermission("candidate:create");
 export const canEditCandidate = () => hasPermission("candidate:edit");
 export const canEvaluateCandidate = () => hasPermission("candidate:evaluate");
@@ -67,7 +66,7 @@ export const canEditApplication = () => hasPermission("application:edit");
 export const canMoveApplication = () => hasPermission("application:move");
 
 export const canScheduleInterview = () => hasPermission("interview:schedule");
-export const canManageInterviews = () => hasPermission("interview:manage");
+// export const canManageInterviews = () => hasPermission("interview:manage");
 
 export const canGenerateReport = () => hasPermission("report:generate");
 export const canViewReport = () => hasPermission("report:view");
@@ -78,7 +77,6 @@ export const canManageMember = () => hasPermission("member:manage");
 // ── Tenant ownership assertions ────────────────────────────────────────────────
 // Each throws a 404-style AuthzError so cross-tenant probes can't tell
 // "exists in another org" from "doesn't exist".
-
 export const assertJobBelongsToOrg = async (jobId: number, orgId: string) => {
     const [job] = await db
         .select({ id: job_listings.id, name: job_listings.name, subdomain: job_listings.subdomain })

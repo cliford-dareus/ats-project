@@ -1,7 +1,9 @@
 import StepThreeForm from "@/app/(dashboard)/jobs/new/_component/forms/step-three-form";
 import { HasPermission } from "@/components/has-permission";
+import { get_users } from "./_actions";
 
-export default function Page() {
+export default async function Page() {
+    const users = await get_users();
     return (
         <HasPermission permission="job:create" renderFallback fallbackText="You need permission to create job listings to use the job wizard.">
             <div className="py-8">
@@ -10,7 +12,7 @@ export default function Page() {
                     <h1 className="text-3xl font-bold text-gray-900 uppercase leading-none">Hiring Workflow</h1>
                     <p className="text-zinc-500">Design your hiring pipeline and interview process</p>
                 </div>
-                <StepThreeForm/>
+                <StepThreeForm users={users}/>
             </div>
         </HasPermission>
     );

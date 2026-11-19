@@ -56,7 +56,7 @@ export async function send_hold_email(input: HoldEmailInput) {
         toName: input.candidate.name ?? undefined,
         subject: rendered.subject,
         text: rendered.text,
-        type: "interview_hold",
+        type: input.type ?? "interview_hold",
         templateId: rendered.templateId,
         candidateId: input.candidate.id ?? undefined,
         sentBy: input.sender?.userId,

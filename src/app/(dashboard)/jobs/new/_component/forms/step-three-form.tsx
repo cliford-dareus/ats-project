@@ -6,11 +6,10 @@ import React, { useActionState, useEffect, useState } from "react";
 import { stepThreeFormAction } from "@/app/(dashboard)/jobs/new/step-three/_actions";
 import { JOB_ENUM, jobStageSchema } from "@/zod";
 import { z } from "zod";
-import { Plus, X, Users, Settings, Workflow, GripVertical } from "lucide-react";
+import { Plus, X, Users, Settings, Workflow, GripVertical, Building2 } from "lucide-react";
 import { useNewJobContext } from "@/providers/new-job-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -47,7 +46,7 @@ const JOB_STAGES = [
     'Drafted'
 ];
 
-const StepThreeForm = () => {
+const StepThreeForm = ({ users }: { users: { id: number; organization_id: string; name: string | null }[] }) => {
     const [currentStages, setCurrentStages] = useState<z.infer<typeof jobStageSchema>[]>([]);
     const [, formAction] = useActionState(stepThreeFormAction, initialState);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -212,16 +211,29 @@ const StepThreeForm = () => {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="stage_assign_to" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Assign To</Label>
-                                        <Input
-                                            id="stage_assign_to"
-                                            placeholder="e.g. HR Manager, Engineering Team"
-                                            value={newStage.stage_assign_to}
-                                            onChange={(e) => setNewStage({
+                                        <Label htmlFor="stage_assign_to" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                                            <Building2 size={16} className="inline mr-1" />
+                                            Department
+                                        </Label>
+                                        <Select
+                                            name="stage_assign_to"
+                                            onValueChange={(value) => setNewStage({
                                                 ...newStage,
-                                                stage_assign_to: e.target.value
+                                                stage_assign_to: value
                                             })}
-                                        />
+                                            value={newStage.stage_assign_to}
+                                        >
+                                            <SelectTrigger className="h-11">
+                                                <SelectValue placeholder="Select department" />
+                                            </SelectTrigger>
+                                            <SelectContent id="stage_assign_to">
+                                                {users.map((user) => (
+                                                    <SelectItem key={user.id} value={String(user.id) || ''}>
+                                                        {user.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </div>
 
                                     <div className="space-y-2">

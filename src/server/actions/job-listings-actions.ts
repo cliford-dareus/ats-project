@@ -17,16 +17,19 @@ import {assertJobBelongsToOrg, canViewJob, getAuthOrThrow, requirePermission} fr
 const jobIdSchema = z.number();
 
 // TODO: Fix validation later
-export const create_job_action = async (unsafeData: z.infer<typeof jobFormSchema>) => {
+export const create_job_action = async (
+    unsafeData: z.infer<typeof jobFormSchema>, 
+    opts?: { status?: "OPEN" | "CLOSED" | "DRAFT" | "ARCHIVED" | "PENDING" }
+) => {
     // const { success, data } = await jobFormSchema.spa(unsafeData);
     // if (!success) {
     //     return { error: true, message: "There was an error creating your product" }
     // }
 
-    await requirePermission("job:create");
+    const { userId } = await requirePermission("job:create");
     console.log('Job created:');
 
-    const {id} = await create_job_listing(unsafeData);
+    const {id} = await create_job_listing({...unsafeData, userId: String(userId), ...opts});
     redirect(`/jobs/${id}`);
 };
 

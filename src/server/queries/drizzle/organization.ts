@@ -295,6 +295,29 @@ export const get_org_departments_db = async (org_id: string) => {
         .leftJoin(departments, eq(departments.id, org_to_department.department_id));
 };
 
+export const get_oganization_users = async (org_id: string) => { 
+    const cacheFn = dbCache(get_org_departments_db, {
+        tags: [getIdTag(org_id, CACHE_TAGS.departments)]
+    });
+
+    return cacheFn(org_id);
+};
+
+export const get_oganization_users_db = async (org_id: string) => {
+   // return the user with their details
+   return await db.select({
+        id: users_table.id,
+        name: users_table.name,
+        email: users_table.email,
+        username: users_table.username,
+        image_url: users_table.image_url,
+    })
+        .from(organization_member)
+        .innerJoin(users_table, eq(organization_member.user_id, users_table.id))
+        .where(eq(organization_member.organization_id, org_id))
+        .orderBy(users_table.name);
+};
+
 // Helper functions
 export const check_organization_subdomain = async (subdomain: string) => {
     const existingSubdomain = await db
@@ -303,6 +326,14 @@ export const check_organization_subdomain = async (subdomain: string) => {
         .where(eq(organization.subdomain, subdomain));
 
     return existingSubdomain;
+};
+
+export const ensure_organization_row = async (orgId: string, subdomain?: string) => {
+    const existing = await db.select().from(organization).where(and(eq(organization.clerk_id, orgId), ...(subdomain ? [eq(organization.subdomain, subdomain)] : []))).limit(1);
+    // if (!existing.length) {
+    //     throw new Error("Organization not found");
+    // }
+    return existing[0];
 };
 
 // ── Org members (for @mentions) ───────────────────────────────────────────────

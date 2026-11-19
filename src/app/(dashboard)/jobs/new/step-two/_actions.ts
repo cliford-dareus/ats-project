@@ -1,8 +1,8 @@
 'use server';
 
-import {stepTwoSchema} from '@/zod';
-import {FormErrors} from "@/types";
-import {redirect} from 'next/navigation';
+import { stepTwoSchema } from '@/zod';
+import { FormErrors } from "@/types";
+import { redirect } from 'next/navigation';
 
 export const stepTwoFormAction = async (
     prevState: FormErrors | undefined,

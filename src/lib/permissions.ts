@@ -63,3 +63,7 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
         "report:view",
     ],
 };
+
+export const role_has_permission = async (role: string, permission: Permission) => { 
+    return ROLE_PERMISSIONS[role]?.includes(permission) ?? false;
+};

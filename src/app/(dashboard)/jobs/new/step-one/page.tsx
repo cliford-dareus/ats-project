@@ -1,16 +1,9 @@
 import StepOneForm from "../_component/forms/step-one-form";
-import {auth} from "@clerk/nextjs/server";
 import {get_dept} from "@/app/(dashboard)/jobs/new/step-one/_actions";
 import { HasPermission } from "@/components/has-permission";
 
 export default async function Page() {
-    const {userId, orgId} = await auth();
-    if (!userId && !orgId) {
-        return
-    }
-
     const departments = await get_dept();
-
     return (
         <HasPermission permission="job:create" renderFallback fallbackText="You need permission to create job listings to use the job wizard.">
             <div className="py-8 w-full h-full">
@@ -23,7 +16,7 @@ export default async function Page() {
                         Let&#39;s start with the basic information about your job opening
                     </p>
                 </div>
-                <StepOneForm orgId={orgId as string} departments={departments}/>
+                <StepOneForm orgId={departments[0].organization_id as string} departments={departments}/>
             </div>
         </HasPermission>
     );

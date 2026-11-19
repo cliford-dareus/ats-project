@@ -1,9 +1,8 @@
 'use server';
 
 import { FormErrors } from "@/types";
-import { create_job_action } from "@/server/actions/job-listings-actions";
-import { create_job_listing } from "@/server/queries/drizzle/job-listings";
 import { redirect } from "next/navigation";
+import { create_job_action } from "@/server/actions/job-listings-actions";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { auth } from "@clerk/nextjs/server";
 import { canCreateJob } from "@/server/permissions";
@@ -66,7 +65,7 @@ export const stepReviewFormAction = async (
                 job_effective_date: new Date(),
                 job_agency: ""
             },
-            userId: 1
+            userId: String(userId),
         };
         // Create the job listing
         await create_job_action(completeJobData);
@@ -74,7 +73,6 @@ export const stepReviewFormAction = async (
         console.log(completeJobData);
         // The create_job_action will handle the redirect
         return undefined;
-
     } catch (error) {
         console.error('Error creating job listing:', error);
         return {
@@ -114,7 +112,7 @@ export const saveDraftAction = async (prevState: FormErrors | undefined, formDat
             return { general: "Give the job a name before saving a draft." };
         }
 
-        await create_job_listing({
+        await create_job_action({
             jobInfo: {
                 ...jobInfo,
                 job_description: jobInfo.job_description || "",
@@ -128,7 +126,7 @@ export const saveDraftAction = async (prevState: FormErrors | undefined, formDat
                 job_effective_date: new Date(),
                 job_agency: ""
             },
-            userId: 1
+            userId: ""
         }, { status: "DRAFT" });
 
         redirect('/jobs?tab=drafts');

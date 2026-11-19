@@ -15,6 +15,13 @@
       "when": 1792525395713,
       "tag": "0001_interview_hold_hardening",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1795049785672,
+      "tag": "0002_slim_pretty_boy",
+      "breakpoints": true
     }
   ]
 }

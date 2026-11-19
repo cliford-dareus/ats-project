@@ -35,7 +35,7 @@ const Layout = async ({ children }: Props) => {
     }
 
     // Session org is authoritative; make sure its local row exists.
-    await ensure_organization_row(orgId, orgSlug ?? "", orgSlug ?? "");
+    await ensure_organization_row(orgId, orgSlug ?? "");
 
     return (
         <div className="min-h-screen">

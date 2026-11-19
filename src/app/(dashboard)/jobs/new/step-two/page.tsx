@@ -1,7 +1,7 @@
 import StepTwoForm from "../_component/forms/step-two-form";
 import { HasPermission } from "@/components/has-permission";
 
-export default function Page() {
+export default async function Page() {
     return (
         <HasPermission permission="job:create" renderFallback fallbackText="You need permission to create job listings to use the job wizard.">
             <div className="py-8">
@@ -11,7 +11,7 @@ export default function Page() {
                     <p className="text-zinc-500">Define the skills and experience needed for this role</p>
                 </div>
                 <StepTwoForm/>
-            </div>
+            </div>  
         </HasPermission>
     );
 };

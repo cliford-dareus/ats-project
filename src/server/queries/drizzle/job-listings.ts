@@ -29,7 +29,10 @@ interface FilterInterface extends z.infer<typeof filterJobSchema> {
     organization: string;
 };
 
-export const create_job_listing = async (data: z.infer<typeof jobFormSchema>, opts?: { status?: "OPEN" | "CLOSED" | "DRAFT" | "ARCHIVED" | "PENDING" }) => {
+export const create_job_listing = async (
+    data: z.infer<typeof jobFormSchema>,
+    opts?: { status?: "OPEN" | "CLOSED" | "DRAFT" | "ARCHIVED" | "PENDING" }
+) => {
     return await db.transaction(async (trx) => {
         // Resolve the org's subdomain from its Clerk id — never hardcode it
         // (every job previously got subdomain "bridge" regardless of org).
@@ -111,7 +114,7 @@ export const create_job_listing = async (data: z.infer<typeof jobFormSchema>, op
                 color: item.color,
             })),
         ]);
-
+create_job_listing
         revalidateDbCache({
             tag: CACHE_TAGS.jobs,
             id: String(inserted_job.id),
