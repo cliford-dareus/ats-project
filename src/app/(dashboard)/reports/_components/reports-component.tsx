@@ -122,7 +122,7 @@ const ReportsComponent = ({ reportData }: Props) => {
             <div className="flex">
                 <Tabs className="px-0 h-full w-full" defaultValue="overview" value={activeTab}
                     onValueChange={handleTabChange}>
-                    <div className="flex items-center justify-between border-b border-zinc-200 pb-4">
+                    <div className="flex items-center justify-between border-b border-border pb-4">
                         <TabsList className="bg-transparent rounded-none p-0 border-b w-full justify-start">
                             {[
                                 { id: 'overview', label: 'Overview', icon: User },

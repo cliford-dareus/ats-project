@@ -104,92 +104,92 @@ const ReportOverview = ({ reportData }: Props) => {
                 {/* KPI Headline Cards Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                     {/* KPI 1 */}
-                    <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm space-y-3 relative overflow-hidden">
+                    <div className="bg-card rounded-2xl border border-border p-6 shadow-sm space-y-3 relative overflow-hidden">
                         <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Total Applications</span>
+                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Applications</span>
                             <div className="w-9 h-9 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center font-bold">
                                 <Users className="w-4 h-4" />
                             </div>
                         </div>
                         <div>
                             <div className="flex items-baseline gap-2">
-                                <span className="text-3xl font-extrabold text-zinc-900 tracking-tight">{summary.totalApplications}</span>
+                                <span className="text-3xl font-extrabold text-foreground tracking-tight">{summary.totalApplications}</span>
                                 <span className="text-xs font-bold text-emerald-600 flex items-center gap-0.5">
                                     <ArrowUpRight className="w-3.5 h-3.5" /> +14.2%
                                 </span>
                             </div>
-                            <p className="text-[11px] text-zinc-400 font-medium mt-1">In selected timeframe ({timeRange})</p>
+                            <p className="text-[11px] text-muted-foreground font-medium mt-1">In selected timeframe ({timeRange})</p>
                         </div>
                     </div>
 
                     {/* KPI 2 */}
-                    <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm space-y-3 relative overflow-hidden">
+                    <div className="bg-card rounded-2xl border border-border p-6 shadow-sm space-y-3 relative overflow-hidden">
                         <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Avg Time to Hire</span>
+                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Avg Time to Hire</span>
                             <div className="w-9 h-9 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center font-bold">
                                 <Clock className="w-4 h-4" />
                             </div>
                         </div>
                         <div>
                             <div className="flex items-baseline gap-2">
-                                <span className="text-3xl font-extrabold text-zinc-900 tracking-tight">{analysis.performanceMetrics.averageTimeToHire} <span className="text-lg font-bold text-zinc-500">days</span></span>
+                                <span className="text-3xl font-extrabold text-foreground tracking-tight">{analysis.performanceMetrics.averageTimeToHire} <span className="text-lg font-bold text-muted-foreground">days</span></span>
                                 <span className="text-xs font-bold text-emerald-600 flex items-center gap-0.5">
                                     <ArrowDownRight className="w-3.5 h-3.5" /> -3 days
                                 </span>
                             </div>
-                            <p className="text-[11px] text-zinc-400 font-medium mt-1">Faster than industry benchmark (28d)</p>
+                            <p className="text-[11px] text-muted-foreground font-medium mt-1">Faster than industry benchmark (28d)</p>
                         </div>
                     </div>
 
                     {/* KPI 3 */}
-                    <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm space-y-3 relative overflow-hidden">
+                    <div className="bg-card rounded-2xl border border-border p-6 shadow-sm space-y-3 relative overflow-hidden">
                         <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Offer Acceptance Rate</span>
+                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Offer Acceptance Rate</span>
                             <div className="w-9 h-9 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center font-bold">
                                 <CheckCircle2 className="w-4 h-4" />
                             </div>
                         </div>
                         <div>
                             <div className="flex items-baseline gap-2">
-                                <span className="text-3xl font-extrabold text-zinc-900 tracking-tight">{analysis.performanceMetrics.offerAcceptanceRate}%</span>
+                                <span className="text-3xl font-extrabold text-foreground tracking-tight">{analysis.performanceMetrics.offerAcceptanceRate}%</span>
                                 <span className="text-xs font-bold text-emerald-600 flex items-center gap-0.5">
                                     <ArrowUpRight className="w-3.5 h-3.5" /> +5.8%
                                 </span>
                             </div>
-                            <p className="text-[11px] text-zinc-400 font-medium mt-1">{summary.hiredCandidates} hires from 2 offers</p>
+                            <p className="text-[11px] text-muted-foreground font-medium mt-1">{summary.hiredCandidates} hires from 2 offers</p>
                         </div>
                     </div>
 
                     {/* KPI 4 */}
-                    <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm space-y-3 relative overflow-hidden">
+                    <div className="bg-card rounded-2xl border border-border p-6 shadow-sm space-y-3 relative overflow-hidden">
                         <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Avg Cost per Hire</span>
+                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Avg Cost per Hire</span>
                             <div className="w-9 h-9 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center font-bold">
                                 <Target className="w-4 h-4" />
                             </div>
                         </div>
                         <div>
                             <div className="flex items-baseline gap-2">
-                                <span className="text-3xl font-extrabold text-zinc-900 tracking-tight">${analysis.performanceMetrics.costPerHire.toLocaleString()}</span>
+                                <span className="text-3xl font-extrabold text-foreground tracking-tight">${analysis.performanceMetrics.costPerHire.toLocaleString()}</span>
                                 <span className="text-xs font-bold text-emerald-600 flex items-center gap-0.5">
                                     <ArrowDownRight className="w-3.5 h-3.5" /> -12.4%
                                 </span>
                             </div>
-                            <p className="text-[11px] text-zinc-400 font-medium mt-1">Includes job board fees & referrals</p>
+                            <p className="text-[11px] text-muted-foreground font-medium mt-1">Includes job board fees & referrals</p>
                         </div>
                     </div>
                 </div>
 
                 {/* AI Intelligence Synthesis Section */}
-                <div className="bg-white rounded-2xl border border-zinc-200 p-8 shadow-sm space-y-6 relative overflow-hidden">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-zinc-100">
+                <div className="bg-card rounded-2xl border border-border p-8 shadow-sm space-y-6 relative overflow-hidden">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-border">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-brand-600 text-white rounded-2xl flex items-center justify-center shadow-md shadow-brand-500/20">
                                 <Sparkles className="w-5 h-5" />
                             </div>
                             <div>
                                 <h2 className="font-black tracking-tight uppercase">AI Executive Recruitment Digest</h2>
-                                <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Instant AI data synthesis of bottlenecks and channel ROI</p>
+                                <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">Instant AI data synthesis of bottlenecks and channel ROI</p>
                             </div>
                         </div>
 
@@ -213,14 +213,14 @@ const ReportOverview = ({ reportData }: Props) => {
                     </div>
 
                     {aiHealthReport ? (
-                        <div className="p-6 bg-zinc-50/80 rounded-2xl border border-zinc-200/80 prose prose-zinc max-w-none text-xs font-medium text-zinc-700 leading-relaxed">
+                        <div className="p-6 bg-muted/80 rounded-2xl border border-border/80 prose prose max-w-none text-xs font-medium text-foreground leading-relaxed">
                             {/*<ReactMarkdown>{aiHealthReport}</ReactMarkdown>*/}
                         </div>
                     ) : (
-                        <div className="p-8 bg-zinc-50/60 rounded-2xl border border-dashed border-zinc-200 text-center space-y-2">
+                        <div className="p-8 bg-muted/60 rounded-2xl border border-dashed border-border text-center space-y-2">
                             <Sparkles className="w-8 h-8 text-brand-600 mx-auto" />
-                            <h3 className="text-sm font-bold text-zinc-800">Generate AI Automated Recruitment Diagnostics</h3>
-                            <p className="text-xs text-zinc-500 max-w-lg mx-auto">
+                            <h3 className="text-sm font-bold text-foreground">Generate AI Automated Recruitment Diagnostics</h3>
+                            <p className="text-xs text-muted-foreground max-w-lg mx-auto">
                                 Click the button above to analyze hiring velocities, detect stage bottlenecks, and receive AI-backed recommendations tailored to your active open roles.
                             </p>
                         </div>
@@ -230,11 +230,11 @@ const ReportOverview = ({ reportData }: Props) => {
                 {/* Visual Charts Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Chart 1: Application Volume & Pipeline Velocity (Area Chart) */}
-                    <div className="lg:col-span-2 bg-white rounded-2xl border border-zinc-200 p-8 shadow-sm space-y-6">
+                    <div className="lg:col-span-2 bg-card rounded-2xl border border-border p-8 shadow-sm space-y-6">
                         <div className="flex items-center justify-between">
                             <div>
                                 <h3 className="font-black tracking-tight uppercase">Application Velocity & Pipeline Trend</h3>
-                                <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Monthly applicant influx vs interviews conducted and hires made</p>
+                                <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">Monthly applicant influx vs interviews conducted and hires made</p>
                             </div>
 
                             <div className="flex items-center gap-4 text-xs font-bold">
@@ -278,10 +278,10 @@ const ReportOverview = ({ reportData }: Props) => {
                     </div>
 
                     {/* Chart 2: Stage Distribution Breakdown (Pie Chart) */}
-                    <div className="bg-white rounded-2xl border border-zinc-200 p-8 shadow-sm space-y-6 flex flex-col justify-between">
+                    <div className="bg-card rounded-2xl border border-border p-8 shadow-sm space-y-6 flex flex-col justify-between">
                         <div>
                             <h3 className="font-black tracking-tight uppercase">Active Candidate Distribution</h3>
-                            <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Breakdown of candidates across pipeline stages</p>
+                            <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">Breakdown of candidates across pipeline stages</p>
                         </div>
 
                         <div className="h-56 w-full flex items-center justify-center">
@@ -311,13 +311,13 @@ const ReportOverview = ({ reportData }: Props) => {
                             {reportData.breakdown.applicationsByStage.map((item) => (
                                 <div
                                     key={item.stageName as string}
-                                    className="flex items-center justify-between p-2 rounded-xl bg-zinc-50 border border-zinc-100"
+                                    className="flex items-center justify-between p-2 rounded-xl bg-muted border border-border"
                                 >
-                                    <span className="flex items-center gap-1.5 text-zinc-600">
+                                    <span className="flex items-center gap-1.5 text-muted-foreground">
                                         <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.stageColor! }} />
                                         {item.stageName}
                                     </span>
-                                    <span className="text-zinc-900 font-extrabold">{item.count}</span>
+                                    <span className="text-foreground font-extrabold">{item.count}</span>
                                 </div>
                             ))}
                         </div>
@@ -327,11 +327,11 @@ const ReportOverview = ({ reportData }: Props) => {
                 {/* Sourcing Channels & Department Requisition Breakdown */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Sourcing Channels Bar Chart */}
-                    <div className="bg-white rounded-2xl border border-zinc-200 p-8 shadow-sm space-y-6">
+                    <div className="bg-card rounded-2xl border border-border p-8 shadow-sm space-y-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <h3 className="text-base font-bold text-zinc-900 tracking-tight">Sourcing Channel Performance</h3>
-                                <p className="text-xs text-zinc-400 font-medium">Total volume vs candidate conversion rate (%)</p>
+                                <h3 className="text-base font-bold text-foreground tracking-tight">Sourcing Channel Performance</h3>
+                                <p className="text-xs text-muted-foreground font-medium">Total volume vs candidate conversion rate (%)</p>
                             </div>
                             <Award className="w-5 h-5 text-brand-600" />
                         </div>
@@ -351,31 +351,31 @@ const ReportOverview = ({ reportData }: Props) => {
                     </div>
 
                     {/* Department Open Requisitions List */}
-                    <div className="bg-white rounded-2xl border border-zinc-200 p-8 shadow-sm space-y-6">
+                    <div className="bg-card rounded-2xl border border-border p-8 shadow-sm space-y-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <h3 className="text-base font-bold text-zinc-900 tracking-tight">Job Requisition Health</h3>
-                                <p className="text-xs text-zinc-400 font-medium">Status and applicant numbers for open positions</p>
+                                <h3 className="text-base font-bold text-foreground tracking-tight">Job Requisition Health</h3>
+                                <p className="text-xs text-muted-foreground font-medium">Status and applicant numbers for open positions</p>
                             </div>
                             <Briefcase className="w-5 h-5 text-brand-600" />
                         </div>
 
                         <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
                             {breakdown.applicationsByJob.map((job, index) => (
-                                <div key={index} className="p-4 bg-zinc-50/80 rounded-2xl border border-zinc-200/60 flex items-center justify-between gap-4">
+                                <div key={index} className="p-4 bg-muted/80 rounded-2xl border border-border/60 flex items-center justify-between gap-4">
                                     <div>
-                                        <h4 className="text-xs font-bold text-zinc-900">{job.jobTitle}</h4>
-                                        <p className="text-[11px] text-zinc-500 font-medium">{job.job_department} • {job.job_location}</p>
+                                        <h4 className="text-xs font-bold text-foreground">{job.jobTitle}</h4>
+                                        <p className="text-[11px] text-muted-foreground font-medium">{job.job_department} • {job.job_location}</p>
                                     </div>
 
                                     <div className="flex items-center gap-3">
                                         <div className="text-right">
                                             <p className="text-xs font-extrabold text-brand-700">{job.count} Applicants</p>
-                                            <p className="text-[10px] text-zinc-400 font-medium">Posted {format(job.job_created_at, 'MMM d, yyyy')}</p>
+                                            <p className="text-[10px] text-muted-foreground font-medium">Posted {format(job.job_created_at, 'MMM d, yyyy')}</p>
                                         </div>
                                         <span className={cn(
                                             "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase",
-                                            job.job_status === 'OPEN' ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-zinc-100 text-zinc-600"
+                                            job.job_status === 'OPEN' ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-muted text-muted-foreground"
                                         )}>
                                             {job.job_status}
                                         </span>
@@ -386,11 +386,11 @@ const ReportOverview = ({ reportData }: Props) => {
                     </div>
 
                     {/* Department Open Requisitions List */}
-                    <div className="bg-white rounded-2xl border border-zinc-200 p-8 shadow-sm space-y-6">
+                    <div className="bg-card rounded-2xl border border-border p-8 shadow-sm space-y-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <h3 className="text-base font-bold text-zinc-900 tracking-tight">Job Requisition Health</h3>
-                                <p className="text-xs text-zinc-400 font-medium">Status and applicant numbers for open positions</p>
+                                <h3 className="text-base font-bold text-foreground tracking-tight">Job Requisition Health</h3>
+                                <p className="text-xs text-muted-foreground font-medium">Status and applicant numbers for open positions</p>
                             </div>
                             <Briefcase className="w-5 h-5 text-brand-600" />
                         </div>

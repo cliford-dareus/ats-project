@@ -226,17 +226,17 @@ const ReportHistory = () => {
                 <CardContent>
                     {reportHistory.length === 0 ? (
                         <div className="text-center py-8">
-                            <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                            <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                             <p className="text-gray-500">No reports found</p>
-                            <p className="text-sm text-gray-400">Generated reports will appear here</p>
+                            <p className="text-sm text-muted-foreground">Generated reports will appear here</p>
                         </div>
                     ) : (
                         <div className="space-y-4">
                             {reportHistory.map((report) => (
-                                <div key={report.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                                <div key={report.id} className="border rounded-lg p-4 hover:bg-muted transition-colors">
                                     <div className="flex items-center justify-between mb-3">
                                         <div className="flex items-center space-x-3">
-                                            <FileText className="h-5 w-5 text-gray-600" />
+                                            <FileText className="h-5 w-5 text-muted-foreground" />
                                             <div>
                                                 <h4 className="font-medium text-gray-900">{report.name}</h4>
                                                 <p className="text-sm text-gray-500">
@@ -251,24 +251,24 @@ const ReportHistory = () => {
 
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
                                         <div className="flex items-center space-x-2">
-                                            <Calendar className="h-4 w-4 text-gray-400" />
-                                            <span className="text-gray-600">
+                                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                                            <span className="text-muted-foreground">
                                                 {format(report.generatedAt, 'MMM dd, yyyy')}
                                             </span>
                                         </div>
                                         <div className="flex items-center space-x-2">
-                                            <Clock className="h-4 w-4 text-gray-400" />
-                                            <span className="text-gray-600">
+                                            <Clock className="h-4 w-4 text-muted-foreground" />
+                                            <span className="text-muted-foreground">
                                                 {format(report.generatedAt, 'HH:mm')}
                                             </span>
                                         </div>
                                         <div className="flex items-center space-x-2">
-                                            <FileText className="h-4 w-4 text-gray-400" />
-                                            <span className="text-gray-600">{report.fileSize}</span>
+                                            <FileText className="h-4 w-4 text-muted-foreground" />
+                                            <span className="text-muted-foreground">{report.fileSize}</span>
                                         </div>
                                         <div className="flex items-center space-x-2">
-                                            <Download className="h-4 w-4 text-gray-400" />
-                                            <span className="text-gray-600">{report.downloadCount} downloads</span>
+                                            <Download className="h-4 w-4 text-muted-foreground" />
+                                            <span className="text-muted-foreground">{report.downloadCount} downloads</span>
                                         </div>
                                     </div>
 
@@ -323,10 +323,10 @@ const ReportHistory = () => {
                 <CardContent>
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600">Used Storage</span>
+                            <span className="text-sm text-muted-foreground">Used Storage</span>
                             <span className="text-sm font-medium">12.7 MB of 100 MB</span>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="w-full bg-muted rounded-full h-2">
                             <div className="bg-blue-600 h-2 rounded-full" style={{ width: '12.7%' }}></div>
                         </div>
                         <div className="grid grid-cols-3 gap-4 text-sm">

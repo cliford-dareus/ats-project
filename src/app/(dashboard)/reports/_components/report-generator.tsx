@@ -298,7 +298,7 @@ const ReportGenerator = () => {
                                         onClick={() => setSelectedReportType(type.id)}
                                     >
                                         <div className="flex items-center space-x-3">
-                                            <type.icon className="h-5 w-5 text-gray-600" />
+                                            <type.icon className="h-5 w-5 text-muted-foreground" />
                                             <div className="flex-1">
                                                 <p className="font-medium text-sm">{type.name}</p>
                                                 <p className="text-xs text-gray-500">{type.description}</p>
@@ -423,9 +423,9 @@ const ReportGenerator = () => {
                     <CardContent>
                         {generatedReports.length === 0 ? (
                             <div className="text-center py-8">
-                                <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                                <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                                 <p className="text-gray-500">No reports generated yet</p>
-                                <p className="text-sm text-gray-400">Generate your first report to see it here</p>
+                                <p className="text-sm text-muted-foreground">Generate your first report to see it here</p>
                             </div>
                         ) : (
                             <div className="space-y-3">
