@@ -15,7 +15,7 @@ const ApplicationsSidebar = () => {
                 { value: "NEW CANDIDATE", label: "Pending", icon: Clock, color: "bg-yellow-500", count: 5 },
                 { value: "SCREENING", label: "Screening", icon: Eye, color: "bg-blue-500", count: 3 },
                 { value: "PHONE INTERVIEW", label: "Phone Interview", icon: XCircle, color: "bg-red-500", count: 8 },
-                { value: "INTERVIEW", label: "Interview", icon: Archive, color: "bg-gray-500", count: 2 },
+                { value: "INTERVIEW", label: "Interview", icon: Archive, color: "bg-muted-foreground/50", count: 2 },
             ],
         },
         {
@@ -27,7 +27,7 @@ const ApplicationsSidebar = () => {
     ];
 
     return (
-        <aside className="flex flex-col bg-white flex-shrink-0 h-[calc(100vh-135px)]">
+        <aside className="flex flex-col bg-card flex-shrink-0 h-[calc(100vh-135px)]">
           <AppSidebarFilter config={config} />
         </aside>
     );

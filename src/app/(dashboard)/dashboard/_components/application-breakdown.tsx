@@ -54,11 +54,11 @@ const ApplicationBreakdown = ({ data, className }: Props) => {
                             value={activeStage as string}
                         >
                             <SelectTrigger
-                                className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-[11px] font-bold text-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-500/5 transition-all cursor-pointer uppercase tracking-widest"
+                                className="bg-card border border-border rounded-xl px-4 py-2 text-[11px] font-bold text-muted-foreground focus:outline-none focus:ring-4 focus:ring-blue-500/5 transition-all cursor-pointer uppercase tracking-widest"
                             >
                                 {activeStage}
                             </SelectTrigger>
-                            <SelectContent className="text-[11px] font-bold bg-white border border-slate-200 rounded-xl px-4 py-2 text-slate-600 focus:outline-none focus:ring-4 focus:ring-blue-500/5 transition-all cursor-pointer uppercase tracking-widest">
+                            <SelectContent className="text-[11px] font-bold bg-card border border-border rounded-xl px-4 py-2 text-muted-foreground focus:outline-none focus:ring-4 focus:ring-blue-500/5 transition-all cursor-pointer uppercase tracking-widest">
                                 {stages.map((stage) => (
                                     <SelectItem key={stage} value={stage as string}>{stage}</SelectItem>
                                 ))}
@@ -139,9 +139,9 @@ const ApplicationBreakdown = ({ data, className }: Props) => {
                     {data.map((item) => (
                         <div key={item.stage} className="flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.stageColor }} />
-                            <span className="text-[11px] font-bold text-slate-600">{item.stage}</span>
-                            <span className="text-[11px] font-bold text-slate-600">{item.count.toLocaleString()}</span>
-                            <span className="text-[11px] font-bold text-slate-600">{item.conversion}%</span>
+                            <span className="text-[11px] font-bold text-muted-foreground">{item.stage}</span>
+                            <span className="text-[11px] font-bold text-muted-foreground">{item.count.toLocaleString()}</span>
+                            <span className="text-[11px] font-bold text-muted-foreground">{item.conversion}%</span>
                         </div>
                     ))}
                 </div>

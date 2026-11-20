@@ -24,7 +24,7 @@ const ApplicationList = ({application, pageCount}: Props) => {
 
     return (
         <>
-            <div className="rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
+            <div className="rounded-2xl border border-border shadow-sm overflow-hidden">
                 <DataTable<ApplicationResponseType>
                     columns={columns}
                     data={application}

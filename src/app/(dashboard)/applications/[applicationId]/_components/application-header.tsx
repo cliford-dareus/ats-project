@@ -41,8 +41,8 @@ const AppicationHeader = ({ applicationResult, stages }: Props) => {
                         <AvatarFallback>CN</AvatarFallback>
                     </Avatar>
                     <div>
-                        <h2 className="text-2xl font-bold text-zinc-900 leading-tight uppercase">{applicationResult.candidate_name}</h2>
-                        <p className="text-sm text-zinc-500 font-medium">
+                        <h2 className="text-2xl font-bold text-foreground leading-tight uppercase">{applicationResult.candidate_name}</h2>
+                        <p className="text-sm text-muted-foreground font-medium">
                             Applying for <span
                                 className="text-primary font-bold uppercase">{applicationResult.job_apply}</span>
                         </p>
@@ -52,7 +52,7 @@ const AppicationHeader = ({ applicationResult, stages }: Props) => {
 
             <div className="flex items-center gap-3">
                 <button
-                    className="px-4 !py-2 border border-zinc-200 rounded-lg text-[10px] uppercase tracking-widest font-bold text-zinc-600 hover:bg-zinc-50 transition-all flex items-center gap-2">
+                    className="px-4 !py-2 border border-border rounded-lg text-[10px] uppercase tracking-widest font-bold text-muted-foreground hover:bg-muted transition-all flex items-center gap-2">
                     <MessageSquare size={14} />
                     Message
                 </button>
@@ -60,7 +60,7 @@ const AppicationHeader = ({ applicationResult, stages }: Props) => {
                 <div className="flex">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <button className="px-4 py-2 bg-primary text-white text-[10px] font-bold rounded-l-lg uppercase tracking-widest flex items-center gap-2 hover:bg-brand-primary/90 transition-colors">
+                            <button className="px-4 py-2 bg-primary text-primary-foreground text-[10px] font-bold rounded-l-lg uppercase tracking-widest flex items-center gap-2 hover:bg-brand-primary/90 transition-colors">
                                 <UserCheck size={14} />
                                 Advance
                                 <ChevronDown size={14} />

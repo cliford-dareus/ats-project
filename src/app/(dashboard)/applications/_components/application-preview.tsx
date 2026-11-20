@@ -158,10 +158,10 @@ const ApplicationPreview = ({ data, applications }: Props) => {
             <div className="px-4">
                 <div className="flex-1 overflow-y-auto space-y-4">
                     {/* Header */}
-                    <div className="bg-foreground rounded-3xl p-8 text-white relative overflow-hidden">
+                    <div className="bg-foreground text-background relative overflow-hidden">
                         <div className="relative z-10 space-y-6">
                             <div className="flex items-center justify-between">
-                                <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center">
+                                <div className="w-12 h-12 bg-card/10 backdrop-blur-md rounded-xl flex items-center justify-center">
                                     <Briefcase size={24} />
                                 </div>
                                 <div className="flex flex-col items-end gap-2">
@@ -171,11 +171,11 @@ const ApplicationPreview = ({ data, applications }: Props) => {
                                     <div className="flex gap-2">
                                         <Edit3
                                             size={16}
-                                            className="text-white/40 cursor-pointer hover:text-white transition-colors"
+                                            className="text-background/40 cursor-pointer hover:text-background transition-colors"
                                         />
                                         <Share2
                                             size={16}
-                                            className="text-white/40 cursor-pointer hover:text-white transition-colors"
+                                            className="text-background/40 cursor-pointer hover:text-background transition-colors"
                                         />
                                     </div>
                                 </div>
@@ -185,7 +185,7 @@ const ApplicationPreview = ({ data, applications }: Props) => {
                                 <h3 className="text-2xl font-bold font-mono uppercase tracking-tight">
                                     {currentApplication?.candidate_name}
                                 </h3>
-                                <p className="text-xs font-bold text-white/40 uppercase tracking-widest mt-1">
+                                <p className="text-xs font-bold text-background/40 uppercase tracking-widest mt-1">
                                     Applying for{" "}
                                     <span className="uppercase text-primary">
                                         {currentApplication?.job_apply}
@@ -193,9 +193,9 @@ const ApplicationPreview = ({ data, applications }: Props) => {
                                 </p>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-y-4 pt-4 border-t border-white/10">
+                            <div className="grid grid-cols-2 gap-y-4 pt-4 border-t border-background/10">
                                 <div>
-                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">
+                                    <p className="text-[10px] font-bold text-background/40 uppercase tracking-widest">
                                         Rating
                                     </p>
                                     <div className="font-mono flex items-center gap-1">
@@ -204,7 +204,7 @@ const ApplicationPreview = ({ data, applications }: Props) => {
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">
+                                    <p className="text-[10px] font-bold text-background/40 uppercase tracking-widest">
                                         Location
                                     </p>
                                     <p className="text-sm font-bold">
@@ -212,7 +212,7 @@ const ApplicationPreview = ({ data, applications }: Props) => {
                                     </p>
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">
+                                    <p className="text-[10px] font-bold text-background/40 uppercase tracking-widest">
                                         Type
                                     </p>
                                     <p className="text-sm font-bold">{data?.type}</p>
@@ -237,7 +237,7 @@ const ApplicationPreview = ({ data, applications }: Props) => {
                                 {canMove && (
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <button className="px-4 py-2 bg-primary text-white text-[10px] font-bold rounded-l-lg uppercase tracking-widest flex items-center gap-2 hover:bg-brand-primary/90 transition-colors">
+                                        <button className="px-4 py-2 bg-primary text-primary-foreground text-[10px] font-bold rounded-l-lg uppercase tracking-widest flex items-center gap-2 hover:bg-brand-primary/90 transition-colors">
                                             <UserCheck size={14} />
                                             Advance
                                             <ChevronDown size={14} />
@@ -304,8 +304,8 @@ const ApplicationPreview = ({ data, applications }: Props) => {
 
                     {/* Quick Stats */}
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-zinc-50 p-4 rounded-2xl border border-zinc-100">
-                            <div className="flex items-center gap-2 text-zinc-400 mb-1">
+                        <div className="bg-muted p-4 rounded-2xl border border-border">
+                            <div className="flex items-center gap-2 text-muted-foreground mb-1">
                                 <Users className="w-4 h-4" />
                                 <span className="text-xs font-bold uppercase text-foreground/30 tracking-wider">
                                     Current Stage
@@ -315,8 +315,8 @@ const ApplicationPreview = ({ data, applications }: Props) => {
                                 {currentApplication?.current_stage}
                             </p>
                         </div>
-                        <div className="bg-zinc-50 p-4 rounded-2xl border border-zinc-100">
-                            <div className="flex items-center gap-2 text-zinc-400 mb-1">
+                        <div className="bg-muted p-4 rounded-2xl border border-border">
+                            <div className="flex items-center gap-2 text-muted-foreground mb-1">
                                 <Calendar className="w-4 h-4" />
                                 <span className="text-xs font-bold uppercase text-foreground/30 tracking-wider">
                                     Applied On

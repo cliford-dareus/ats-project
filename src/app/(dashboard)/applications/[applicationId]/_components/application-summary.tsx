@@ -37,10 +37,10 @@ type ApplicationSummaryProps = {
 
 export const ApplicationSummary = ({ candidate_id, resumeSummary, key_accomplishments }: ApplicationSummaryProps) => {
     return (
-        <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-zinc-100 bg-zinc-50/50 flex items-center justify-between">
+        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-border bg-muted/50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-zinc-400" />
+                    <FileText className="w-4 h-4 text-muted-foreground" />
                     <h3 className="text-[11px] font-bold text-brand-dark uppercase tracking-widest">
                         Resume Summary
                     </h3>
@@ -51,14 +51,14 @@ export const ApplicationSummary = ({ candidate_id, resumeSummary, key_accomplish
                 </button>
             </div>
             <div className="p-4">
-                <div className="prose prose-zinc prose-sm max-w-none text-zinc-600 leading-relaxed">
+                <div className="prose prose prose-sm max-w-none text-muted-foreground leading-relaxed">
                     <div className="flex gap-2 group">
                         <div className="min-w-4 h-full pt-1">
                             <GenerateFieldButton field_name="resumeSummary" candidate_id={candidate_id} />
                         </div>
                         <p>{resumeSummary}</p>
                     </div>
-                    <h4 className="text-zinc-900 font-bold mt-4 mb-2">
+                    <h4 className="text-foreground font-bold mt-4 mb-2">
                         Key Accomplishments:
                     </h4>
                     <div className="flex gap-2 group">
@@ -79,10 +79,10 @@ export const ApplicationSummary = ({ candidate_id, resumeSummary, key_accomplish
 
 export const ApplicationSoftSkills = ({ softSkills }: { softSkills: string[] }) => {
     return (
-        <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-zinc-100 bg-zinc-50/50 flex items-center justify-between">
+        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-border bg-muted/50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-zinc-400" />
+                    <FileText className="w-4 h-4 text-muted-foreground" />
                     <h3 className="text-[11px] font-bold text-brand-dark uppercase tracking-widest">
                         Soft Skills
                     </h3>
@@ -100,19 +100,19 @@ export const ApplicationSoftSkills = ({ softSkills }: { softSkills: string[] }) 
 export const ApplicationExperience = ({ experience, }: { experience: CandidateExperience[] }) => {
     return (
         <div>
-            <h4 className="text-sm font-bold text-zinc-400 uppercase tracking-widest mb-4">
+            <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-4">
                 Experience
             </h4>
             <div className="space-y-6">
                 {experience?.map((experience, index) => (
                     <div key={index} className="flex gap-4">
-                        <div className="w-10 h-10 bg-zinc-100 rounded-lg flex-shrink-0" />
+                        <div className="w-10 h-10 bg-muted rounded-lg flex-shrink-0" />
                         <div>
-                            <p className="font-bold text-zinc-900">{experience.position}</p>
-                            <p className="text-sm text-zinc-500">
+                            <p className="font-bold text-foreground">{experience.position}</p>
+                            <p className="text-sm text-muted-foreground">
                                 {experience.company} • {experience.period}
                             </p>
-                            <p className="text-sm text-zinc-600 mt-2 leading-relaxed">
+                            <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
                                 {experience.description}
                             </p>
                         </div>
@@ -128,10 +128,10 @@ export const ApplicationEducation = ({ education }: { education: CandidateEducat
         <div>
             {education.map((edu, index) => (
                 <div key={index}>
-                    <p className="font-bold text-zinc-900">{edu.school}</p>
-                    <p className="text-sm text-zinc-500">{edu.degree}</p>
-                    <p className="text-sm text-zinc-500">{edu.field_of_study}</p>
-                    <p className="text-sm text-zinc-500">{edu.graduation_date}</p>
+                    <p className="font-bold text-foreground">{edu.school}</p>
+                    <p className="text-sm text-muted-foreground">{edu.degree}</p>
+                    <p className="text-sm text-muted-foreground">{edu.field_of_study}</p>
+                    <p className="text-sm text-muted-foreground">{edu.graduation_date}</p>
                 </div>
             ))}
         </div>
@@ -149,8 +149,8 @@ export const ApplicationExperienceMatch = ({ candidate_id, experience, jobSkills
     const experienceMatch = getApplicationMatch(candidate_id, jobSkills, experience);
 
     return (
-        <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-zinc-100 bg-zinc-50/50 flex items-center justify-between">
+        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-border bg-muted/50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <TrendingUp className="w-4 h-4 text-primary" />
                     <h3 className="text-[11px] font-bold text-brand-dark uppercase tracking-widest">
@@ -170,16 +170,16 @@ export const ApplicationExperienceMatch = ({ candidate_id, experience, jobSkills
                     {experienceMatch?.skills.map((skill, index) => (
                         <div
                             key={index}
-                            className="flex items-center justify-between p-3 rounded-xl bg-zinc-50 border border-zinc-100"
+                            className="flex items-center justify-between p-3 rounded-xl bg-muted border border-border"
                         >
                             <div>
-                                <p className="text-sm font-bold text-zinc-900">{skill.name}</p>
-                                <p className="text-xs text-zinc-500">
+                                <p className="text-sm font-bold text-foreground">{skill.name}</p>
+                                <p className="text-xs text-muted-foreground">
                                     {skill.candidateYears} years exp.
                                 </p>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="text-xs font-medium text-zinc-400">
+                                <span className="text-xs font-medium text-muted-foreground">
                                     Req:{skill.requiredYears}
                                 </span>
                                 {skill.match ? (
@@ -217,8 +217,8 @@ export const EmptyApplicationSummary = ({ candidate_id }: { candidate_id: number
     return (
         <div className="col-span-2 space-y-4">
             {/* CandidateDetails Comparison Card */}
-            <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
-                <div className="p-4 border-b border-zinc-100 bg-zinc-50/50 flex items-center justify-between">
+            <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-border bg-muted/50 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <TrendingUp className="w-4 h-4 text-primary" />
                         <h3 className="text-[11px] font-bold text-brand-dark uppercase tracking-widest">
@@ -238,9 +238,9 @@ export const EmptyApplicationSummary = ({ candidate_id }: { candidate_id: number
             </div>
 
             {/* Resume Preview / Summary */}
-            <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
+            <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
                 <div className="p-4">
-                    <div className="prose prose-zinc prose-sm max-w-none text-zinc-600 leading-relaxed">
+                    <div className="prose prose prose-sm max-w-none text-muted-foreground leading-relaxed">
                         <section>
                             <h4 className="text-sm font-bold  uppercase tracking-widest mb-4 text-foreground/40 ">
                                 AI Talent Analysis
@@ -251,7 +251,7 @@ export const EmptyApplicationSummary = ({ candidate_id }: { candidate_id: number
                                 </div>
 
                                 <div className="text-center py-8">
-                                    <p className="text-zinc-600 mb-4">
+                                    <p className="text-muted-foreground mb-4">
                                         Get a deep dive into your candidate&rsquo;s profile using Gemini
                                         AI.
                                     </p>
