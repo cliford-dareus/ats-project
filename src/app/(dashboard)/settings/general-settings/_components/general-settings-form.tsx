@@ -99,10 +99,10 @@ const GeneralSettingsForm = ({ initial, rootDomain = "aplico.online" }: Props) =
         <div className="space-y-8 max-w-3xl">
             <div className="flex items-start justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-zinc-900">
+                    <h1 className="text-2xl font-bold tracking-tight text-foreground">
                         General Settings
                     </h1>
-                    <p className="text-sm text-zinc-500 mt-1">
+                    <p className="text-sm text-muted-foreground mt-1">
                         Company identity, contact details, and career-page branding for your
                         organization.
                     </p>
@@ -140,10 +140,10 @@ const GeneralSettingsForm = ({ initial, rootDomain = "aplico.online" }: Props) =
                     className="space-y-6"
                 >
                     {/* Company profile */}
-                    <section className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
-                        <div className="px-6 py-4 border-b border-zinc-100 flex items-center gap-2">
-                            <Building2 className="h-4 w-4 text-zinc-400" />
-                            <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-700">
+                    <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+                        <div className="px-6 py-4 border-b border-border flex items-center gap-2">
+                            <Building2 className="h-4 w-4 text-muted-foreground" />
+                            <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground">
                                 Company profile
                             </h2>
                         </div>
@@ -153,14 +153,14 @@ const GeneralSettingsForm = ({ initial, rootDomain = "aplico.online" }: Props) =
                                 name="name"
                                 render={({ field }) => (
                                     <FormItem className="md:col-span-2">
-                                        <FormLabel className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                                        <FormLabel className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                                             Company name
                                         </FormLabel>
                                         <FormControl>
                                             <Input
                                                 {...field}
                                                 placeholder="Acme Corp"
-                                                className="rounded-xl bg-zinc-50"
+                                                className="rounded-xl bg-muted"
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -173,7 +173,7 @@ const GeneralSettingsForm = ({ initial, rootDomain = "aplico.online" }: Props) =
                                 name="locations"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                                        <FormLabel className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                                             <MapPin className="h-3 w-3" />
                                             Headquarters
                                         </FormLabel>
@@ -181,7 +181,7 @@ const GeneralSettingsForm = ({ initial, rootDomain = "aplico.online" }: Props) =
                                             <Input
                                                 {...field}
                                                 placeholder="Miami, FL"
-                                                className="rounded-xl bg-zinc-50"
+                                                className="rounded-xl bg-muted"
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -194,7 +194,7 @@ const GeneralSettingsForm = ({ initial, rootDomain = "aplico.online" }: Props) =
                                 name="phone"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                                        <FormLabel className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                                             <Phone className="h-3 w-3" />
                                             Phone
                                         </FormLabel>
@@ -202,7 +202,7 @@ const GeneralSettingsForm = ({ initial, rootDomain = "aplico.online" }: Props) =
                                             <Input
                                                 {...field}
                                                 placeholder="305-555-0100"
-                                                className="rounded-xl bg-zinc-50"
+                                                className="rounded-xl bg-muted"
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -215,7 +215,7 @@ const GeneralSettingsForm = ({ initial, rootDomain = "aplico.online" }: Props) =
                                 name="email"
                                 render={({ field }) => (
                                     <FormItem className="md:col-span-2">
-                                        <FormLabel className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                                        <FormLabel className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                                             <Mail className="h-3 w-3" />
                                             Company email
                                         </FormLabel>
@@ -224,7 +224,7 @@ const GeneralSettingsForm = ({ initial, rootDomain = "aplico.online" }: Props) =
                                                 {...field}
                                                 type="email"
                                                 placeholder="hiring@acme.com"
-                                                className="rounded-xl bg-zinc-50"
+                                                className="rounded-xl bg-muted"
                                             />
                                         </FormControl>
                                         <FormDescription className="text-xs">
@@ -239,10 +239,10 @@ const GeneralSettingsForm = ({ initial, rootDomain = "aplico.online" }: Props) =
                     </section>
 
                     {/* Career page */}
-                    <section className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
-                        <div className="px-6 py-4 border-b border-zinc-100 flex items-center gap-2">
-                            <Globe className="h-4 w-4 text-zinc-400" />
-                            <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-700">
+                    <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+                        <div className="px-6 py-4 border-b border-border flex items-center gap-2">
+                            <Globe className="h-4 w-4 text-muted-foreground" />
+                            <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground">
                                 Career page
                             </h2>
                         </div>
@@ -252,11 +252,11 @@ const GeneralSettingsForm = ({ initial, rootDomain = "aplico.online" }: Props) =
                                 name="subdomain"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                                        <FormLabel className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                                             Subdomain
                                         </FormLabel>
                                         <FormControl>
-                                            <div className="flex rounded-xl overflow-hidden border border-zinc-200 bg-zinc-50">
+                                            <div className="flex rounded-xl overflow-hidden border border-border bg-muted">
                                                 <Input
                                                     {...field}
                                                     onChange={(e) =>
@@ -267,7 +267,7 @@ const GeneralSettingsForm = ({ initial, rootDomain = "aplico.online" }: Props) =
                                                     placeholder="acme"
                                                     className="border-0 rounded-none bg-transparent focus-visible:ring-0"
                                                 />
-                                                <div className="flex items-center px-3 text-sm text-zinc-400 border-l border-zinc-200 bg-zinc-100/80 whitespace-nowrap">
+                                                <div className="flex items-center px-3 text-sm text-muted-foreground border-l border-border bg-muted/80 whitespace-nowrap">
                                                     .{rootDomain}
                                                 </div>
                                             </div>
@@ -291,10 +291,10 @@ const GeneralSettingsForm = ({ initial, rootDomain = "aplico.online" }: Props) =
                     </section>
 
                     {/* Branding */}
-                    <section className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
-                        <div className="px-6 py-4 border-b border-zinc-100 flex items-center gap-2">
-                            <Palette className="h-4 w-4 text-zinc-400" />
-                            <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-700">
+                    <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+                        <div className="px-6 py-4 border-b border-border flex items-center gap-2">
+                            <Palette className="h-4 w-4 text-muted-foreground" />
+                            <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground">
                                 Branding
                             </h2>
                         </div>
@@ -304,7 +304,7 @@ const GeneralSettingsForm = ({ initial, rootDomain = "aplico.online" }: Props) =
                                 name="primary_color"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                                        <FormLabel className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                                             Primary color
                                         </FormLabel>
                                         <FormControl>
@@ -317,7 +317,7 @@ const GeneralSettingsForm = ({ initial, rootDomain = "aplico.online" }: Props) =
                                                             onClick={() => field.onChange(c.value)}
                                                             title={c.label}
                                                             className={`h-8 w-8 rounded-full border-2 transition ${field.value === c.value
-                                                                ? "border-zinc-900 scale-110"
+                                                                ? "border-foreground scale-110"
                                                                 : "border-transparent opacity-80 hover:opacity-100"
                                                                 }`}
                                                             style={{ backgroundColor: c.swatch }}
@@ -327,7 +327,7 @@ const GeneralSettingsForm = ({ initial, rootDomain = "aplico.online" }: Props) =
                                                 <Input
                                                     {...field}
                                                     placeholder="purple or #7c3aed"
-                                                    className="rounded-xl bg-zinc-50"
+                                                    className="rounded-xl bg-muted"
                                                 />
                                             </div>
                                         </FormControl>
@@ -341,13 +341,13 @@ const GeneralSettingsForm = ({ initial, rootDomain = "aplico.online" }: Props) =
                                 name="font_family"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                                        <FormLabel className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                                             <Type className="h-3 w-3" />
                                             Font family
                                         </FormLabel>
                                         <Select value={field.value} onValueChange={field.onChange}>
                                             <FormControl>
-                                                <SelectTrigger className="rounded-xl bg-zinc-50">
+                                                <SelectTrigger className="rounded-xl bg-muted">
                                                     <SelectValue placeholder="Select font" />
                                                 </SelectTrigger>
                                             </FormControl>
@@ -365,7 +365,7 @@ const GeneralSettingsForm = ({ initial, rootDomain = "aplico.online" }: Props) =
                             />
 
                             {/* Live preview card */}
-                            <div className="md:col-span-2 rounded-2xl border border-zinc-200 overflow-hidden">
+                            <div className="md:col-span-2 rounded-2xl border border-border overflow-hidden">
                                 <div
                                     className="px-5 py-4 text-white"
                                     style={{ backgroundColor: activeSwatch }}
@@ -377,9 +377,9 @@ const GeneralSettingsForm = ({ initial, rootDomain = "aplico.online" }: Props) =
                                         {companyName || "Your company"}
                                     </p>
                                 </div>
-                                <div className="px-5 py-4 bg-zinc-50 text-sm text-zinc-600">
+                                <div className="px-5 py-4 bg-muted text-sm text-muted-foreground">
                                     Open roles at{" "}
-                                    <span className="font-medium text-zinc-900">
+                                    <span className="font-medium text-foreground">
                                         {companyName || "your company"}
                                     </span>
                                     . Branding color and font apply to the public jobs site.

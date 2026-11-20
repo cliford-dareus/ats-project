@@ -110,7 +110,7 @@ const PerformanceMetrics = ({ className }: Props) => {
             case 'down':
                 return <TrendingDown className="h-3 w-3 text-red-600" />;
             default:
-                return <div className="h-3 w-3 rounded-full bg-gray-400" />;
+                return <div className="h-3 w-3 rounded-full bg-muted-foreground" />;
         }
     };
 
@@ -121,7 +121,7 @@ const PerformanceMetrics = ({ className }: Props) => {
             case 'down':
                 return "text-red-600";
             default:
-                return "text-gray-600";
+                return "text-muted-foreground";
         }
     };
 

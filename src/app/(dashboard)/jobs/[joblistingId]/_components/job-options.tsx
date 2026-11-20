@@ -36,7 +36,7 @@ const JobOptions = ({data, stages, job_id}: Props) => {
                 <div>
                     <div className="mb-2">
                         <h2>Customize info</h2>
-                        <p className="text-slate-500 text-sm">Customize this job information</p>
+                        <p className="text-muted-foreground text-sm">Customize this job information</p>
                     </div>
                     <div className="">
                         {/*   TODO:
@@ -79,7 +79,7 @@ const JobOptions = ({data, stages, job_id}: Props) => {
                 <div>
                     <div className="mb-2">
                         <h2>Customize pipeline</h2>
-                        <p className="text-slate-500 text-sm">Customize this job listing workflow</p>
+                        <p className="text-muted-foreground text-sm">Customize this job listing workflow</p>
                     </div>
                     {stages?.map((stage) => (
                         <div key={stage.id} onClick={() => setOpenStage(stage.stage_name as JOB_ENUM)}>

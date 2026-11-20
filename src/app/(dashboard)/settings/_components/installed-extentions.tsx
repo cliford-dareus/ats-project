@@ -51,16 +51,16 @@ const InstalledExtensions = ({ installed, orgId }: InstalledExtensionsProps) => 
         <div className="space-y-6 px-4">
             <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                    <h3 className="font-bold text-zinc-900">Active Extensions</h3>
-                    <p className="text-xs text-zinc-500">Manage your connected applications and tools.</p>
+                    <h3 className="font-bold text-foreground">Active Extensions</h3>
+                    <p className="text-xs text-muted-foreground">Manage your connected applications and tools.</p>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {installed.map((plugin) => (
                     <div key={plugin.id} className={cn(
-                        "bg-white p-6 rounded-2xl border transition-all group relative",
-                        plugin.settings.active ? "border-zinc-200 shadow-sm" : "border-zinc-100 opacity-75 grayscale-[0.5]"
+                        "bg-card p-6 rounded-2xl border transition-all group relative",
+                        plugin.settings.active ? "border-border shadow-sm" : "border-border opacity-75 grayscale-[0.5]"
                     )}>
                         <div className="flex justify-between items-start mb-4">
                             <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center relative", plugin.providerColor)}>
@@ -74,7 +74,7 @@ const InstalledExtensions = ({ installed, orgId }: InstalledExtensionsProps) => 
                                     onClick={() => onToggleActive(plugin, !plugin.settings.active)}
                                     className={cn(
                                         "p-2 rounded-lg transition-all",
-                                        plugin.settings.active ? "bg-zinc-100 text-zinc-600 hover:bg-zinc-200" : "bg-brand-50 text-brand-600 hover:bg-brand-100"
+                                        plugin.settings.active ? "bg-muted text-muted-foreground hover:bg-muted" : "bg-brand-50 text-brand-600 hover:bg-brand-100"
                                     )}
                                     title={plugin.settings.active ? "Deactivate" : "Activate"}
                                 >
@@ -87,25 +87,25 @@ const InstalledExtensions = ({ installed, orgId }: InstalledExtensionsProps) => 
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <h4 className="font-bold text-zinc-900">{plugin.name}</h4>
+                            <h4 className="font-bold text-foreground">{plugin.name}</h4>
                             {plugin.id === 'gemini' && (
                                 <span className="px-1.5 py-0.5 bg-brand-100 text-brand-700 text-[8px] font-bold uppercase rounded leading-none">Pro</span>
                             )}
                         </div>
-                        {/*<p className="text-xs text-zinc-400 font-medium">by {plugin.provider}</p>*/}
-                        <p className="text-sm text-zinc-500 mt-3 leading-relaxed min-h-[40px]">
+                        {/*<p className="text-xs text-muted-foreground font-medium">by {plugin.provider}</p>*/}
+                        <p className="text-sm text-muted-foreground mt-3 leading-relaxed min-h-[40px]">
                             {plugin.description}
                         </p>
 
-                        <div className="mt-6 pt-6 border-t border-zinc-50 flex items-center justify-between">
+                        <div className="mt-6 pt-6 border-t border-border flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <button
                                     onClick={() => router.push(`/settings/${plugin.id}`)}
-                                    className="text-xs font-bold text-zinc-500 hover:text-zinc-800 transition-colors flex items-center gap-1"
+                                    className="text-xs font-bold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
                                 >
                                     Settings
                                 </button>
-                                <div className="w-1 h-1 bg-zinc-200 rounded-full" />
+                                <div className="w-1 h-1 bg-muted rounded-full" />
                                 <button
                                     onClick={() => onUninstall(plugin.id)}
                                     className="text-xs font-bold text-red-400 hover:text-red-600 transition-colors"
@@ -113,7 +113,7 @@ const InstalledExtensions = ({ installed, orgId }: InstalledExtensionsProps) => 
                                     Uninstall
                                 </button>
                             </div>
-                            <div className="flex items-center gap-2 text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
+                            <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
                                 <ProviderBadge providerId={plugin.id} />
                             </div>
                         </div>

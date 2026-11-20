@@ -70,21 +70,21 @@ const Page = async ({ params }: Props) => {
                                 >
                                     {singleJob.job_status}
                                 </Badge>
-                                <h1 className="text-2xl font-bold text-zinc-900 leading-tight uppercase">
+                                <h1 className="text-2xl font-bold text-foreground leading-tight uppercase">
                                     {singleJob.job_name}
                                 </h1>
                             </div>
 
                             <div className="flex items-center gap-2">
-                                <span className="text-zinc-500 mt-1 font-medium">
+                                <span className="text-muted-foreground mt-1 font-medium">
                                     {singleJob.job_department}
                                 </span>
-                                <span className="text-zinc-300 ml-2 mt-1">•</span>
-                                <span className="text-zinc-500 mt-1 font-medium">
+                                <span className="text-muted-foreground ml-2 mt-1">•</span>
+                                <span className="text-muted-foreground mt-1 font-medium">
                                     {singleJob.job_location}
                                 </span>
-                                <span className="text-zinc-300 ml-2 mt-1">•</span>
-                                <span className="text-zinc-500 mt-1 font-medium">
+                                <span className="text-muted-foreground ml-2 mt-1">•</span>
+                                <span className="text-muted-foreground mt-1 font-medium">
                                     Published on{" "}
                                     {new Date(singleJob.job_created_at).toLocaleDateString()}
                                 </span>

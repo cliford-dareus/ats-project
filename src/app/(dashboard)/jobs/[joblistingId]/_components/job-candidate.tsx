@@ -136,7 +136,7 @@ const JobCandidate = ({ job, stages }: Props) => {
         <>
             <div className="flex gap-4 h-full">
                 <Tabs defaultValue="all">
-                    <div className="flex mt-4 items-center justify-between bg-white border border-foreground/5 rounded-xl cursor-pointer hover:bg-primary/5 transition-colors">
+                    <div className="flex mt-4 items-center justify-between bg-card border border-foreground/5 rounded-xl cursor-pointer hover:bg-primary/5 transition-colors">
                         <TabsList className="bg-transparent rounded-none  outline-none p-0 h-auto w-full">
                             <Select defaultValue="all">
                                 <SelectTrigger className="w-full">
@@ -158,10 +158,10 @@ const JobCandidate = ({ job, stages }: Props) => {
 
                     {/* All Applied */}
                     <TabsContent value="all">
-                        <div className="bg-white rounded-2xl border border-foreground/5 shadow-sm overflow-hidden flex flex-col">
+                        <div className="bg-card rounded-2xl border border-foreground/5 shadow-sm overflow-hidden flex flex-col">
                             <div className="p-4 border-b border-foreground/5 flex items-center gap-3">
                                 <Checkbox
-                                    className="text-zinc-400"
+                                    className="text-muted-foreground"
                                     onCheckedChange={() => handleSelectAll()}
                                     id="all"
                                 />
@@ -181,7 +181,7 @@ const JobCandidate = ({ job, stages }: Props) => {
                                         )}
                                     >
                                         <Checkbox
-                                            className="text-zinc-400"
+                                            className="text-muted-foreground"
                                             checked={selectedCandidates.includes(application.id)}
                                             onCheckedChange={() =>
                                                 handleSelectCandidate(application.id)
@@ -220,7 +220,7 @@ const JobCandidate = ({ job, stages }: Props) => {
                             <div className="flex items-center justify-between py-4">
                                 <div>
                                     <h2 className="text-lg">All Drafted</h2>
-                                    <p className="text-sm text-slate-400">
+                                    <p className="text-sm text-muted-foreground">
                                         All Drafted candidates are listed here.
                                     </p>
                                 </div>
@@ -255,7 +255,7 @@ const JobCandidate = ({ job, stages }: Props) => {
                                                 <h2 className="text-2xl font-bold text-foreground">
                                                     {selectedApplications.candidate.name.toUpperCase()}
                                                 </h2>
-                                                <p className="text-sm text-zinc-500 font-medium">
+                                                <p className="text-sm text-muted-foreground font-medium">
                                                     Applying for{" "}
                                                     <span className="text-primary font-bold uppercase">
                                                         {job.job_name}
@@ -268,14 +268,14 @@ const JobCandidate = ({ job, stages }: Props) => {
                                         <Button
                                             size="sm"
                                             variant="ghost"
-                                            className="px-4 !py-0 border border-zinc-200 rounded-lg text-[10px] uppercase tracking-widest font-bold text-zinc-600 hover:bg-zinc-50 transition-all flex items-center gap-2">
+                                            className="px-4 !py-0 border border-border rounded-lg text-[10px] uppercase tracking-widest font-bold text-muted-foreground hover:bg-muted transition-all flex items-center gap-2">
                                             <MessageSquare size={14} />
                                         </Button>
                                         
                                         {canMove && (
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <button className="px-4 py-2 bg-primary text-white text-[10px] font-bold rounded-lg uppercase tracking-widest flex items-center gap-2 hover:bg-brand-primary/90 transition-colors">
+                                                <button className="px-4 py-2 bg-primary text-primary-foreground text-[10px] font-bold rounded-lg uppercase tracking-widest flex items-center gap-2 hover:bg-brand-primary/90 transition-colors">
                                                     <UserCheck size={14} />
                                                     Advance
                                                     <ChevronDown size={14} />
@@ -334,7 +334,7 @@ const JobCandidate = ({ job, stages }: Props) => {
                             {/* Right Column: Sidebar Info */}
                             <div className="space-y-4 w-80">
                                 {/* Application Details */}
-                                <div className="bg-white p-6 rounded-3xl border border-brand-dark/5 shadow-sm space-y-8">
+                                <div className="bg-card p-6 rounded-3xl border border-brand-dark/5 shadow-sm space-y-8">
                                     <div className="flex items-center gap-2">
                                         <AlertCircle size={16} className="text-brand-dark/30" />
                                         <h3 className="text-[11px] font-bold text-brand-dark uppercase tracking-widest">

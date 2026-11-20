@@ -36,17 +36,15 @@ const Page = async ({  }: Props) => {
     ]);
 
     return (
-        <div className="min-h-screen bg-gray-50/50 w-full">
-            <Dashboard
-                metrics={metrics}
-                recentActivity={recentActivity}
-                upcomingInterviews={upcomingInterviews}
-                jobPipeline={jobPipeline}
-                recruitmentFunnel={recruitmentFunnel}
-                applicationTrend={applicationTrend}
-                userName={user?.fullName || 'User'}
-            />
-        </div>
+        <Dashboard
+            metrics={metrics}
+            recentActivity={recentActivity}
+            upcomingInterviews={upcomingInterviews}
+            jobPipeline={jobPipeline}
+            recruitmentFunnel={recruitmentFunnel}
+            applicationTrend={applicationTrend}
+            userName={user?.fullName || 'User'}
+        />
     );
 };
 

@@ -194,22 +194,22 @@ const CommunicationInbox = ({ logs, templates, systemTemplates, users }: Props) 
     };
 
     return (
-        <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden grid grid-cols-1 grid-rows-1 lg:grid-cols-12 min-h-[700px] h-[calc(100vh_-_235px)]">
+        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden grid grid-cols-1 grid-rows-1 lg:grid-cols-12 min-h-[700px] h-[calc(100vh_-_235px)]">
             {/* LEFT COLUMN: Threads List & Folder Filters (4 Cols) */}
-            <div className="lg:col-span-4 border-r border-zinc-200 flex flex-col bg-zinc-50/40">
+            <div className="lg:col-span-4 border-r border-border flex flex-col bg-muted/40">
 
                 {/* Search & Folder Controls */}
-                <div className="p-4 border-b border-zinc-200 space-y-3 bg-white">
+                <div className="p-4 border-b border-border space-y-3 bg-card">
 
                     {/* Search Input */}
                     <div className="relative">
-                        <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+                        <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                         <input
                             type="text"
                             placeholder="Search candidates or conversations..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 bg-zinc-50 border border-zinc-200 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+                            className="w-full pl-10 pr-4 py-2 bg-muted border border-border rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
                         />
                     </div>
 
@@ -230,8 +230,8 @@ const CommunicationInbox = ({ logs, templates, systemTemplates, users }: Props) 
                                     className={cn(
                                         "flex-1 py-1.5 px-2 rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1",
                                         isActive
-                                            ? "bg-zinc-900 text-white shadow-sm"
-                                            : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
+                                            ? "bg-foreground text-background shadow-sm"
+                                            : "text-muted-foreground hover:text-foreground hover:bg-muted"
                                     )}
                                 >
                                     <Icon className="w-3 h-3" />
@@ -243,7 +243,7 @@ const CommunicationInbox = ({ logs, templates, systemTemplates, users }: Props) 
                 </div>
 
                 {/* Threads Stream List */}
-                <div className="flex-1 overflow-y-auto divide-y divide-zinc-100">
+                <div className="flex-1 overflow-y-auto divide-y divide-border">
                     {filteredThreads.length > 0 ? (
                         filteredThreads.map((thread) => {
                             const isSelected = thread._id === activeThread?._id;
@@ -257,25 +257,25 @@ const CommunicationInbox = ({ logs, templates, systemTemplates, users }: Props) 
                                     className={cn(
                                         "p-4 cursor-pointer transition-colors relative group flex items-start gap-3",
                                         isSelected
-                                            ? "bg-teal-100 border-l-4 border-primary text-white"
-                                            : "hover:bg-zinc-100/60 bg-white"
+                                            ? "bg-teal-100 border-l-4 border-primary text-primary"
+                                            : "hover:bg-muted/60 bg-card"
                                     )}
                                 >
                                     <Avatar>
                                         <AvatarImage
                                             src={thread.candidate_avatar}
                                             alt={thread.candidate_name}
-                                            className="w-10 h-10 rounded-2xl object-cover ring-2 ring-zinc-100 flex-shrink-0"
+                                            className="w-10 h-10 rounded-2xl object-cover ring-2 ring-border flex-shrink-0"
                                             referrerPolicy="no-referrer" />
                                         <AvatarFallback>CN</AvatarFallback>
                                     </Avatar>
 
                                     <div className="flex-1 min-w-0 space-y-1">
                                         <div className="flex items-center justify-between">
-                                            <h4 className={cn("text-xs font-bold truncate", isSelected ? "text-primary" : "text-zinc-900")}>
+                                            <h4 className={cn("text-xs font-bold truncate", isSelected ? "text-primary" : "text-foreground")}>
                                                 {thread.candidate_name}
                                             </h4>
-                                            <span className="text-[10px] text-zinc-400 font-medium flex-shrink-0">
+                                            <span className="text-[10px] text-muted-foreground font-medium flex-shrink-0">
                                                 {thread.last_timestamp}
                                             </span>
                                         </div>
@@ -284,12 +284,12 @@ const CommunicationInbox = ({ logs, templates, systemTemplates, users }: Props) 
                                             {thread.candidate_role}
                                         </p>
 
-                                        <p className="text-xs text-zinc-500 truncate font-normal">
+                                        <p className="text-xs text-muted-foreground truncate font-normal">
                                             {thread.last_message}
                                         </p>
 
                                         <div className="flex items-center justify-between pt-1">
-                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-100 text-zinc-600 border border-zinc-200/60">
+                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-muted text-muted-foreground border border-border/60">
                                                 {thread.candidate_status}
                                             </span>
 
@@ -302,7 +302,7 @@ const CommunicationInbox = ({ logs, templates, systemTemplates, users }: Props) 
                                                         e.stopPropagation();
                                                         // handleToggleStar(thread._id);
                                                     }}
-                                                    className="text-zinc-300 hover:text-amber-500 transition-colors"
+                                                    className="text-muted-foreground hover:text-amber-500 transition-colors"
                                                 >
                                                     <Star className={cn("w-3.5 h-3.5", thread.starred && "text-amber-500 fill-amber-500")} />
                                                 </button>
@@ -313,7 +313,7 @@ const CommunicationInbox = ({ logs, templates, systemTemplates, users }: Props) 
                             );
                         })
                     ) : (
-                        <div className="p-8 text-center text-xs text-zinc-400 font-medium">
+                        <div className="p-8 text-center text-xs text-muted-foreground font-medium">
                             No conversation threads match your filter.
                         </div>
                     )}
@@ -322,28 +322,28 @@ const CommunicationInbox = ({ logs, templates, systemTemplates, users }: Props) 
 
             {/* MIDDLE COLUMN: Active Conversation & Reply Center (8 Cols) */}
             {activeThread ? (
-                <div className="lg:col-span-8 flex-1 flex flex-col bg-white">
+                <div className="lg:col-span-8 flex-1 flex flex-col bg-card">
 
                     {/* Thread Header Bar */}
-                    <div className="p-6 border-b border-zinc-200 flex flex-wrap items-center justify-between gap-4 bg-white sticky top-0 z-10">
+                    <div className="p-6 border-b border-border flex flex-wrap items-center justify-between gap-4 bg-card sticky top-0 z-10">
                         <div className="flex items-center gap-4">
                             <Avatar>
                                 <AvatarImage
                                     src={activeThread.candidate_avatar}
                                     alt={activeThread.candidate_name}
-                                    className="w-12 h-12 rounded-2xl object-cover ring-2 ring-zinc-100"
+                                    className="w-12 h-12 rounded-2xl object-cover ring-2 ring-border"
                                     referrerPolicy="no-referrer"
                                 />
                                 <AvatarFallback>CN</AvatarFallback>
                             </Avatar>
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <h3 className="text-base font-bold text-zinc-900 tracking-tight">{activeThread.candidate_name}</h3>
+                                    <h3 className="text-base font-bold text-foreground tracking-tight">{activeThread.candidate_name}</h3>
                                     <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary border border-primary/20 text-primary/70">
                                         {activeThread.candidate_status}
                                     </span>
                                 </div>
-                                <p className="text-xs text-zinc-500 font-medium flex items-center gap-2 mt-0.5">
+                                <p className="text-xs text-muted-foreground font-medium flex items-center gap-2 mt-0.5">
                                     <Briefcase className="w-3.5 h-3.5 text-primary/60" />
                                     {activeThread.candidate_role} • {activeThread.candidate_email}
                                 </p>
@@ -354,23 +354,23 @@ const CommunicationInbox = ({ logs, templates, systemTemplates, users }: Props) 
                         <div className="flex items-center gap-2">
                             <button
                                 // onClick={() => router.push(`/dashboard/candidates/${activeThread.candidate_id}`)}
-                                className="px-3.5 py-1.5 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-xl text-xs font-bold text-zinc-700 transition-all flex items-center gap-1.5"
+                                className="px-3.5 py-1.5 bg-muted hover:bg-muted border border-border rounded-xl text-xs font-bold text-foreground transition-all flex items-center gap-1.5"
                             >
-                                <User className="w-3.5 h-3.5 text-zinc-500" />
+                                <User className="w-3.5 h-3.5 text-muted-foreground" />
                                 Full Profile
                             </button>
 
                             <button
                                 // onClick={() => handleToggleStar(activeThread._id)}
-                                className="p-2 border border-zinc-200 rounded-xl hover:bg-zinc-50 transition-colors"
+                                className="p-2 border border-border rounded-xl hover:bg-muted transition-colors"
                             >
-                                <Star className={cn("w-4 h-4", activeThread.starred ? "text-amber-500 fill-amber-500" : "text-zinc-400")} />
+                                <Star className={cn("w-4 h-4", activeThread.starred ? "text-amber-500 fill-amber-500" : "text-muted-foreground")} />
                             </button>
                         </div>
                     </div>
 
                     {/* Conversation Messages Feed */}
-                    <div className="p-6 overflow-y-scroll h-[50%] space-y-4 bg-zinc-50/30">
+                    <div className="p-6 overflow-y-scroll h-[50%] space-y-4 bg-muted/30">
                         {activeThread.messages.map((msg) => {
                             const isCandidate = msg.sender === 'candidate';
                             const isInternalNote = msg.sender === 'team';
@@ -381,16 +381,16 @@ const CommunicationInbox = ({ logs, templates, systemTemplates, users }: Props) 
                                     className={cn(
                                         "p-5 rounded-2xl border transition-all space-y-2 max-w-2xl",
                                         isCandidate
-                                            ? "bg-white border-zinc-200 mr-auto"
+                                            ? "bg-card border-border mr-auto"
                                             : isInternalNote
                                                 ? "bg-amber-50/80 border-amber-200 mx-auto w-full text-amber-950"
-                                                : "bg-primary text-white border-primary/40 ml-auto"
+                                                : "bg-primary text-primary-foreground border-primary/40 ml-auto"
                                     )}
                                 >
                                     <div className="flex items-center justify-between text-xs font-bold">
                                         <div className="flex items-center gap-2">
                                             {isInternalNote && <Tag className="w-3.5 h-3.5 text-amber-600" />}
-                                            <span className={isInternalNote ? "text-amber-900" : isCandidate ? "text-zinc-900" : "text-white"}>
+                                            <span className={isInternalNote ? "text-amber-900" : isCandidate ? "text-foreground" : "text-primary-foreground"}>
                                                 {msg.authorName}
                                             </span>
                                             <span className={cn(
@@ -398,18 +398,18 @@ const CommunicationInbox = ({ logs, templates, systemTemplates, users }: Props) 
                                                 isInternalNote
                                                     ? "bg-amber-200 text-amber-800"
                                                     : isCandidate
-                                                        ? "bg-zinc-100 text-zinc-600"
+                                                        ? "bg-muted text-muted-foreground"
                                                         : "bg-teal-500 text-white"
                                             )}>
                                                 {msg.channel}
                                             </span>
                                         </div>
-                                        <span className={isCandidate || isInternalNote ? "text-zinc-400 font-normal" : "text-teal-100 font-normal"}>
+                                        <span className={isCandidate || isInternalNote ? "text-muted-foreground font-normal" : "text-teal-100 font-normal"}>
                                             {new Date(msg.createdAt).toLocaleString()}
                                         </span>
                                     </div>
 
-                                    <p className={cn("text-xs leading-relaxed whitespace-pre-wrap font-medium", isCandidate ? "text-zinc-700" : isInternalNote ? "text-amber-900" : "text-white")}>
+                                    <p className={cn("text-xs leading-relaxed whitespace-pre-wrap font-medium", isCandidate ? "text-foreground" : isInternalNote ? "text-amber-900" : "text-primary-foreground")}>
                                         {msg.text}
                                     </p>
                                 </div>
@@ -418,7 +418,7 @@ const CommunicationInbox = ({ logs, templates, systemTemplates, users }: Props) 
                     </div>
 
                     {/* Rich Composer Center */}
-                    <div className="p-6 border-t border-zinc-200 bg-white space-y-4">
+                    <div className="p-6 border-t border-border bg-card space-y-4">
 
                         {/* Delivery notification */}
                         {deliveryStatus && (
@@ -432,12 +432,12 @@ const CommunicationInbox = ({ logs, templates, systemTemplates, users }: Props) 
                         <div className="flex flex-wrap items-center justify-between gap-3">
 
                             {/* Reply vs Internal Note Selector */}
-                            <div className="bg-zinc-100 p-1 rounded-2xl flex items-center gap-1">
+                            <div className="bg-muted p-1 rounded-2xl flex items-center gap-1">
                                 <button
                                     onClick={() => setComposerMode('reply')}
                                     className={cn(
                                         "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5",
-                                        composerMode === 'reply' ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500"
+                                        composerMode === 'reply' ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
                                     )}
                                 >
                                     <Mail className="w-3.5 h-3.5 text-primary" />
@@ -448,7 +448,7 @@ const CommunicationInbox = ({ logs, templates, systemTemplates, users }: Props) 
                                     onClick={() => setComposerMode('internal')}
                                     className={cn(
                                         "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5",
-                                        composerMode === 'internal' ? "bg-amber-100 text-amber-900 shadow-sm" : "text-zinc-500"
+                                        composerMode === 'internal' ? "bg-amber-100 text-amber-900 shadow-sm" : "text-muted-foreground"
                                     )}
                                 >
                                     <Tag className="w-3.5 h-3.5 text-amber-700" />
@@ -464,7 +464,7 @@ const CommunicationInbox = ({ logs, templates, systemTemplates, users }: Props) 
                                     <select
                                         value={selectedTemplate}
                                         onChange={(e) => handleApplyTemplate(e.target.value)}
-                                        className="bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-1.5 text-xs font-bold text-zinc-700 focus:outline-none cursor-pointer"
+                                        className="bg-muted border border-border rounded-xl px-3 py-1.5 text-xs font-bold text-foreground focus:outline-none cursor-pointer"
                                     >
                                         <option value="">Insert Email Template...</option>
                                         {allTemplates.map(t => (
@@ -514,14 +514,14 @@ const CommunicationInbox = ({ logs, templates, systemTemplates, users }: Props) 
                                 className={cn(
                                     "w-full rounded-2xl p-4 text-xs font-medium focus:outline-none focus:ring-2 transition-all",
                                     composerMode === 'reply'
-                                        ? "bg-zinc-50 border border-zinc-200 focus:ring-primary/20 focus:border-primary/50"
+                                        ? "bg-muted border border-border focus:ring-primary/20 focus:border-primary/50"
                                         : "bg-amber-50/50 border border-amber-200 focus:ring-amber-500/20 focus:border-amber-500 text-amber-950"
                                 )}
                             />
 
                             <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2 text-xs font-medium text-zinc-400">
-                                    <button type="button" className="p-2 hover:bg-zinc-100 rounded-xl text-zinc-500 transition-colors" title="Attach file">
+                                <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                                    <button type="button" className="p-2 hover:bg-muted rounded-xl text-muted-foreground transition-colors" title="Attach file">
                                         <Paperclip className="w-4 h-4" />
                                     </button>
                                     <span className="text-[11px]">Markdown & Variables Supported</span>
@@ -533,7 +533,7 @@ const CommunicationInbox = ({ logs, templates, systemTemplates, users }: Props) 
                                     className={cn(
                                         "px-6 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 shadow-md disabled:opacity-40",
                                         composerMode === 'reply'
-                                            ? "bg-primary/60 hover:bg-primary/70 text-white shadow-primary/20"
+                                            ? "bg-primary text-primary-foreground shadow-primary/20"
                                             : "bg-amber-600 hover:bg-amber-700 text-white shadow-amber-500/20"
                                     )}
                                 >
@@ -545,7 +545,7 @@ const CommunicationInbox = ({ logs, templates, systemTemplates, users }: Props) 
                     </div>
                 </div>
             ) : (
-                <div className="lg:col-span-8 flex items-center justify-center p-12 text-center text-zinc-400">
+                <div className="lg:col-span-8 flex items-center justify-center p-12 text-center text-muted-foreground">
                     Select a thread to view candidate conversation.
                 </div>
             )}

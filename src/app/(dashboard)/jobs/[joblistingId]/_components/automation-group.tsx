@@ -23,7 +23,7 @@ const AutomationGroup = ({ stage, rules, onSave, onDelete, onAdd, installedInteg
         <motion.div
             layout
             animate={{ height: collapsed ? "40px" : "auto" }}
-            className="overflow-hidden min-w-[230px] w-[230px] bg-zinc-50/50 rounded-[14px] pt-1.5 border border-transparent hover:border-zinc-200 transition-colors"
+            className="overflow-hidden min-w-[230px] w-[230px] bg-muted/50 rounded-[14px] pt-1.5 border border-transparent hover:border-border transition-colors"
         >
             {/* Stage header */}
             <motion.div
@@ -40,8 +40,8 @@ const AutomationGroup = ({ stage, rules, onSave, onDelete, onAdd, installedInteg
                             backgroundColor: stage.color ? stage.color : "#a1a1aa"
                         }}
                     />
-                    <p className="font-bold text-zinc-800 text-[11px] tracking-wider ml-1 uppercase">{stage.stage_name}</p>
-                    <span className="px-1.5 py-0.5 bg-white border border-zinc-200 text-[10px] font-bold text-zinc-500 rounded-lg ml-2">
+                    <p className="font-bold text-foreground text-[11px] tracking-wider ml-1 uppercase">{stage.stage_name}</p>
+                    <span className="px-1.5 py-0.5 bg-card border border-border text-[10px] font-bold text-muted-foreground rounded-lg ml-2">
                         {applications.filter(r => r.stage === stage.stage_name).length}
                     </span>
                 </div>
@@ -50,7 +50,7 @@ const AutomationGroup = ({ stage, rules, onSave, onDelete, onAdd, installedInteg
                     onClick={() => setCollapsed(!collapsed)}
                     className={cn(
                         "flex items-center rounded-lg transition-all",
-                        collapsed ? "text-primary/60 hover:bg-white hover:text-primary" : "text-primary bg-primary/10"
+                        collapsed ? "text-primary/60 hover:bg-card hover:text-primary" : "text-primary bg-primary/10"
                     )}
                 >
                     <WandSparkles size={16} />
@@ -80,7 +80,7 @@ const AutomationGroup = ({ stage, rules, onSave, onDelete, onAdd, installedInteg
 
                         <button
                             onClick={() => onAdd("stage_changed", stage.stage_name!)}
-                            className="w-full h-10 mt-2 flex items-center justify-center gap-2 border-2 border-dashed border-primary/20 rounded-xl text-zinc-400 text-xs font-bold hover:border-primary/50 hover:text-primary hover:bg-primary/5 transition-all group"
+                            className="w-full h-10 mt-2 flex items-center justify-center gap-2 border-2 border-dashed border-primary/20 rounded-xl text-muted-foreground text-xs font-bold hover:border-primary/50 hover:text-primary hover:bg-primary/5 transition-all group"
                         >
                             <Plus size={14} className="group-hover:scale-110 transition-transform" />
                             Add Automation

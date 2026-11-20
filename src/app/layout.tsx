@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Ubuntu_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
+import { ThemeProvider } from "@/hooks/use-theme";
 
 const geistSans = Inter({
     variable: "--font-inter-sans",
@@ -24,11 +25,13 @@ export default function RootLayout({ children, }: Readonly<{
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en">
+        <html lang="en" suppressHydrationWarning>
             <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-                <ClerkProvider>
-                    {children}
-                </ClerkProvider>
+                <ThemeProvider>
+                    <ClerkProvider>
+                        {children}
+                    </ClerkProvider>
+                </ThemeProvider>
             </body>
         </html>
     );

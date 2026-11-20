@@ -134,7 +134,7 @@ const DashboardSummary = ({className}: Props) => {
                                     {getStatusIcon(item.status)}
                                     <div>
                                         <h4 className="font-medium text-gray-900">{item.title}</h4>
-                                        <p className="text-sm text-gray-600">{item.description}</p>
+                                        <p className="text-sm text-muted-foreground">{item.description}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
@@ -175,11 +175,11 @@ const DashboardSummary = ({className}: Props) => {
               <span>Post 3 new jobs</span>
             </div>
             <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-gray-400" />
+              <Clock className="h-4 w-4 text-muted-foreground" />
               <span>Make 5 offers</span>
             </div>
             <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-gray-400" />
+              <Clock className="h-4 w-4 text-muted-foreground" />
               <span>Close 2 positions</span>
             </div>
           </div>

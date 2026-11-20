@@ -84,7 +84,7 @@ const GoogleConfig = ({ pluginId, settings, onSave }: ConfigProps) => {
                 {/* Resend wordmark */}
                 <div className="flex items-center gap-3">
                     <div
-                        className="flex items-center justify-center w-8 h-8 rounded-full bg-white">
+                        className="flex items-center justify-center w-8 h-8 rounded-full bg-card">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                             <path d="M3 5.5L12 12L21 5.5" stroke="#000" strokeWidth="2" strokeLinecap="round" />
                             <rect x="3" y="5" width="18" height="14" rx="2" stroke="#000" strokeWidth="2" />
@@ -109,7 +109,7 @@ const GoogleConfig = ({ pluginId, settings, onSave }: ConfigProps) => {
                         color: isConnected ? "#10b981" : "#4b5563",
                         // fontFamily: "'Geist Mono', monospace",
                     }}>
-                    <div className="w-5 h-5 rounded-full  bg-white shadow-[0_0_4px_#10b981] dark:bg-gray-800 dark:shadow-[0_0_4px_#374151]">
+                    <div className="w-5 h-5 rounded-full  bg-card shadow-[0_0_4px_#10b981] dark:bg-card dark:shadow-[0_0_4px_#374151]">
                         <div className="w-5 h-5 rounded-full bg-[#10b981] dark:bg-[#374151]" />
                     </div>
                     {isConnected ? "Connected" : "Not connected"}
@@ -142,7 +142,7 @@ const GoogleConfig = ({ pluginId, settings, onSave }: ConfigProps) => {
                         <h1 className="text-[20px] font-semibold tracking-tight">
                             Google Settings
                         </h1>
-                        <p className="mt-1 text-[13px] text-gray-400 leading-tight">
+                        <p className="mt-1 text-[13px] text-muted-foreground leading-tight">
                             Configure your Google integration
                         </p>
                     </div>

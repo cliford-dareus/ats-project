@@ -8,44 +8,44 @@ import { useHasPermission } from "@/lib/use-permission";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-expect-error
 const RowAction = ({ row, table }) => {
-  const hasPermission = useHasPermission();
-  const canEdit = hasPermission("job:edit");
-  const canDelete = hasPermission("job:delete");
-  const meta = table.options.meta;
-  const validRow = meta?.validRows[row.id];
-  const disableSubmit = validRow
-    ? Object.values(validRow)?.some((value) => !value)
-    : false;
-  const [isEditJobOpen, setIsEditJobOpen] = useState(false);
-  const [isDeleteJobOpen, setIsDeleteJobOpen] = useState(false);
+    const hasPermission = useHasPermission();
+    const canEdit = hasPermission("job:edit");
+    const canDelete = hasPermission("job:delete");
+    const meta = table.options.meta;
+    const validRow = meta?.validRows[row.id];
+    const disableSubmit = validRow
+        ? Object.values(validRow)?.some((value) => !value)
+        : false;
+    const [isEditJobOpen, setIsEditJobOpen] = useState(false);
+    const [isDeleteJobOpen, setIsDeleteJobOpen] = useState(false);
 
-  return (
-    <>
-      <div className="flex items-center gap-2">
-        {canEdit && (
-          <Button disabled={disableSubmit} variant="ghost" onClick={() => setIsEditJobOpen(true)}>
-            <EditIcon size={18} />
-          </Button>
-        )}
-        {canDelete && (
-          <Button disabled={disableSubmit} variant="ghost" onClick={() => setIsDeleteJobOpen(true)}>
-            <DeleteIcon size={18} />
-          </Button>
-        )}
-      </div>
+    return (
+        <>
+            <div className="flex items-center gap-2">
+                {canEdit && (
+                    <Button disabled={disableSubmit} variant="ghost" onClick={() => setIsEditJobOpen(true)}>
+                        <EditIcon size={18} />
+                    </Button>
+                )}
+                {canDelete && (
+                    <Button disabled={disableSubmit} variant="ghost" onClick={() => setIsDeleteJobOpen(true)}>
+                        <DeleteIcon size={18} />
+                    </Button>
+                )}
+            </div>
 
-      <EditJobListingModal
-        isEditJobOpen={isEditJobOpen}
-        setIsEditJobOpen={setIsEditJobOpen}
-        data={row.original}
-      />
-      <DeleteJoblistingModal
-        isDeleteJobOpen={isDeleteJobOpen}
-        setIsDeleteJobOpen={setIsDeleteJobOpen}
-        data={row.original}
-      />
-    </>
-  );
+            <EditJobListingModal
+                isEditJobOpen={isEditJobOpen}
+                setIsEditJobOpen={setIsEditJobOpen}
+                data={row.original}
+            />
+            <DeleteJoblistingModal
+                isDeleteJobOpen={isDeleteJobOpen}
+                setIsDeleteJobOpen={setIsDeleteJobOpen}
+                data={row.original}
+            />
+        </>
+    );
 };
 
 export default RowAction;

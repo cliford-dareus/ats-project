@@ -11,6 +11,7 @@ import { redirect } from "next/navigation";
 import AuthDropdown from "@/components/auth-dropdown";
 import Provider from "@/providers/providers";
 import { ensure_organization_row } from "@/server/queries/drizzle/organization";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 type Props = {
     children: React.ReactNode;
@@ -38,16 +39,31 @@ const Layout = async ({ children }: Props) => {
     await ensure_organization_row(orgId, orgSlug ?? "");
 
     return (
-        <div className="min-h-screen">
-            <Provider orgId={orgId as string}>
-                <AppSidebar />
-                <SidebarInset>
-                    <header className="sticky top-0 flex shrink-0 items-center gap-2 border-b bg-background p-4">
+        <div className="relative min-h-screen w-full bg-background text-foreground antialiased">
+            {/* Subtle architectural grid & ambient glow */}
+            <div
+                aria-hidden="true"
+                className="pointer-events-none fixed inset-0 bg-[linear-gradient(to_right,hsl(var(--border)/0.5)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border)/0.5)_1px,transparent_1px)] bg-[size:64px_64px]"
+            />
+            <div
+                aria-hidden="true"
+                className="pointer-events-none fixed top-[-18%] right-[8%] w-[520px] h-[520px] rounded-full bg-primary/[0.08] blur-[140px]"
+            />
+            <div
+                aria-hidden="true"
+                className="pointer-events-none fixed bottom-[-18%] left-[4%] w-[420px] h-[420px] rounded-full bg-accent/[0.05] blur-[140px]"
+            />
+            <div className="relative z-10">
+                <Provider orgId={orgId as string}>
+                    <AppSidebar />
+                    <SidebarInset>
+                        <header className="sticky top-0 flex shrink-0 items-center gap-2 border-b bg-background p-4">
                         <SidebarTrigger className="-ml-1" />
                         <Separator orientation="vertical" className="mr-2 h-4" />
                         <OrganizationSwitcher />
                         <Separator orientation="vertical" className="mr-2 h-4" />
-                        <div className="ml-auto flex items-center gap-4">
+                        <div className="ml-auto flex items-center gap-2">
+                            <ThemeToggle />
                             <Bell size={18} />
                             <Button className="!p-0 border rounded-lg text-[10px] uppercase tracking-widest font-bold transition-all flex items-center gap-2">
                                 <Link
@@ -67,6 +83,7 @@ const Layout = async ({ children }: Props) => {
                     </div>
                 </SidebarInset>
             </Provider>
+            </div>
         </div>
     );
 };

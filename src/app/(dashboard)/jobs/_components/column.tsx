@@ -46,14 +46,14 @@ export const columns: ColumnDef<JobResponseType>[] = [
                     <Briefcase size={20} />
                 </div>
                 <div className="flex flex-col">
-                    <span className="text-xl font-semibold text-zinc-900">
+                    <span className="text-xl font-semibold text-foreground">
                       {row.original.name}
                     </span>
 
                     <div className="flex items-center gap-1 text-xs font-bold text-foreground/30 uppercase tracking-widest mt-1">
                         <Clock size={16}/>
                         <span className="ml-1">{row.original.type}</span>
-                        <span className="text-zinc-300 ml-2">•</span>
+                        <span className="text-muted-foreground ml-2">•</span>
                         <span className="ml-2">{row.original.department}</span>
                     </div>
                 </div>
@@ -64,7 +64,7 @@ export const columns: ColumnDef<JobResponseType>[] = [
         accessorKey: "location",
         header: "Location",
         cell: ({row}) => (
-            <div className="flex items-center text-sm text-zinc-500 gap-1">
+            <div className="flex items-center text-sm text-muted-foreground gap-1">
                 <MapPin size={16}/>
                 <span>{row.original.location}</span>
             </div>

@@ -147,7 +147,7 @@ const Dashboard = ({
             case 'job_posted':
                 return 'bg-purple-100 text-purple-600';
             default:
-                return 'bg-gray-100 text-gray-600';
+                return 'bg-muted text-muted-foreground';
         }
     };
 
@@ -167,23 +167,23 @@ const Dashboard = ({
                             today.</p>
                     </div>
                     <div className="flex items-center gap-4">
-                        <div className="flex bg-white border border-slate-200 p-1.5 rounded-md shadow-sm">
+                        <div className="flex bg-card border border-border p-1.5 rounded-md shadow-sm">
                             <button
                                 onClick={() => setViewMode('grid')}
-                                className={`p-2 rounded-md transition-all ${viewMode === 'grid' ? 'bg-primary text-white shadow-lg shadow-slate-200' : 'text-slate-400 hover:text-slate-600'}`}
+                                className={`p-2 rounded-md transition-all ${viewMode === 'grid' ? 'bg-primary text-primary-foreground shadow-lg ' : 'text-muted-foreground hover:text-muted-foreground'}`}
                             >
                                 <LayoutGrid size={14} />
                             </button>
                             <button
                                 onClick={() => setViewMode('list')}
-                                className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'bg-primary text-white shadow-lg shadow-slate-200' : 'text-slate-400 hover:text-slate-600'}`}
+                                className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'bg-primary text-primary-foreground shadow-lg ' : 'text-muted-foreground hover:text-muted-foreground'}`}
                             >
                                 <List size={14} />
                             </button>
                         </div>
                         {/* <button
                             // onClick={() => setIsModalOpen(true)}
-                            className="flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded-[1.25rem] font-black text-s transition-all shadow-2xl shadow-blue-200"
+                            className="flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded-[1.25rem] font-black text-s transition-all shadow-2xl "
                         >
                             <Plus size={14} />
                             New Automation
@@ -237,17 +237,17 @@ const Dashboard = ({
                         </Button>
                     </div>
 
-                    <div className="flex items-center space-x-3 border-b border-slate-200">
+                    <div className="flex items-center space-x-3 border-b border-border">
                         <motion.div
                             layout
                             // layoutId={candidate.id}
                             whileHover={{ y: -4 }}
-                            className="group bg-white border border-slate-200 rounded-md p-4 shadow-sm hover:shadow-2xl hover:border-blue-100 transition-all duration-500 cursor-pointer"
+                            className="group bg-card border border-border rounded-md p-4 shadow-sm hover:shadow-2xl hover:border-primary/20 transition-all duration-500 cursor-pointer"
                         >
                             <div className="flex gap-6 items-center">
                                 <div className="relative flex-shrink-0">
                                     <div
-                                        className="w-12 h-12 rounded-[1.25rem] overflow-hidden border-4 border-white shadow-xl ring-1 ring-slate-100 group-hover:rotate-3 transition-transform duration-500">
+                                        className="w-12 h-12 rounded-[1.25rem] overflow-hidden border-4 border-white shadow-xl ring-1 ring-border group-hover:rotate-3 transition-transform duration-500">
                                         <Avatar>
                                             <AvatarImage alt="" />
                                             <AvatarFallback></AvatarFallback>
@@ -255,7 +255,7 @@ const Dashboard = ({
                                     </div>
                                     {/* {hasActiveTrigger && ( */}
                                     <div
-                                        className="absolute -top-1 -right-2 bg-primary text-white p-1.5 rounded-xl shadow-lg border-2 border-white animate-bounce">
+                                        className="absolute -top-1 -right-2 bg-primary text-primary-foreground p-1.5 rounded-xl shadow-lg border-2 border-white animate-bounce">
                                         <Zap size={12} fill="currentColor" />
                                     </div>
                                     {/* )} */}
@@ -264,9 +264,9 @@ const Dashboard = ({
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <h4 className="text-sm font-bold text-slate-900 truncate tracking-tight">John
+                                            <h4 className="text-sm font-bold text-foreground truncate tracking-tight">John
                                                 Doe</h4>
-                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Software
+                                            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em] mt-1">Software
                                                 Engineer</p>
                                         </div>
                                     </div>
@@ -279,7 +279,7 @@ const Dashboard = ({
                                     Active
                                 </div>
                                 <div
-                                    className="flex items-center gap-2 text-[11px] text-slate-500 font-bold bg-slate-50 px-4 py-1 rounded-xl">
+                                    className="flex items-center gap-2 text-[11px] text-muted-foreground font-bold bg-muted px-4 py-1 rounded-xl">
                                     <Calendar size={12} className="text-blue-500" />
                                     New Candidate
                                 </div>

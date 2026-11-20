@@ -257,7 +257,7 @@ const TrashSidebar = () => {
               {storageInfo.used} / {storageInfo.total} {storageInfo.unit}
             </span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-muted rounded-full h-2">
                         <div
                             className="bg-primary h-2 rounded-full transition-all duration-300"
                             style={{width: `${usagePercentage}%`}}

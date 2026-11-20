@@ -52,7 +52,7 @@ const JobTabs = ({ applications, stages, jobs, jobListingId, singleJob }: Props)
         <div className="h-[calc(100vh-210px)] overflow-hidden">
             <div className="flex px-4">
                 <Tabs className="px-0 h-full w-full" value={activeTab} onValueChange={handleTabChange}>
-                    <div className="flex items-center justify-between border-b border-zinc-200 pb-4">
+                    <div className="flex items-center justify-between border-b border-border pb-4">
                         <TabsList className="bg-transparent rounded-none p-0 justify-start">
                             {['candidates', 'pipelines', 'options'].map((tab) => (
                                 <CustomTabsTrigger

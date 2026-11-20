@@ -19,7 +19,7 @@ const SidebarDashboard = () => {
     return (
         <div className="flex flex-col overflow-y-auto h-[calc(100vh-125px)]">
             <div className="px-4">
-                <div className="relative group overflow-hidden bg-card rounded-md border border-zinc-200 p-4 flex flex-col justify-between min-h-[280px] shadow-sm">
+                <div className="relative group overflow-hidden bg-card rounded-md border border-border p-4 flex flex-col justify-between min-h-[280px] shadow-sm">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-32 -mt-32 group-hover:bg-primary/10 transition-all duration-700" />
                     <div className="absolute bottom-0 left-0 w-48 h-48 bg-amber-500/5 rounded-full blur-3xl -ml-24 -mb-24 group-hover:bg-amber-500/10 transition-all duration-700" />
 
@@ -30,7 +30,7 @@ const SidebarDashboard = () => {
                             </div>
                             <div>
                                 <h2 className="text-sm font-bold text-foreground zinc-900 tracking-tight">Ask Apliko AI</h2>
-                                <p className="text-xs text-zinc-500 font-medium italic">Your intelligent recruitment partner</p>
+                                <p className="text-xs text-muted-foreground font-medium italic">Your intelligent recruitment partner</p>
                             </div>
                         </div>
 
@@ -42,7 +42,7 @@ const SidebarDashboard = () => {
                     <div className="relative pt-8 space-y-4">
                         <div className="flex flex-wrap gap-2">
                             {['Find Matches', 'My Pipeline', 'Insights'].map((label) => (
-                                <button key={label} className="px-2 py-1 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-md text-[10px] font-bold text-zinc-600 transition-all flex items-center gap-2">
+                                <button key={label} className="px-2 py-1 bg-muted hover:bg-muted border border-border rounded-md text-[10px] font-bold text-muted-foreground transition-all flex items-center gap-2">
                                     {label === 'Find Matches' && <Search className="w-3.5 h-3.5" />}
                                     {label === 'My Pipeline' && <Briefcase className="w-3.5 h-3.5" />}
                                     {label === 'Insights' && <TrendingUp className="w-3.5 h-3.5" />}
@@ -52,15 +52,15 @@ const SidebarDashboard = () => {
                         </div>
 
                         <div className="relative flex items-center">
-                            <Plus className="absolute left-4 w-4 h-4 text-zinc-400" />
+                            <Plus className="absolute left-4 w-4 h-4 text-muted-foreground" />
                             <Input
                                 type="text"
                                 placeholder="Ask me anything about your recruitment data..."
                                 // value={query}
                                 // onChange={(e) => setQuery(e.target.value)}
-                                className="w-full bg-zinc-50 border border-zinc-200 rounded-md py-4 pl-12 pr-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
+                                className="w-full bg-muted border border-border rounded-md py-4 pl-12 pr-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
                             />
-                            <Button className="absolute right-0 p-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-all">
+                            <Button className="absolute right-0 p-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-all">
                                 <ArrowUpRight className="w-4 h-4" />
                             </Button>
                         </div>
@@ -73,7 +73,7 @@ const SidebarDashboard = () => {
             <div className="space-y-6">
                 <div className='px-4'>
                     <div
-                        className="bg-card rounded-md border border-zinc-200 p-4 relative overflow-hidden group shadow-sm h-full flex flex-col justify-between"
+                        className="bg-card rounded-md border border-border p-4 relative overflow-hidden group shadow-sm h-full flex flex-col justify-between"
                     >
                         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl -mr-16 -mt-16" />
 
@@ -84,7 +84,7 @@ const SidebarDashboard = () => {
                             <h3 className="font-bold text-foreground tracking-wide uppercase">Complete your company profile</h3>
                         </div>
 
-                        <p className="text-[11px] text-zinc-500 font-medium leading-relaxed my-2">
+                        <p className="text-[11px] text-muted-foreground font-medium leading-relaxed my-2">
                             Personalize your company&#39;s profile, invite team members and setup your company&#39;s career page.
                         </p>
 
@@ -109,12 +109,12 @@ const SidebarDashboard = () => {
                             <PartyPopper size={20} className='text-white'/>
                             <h3 className="text-2xl font-bold text-white tracking-tight">What&#39;s New</h3>
                         </div>
-                        <p className="text-zinc-400 text-sm max-w-md">
+                        <p className="text-muted-foreground text-sm max-w-md">
                             Connect with over 2,000+ apps via our Zapier integration to build even more powerful workflows.
                         </p>
                     </div>
                     <Button
-                        className="border text-[10px] uppercase tracking-widest flex items-center gap-2 px-6 py-3 bg-white text-zinc-900 rounded-md font-bold text-sm hover:scale-105 transition-all active:scale-95"
+                        className="border text-[10px] uppercase tracking-widest flex items-center gap-2 px-6 py-3 bg-card text-foreground rounded-md font-bold text-sm hover:scale-105 transition-all active:scale-95"
                     >
                         Connect Zapier
                     </Button>

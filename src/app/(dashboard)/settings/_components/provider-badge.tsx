@@ -10,7 +10,7 @@ export function ProviderBadge({ providerId }: { providerId: string }) {
     const colors = {
         authenticated: "bg-green-500",
         authenticating: "bg-yellow-500 animate-pulse",
-        unauthenticated: "bg-gray-500",
+        unauthenticated: "bg-muted-foreground/50",
         error: "bg-red-500",
     };
 

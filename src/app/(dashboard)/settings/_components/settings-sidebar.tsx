@@ -54,7 +54,7 @@ const SettingsSidebar = () => {
                             // exit={{ opacity: 0, height: 0 }}
                             onClick={() => router.push(`/settings/${setting.url}`)}
                             className={cn("w-full flex items-center justify-between px-2 py-4 rounded-xl text-[14px] transition-all duration-200 group ",
-                                active === setting.title ? "bg-primary text-white shadow-md shadow-blue-200" : "text-slate-600 hover:bg-primary/10 hover:text-slate-900")}
+                                active === setting.title ? "bg-primary text-primary-foreground shadow-md " : "text-muted-foreground hover:bg-primary/10 hover:text-foreground")}
                         >
                             <div className="flex items-center gap-2.5">
                                 <setting.icon size={14} />
@@ -63,7 +63,7 @@ const SettingsSidebar = () => {
                             <div className="flex items-center gap-2">
                                 <ChevronRight
                                     size={12}
-                                    className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-slate-300"
+                                    className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-muted-foreground"
                                 />
                             </div>
                         </motion.button>

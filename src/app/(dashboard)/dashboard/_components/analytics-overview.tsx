@@ -33,24 +33,24 @@ const AnalyticsOverview = ({ data, className }: Props) => {
             <CardHeader className="flex flex-row items-center justify-between">
                 <div className="flex items-center justify-between mb-10 w-full">
                     <div className="flex items-center gap-4">
-                        <div className="p-2 bg-primary rounded-md text-white shadow-xl">
+                        <div className="p-2 bg-primary text-primary-foreground shadow-xl">
                             <TrendingUp size={18} />
                         </div>
                         <div>
                             <h3 className="font-black tracking-tight uppercase">Application Trends</h3>
-                            <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Weekly Performance Metrics</p>
+                            <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">Weekly Performance Metrics</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-xl border border-slate-100">
+                        <div className="flex items-center gap-2 px-4 py-2 bg-muted rounded-xl border border-border">
                             <div className="w-2 h-2 rounded-full bg-accent" />
-                            <span className="text-[11px] font-bold text-slate-600 uppercase tracking-widest">Applications</span>
+                            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Applications</span>
                         </div>
                         <Select>
                             <SelectTrigger>
                                 <SelectValue />
                             </SelectTrigger>
-                            <SelectContent className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-[11px] font-bold text-slate-600 focus:outline-none focus:ring-4 focus:ring-blue-500/5 transition-all cursor-pointer uppercase tracking-widest">
+                            <SelectContent className="bg-card border border-border rounded-xl px-4 py-2 text-[11px] font-bold text-muted-foreground focus:outline-none focus:ring-4 focus:ring-blue-500/5 transition-all cursor-pointer uppercase tracking-widest">
                                 <SelectItem value="7d">Last 7 Days</SelectItem>
                                 <SelectItem value="30d">Last 30 Days</SelectItem>
                             </SelectContent>

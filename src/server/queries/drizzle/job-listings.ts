@@ -114,7 +114,7 @@ export const create_job_listing = async (
                 color: item.color,
             })),
         ]);
-create_job_listing
+
         revalidateDbCache({
             tag: CACHE_TAGS.jobs,
             id: String(inserted_job.id),

@@ -109,8 +109,8 @@ const Page = async ({ params }: Props) => {
         return (
             <div className="p-4">
                 <div className="text-center py-8">
-                    <h2 className="text-xl font-semibold text-gray-900">Application not found</h2>
-                    <p className="text-gray-500 mt-2">The application or candidate you're looking for doesn't exist.</p>
+                    <h2 className="text-xl font-semibold text-foreground">Application not found</h2>
+                    <p className="text-muted-foreground mt-2">The application or candidate you're looking for doesn't exist.</p>
                     <Link href="/applications">
                         <Button className="mt-4">
                             <ArrowLeft size={16} className="mr-2" />
@@ -144,10 +144,10 @@ const Page = async ({ params }: Props) => {
                         </Button>
                     </Link>
                 </div>
-                <h1 className="font-bold text-3xl text-gray-900">
+                <h1 className="font-bold text-3xl text-foreground">
                     Application Review
                 </h1>
-                <p className="text-gray-600 mt-1">
+                <p className="text-muted-foreground mt-1">
                     Reviewing {candidate?.name}'s application for this position
                 </p>
             </div>
@@ -165,8 +165,8 @@ const Page = async ({ params }: Props) => {
                             </Avatar>
                             <div className="flex flex-col gap-3">
                                 <div>
-                                    <h2 className="text-2xl font-bold text-gray-900">{candidate?.name}</h2>
-                                    <div className="flex items-center gap-6 text-sm text-gray-600 mt-2">
+                                    <h2 className="text-2xl font-bold text-foreground">{candidate?.name}</h2>
+                                    <div className="flex items-center gap-6 text-sm text-muted-foreground mt-2">
                                         {candidate?.email && (
                                             <div className="flex items-center gap-2">
                                                 <Mail size={16} />
@@ -299,7 +299,7 @@ const Page = async ({ params }: Props) => {
                             <Badge variant="secondary">Screening</Badge>
                         </div>
                         <Progress value={40} className="w-full" />
-                        <div className="flex justify-between text-xs text-gray-500">
+                        <div className="flex justify-between text-xs text-muted-foreground">
                             <span>Applied</span>
                             <span>Screening</span>
                             <span>Interview</span>
@@ -367,19 +367,19 @@ const Page = async ({ params }: Props) => {
                                 <CardContent className="space-y-4">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="text-sm font-medium text-gray-700">Full Name</label>
-                                            <p className="mt-1 text-gray-900">{candidate?.name}</p>
+                                            <label className="text-sm font-medium text-foreground">Full Name</label>
+                                            <p className="mt-1 text-foreground">{candidate?.name}</p>
                                         </div>
                                         <div>
-                                            <label className="text-sm font-medium text-gray-700">Email</label>
-                                            <p className="mt-1 text-gray-900">{candidate?.email || 'Not provided'}</p>
+                                            <label className="text-sm font-medium text-foreground">Email</label>
+                                            <p className="mt-1 text-foreground">{candidate?.email || 'Not provided'}</p>
                                         </div>
                                         <div>
-                                            <label className="text-sm font-medium text-gray-700">Phone</label>
-                                            <p className="mt-1 text-gray-900">{candidate?.phone || 'Not provided'}</p>
+                                            <label className="text-sm font-medium text-foreground">Phone</label>
+                                            <p className="mt-1 text-foreground">{candidate?.phone || 'Not provided'}</p>
                                         </div>
                                         <div>
-                                            <label className="text-sm font-medium text-gray-700">Status</label>
+                                            <label className="text-sm font-medium text-foreground">Status</label>
                                             <p className="mt-1">
                                                 <Badge variant={candidate?.status === 'ACTIVE' ? 'default' : 'secondary'}>
                                                     {candidate?.status || 'ACTIVE'}
@@ -387,14 +387,14 @@ const Page = async ({ params }: Props) => {
                                             </p>
                                         </div>
                                         <div>
-                                            <label className="text-sm font-medium text-gray-700">Applied Date</label>
-                                            <p className="mt-1 text-gray-900">
+                                            <label className="text-sm font-medium text-foreground">Applied Date</label>
+                                            <p className="mt-1 text-foreground">
                                                 {new Date(candidate?.created_at || '').toLocaleDateString()}
                                             </p>
                                         </div>
                                         <div>
-                                            <label className="text-sm font-medium text-gray-700">Last Updated</label>
-                                            <p className="mt-1 text-gray-900">
+                                            <label className="text-sm font-medium text-foreground">Last Updated</label>
+                                            <p className="mt-1 text-foreground">
                                                 {new Date(candidate?.updated_at || '').toLocaleDateString()}
                                             </p>
                                         </div>
@@ -470,8 +470,8 @@ const Page = async ({ params }: Props) => {
                                                 className="border rounded"
                                             >
                                                 <div className="text-center py-12">
-                                                    <FileText size={48} className="mx-auto text-gray-400 mb-4" />
-                                                    <p className="text-gray-600 mb-4">Unable to display PDF in browser</p>
+                                                    <FileText size={48} className="mx-auto text-muted-foreground mb-4" />
+                                                    <p className="text-muted-foreground mb-4">Unable to display PDF in browser</p>
                                                     <Button variant="outline" asChild>
                                                         <a
                                                             href={`https://ffwqzrdbkpjdhhnlaxvl.supabase.co/storage/v1/object/public/${candidate.cv_path}`}
@@ -486,9 +486,9 @@ const Page = async ({ params }: Props) => {
                                             </object>
                                         ) : (
                                             <div className="text-center py-12">
-                                                <FileText size={48} className="mx-auto text-gray-400 mb-4" />
-                                                <h3 className="text-lg font-medium text-gray-900 mb-2">No resume uploaded</h3>
-                                                <p className="text-gray-600">This candidate hasn't uploaded a resume yet.</p>
+                                                <FileText size={48} className="mx-auto text-muted-foreground mb-4" />
+                                                <h3 className="text-lg font-medium text-foreground mb-2">No resume uploaded</h3>
+                                                <p className="text-muted-foreground">This candidate hasn't uploaded a resume yet.</p>
                                             </div>
                                         )}
                                     </CardContent>
@@ -512,7 +512,7 @@ const Page = async ({ params }: Props) => {
                                                         <FileText size={16} className="text-red-500" />
                                                         <div>
                                                             <div className="text-sm font-medium">Resume.pdf</div>
-                                                            <div className="text-xs text-gray-500">PDF Document</div>
+                                                            <div className="text-xs text-muted-foreground">PDF Document</div>
                                                         </div>
                                                     </div>
                                                     <Button variant="ghost" size="sm" asChild>
@@ -532,7 +532,7 @@ const Page = async ({ params }: Props) => {
                                                         <FileText size={16} className="text-blue-500" />
                                                         <div>
                                                             <div className="text-sm font-medium">Document {index + 1}</div>
-                                                            <div className="text-xs text-gray-500">Attachment</div>
+                                                            <div className="text-xs text-muted-foreground">Attachment</div>
                                                         </div>
                                                     </div>
                                                     <Button variant="ghost" size="sm">
@@ -541,7 +541,7 @@ const Page = async ({ params }: Props) => {
                                                 </div>
                                             ))}
                                             {attachments.length === 0 && !candidate?.cv_path && (
-                                                <div className="text-center py-6 text-gray-500">
+                                                <div className="text-center py-6 text-muted-foreground">
                                                     <FileText size={32} className="mx-auto mb-2 opacity-50" />
                                                     <p className="text-sm">No documents available</p>
                                                 </div>
@@ -566,11 +566,11 @@ const Page = async ({ params }: Props) => {
                                 <div className="space-y-4">
                                     {applications.length > 0 ? (
                                         applications.map((app: any, index: number) => (
-                                            <div key={index} className="border rounded-lg p-6 hover:bg-gray-50 transition-colors">
+                                            <div key={index} className="border rounded-lg p-6 hover:bg-muted transition-colors">
                                                 <div className="flex justify-between items-start mb-4">
                                                     <div className="flex-1">
-                                                        <h3 className="font-semibold text-lg text-gray-900">Position #{index + 1}</h3>
-                                                        <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                                                        <h3 className="font-semibold text-lg text-foreground">Position #{index + 1}</h3>
+                                                        <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                                                             <div className="flex items-center gap-1">
                                                                 <Calendar size={14} />
                                                                 <span>Applied: {new Date(app.created_at || candidate?.created_at || '').toLocaleDateString()}</span>
@@ -588,21 +588,21 @@ const Page = async ({ params }: Props) => {
                                                 <Separator className="my-4" />
                                                 <div className="grid grid-cols-2 gap-4 text-sm">
                                                     <div>
-                                                        <label className="font-medium text-gray-700">Application ID</label>
-                                                        <p className="text-gray-900">#{app.id || applicationId}</p>
+                                                        <label className="font-medium text-foreground">Application ID</label>
+                                                        <p className="text-foreground">#{app.id || applicationId}</p>
                                                     </div>
                                                     <div>
-                                                        <label className="font-medium text-gray-700">Status</label>
-                                                        <p className="text-gray-900">{candidate?.status || 'ACTIVE'}</p>
+                                                        <label className="font-medium text-foreground">Status</label>
+                                                        <p className="text-foreground">{candidate?.status || 'ACTIVE'}</p>
                                                     </div>
                                                 </div>
                                             </div>
                                         ))
                                     ) : (
                                         <div className="text-center py-12">
-                                            <Briefcase size={48} className="mx-auto text-gray-400 mb-4" />
-                                            <h3 className="text-lg font-medium text-gray-900 mb-2">No applications found</h3>
-                                            <p className="text-gray-600">This candidate hasn't submitted any applications yet.</p>
+                                            <Briefcase size={48} className="mx-auto text-muted-foreground mb-4" />
+                                            <h3 className="text-lg font-medium text-foreground mb-2">No applications found</h3>
+                                            <p className="text-muted-foreground">This candidate hasn't submitted any applications yet.</p>
                                         </div>
                                     )}
                                 </div>
@@ -638,7 +638,7 @@ const Page = async ({ params }: Props) => {
                                                     <div className="flex justify-between items-start mb-4">
                                                         <div>
                                                             <h3 className="font-semibold text-lg">Interview #{index + 1}</h3>
-                                                            <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-gray-600">
+                                                            <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-muted-foreground">
                                                                 <div className="flex items-center gap-1">
                                                                     <Calendar size={14} />
                                                                     <span>Scheduled: {format_interview_datetime(interview.start_at)}</span>
@@ -650,7 +650,7 @@ const Page = async ({ params }: Props) => {
                                                                     </div>
                                                                 )}
                                                             </div>
-                                                            <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-gray-600">
+                                                            <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-muted-foreground">
                                                                 {interview.type && (
                                                                     <span>Type: {interview.type}</span>
                                                                 )}
@@ -681,9 +681,9 @@ const Page = async ({ params }: Props) => {
                                         })
                                     ) : (
                                         <div className="text-center py-12">
-                                            <Calendar size={48} className="mx-auto text-gray-400 mb-4" />
-                                            <h3 className="text-lg font-medium text-gray-900 mb-2">No interviews scheduled</h3>
-                                            <p className="text-gray-600 mb-4">Schedule an interview to continue the evaluation process.</p>
+                                            <Calendar size={48} className="mx-auto text-muted-foreground mb-4" />
+                                            <h3 className="text-lg font-medium text-foreground mb-2">No interviews scheduled</h3>
+                                            <p className="text-muted-foreground mb-4">Schedule an interview to continue the evaluation process.</p>
                                             <Button>
                                                 <Plus size={16} className="mr-2" />
                                                 Schedule First Interview
@@ -714,7 +714,7 @@ const Page = async ({ params }: Props) => {
                                     <div className="flex justify-between items-center">
                                         <div className="flex items-center gap-2">
                                             <input type="checkbox" id="private" className="rounded" />
-                                            <label htmlFor="private" className="text-sm text-gray-600">Private note</label>
+                                            <label htmlFor="private" className="text-sm text-muted-foreground">Private note</label>
                                         </div>
                                         <Button>
                                             <MessageSquare size={16} className="mr-2" />
@@ -739,23 +739,23 @@ const Page = async ({ params }: Props) => {
                                                 <div key={index} className="border-l-4 border-blue-500 pl-4 py-2">
                                                     <div className="flex justify-between items-start mb-2">
                                                         <div className="font-medium text-sm">Evaluation #{index + 1}</div>
-                                                        <div className="text-xs text-gray-500">
+                                                        <div className="text-xs text-muted-foreground">
                                                             {new Date(scoreCard.created_at || '').toLocaleDateString()}
                                                         </div>
                                                     </div>
-                                                    <p className="text-sm text-gray-700">
+                                                    <p className="text-sm text-foreground">
                                                         Score: {scoreCard.score || 'Not scored'}
                                                     </p>
                                                     {scoreCard.feedback && (
-                                                        <p className="text-sm text-gray-600 mt-1">{scoreCard.feedback}</p>
+                                                        <p className="text-sm text-muted-foreground mt-1">{scoreCard.feedback}</p>
                                                     )}
                                                 </div>
                                             ))
                                         ) : (
                                             <div className="text-center py-8">
-                                                <MessageSquare size={32} className="mx-auto text-gray-400 mb-2" />
-                                                <p className="text-sm text-gray-600">No notes or feedback yet</p>
-                                                <p className="text-xs text-gray-500 mt-1">Add the first note to start tracking feedback</p>
+                                                <MessageSquare size={32} className="mx-auto text-muted-foreground mb-2" />
+                                                <p className="text-sm text-muted-foreground">No notes or feedback yet</p>
+                                                <p className="text-xs text-muted-foreground mt-1">Add the first note to start tracking feedback</p>
                                             </div>
                                         )}
                                     </div>
