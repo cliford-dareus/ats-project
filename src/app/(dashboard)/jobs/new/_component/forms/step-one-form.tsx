@@ -65,7 +65,7 @@ const StepOneForm = ({ orgId, departments }: Props) => {
                     <CardContent className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <Label htmlFor="job_name" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                                <Label htmlFor="job_name" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                                     Job Title *
                                 </Label>
                                 <Input
@@ -83,7 +83,7 @@ const StepOneForm = ({ orgId, departments }: Props) => {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="job_location" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                                <Label htmlFor="job_location" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                                     <MapPin size={16} className="inline mr-1" />
                                     Location *
                                 </Label>
@@ -104,7 +104,7 @@ const StepOneForm = ({ orgId, departments }: Props) => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <Label htmlFor="department" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                                <Label htmlFor="department" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                                     <Building2 size={16} className="inline mr-1" />
                                     Department
                                 </Label>
@@ -129,7 +129,7 @@ const StepOneForm = ({ orgId, departments }: Props) => {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="salary_up_to" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                                <Label htmlFor="salary_up_to" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                                     <DollarSign size={16} className="inline mr-1" />
                                     Salary (Annual)
                                 </Label>
@@ -147,7 +147,7 @@ const StepOneForm = ({ orgId, departments }: Props) => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <Label htmlFor="job_type" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                                <Label htmlFor="job_type" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                                     <Building2 size={16} className="inline mr-1" />
                                     Type
                                 </Label>
@@ -173,7 +173,7 @@ const StepOneForm = ({ orgId, departments }: Props) => {
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="job_description" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                            <Label htmlFor="job_description" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                                 Job Description *
                             </Label>
                             <Textarea

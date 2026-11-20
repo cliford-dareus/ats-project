@@ -86,10 +86,10 @@ export default function StepReviewForm() {
                             <CardContent className="space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
-                                        <h3 className="font-semibold text-lg text-gray-900">
+                                        <h3 className="font-semibold text-lg text-foreground">
                                             {newJobData.jobInfo.job_name || 'Job Title Not Set'}
                                         </h3>
-                                        <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                                        <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                                             <div className="flex items-center gap-1">
                                                 <MapPin size={14} />
                                                 <span>{newJobData.jobInfo.job_location || 'Location not set'}</span>
@@ -112,8 +112,8 @@ export default function StepReviewForm() {
 
                                 {newJobData.jobInfo.job_description && (
                                     <div>
-                                        <h4 className="font-medium text-gray-900 mb-2">Description</h4>
-                                        <p className="text-gray-700 text-sm leading-relaxed">
+                                        <h4 className="font-medium text-foreground mb-2">Description</h4>
+                                        <p className="text-foreground text-sm leading-relaxed">
                                             {newJobData.jobInfo.job_description}
                                         </p>
                                     </div>
@@ -141,14 +141,14 @@ export default function StepReviewForm() {
                                         {newJobData.jobTechnology.map((tech, index) => (
                                             <div key={index} className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
                                                 <div>
-                                                    <p className="font-medium text-gray-900">{tech.technology}</p>
-                                                    <p className="text-sm text-gray-600">{tech.year_of_experience} years experience</p>
+                                                    <p className="font-medium text-foreground">{tech.technology}</p>
+                                                    <p className="text-sm text-muted-foreground">{tech.year_of_experience} years experience</p>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="text-center py-6 text-gray-500">
+                                    <div className="text-center py-6 text-muted-foreground">
                                         <Code size={24} className="mx-auto mb-2 opacity-50" />
                                         <p>No technical requirements added</p>
                                     </div>
@@ -173,13 +173,13 @@ export default function StepReviewForm() {
                             <CardContent>
                                 <div className="space-y-4">
                                     {/* Applied Stage (Default) */}
-                                    <div className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                                        <div className="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center">
-                                            <span className="text-white text-sm font-medium">1</span>
+                                    <div className="flex items-center gap-3 p-3 bg-muted border border-border rounded-lg">
+                                        <div className="w-8 h-8 bg-muted-foreground/50 rounded-full flex items-center justify-center">
+                                            <span className="text-background text-sm font-medium">1</span>
                                         </div>
                                         <div className="flex-1">
-                                            <h4 className="font-medium text-gray-900">Applied</h4>
-                                            <p className="text-sm text-gray-600">Default stage for new applications</p>
+                                            <h4 className="font-medium text-foreground">Applied</h4>
+                                            <p className="text-sm text-muted-foreground">Default stage for new applications</p>
                                         </div>
                                         <Badge variant="secondary">Default</Badge>
                                     </div>
@@ -187,17 +187,17 @@ export default function StepReviewForm() {
                                     {/* Custom Stages */}
                                     {newJobData.jobStages.length > 0 ? (
                                         newJobData.jobStages.map((stage, index) => (
-                                            <div key={index} className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg">
+                                            <div key={index} className="flex items-center gap-3 p-3 bg-card border border-border rounded-lg">
                                                 <div
                                                     className="w-8 h-8 rounded-full flex items-center justify-center"
                                                     style={{ backgroundColor: stage.color }}
                                                 >
-                                                    <span className="text-white text-sm font-medium">{index + 2}</span>
+                                                    <span className="text-background text-sm font-medium">{index + 2}</span>
                                                 </div>
                                                 <div className="flex-1">
-                                                    <h4 className="font-medium text-gray-900">{stage.stage_name}</h4>
+                                                    <h4 className="font-medium text-foreground">{stage.stage_name}</h4>
                                                     <div className="flex items-center gap-4 mt-1">
-                                                        <p className="text-sm text-gray-600">
+                                                        <p className="text-sm text-muted-foreground">
                                                             <Users size={14} className="inline mr-1" />
                                                             {stage.stage_assign_to}
                                                         </p>
@@ -211,20 +211,20 @@ export default function StepReviewForm() {
                                             </div>
                                         ))
                                     ) : (
-                                        <div className="text-center py-6 text-gray-500">
+                                        <div className="text-center py-6 text-muted-foreground">
                                             <Workflow size={24} className="mx-auto mb-2 opacity-50" />
                                             <p>Only default &quot;Applied&quot; stage will be used</p>
                                         </div>
                                     )}
 
                                     {/* Workflow Preview */}
-                                    <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                        <h4 className="font-medium text-blue-900 mb-3">Complete Workflow</h4>
+                                    <div className="mt-6 p-4 bg-muted border border-border rounded-lg">
+                                        <h4 className="font-medium text-foreground mb-3">Complete Workflow</h4>
                                         <div className="flex items-center gap-2 overflow-x-auto">
                                             <Badge variant="secondary">Applied</Badge>
                                             {newJobData.jobStages.map((stage, index) => (
                                                 <React.Fragment key={index}>
-                                                    <div className="w-2 h-0.5 bg-blue-300" />
+                                                    <div className="w-2 h-0.5 bg-border" />
                                                     <Badge
                                                         variant="secondary"
                                                         style={{ backgroundColor: stage.color + '20', color: stage.color }}
@@ -277,7 +277,7 @@ export default function StepReviewForm() {
 
                                 <Button
                                     onClick={handleSaveDraft}
-                                    className="ml-auto bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                                    className="ml-auto bg-foreground hover:bg-foreground/90 text-background rounded-lg font-medium transition-colors flex items-center gap-2"
                                 >
                                     <Save size={16} />
                                     Draft

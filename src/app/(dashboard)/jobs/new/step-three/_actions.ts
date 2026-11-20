@@ -1,8 +1,8 @@
 'use server';
 
-import {stepThreeSchema} from '@/zod';
-import {redirect} from 'next/navigation';
-import {FormErrors} from "@/types";
+import { stepThreeSchema } from '@/zod';
+import { redirect } from 'next/navigation';
+import { FormErrors } from "@/types";
 import { auth } from '@clerk/nextjs/server';
 import { canCreateJob } from '@/server/permissions';
 import { get_oganization_users } from '@/server/queries';
@@ -30,7 +30,16 @@ export const stepThreeFormAction = async (
 // (same gate as the page's <HasPermission permission="job:create">).
 // Returns [] when unauthenticated or unauthorized; the page renders the
 // permission fallback in that case.
-export const get_users = async (): Promise<{ id: number, organization_id: string, name: string | null }[]> => {
+type User = {
+    id: string,
+    organization_id: string,
+    name: string | null;
+    email: string | null;
+    username: string | null;
+    image_url: string | null;
+};
+
+export const get_users = async (): Promise<User[]> => {
     const { userId, orgId } = await auth();
     if (!userId || !orgId) {
         return [];

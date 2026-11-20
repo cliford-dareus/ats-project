@@ -34,9 +34,9 @@ const StepTwoCollapse = () => {
                     {newJobData.jobTechnology.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                             {newJobData.jobTechnology.map((tech, index) => (
-                                <div key={index} className="flex items-center justify-between p-2 bg-white border border-blue-200 rounded text-sm">
+                                <div key={index} className="flex items-center justify-between p-2 bg-card border border-blue-200 rounded text-sm">
                                     <span className="font-medium">{tech.technology}</span>
-                                    <span className="text-gray-600">{tech.year_of_experience} years</span>
+                                    <span className="text-muted-foreground">{tech.year_of_experience} years</span>
                                 </div>
                             ))}
                         </div>

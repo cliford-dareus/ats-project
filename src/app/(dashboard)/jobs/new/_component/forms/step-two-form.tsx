@@ -43,7 +43,7 @@ const StepTwoForm = () => {
                             <Code size={20} className="text-primary" />
                             Technical Requirements
                         </CardTitle>
-                        <p className="text-sm text-gray-600">Add the technologies and experience levels required</p>
+                        <p className="text-sm text-muted-foreground">Add the technologies and experience levels required</p>
                     </CardHeader>
                     <CardContent className="space-y-6">
                         {/* Current Requirements */}
@@ -57,7 +57,7 @@ const StepTwoForm = () => {
                                             <div className="flex items-center gap-3">
                                                 <Award size={16} className="text-primary" />
                                                 <div>
-                                                    <p className="font-medium text-gray-900">{item.technology}</p>
+                                                    <p className="font-medium text-foreground">{item.technology}</p>
                                                     <p className="text-sm text-foreground/60">{item.year_of_experience} years
                                                         experience</p>
                                                 </div>
@@ -78,7 +78,7 @@ const StepTwoForm = () => {
                         )}
 
                         {/* Add New Requirement */}
-                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                        <div className="border-2 border-dashed border-border rounded-lg p-6">
                             <MultiSelect
                                 className="w-full"
                                 schema={jobTechSchema}
@@ -96,7 +96,7 @@ const StepTwoForm = () => {
                                         <DropdownMenuContent className="w-80 p-4">
                                             <div className="space-y-4">
                                                 <FormItem>
-                                                    <FormLabel className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Technology/Skill</FormLabel>
+                                                    <FormLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Technology/Skill</FormLabel>
                                                     <FormControl>
                                                         <Input
                                                             {...forms.register("technology")}
@@ -107,7 +107,7 @@ const StepTwoForm = () => {
                                                 </FormItem>
 
                                                 <FormItem>
-                                                    <FormLabel className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Years of Experience</FormLabel>
+                                                    <FormLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Years of Experience</FormLabel>
                                                     <FormControl>
                                                         <Input
                                                             {...forms.register("year_of_experience")}

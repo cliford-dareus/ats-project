@@ -9,6 +9,7 @@ import {useNewJobContext} from "@/providers/new-job-provider";
 
 const steps = [
     {
+        index: '01',
         title: 'Job Details',
         route: 'step-one',
         icon: <FileText size={14}/>,
@@ -16,6 +17,7 @@ const steps = [
         description: 'Basic job information'
     },
     {
+        index: '02',
         title: "Requirements",
         route: 'step-two',
         icon: <Users size={14}/>,
@@ -23,6 +25,7 @@ const steps = [
         description: 'Skills and experience'
     },
     {
+        index: '03',
         title: 'Workflow',
         route: 'step-three',
         icon: <Workflow size={14}/>,
@@ -30,6 +33,7 @@ const steps = [
         description: 'Hiring pipeline'
     },
     {
+        index: '04',
         title: 'Review',
         route: 'step-review',
         icon: <Eye size={14}/>,
@@ -62,7 +66,7 @@ const SideNavigation = () => {
     };
 
     return (
-        <div className=" px-4">
+        <aside className=" px-4">
             {/* Progress Steps */}
             <div className="space-y-4">
                 {steps.map((step, index) => {
@@ -78,28 +82,32 @@ const SideNavigation = () => {
                                     "block transition-all duration-200",
                                 )}
                             >
-                                <div className="flex items-center gap-3">
+                                <div className={cn("flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors min-w-[170px] lg:min-w-0 lg:w-full cursor-pointer",
+                                    isActive
+                                        ? 'bg-blue-50/80 text-blue-900'
+                                        : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                                )}>
                                     <div className={cn(
-                                        "flex items-center justify-center w-10 h-10 rounded-full border transition-colors",
+                                        "w-7 h-7 rounded-md flex items-center justify-center shrink-0 border text-xs font-mono tabular-nums transition-colors",
                                         isActive
                                             ? "bg-blue-500 border-blue-500 text-white"
                                             : isCompleted
                                                 ? "bg-green-500 border-green-500 text-white"
                                                 : isAccessible
-                                                    ? "bg-white border-gray-300 text-gray-600"
-                                                    : "bg-gray-100 border-gray-200 text-gray-400"
+                                                    ? "bg-card border-border text-muted-foreground"
+                                                    : "bg-muted border-border text-muted-foreground"
                                     )}>
                                         {isCompleted ? <Check size={18}/> : step.icon}
                                     </div>
 
-                                    <div className="flex-1 min-w-0">
+                                    <div className="min-w-0 flex-1">
                                         <h3 className={cn(
-                                            "font-medium text-sm leading-none uppercase",
+                                            "text-sm font-medium leading-tight truncate",
                                         )}>
-                                            {step.title}
+                                            {step.index}. {step.title}
                                         </h3>
                                         <p className={cn(
-                                            "text-xs mt-1 text-zinc-400",
+                                            "text-xs text-slate-500 truncate mt-0.5 hidden lg:block",
                                         )}>
                                             {step.description}
                                         </p>
@@ -112,19 +120,22 @@ const SideNavigation = () => {
             </div>
 
             {/*Progress Bar */}
-            {/*<div className="mt-2">*/}
-            {/*    <div className="flex justify-between text-sm text-gray-600">*/}
-            {/*        <span>Progress</span>*/}
-            {/*        <span>{Math.round(((currentStep + 1) / steps.length) * 100)}%</span>*/}
-            {/*    </div>*/}
-            {/*    <div className="w-full bg-gray-200 rounded-full h-2">*/}
-            {/*        <div*/}
-            {/*            className="bg-blue-500 h-2 rounded-full transition-all duration-300"*/}
-            {/*            style={{width: `${((currentStep + 1) / steps.length) * 100}%`}}*/}
-            {/*        />*/}
-            {/*    </div>*/}
-            {/*</div>*/}
-        </div>
+            <div className="mt-2">
+                <div className="flex items-center justify-between text-xs font-medium text-slate-500 mb-2">
+                    <span className="">Progress</span>
+                    <span className="font-mono tabular-nums text-slate-900 font-semibold">{Math.round(((currentStep + 1) / steps.length) * 100)}%</span>
+                </div>
+                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                        className="h-full bg-blue-700 transition-all duration-300"
+                        style={{width: `${((currentStep + 1) / steps.length) * 100}%`}}
+                    />
+                </div>
+                <p className="mt-2.5 text-xs text-slate-500 tabular-nums">
+                    {currentStep + 1} of {steps.length - 1} required checkpoints complete
+                </p>
+            </div>
+        </aside>
     );
 };
 

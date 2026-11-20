@@ -104,21 +104,21 @@ const StepThreeForm = ({ users }: { users: { id: number; organization_id: string
                             <Workflow size={20} className="text-blue-500" />
                             Hiring Pipeline
                         </CardTitle>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-muted-foreground">
                             Create stages that candidates will move through during the hiring process
                         </p>
                     </CardHeader>
                     <CardContent className="space-y-6">
                         {/* Default Applied Stage */}
-                        <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                        <div className="p-4 bg-muted border border-border rounded-lg">
                             <div className="flex items-center gap-3">
                                 <div
-                                    className="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center">
-                                    <span className="text-white text-sm font-medium">1</span>
+                                    className="w-8 h-8 bg-muted-foreground/50 rounded-full flex items-center justify-center">
+                                    <span className="text-background text-sm font-medium">1</span>
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="font-medium text-gray-900">Applied</h3>
-                                    <p className="text-sm text-gray-600">Default stage for new applications</p>
+                                    <h3 className="font-medium text-foreground">Applied</h3>
+                                    <p className="text-sm text-muted-foreground">Default stage for new applications</p>
                                 </div>
                                 <Badge variant="secondary">Default</Badge>
                             </div>
@@ -129,11 +129,11 @@ const StepThreeForm = ({ users }: { users: { id: number; organization_id: string
                             <div className="space-y-3">
                                 {currentStages.map((stage, index) => (
                                     <div key={index}
-                                        className="p-4 bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">
+                                        className="p-4 bg-card border border-border rounded-lg hover:shadow-sm transition-shadow">
                                         <div className="flex items-center gap-3">
                                             <button
                                                 type="button"
-                                                className="cursor-grab hover:cursor-grabbing text-gray-400 hover:text-gray-600"
+                                                className="cursor-grab hover:cursor-grabbing text-muted-foreground hover:text-muted-foreground"
                                             >
                                                 <GripVertical size={16} />
                                             </button>
@@ -143,13 +143,13 @@ const StepThreeForm = ({ users }: { users: { id: number; organization_id: string
                                                 style={{ backgroundColor: stage.color }}
                                             >
                                                 <span
-                                                    className="text-white text-sm font-medium">{index + 2}</span>
+                                                    className="text-background text-sm font-medium">{index + 2}</span>
                                             </div>
 
                                             <div className="flex-1">
-                                                <h3 className="font-medium text-gray-900">{stage.stage_name}</h3>
+                                                <h3 className="font-medium text-foreground">{stage.stage_name}</h3>
                                                 <div className="flex items-center gap-4 mt-1">
-                                                    <p className="text-sm text-gray-600">
+                                                    <p className="text-sm text-muted-foreground">
                                                         <Users size={14} className="inline mr-1" />
                                                         Assigned to: {stage.stage_assign_to}
                                                     </p>
@@ -191,7 +191,7 @@ const StepThreeForm = ({ users }: { users: { id: number; organization_id: string
                                 </DialogHeader>
                                 <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="stage_name" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Stage Name</Label>
+                                        <Label htmlFor="stage_name" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Stage Name</Label>
                                         <Select
                                             name="stage_name"
                                             onValueChange={(value) => setNewStage({
@@ -211,9 +211,9 @@ const StepThreeForm = ({ users }: { users: { id: number; organization_id: string
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="stage_assign_to" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                                        <Label htmlFor="stage_assign_to" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                                             <Building2 size={16} className="inline mr-1" />
-                                            Department
+                                            Assigned To
                                         </Label>
                                         <Select
                                             name="stage_assign_to"
@@ -224,7 +224,7 @@ const StepThreeForm = ({ users }: { users: { id: number; organization_id: string
                                             value={newStage.stage_assign_to}
                                         >
                                             <SelectTrigger className="h-11">
-                                                <SelectValue placeholder="Select department" />
+                                                <SelectValue placeholder="Select co-worker" />
                                             </SelectTrigger>
                                             <SelectContent id="stage_assign_to">
                                                 {users.map((user) => (
@@ -237,7 +237,7 @@ const StepThreeForm = ({ users }: { users: { id: number; organization_id: string
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Stage Color</Label>
+                                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Stage Color</Label>
                                         <div className="flex gap-2 flex-wrap">
                                             {STAGE_COLORS.map((color) => (
                                                 <button
@@ -263,7 +263,7 @@ const StepThreeForm = ({ users }: { users: { id: number; organization_id: string
                                                 need_schedule: checked
                                             })}
                                         />
-                                        <Label htmlFor="need_schedule" className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
+                                        <Label htmlFor="need_schedule" className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                                             Requires scheduling (interviews, assessments)
                                         </Label>
                                     </div>

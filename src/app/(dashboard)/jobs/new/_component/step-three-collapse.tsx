@@ -36,9 +36,9 @@ const StepThreeCollapse = () => {
                     {newJobData.jobStages.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                             {newJobData.jobStages.map((stage, index) => (
-                                <div key={index} className="flex items-center justify-between p-2 bg-white border border-primary/20 rounded text-sm">
+                                <div key={index} className="flex items-center justify-between p-2 bg-card border border-primary/20 rounded text-sm">
                                     <span className="font-medium">{stage.stage_name}</span>
-                                    <span className="text-gray-600">{stage.stage_assign_to} years</span>
+                                    <span className="text-muted-foreground">{stage.stage_assign_to} years</span>
                                 </div>
                             ))}
                         </div>

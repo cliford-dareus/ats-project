@@ -9,10 +9,10 @@ export default async function Page() {
             <div className="py-8 w-full h-full">
                 {/* Header */}
                 <div className="my-2">
-                    <h1 className="text-3xl font-bold text-gray-900 uppercase leading-none">
+                    <h1 className="text-3xl font-bold text-foreground uppercase leading-none">
                         Job Details
                     </h1>
-                    <p className="text-zinc-500">
+                    <p className="text-muted-foreground">
                         Let&#39;s start with the basic information about your job opening
                     </p>
                 </div>
