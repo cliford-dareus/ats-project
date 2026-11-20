@@ -54,7 +54,7 @@ const Page = async ({ params }: Props) => {
 
                     <div className="space-y-2">
                         <div className="flex flex-wrap items-center gap-3">
-                            <h1 className="text-2xl font-bold text-zinc-900 leading-tight uppercase">{candidate.candidate?.name}</h1>
+                            <h1 className="text-2xl font-bold text-foreground leading-tight uppercase">{candidate.candidate?.name}</h1>
                             <span className={cn(
                                 "px-3 py-1 rounded-full text-xs font-bold border uppercase tracking-wider",
                                 candidate.candidate?.status === 'HIRED' ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
@@ -65,13 +65,13 @@ const Page = async ({ params }: Props) => {
                             </span>
                         </div>
 
-                        <p className="text-base font-semibold text-zinc-600 flex items-center gap-2">
+                        <p className="text-base font-semibold text-muted-foreground flex items-center gap-2">
                             <Briefcase className="w-4 h-4 text-brand-600" />
                             {headline}
                         </p>
 
                         {/* Rating & Location Meta */}
-                        <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-zinc-500 pt-1">
+                        <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-muted-foreground pt-1">
                             <div className="flex items-center gap-1.5 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200/60">
                                 <span className="font-bold text-amber-700">{rating}</span>
                                 <div className="flex gap-0.5">
@@ -82,20 +82,20 @@ const Page = async ({ params }: Props) => {
                                         >
                                             <Star className={cn(
                                                 "w-3 h-3",
-                                                star <= Math.round(rating) ? "text-amber-500 fill-amber-500" : "text-zinc-200"
+                                                star <= Math.round(rating) ? "text-amber-500 fill-amber-500" : "text-muted"
                                             )} />
                                         </button>
                                     ))}
                                 </div>
                             </div>
 
-                            <span className="flex items-center gap-1 text-zinc-600">
-                                <MapPin className="w-3.5 h-3.5 text-zinc-400" />
+                            <span className="flex items-center gap-1 text-muted-foreground">
+                                <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
                                 {candidate.candidate?.location || 'New York, USA'}
                             </span>
 
-                            <span className="flex items-center gap-1 text-zinc-600">
-                                <Calendar className="w-3.5 h-3.5 text-zinc-400" />
+                            <span className="flex items-center gap-1 text-muted-foreground">
+                                <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
                                 Applied {format(candidate.candidate?.created_at ?? new Date(), 'MMM d, yyyy')}
                             </span>
                         </div>
@@ -105,7 +105,7 @@ const Page = async ({ params }: Props) => {
                 {/* Quick Contact & Action Cards */}
                 <div className="flex flex-wrap lg:flex-col items-stretch gap-2.5 w-full lg:w-auto">
                     <button
-                        className="flex-1 lg:flex-none px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm"
+                        className="flex-1 lg:flex-none px-5 py-2.5 bg-foreground text-background rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm"
                     >
                         <MessageSquare className="w-4 h-4" />
                         Send Direct Message
@@ -113,9 +113,9 @@ const Page = async ({ params }: Props) => {
 
                     <a
                         href={`mailto:${candidate.candidate?.email}`}
-                        className="flex-1 lg:flex-none px-5 py-2.5 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-2xl text-xs font-bold text-zinc-700 transition-all flex items-center justify-center gap-2"
+                        className="flex-1 lg:flex-none px-5 py-2.5 bg-muted hover:bg-muted border border-border rounded-2xl text-xs font-bold text-foreground transition-all flex items-center justify-center gap-2"
                     >
-                        <Mail className="w-4 h-4 text-zinc-500" />
+                        <Mail className="w-4 h-4 text-muted-foreground" />
                         {candidate.candidate?.email}
                     </a>
 
@@ -124,7 +124,7 @@ const Page = async ({ params }: Props) => {
                             href={linkedInUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="flex-1 lg:flex-none px-5 py-2.5 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-2xl text-xs font-bold text-zinc-700 transition-all flex items-center justify-center gap-2"
+                            className="flex-1 lg:flex-none px-5 py-2.5 bg-muted hover:bg-muted border border-border rounded-2xl text-xs font-bold text-foreground transition-all flex items-center justify-center gap-2"
                         >
                             <ExternalLink className="w-4 h-4 text-brand-600" />
                             LinkedIn Profile

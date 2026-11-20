@@ -67,7 +67,7 @@ const ImportGuidelines = () => {
           </Alert>
 
           <div>
-            <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+            <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-600" />
               Required Fields
             </h4>
@@ -76,9 +76,9 @@ const ImportGuidelines = () => {
                 <div key={index} className="flex items-center justify-between p-2 bg-green-50 rounded border border-green-200">
                   <div>
                     <Badge variant="default" className="mr-2">{field.name}</Badge>
-                    <span className="text-sm text-gray-700">{field.description}</span>
+                    <span className="text-sm text-foreground">{field.description}</span>
                   </div>
-                  <code className="text-xs bg-white px-2 py-1 rounded border">
+                  <code className="text-xs bg-card px-2 py-1 rounded border">
                     {field.example}
                   </code>
                 </div>
@@ -87,7 +87,7 @@ const ImportGuidelines = () => {
           </div>
 
           <div>
-            <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+            <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
               <Info className="h-4 w-4 text-blue-600" />
               Optional Fields
             </h4>
@@ -96,9 +96,9 @@ const ImportGuidelines = () => {
                 <div key={index} className="flex items-center justify-between p-2 bg-blue-50 rounded border border-blue-200">
                   <div>
                     <Badge variant="outline" className="mr-2">{field.name}</Badge>
-                    <span className="text-sm text-gray-700">{field.description}</span>
+                    <span className="text-sm text-foreground">{field.description}</span>
                   </div>
-                  <code className="text-xs bg-white px-2 py-1 rounded border">
+                  <code className="text-xs bg-card px-2 py-1 rounded border">
                     {field.example}
                   </code>
                 </div>
@@ -124,7 +124,7 @@ const ImportGuidelines = () => {
             {validationRules.map((rule, index) => (
               <li key={index} className="flex items-start space-x-2">
                 <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                <span className="text-sm text-gray-700">{rule}</span>
+                <span className="text-sm text-foreground">{rule}</span>
               </li>
             ))}
           </ul>
@@ -149,8 +149,8 @@ const ImportGuidelines = () => {
                 <div className="flex items-start space-x-2">
                   <AlertTriangle className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
-                    <p className="font-medium text-gray-900 text-sm">{item.error}</p>
-                    <p className="text-sm text-gray-600 mt-1">{item.solution}</p>
+                    <p className="font-medium text-foreground text-sm">{item.error}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{item.solution}</p>
                   </div>
                 </div>
               </div>
@@ -168,7 +168,7 @@ const ImportGuidelines = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3 text-sm text-gray-700">
+          <div className="space-y-3 text-sm text-foreground">
             <div className="flex items-start space-x-2">
               <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
               <span>Test with a small batch first (10-20 candidates) to verify your format</span>

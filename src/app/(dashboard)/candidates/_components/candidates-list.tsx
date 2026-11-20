@@ -18,7 +18,7 @@ const CandidatesList = ({candidate, pageCount}: Props) => {
 
     return (
         <>
-            <div className="rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
+            <div className="rounded-2xl border border-border shadow-sm overflow-hidden">
                 <DataTable<CandidatesResponseType>
                     columns={columns} data={candidate}
                     status="candidates"

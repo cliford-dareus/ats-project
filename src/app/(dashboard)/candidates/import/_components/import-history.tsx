@@ -81,7 +81,7 @@ const ImportHistory = () => {
       case 'failed':
         return <AlertCircle className="h-4 w-4 text-red-600" />;
       default:
-        return <Clock className="h-4 w-4 text-gray-600" />;
+        return <Clock className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -154,20 +154,20 @@ const ImportHistory = () => {
       <CardContent>
         {importHistory.length === 0 ? (
           <div className="text-center py-8">
-            <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-gray-500">No import history found</p>
-            <p className="text-sm text-gray-400">Your import history will appear here after you import candidates</p>
+            <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">No import history found</p>
+            <p className="text-sm text-muted-foreground">Your import history will appear here after you import candidates</p>
           </div>
         ) : (
           <div className="space-y-4">
             {importHistory.map((record) => (
-              <div key={record.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+              <div key={record.id} className="border rounded-lg p-4 hover:bg-muted transition-colors">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-3">
                     {getStatusIcon(record.status)}
                     <div>
-                      <h4 className="font-medium text-gray-900">{record.fileName}</h4>
-                      <p className="text-sm text-gray-500 flex items-center gap-1">
+                      <h4 className="font-medium text-foreground">{record.fileName}</h4>
+                      <p className="text-sm text-muted-foreground flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
                         {format(record.importedAt, 'PPp')}
                       </p>
@@ -190,25 +190,25 @@ const ImportHistory = () => {
 
                 <div className="grid grid-cols-3 gap-4 text-sm">
                   <div className="flex items-center space-x-2">
-                    <Users className="h-4 w-4 text-gray-400" />
-                    <span className="text-gray-600">Total:</span>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Total:</span>
                     <span className="font-medium">{record.totalRecords}</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <CheckCircle className="h-4 w-4 text-green-600" />
-                    <span className="text-gray-600">Success:</span>
+                    <span className="text-muted-foreground">Success:</span>
                     <span className="font-medium text-green-600">{record.successfulImports}</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <AlertCircle className="h-4 w-4 text-red-600" />
-                    <span className="text-gray-600">Failed:</span>
+                    <span className="text-muted-foreground">Failed:</span>
                     <span className="font-medium text-red-600">{record.failedImports}</span>
                   </div>
                 </div>
 
                 {record.errors && record.errors.length > 0 && (
                   <div className="mt-3 pt-3 border-t">
-                    <p className="text-sm font-medium text-gray-700 mb-2">Recent Errors:</p>
+                    <p className="text-sm font-medium text-foreground mb-2">Recent Errors:</p>
                     <div className="space-y-1">
                       {record.errors.slice(0, 3).map((error, index) => (
                         <p key={index} className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded">
@@ -216,7 +216,7 @@ const ImportHistory = () => {
                         </p>
                       ))}
                       {record.errors.length > 3 && (
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-muted-foreground">
                           +{record.errors.length - 3} more errors
                         </p>
                       )}
@@ -225,7 +225,7 @@ const ImportHistory = () => {
                 )}
 
                 <div className="mt-3 pt-3 border-t">
-                  <div className="flex items-center justify-between text-xs text-gray-500">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>Success Rate: {Math.round((record.successfulImports / record.totalRecords) * 100)}%</span>
                     <span>Import ID: {record.id}</span>
                   </div>

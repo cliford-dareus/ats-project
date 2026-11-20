@@ -21,15 +21,15 @@ const CandidateSummary = ({ data, softSkills, technicalSkills, resumeSummary }: 
             <div className="lg:col-span-2 space-y-6">
 
                 {/* AI Talent Assessment Card */}
-                {/*<div className="bg-white rounded-2xl border border-zinc-200 p-8 shadow-sm space-y-6 relative overflow-hidden">
-                    <div className="flex items-center justify-between pb-4 border-b border-zinc-100">
+                {/*<div className="bg-card rounded-2xl border border-border p-8 shadow-sm space-y-6 relative overflow-hidden">
+                    <div className="flex items-center justify-between pb-4 border-b border-border">
                         <div className="flex items-center gap-2">
                             <div className="w-9 h-9 bg-brand-50 rounded-xl flex items-center justify-center">
                                 <Sparkles className="w-5 h-5 text-brand-600" />
                             </div>
                             <div>
-                                <h3 className="font-bold text-lg text-zinc-900 tracking-tight">AI Talent Insights</h3>
-                                <p className="text-xs text-zinc-400 font-medium">Powered by Gemini AI Engine</p>
+                                <h3 className="font-bold text-lg text-foreground tracking-tight">AI Talent Insights</h3>
+                                <p className="text-xs text-muted-foreground font-medium">Powered by Gemini AI Engine</p>
                             </div>
                         </div>
 
@@ -47,20 +47,20 @@ const CandidateSummary = ({ data, softSkills, technicalSkills, resumeSummary }: 
                     {isAnalyzing && (
                         <div className="flex flex-col items-center justify-center py-10 gap-3">
                             <Loader2 className="w-8 h-8 text-brand-600 animate-spin" />
-                            <p className="text-xs font-bold text-zinc-600 animate-pulse">Evaluating candidate skills against job requirements...</p>
+                            <p className="text-xs font-bold text-muted-foreground animate-pulse">Evaluating candidate skills against job requirements...</p>
                         </div>
                     )}
 
                     {aiAnalysis && (
-                        <div className="prose prose-zinc max-w-none text-xs font-medium text-zinc-700 leading-relaxed bg-zinc-50/80 p-6 rounded-2xl border border-zinc-200/60">
+                        <div className="prose prose max-w-none text-xs font-medium text-foreground leading-relaxed bg-muted/80 p-6 rounded-2xl border border-border/60">
                             <ReactMarkdown>{aiAnalysis}</ReactMarkdown>
                         </div>
                     )}
 
                     {!aiAnalysis && !isAnalyzing && (
-                        <div className="bg-zinc-50/80 rounded-2xl p-6 border border-zinc-200/60 text-center space-y-2">
-                            <p className="text-xs font-bold text-zinc-700">Get an instant AI match score and candidate breakdown</p>
-                            <p className="text-xs text-zinc-500 max-w-md mx-auto">
+                        <div className="bg-muted/80 rounded-2xl p-6 border border-border/60 text-center space-y-2">
+                            <p className="text-xs font-bold text-foreground">Get an instant AI match score and candidate breakdown</p>
+                            <p className="text-xs text-muted-foreground max-w-md mx-auto">
                                 Click "Generate AI Report" to synthesize {candidate.name}'s experience, technical alignment, and screening recommendations.
                             </p>
                         </div>
@@ -68,18 +68,18 @@ const CandidateSummary = ({ data, softSkills, technicalSkills, resumeSummary }: 
                 </div>*/}
 
                 {/* Bio & Resume Summary */}
-                <div className="bg-white rounded-2xl border border-zinc-200 p-8 shadow-sm space-y-4">
-                    <h3 className="font-bold text-zinc-900 flex items-center gap-2 text-brand-dark uppercase tracking-widest">
+                <div className="bg-card rounded-2xl border border-border p-8 shadow-sm space-y-4">
+                    <h3 className="font-bold text-foreground flex items-center gap-2 text-brand-dark uppercase tracking-widest">
                         <FileText className="w-5 h-5 text-brand-600" />
                         Candidate Summary & Background
                     </h3>
 
-                    <p className="text-xs font-medium text-zinc-600 leading-relaxed">
+                    <p className="text-xs font-medium text-muted-foreground leading-relaxed">
                         {resumeSummary || `${candidate.name} is a seasoned ${candidate.role} with extensive hands-on experience building modern, resilient software architectures. Proficient across key backend and frontend stacks with a strong track record of engineering delivery.`}
                     </p>
 
-                    <div className="pt-4 border-t border-zinc-100">
-                        <h4 className="text-xs font-bold text-zinc-900 mb-3 uppercase tracking-wider">Top Technical Skills</h4>
+                    <div className="pt-4 border-t border-border">
+                        <h4 className="text-xs font-bold text-foreground mb-3 uppercase tracking-wider">Top Technical Skills</h4>
                         <div className="flex flex-wrap gap-2">
                             {technicalSkills.map((skill) => (
                                 <span key={skill} className="px-3 py-1.5 bg-brand-50 border border-brand-200/60 rounded-xl text-xs font-bold text-brand-800">
@@ -90,10 +90,10 @@ const CandidateSummary = ({ data, softSkills, technicalSkills, resumeSummary }: 
                     </div>
 
                     <div className="pt-3">
-                        <h4 className="text-xs font-bold text-zinc-900 mb-3 uppercase tracking-wider">Soft Skills & Capabilities</h4>
+                        <h4 className="text-xs font-bold text-foreground mb-3 uppercase tracking-wider">Soft Skills & Capabilities</h4>
                         <div className="flex flex-wrap gap-2">
                             {softSkills.map((sSkill) => (
-                                <span key={sSkill} className="px-3 py-1.5 bg-zinc-50 border border-zinc-200 rounded-xl text-xs font-bold text-zinc-700">
+                                <span key={sSkill} className="px-3 py-1.5 bg-muted border border-border rounded-xl text-xs font-bold text-foreground">
                                     {sSkill}
                                 </span>
                             ))}
@@ -105,46 +105,46 @@ const CandidateSummary = ({ data, softSkills, technicalSkills, resumeSummary }: 
 
             {/* Right Column: Contact Card & Quick Info */}
             <div className="space-y-6">
-                <div className="bg-white rounded-2xl border border-zinc-200 p-8 shadow-sm space-y-5">
-                    <h3 className="font-bold text-base text-zinc-900 tracking-tight pb-3 border-b border-zinc-100">
+                <div className="bg-card rounded-2xl border border-border p-8 shadow-sm space-y-5">
+                    <h3 className="font-bold text-base text-foreground tracking-tight pb-3 border-b border-border">
                         Contact Details
                     </h3>
 
                     <div className="space-y-4">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-zinc-50 rounded-2xl flex items-center justify-center border border-zinc-100 text-zinc-500">
+                            <div className="w-10 h-10 bg-muted rounded-2xl flex items-center justify-center border border-border text-muted-foreground">
                                 <Mail className="w-4 h-4" />
                             </div>
                             <div>
-                                <p className="text-[10px] text-zinc-400 font-bold uppercase">Email Address</p>
-                                <p className="text-xs font-bold text-zinc-900">{candidate.email}</p>
+                                <p className="text-[10px] text-muted-foreground font-bold uppercase">Email Address</p>
+                                <p className="text-xs font-bold text-foreground">{candidate.email}</p>
                             </div>
                         </div>
 
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-zinc-50 rounded-2xl flex items-center justify-center border border-zinc-100 text-zinc-500">
+                            <div className="w-10 h-10 bg-muted rounded-2xl flex items-center justify-center border border-border text-muted-foreground">
                                 <Phone className="w-4 h-4" />
                             </div>
                             <div>
-                                <p className="text-[10px] text-zinc-400 font-bold uppercase">Phone Number</p>
-                                <p className="text-xs font-bold text-zinc-900">{candidate.phone || '+1 (555) 234-5678'}</p>
+                                <p className="text-[10px] text-muted-foreground font-bold uppercase">Phone Number</p>
+                                <p className="text-xs font-bold text-foreground">{candidate.phone || '+1 (555) 234-5678'}</p>
                             </div>
                         </div>
 
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-zinc-50 rounded-2xl flex items-center justify-center border border-zinc-100 text-zinc-500">
+                            <div className="w-10 h-10 bg-muted rounded-2xl flex items-center justify-center border border-border text-muted-foreground">
                                 <Calendar className="w-4 h-4" />
                             </div>
                             <div>
-                                <p className="text-[10px] text-zinc-400 font-bold uppercase">Applied On</p>
-                                <p className="text-xs font-bold text-zinc-900">{format(candidate.created_at, 'MM/dd/yyyy')}</p>
+                                <p className="text-[10px] text-muted-foreground font-bold uppercase">Applied On</p>
+                                <p className="text-xs font-bold text-foreground">{format(candidate.created_at, 'MM/dd/yyyy')}</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="pt-4 border-t border-zinc-100 space-y-2">
+                    <div className="pt-4 border-t border-border space-y-2">
                         <button
-                            className="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-2xl text-xs font-bold transition-all shadow-md shadow-primary-500/20"
+                            className="w-full py-3 bg-primary text-primary-foreground rounded-2xl text-xs font-bold transition-all shadow-md shadow-primary-500/20"
                         >
                             Schedule Interview
                         </button>

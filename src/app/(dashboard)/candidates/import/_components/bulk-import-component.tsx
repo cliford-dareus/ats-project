@@ -234,11 +234,11 @@ const BulkImportComponent = () => {
                 <div className="flex items-center justify-center space-x-4">
                     <div className={cn(
                         "flex items-center space-x-2 px-3 py-1 rounded-full text-sm",
-                        currentStep === 'upload' ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-500"
+                        currentStep === 'upload' ? "bg-blue-100 text-blue-700" : "bg-muted text-muted-foreground"
                     )}>
                         <div className={cn(
                             "w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium",
-                            currentStep === 'upload' ? "bg-blue-600 text-white" : "bg-gray-300 text-gray-600"
+                            currentStep === 'upload' ? "bg-blue-600 text-white" : "bg-muted text-muted-foreground"
                         )}>
                             1
                         </div>
@@ -247,11 +247,11 @@ const BulkImportComponent = () => {
 
                     <div className={cn(
                         "flex items-center space-x-2 px-3 py-1 rounded-full text-sm",
-                        currentStep === 'preview' ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-500"
+                        currentStep === 'preview' ? "bg-blue-100 text-blue-700" : "bg-muted text-muted-foreground"
                     )}>
                         <div className={cn(
                             "w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium",
-                            currentStep === 'preview' ? "bg-blue-600 text-white" : "bg-gray-300 text-gray-600"
+                            currentStep === 'preview' ? "bg-blue-600 text-white" : "bg-muted text-muted-foreground"
                         )}>
                             2
                         </div>
@@ -260,11 +260,11 @@ const BulkImportComponent = () => {
 
                     <div className={cn(
                         "flex items-center space-x-2 px-3 py-1 rounded-full text-sm",
-                        currentStep === 'result' ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-500"
+                        currentStep === 'result' ? "bg-blue-100 text-blue-700" : "bg-muted text-muted-foreground"
                     )}>
                         <div className={cn(
                             "w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium",
-                            currentStep === 'result' ? "bg-blue-600 text-white" : "bg-gray-300 text-gray-600"
+                            currentStep === 'result' ? "bg-blue-600 text-white" : "bg-muted text-muted-foreground"
                         )}>
                             3
                         </div>
@@ -287,19 +287,19 @@ const BulkImportComponent = () => {
                                 {...getRootProps()}
                                 className={cn(
                                     "border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors",
-                                    isDragActive ? "border-blue-400 bg-blue-50" : "border-gray-300 hover:border-gray-400"
+                                    isDragActive ? "border-primary bg-muted" : "border-border hover:border-border/80"
                                 )}
                             >
                                 <input {...getInputProps()} />
-                                <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                                <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                                 {isDragActive ? (
                                     <p className="text-blue-600">Drop the CSV file here...</p>
                                 ) : (
                                     <div>
-                                        <p className="text-gray-600 mb-2">
+                                        <p className="text-muted-foreground mb-2">
                                             Drag and drop a CSV file here, or click to select
                                         </p>
-                                        <p className="text-sm text-gray-400">
+                                        <p className="text-sm text-muted-foreground">
                                             Only CSV files are supported
                                         </p>
                                     </div>
@@ -307,9 +307,9 @@ const BulkImportComponent = () => {
                             </div>
 
                             {file && (
-                                <div className="mt-4 p-3 bg-gray-50 rounded-lg flex items-center justify-between">
+                                <div className="mt-4 p-3 bg-muted rounded-lg flex items-center justify-between">
                                     <div className="flex items-center space-x-2">
-                                        <FileText className="h-4 w-4 text-gray-500" />
+                                        <FileText className="h-4 w-4 text-muted-foreground" />
                                         <span className="text-sm font-medium">{file.name}</span>
                                         <Badge variant="secondary">{(file.size / 1024).toFixed(1)} KB</Badge>
                                     </div>
@@ -401,14 +401,14 @@ const BulkImportComponent = () => {
                                         <div className="border rounded-lg overflow-hidden">
                                             <div className="overflow-x-auto">
                                                 <table className="w-full text-sm">
-                                                    <thead className="bg-gray-50">
+                                                    <thead className="bg-muted">
                                                         <tr>
-                                                            <th className="px-4 py-2 text-left font-medium text-gray-900">Row</th>
-                                                            <th className="px-4 py-2 text-left font-medium text-gray-900">Name</th>
-                                                            <th className="px-4 py-2 text-left font-medium text-gray-900">Email</th>
-                                                            <th className="px-4 py-2 text-left font-medium text-gray-900">Phone</th>
-                                                            <th className="px-4 py-2 text-left font-medium text-gray-900">Location</th>
-                                                            <th className="px-4 py-2 text-left font-medium text-gray-900">Status</th>
+                                                            <th className="px-4 py-2 text-left font-medium text-foreground">Row</th>
+                                                            <th className="px-4 py-2 text-left font-medium text-foreground">Name</th>
+                                                            <th className="px-4 py-2 text-left font-medium text-foreground">Email</th>
+                                                            <th className="px-4 py-2 text-left font-medium text-foreground">Phone</th>
+                                                            <th className="px-4 py-2 text-left font-medium text-foreground">Location</th>
+                                                            <th className="px-4 py-2 text-left font-medium text-foreground">Status</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-gray-200">
@@ -418,7 +418,7 @@ const BulkImportComponent = () => {
 
                                                             return (
                                                                 <tr key={index} className={hasErrors ? "bg-red-50" : ""}>
-                                                                    <td className="px-4 py-2 text-gray-500">{index + 1}</td>
+                                                                    <td className="px-4 py-2 text-muted-foreground">{index + 1}</td>
                                                                     <td className="px-4 py-2">{row.name}</td>
                                                                     <td className="px-4 py-2">{row.email}</td>
                                                                     <td className="px-4 py-2">{row.phone}</td>
@@ -442,7 +442,7 @@ const BulkImportComponent = () => {
                                                 </table>
                                             </div>
                                             {parsedData.length > 10 && (
-                                                <div className="px-4 py-2 bg-gray-50 text-sm text-gray-500 text-center">
+                                                <div className="px-4 py-2 bg-muted text-sm text-muted-foreground text-center">
                                                     Showing first 10 of {parsedData.length} candidates
                                                 </div>
                                             )}
@@ -498,7 +498,7 @@ const BulkImportComponent = () => {
 
                                 {importResult.errors.length > 0 && (
                                     <div className="space-y-2">
-                                        <h4 className="font-medium text-gray-900">Import Errors:</h4>
+                                        <h4 className="font-medium text-foreground">Import Errors:</h4>
                                         {importResult.errors.map((error, index) => (
                                             <div key={index}
                                                 className="p-2 bg-red-50 rounded border border-red-200 text-sm">
