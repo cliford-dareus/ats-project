@@ -296,8 +296,8 @@ export const get_org_departments_db = async (org_id: string) => {
 };
 
 export const get_oganization_users = async (org_id: string) => { 
-    const cacheFn = dbCache(get_org_departments_db, {
-        tags: [getIdTag(org_id, CACHE_TAGS.departments)]
+    const cacheFn = dbCache(get_oganization_users_db, {
+        tags: [getIdTag(org_id, CACHE_TAGS.organizations)]
     });
 
     return cacheFn(org_id);
@@ -311,6 +311,7 @@ export const get_oganization_users_db = async (org_id: string) => {
         email: users_table.email,
         username: users_table.username,
         image_url: users_table.image_url,
+        organization_id: organization_member.organization_id,
     })
         .from(organization_member)
         .innerJoin(users_table, eq(organization_member.user_id, users_table.id))

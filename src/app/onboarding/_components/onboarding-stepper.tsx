@@ -16,10 +16,6 @@ type Props = {
     current: OnboardingStepId | null;
 };
 
-/**
- * Segmented progress indicator for the onboarding flow.
- * Token-only styling (primary / muted) so it works in light and dark mode.
- */
 const OnboardingStepper = ({ current }: Props) => {
     if (!current) return null;
 
