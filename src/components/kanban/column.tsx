@@ -124,13 +124,15 @@ export default function Column({
                 )}
             >
                 {applications.map((card) => (
-                    <Card
-                        key={card.id}
-                        stage={stage}
-                        data={card}
-                        jobDetails={jobDetails}
-                        handleDragStart={(e) => handleDragStart(e, card.id!)}
-                    />
+                    <React.Fragment key={card.id}>
+                        <Card
+                            stage={stage}
+                            data={card}
+                            jobDetails={jobDetails}
+                            handleDragStart={(e) => handleDragStart(e, card.id!)}
+                        />
+                        <DropIndicator beforeId={card.id} stage={stage} column={stage.stage_name} active={active} />
+                    </React.Fragment>
                 ))}
 
                 <DropIndicator beforeId={null} stage={stage} column={stage.stage_name} active={active} />

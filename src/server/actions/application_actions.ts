@@ -3,7 +3,7 @@
 import {
     create_application, create_application_for_candidate_db, get_all_applications,
     get_application_by_id, get_job_all_applications,
-    getTasks, move_application_and_reorder_db,
+    move_application_and_reorder_db,
     update_application,
     update_application_stage
 } from "@/server/queries";
@@ -120,17 +120,3 @@ export const moveApplicationAndReorder = async (unsafeData: z.infer<typeof moveA
 
 // export const delete_application_action = async (data: { candidateId: number }) => {
 // };
-
-export const get_all_tasks_action = async () => {
-    const { userId, orgId } = await auth();
-    // Tasks are the smart-trigger queue for applications on the kanban board;
-    // reading them is an application read. (The sibling write,
-    // add_task_to_queue_action, requires application:move.)
-    const allowed = await canViewApplication();
-
-    if (!userId || !orgId || !allowed) {
-        return { error: true, message: "There was an error retrieving tasks" }
-    }
-
-    return await getTasks(orgId);
-};

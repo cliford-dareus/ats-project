@@ -1,4 +1,3 @@
-import { ConfigType } from "@/plugins/smart-trigger/types";
 import { CANDIDATE_STATUS, JOB_ENUM, JOB_STAGES, JOB_STATUS, JOB_TYPE } from "@/zod";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -61,18 +60,6 @@ export type StageResponseType = {
     assign_to: string | null
     color: string | null;
     need_schedule: boolean | null;
-    // The stages table has no trigger column — present only when a caller
-    // attaches serialized smart-trigger actions. Always guard before parsing.
-    trigger?: string;
-};
-
-export type TriggerResponseType = {
-    id: number;
-    action_type: string;
-    stage_id: number;
-    config: ConfigType;
-    created_at: Date;
-    updated_at: Date;
 };
 
 export type NoteResponseType = {
@@ -406,7 +393,7 @@ export interface SmartTrigger {
 
 // ── Integration result ────────────────────────────────────────────────────────
 export interface ATSIntegrationResult {
-    success: boolean;    data?: unknown;
+    success: boolean; data?: unknown;
     error?: string;
     metadata?: Record<string, string>;
 };
@@ -509,6 +496,7 @@ export interface PendingExecution {
     id: string;
     ruleId: string;
     ruleName: string;
+    applicationId: number;        // candidateId / application ID the execution targets
     scheduledAt: number;          // Date.now() + delayMs
     event: Record<string, unknown>;
     context: Record<string, unknown>;

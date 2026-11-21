@@ -1,11 +1,15 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Evaluates AutomationRules when TriggerEvents fire.
 // Handles delays with setTimeout (swap for a job queue in production).
+//
+// This file is client-safe: it contains only the event emitter, rule management,
+// and evaluation logic. The actual action handlers live in
+// `automation-engine-actions.ts` (server-only) and are loaded dynamically at
+// runtime so that `node:crypto` is never bundled for the client.
 // ─────────────────────────────────────────────────────────────────────────────
 import { EventEmitter } from "events";
 import {
     delayToMs,
-    interpolate,
     type AutomationAction,
     type AutomationRule,
     type PendingExecution,
@@ -15,88 +19,13 @@ import type { ATSContext, TriggerEvent } from "@/types";
 export interface AutomationExecutionResult {
     ruleId: string;
     ruleName: string;
+    applicationId: number;
     success: boolean;
     action: AutomationAction;
     output?: unknown;
     error?: string;
     at: Date;
 }
-
-// ── Execution handlers ────────────────────────────────────────────────────────
-// Each action type has a handler. Real implementations call your DB / API.
-async function executeAction(
-    action: AutomationAction,
-    event: TriggerEvent,
-    context: ATSContext,
-): Promise<unknown> {
-    // Build interpolation vars from context
-    const vars: Record<string, string> = {
-        "candidate.name": context.candidate?.name ?? "",
-        "candidate.email": context.candidate?.email ?? "",
-        "candidate.id": context.candidate?.id?.toString() ?? "",
-        "job.title": context.job?.job_name ?? "",
-        "job.department": context.job?.job_department ?? "",
-        "org.id": context.organization_id,
-        "stage": "toStage" in event ? event.toStage : "",
-    };
-
-    switch (action.type) {
-        case "add_note": {
-            const content = interpolate(action.content, vars);
-            // Real: await db.note.create({ candidateId: context.candidate?.id, content, pinned: action.pinned })
-            console.log(`[AutomationEngine] add_note → "${content.slice(0, 60)}…"`);
-            return { noteId: `note_${Date.now()}`, content };
-        }
-
-        case "send_sms": {
-            const message = interpolate(action.message, vars);
-            const toEmail =
-                action.to === "candidate" ? context.candidate?.email :
-                    action.to === "recruiter" ? (context.settings.recruiterPhone as string) :
-        /* hiring_manager */              (context.settings.hiringManagerPhone as string);
-
-            // Real: await twilioClient.messages.create({ to: toPhone, from: process.env.TWILIO_FROM, body: message })
-            console.log(`[AutomationEngine] send_sms → ${action.to} (${toEmail}): "${message.slice(0, 60)}"`);
-            return { messageSid: `SM${Date.now()}`, to: action.to, message };
-        }
-
-        case "send_email": {
-            const subject = interpolate(action.subject, vars);
-            // const body = interpolate(action.body, vars);
-            const toEmail =
-                action.to === "candidate" ? context.candidate?.email :
-                    action.to === "recruiter" ? (context.settings.recruiterEmail as string) :
-        /* hiring_manager */              (context.settings.hiringManagerEmail as string);
-
-            // Real: await resend.emails.send({ from, to: toEmail, subject, html: body })
-            console.log(`[AutomationEngine] send_email → ${toEmail}: "${subject}"`);
-            return { emailId: `email_${Date.now()}`, to: toEmail, subject };
-        }
-
-        case "fire_integration": {
-            // Dynamically import to avoid circular deps with plugin-registry
-            const { pluginRegistry } = await import("./plugin-registry");
-            const integration = pluginRegistry.getIntegration(action.providerId, action.integrationId);
-            if (!integration) throw new Error(`Integration ${action.providerId}:${action.integrationId} not found`);
-            return integration.execute(event, context);
-        }
-
-        case "move_stage": {
-            // Real: await db.candidateJob.update({ where: { id: context.candidate?.id }, data: { stage: action.toStage } })
-            console.log(`[AutomationEngine] move_stage → ${action.toStage}`);
-            return { toStage: action.toStage };
-        }
-
-        case "assign_recruiter": {
-            // Real: await db.candidateJob.update({ where: { id: context.candidate?.id }, data: { recruiterId: action.userId } })
-            console.log(`[AutomationEngine] assign_recruiter → ${action.userId}`);
-            return { assignedTo: action.userId };
-        }
-
-        default:
-            throw new Error(`Unknown action type: ${(action as AutomationAction).type}`);
-    }
-};
 
 // ── AutomationEngine ──────────────────────────────────────────────────────────
 const EMPTY_RULES: AutomationRule[] = [];
@@ -154,6 +83,7 @@ export class AutomationEngine extends EventEmitter {
                     id: `exec_${rule.id}_${Date.now()}`,
                     ruleId: rule.id,
                     ruleName: rule.name,
+                    applicationId: Number(event.candidateId) ?? 0,
                     scheduledAt: Date.now() + delayMs,
                     event: event as unknown as Record<string, unknown>,
                     context: context as unknown as Record<string, unknown>,
@@ -191,11 +121,17 @@ export class AutomationEngine extends EventEmitter {
         event: TriggerEvent,
         context: ATSContext,
     ): Promise<void> {
+        const applicationId = Number(event.candidateId) ?? 0;
         try {
+            // Dynamically import the server-only action handlers so that
+            // `node:crypto` (used by plugin-encryption) is never bundled for
+            // the client. The import resolves at runtime when the action runs.
+            const { executeAction } = await import("./automation-engine-actions");
             const output = await executeAction(rule.action, event, context);
             const result: AutomationExecutionResult = {
                 ruleId: rule.id,
                 ruleName: rule.name,
+                applicationId,
                 success: true,
                 action: rule.action,
                 output,
@@ -206,6 +142,7 @@ export class AutomationEngine extends EventEmitter {
             const result: AutomationExecutionResult = {
                 ruleId: rule.id,
                 ruleName: rule.name,
+                applicationId,
                 success: false,
                 action: rule.action,
                 error: err instanceof Error ? err.message : String(err),

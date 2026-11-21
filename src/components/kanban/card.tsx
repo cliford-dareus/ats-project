@@ -1,14 +1,13 @@
 'use client'
 
 import { ApplicationType, StageResponseType } from "@/types";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import DropIndicator from "@/components/kanban/drop-indicator";
 import { motion } from "motion/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { cn, getTimeElapsed } from "@/lib/utils";
 import { Calendar, Clock, ExternalLink, GripVertical } from "lucide-react";
-import { TriggerTask } from "@/plugins/smart-trigger/types";
 import { useKanbanContext } from "@/providers/kanban-provider";
 import ScheduleInterviewModal from "@/components/modal/schedule-interview-modal";
 import { useHasPermission } from "@/lib/use-permission";
@@ -21,22 +20,16 @@ type Props = {
 };
 
 const Card = ({ data, handleDragStart, stage, jobDetails }: Props) => {
-    const { tasks } = useKanbanContext();
+    const { pendingApplicationIds } = useKanbanContext();
     const hasPermission = useHasPermission();
     const canMove = hasPermission("application:move");
     const canSchedule = hasPermission("interview:schedule");
     const [isOpen, setIsOpen] = useState(false);
-    const [activeTrigger, setActiveTrigger] = useState<TriggerTask[]>([]);
 
-    const hasActiveTrigger = activeTrigger.length > 0 &&
-        activeTrigger.some(task => new Date(task.triggerTime).getTime() > Date.now());
+    const hasPendingAutomation = pendingApplicationIds.has(data.id);
 
     const hasScheduledInterview = data.interviews?.start_at != null &&
         new Date(data.interviews.start_at) > new Date();;
-    useEffect(() => {
-        const filteredTasks = tasks.filter(task => task.application_id === data.id);
-        setActiveTrigger(filteredTasks);
-    }, [tasks, data.id]);
 
     return (
         <>
@@ -57,7 +50,7 @@ const Card = ({ data, handleDragStart, stage, jobDetails }: Props) => {
                                 <AvatarFallback>CN</AvatarFallback>
                             </Avatar>
                         </div>
-                        {hasActiveTrigger && (
+                        {hasPendingAutomation && (
                             <div className="absolute -top-2 -left-2 bg-white text-blue-500 p-1 rounded-full shadow-md border border-slate-100 animate-bounce">
                                 <Clock size={14} />
                             </div>

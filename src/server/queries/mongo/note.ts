@@ -10,6 +10,7 @@ import Note from "@/models/notes";
 import Thread from "@/models/threads";
 import { canEditCandidate } from "@/server/permissions";
 import { db_get_org_members_by_ids } from "@/server/queries/drizzle/organization";
+import { create_notifications_db } from "@/server/queries/mongo/notifications";
 import { db_get_organization_plugins } from "@/server/queries/drizzle/plugin-queries";
 import { auth } from "@clerk/nextjs/server";
 import { eq } from "drizzle-orm";
@@ -73,14 +74,13 @@ export type NoteMentionNotificationInput = {
 
 /**
  * ── Mention notification hook ────────────────────────────────────────────────
- * Notifies org members mentioned in a note. No in-app notification system
- * exists yet, so this sends email via Resend — the org's configured Resend
- * plugin key when present, otherwise RESEND_API_KEY from the environment.
- * Only users verified as members of the session org are emailed (callers must
- * pass the output of verify_note_mentions), and the author is never emailed.
- * Best-effort: failures are logged and never fail note creation. When no
- * Resend key is configured anywhere, notifications are skipped (the mentions
- * are still persisted on the note).
+ * Notifies org members mentioned in a note via in-app notifications and email.
+ * In-app notifications are always created. Email is sent via Resend — the org's
+ * configured Resend plugin key when present, otherwise RESEND_API_KEY from the
+ * environment. Only users verified as members of the session org are notified
+ * (callers must pass the output of verify_note_mentions), and the author is
+ * never notified. Best-effort: failures are logged and never fail note creation.
+ * When no Resend key is configured, only in-app notifications are created.
  */
 export const notify_mentioned_users = async ({
     orgId,
@@ -97,12 +97,30 @@ export const notify_mentioned_users = async ({
     const members = await db_get_org_members_by_ids(orgId, targets.map((m) => m.userId));
     if (members.length === 0) return { notified: 0 };
 
+    // Always create in-app notifications for mentioned users
+    try {
+        await create_notifications_db(
+            orgId,
+            members.map((m) => m.id),
+            {
+                kind: "mention",
+                title: `${authorName} mentioned you`,
+                body: `${authorName} mentioned you in a note about ${candidateName}.`,
+                link: `/candidates/${candidateId}`,
+                actor_id: authorId,
+                actor_name: authorName,
+            },
+        );
+    } catch (error) {
+        console.warn("[notes] Failed to create in-app mention notifications", error);
+    }
+
     const plugins = await db_get_organization_plugins(orgId);
     const resendSettings = plugins.settings?.["resend"];
     const apiKey = resendSettings?.credentials?.apiKey || process.env.RESEND_API_KEY;
     if (!apiKey) {
         console.warn("[notes] No Resend API key configured — mention emails skipped");
-        return { notified: 0, skipped: "no-api-key" };
+        return { notified: members.length, skipped: "no-api-key" };
     }
 
     const fromAddress =

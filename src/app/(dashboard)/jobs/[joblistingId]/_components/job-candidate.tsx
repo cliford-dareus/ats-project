@@ -41,7 +41,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { get_candidate_details_action } from "@/server/actions/candidates-actions";
 import {
     ApplicationExperienceMatch,
     ApplicationSummaryType,
@@ -51,6 +50,7 @@ import JobQuickViewCard from "@/components/job-quick-view-card";
 import { update_application_stage_action } from "@/server/actions/application_actions";
 import { Button } from "@/components/ui/button";
 import { useHasPermission } from "@/lib/use-permission";
+import { get_candidate_details } from "@/server/queries/mongo/candidate-details";
 
 type Props = {
     job: JobListingType;
@@ -118,7 +118,7 @@ const JobCandidate = ({ job, stages }: Props) => {
     useEffect(() => {
         const detailsFn = async () => {
             if (!selectedApplications?.candidate?.id) return;
-            const rawResponse = await get_candidate_details_action(
+            const rawResponse = await get_candidate_details(
                 selectedApplications.candidate.id as number,
             );
             const candidateDetails = JSON.parse(rawResponse);

@@ -4,8 +4,6 @@ import { auth } from "@clerk/nextjs/server";
 import { canEditJob, canMoveApplication, canViewJob, hasPermission } from "@/server/permissions";
 import { get_stage_by_name } from "@/server/queries/drizzle/stages";
 import { JOB_STAGES } from "@/zod";
-import { TriggerAction } from "@/plugins/smart-trigger/types";
-import { addTaskToQueue } from "../queries";
 
 export const get_stage_by_name_action = async (stageName: string) => {
     const { userId } = await auth();
@@ -41,25 +39,6 @@ export const add_trigger_to_stage_action = async () => {
     return { error: true, message: "Stage triggers are not implemented yet" };
 };
 
-type AddTaskToQueueActionParams = {
-    applicationId: number;
-    action: TriggerAction;
-    jobId: number;
-    stageName?: string;
-};
-
-// MOVE LATER
-export const add_task_to_queue_action = async (unsafeData: AddTaskToQueueActionParams) => {
-    const { userId } = await auth();
-    // Fired as part of moving an application between stages (smart-trigger lifecycle).
-    const allowed = await canMoveApplication();
-
-    if (!userId || !allowed) {
-        return { error: true, message: "There was an error adding the task to the queue" }
-    }
-
-    return await addTaskToQueue(unsafeData);
-};
 
 export const verifyResend = async (apiKey: string): Promise<{ success: boolean; message: string; error?: unknown }> => {
     // Plugin credential setup is plugin management (admin-only). Called from

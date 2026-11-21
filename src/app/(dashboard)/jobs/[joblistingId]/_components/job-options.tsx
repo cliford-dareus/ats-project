@@ -1,7 +1,7 @@
 'use client'
 
 import React, {useActionState, useState} from 'react';
-import {FormErrors, JobResponseType, StageResponseType, TriggerResponseType} from "@/types";
+import {FormErrors, JobResponseType, StageResponseType} from "@/types";
 import {JOB_ENUM, JOB_STAGES, JOB_STATUS} from "@/zod";
 import {cn} from "@/lib/utils";
 import {Plus} from "lucide-react";
@@ -91,11 +91,7 @@ const JobOptions = ({data, stages, job_id}: Props) => {
                             {openStage === stage.stage_name &&
                                 <div className="w-full border p-4 flex flex-col gap-4">
                                     <div className='flex'>
-                                        {/* The stages table has no trigger column, so stages
-                                            loaded from the DB carry no serialized triggers. */}
-                                        {(stage.trigger ? JSON.parse(stage.trigger) : []).map((trigger: TriggerResponseType) => (
-                                            <div key={trigger.id}>{trigger.action_type}</div>
-                                        ))}
+                                        {/* Triggers for this stage will appear here */}
                                     </div>
                                 </div>
                             }

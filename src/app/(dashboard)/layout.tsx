@@ -3,7 +3,7 @@ import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Bell, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import Link from "next/link";
 import OrganizationSwitcher from "@/components/organization_switcher";
@@ -12,6 +12,7 @@ import AuthDropdown from "@/components/auth-dropdown";
 import Provider from "@/providers/providers";
 import { ensure_organization_row } from "@/server/queries/drizzle/organization";
 import { ThemeToggle } from "@/components/theme-toggle";
+import NotificationDropdown from "@/components/notification-dropdown";
 
 type Props = {
     children: React.ReactNode;
@@ -64,7 +65,7 @@ const Layout = async ({ children }: Props) => {
                         <Separator orientation="vertical" className="mr-2 h-4" />
                         <div className="ml-auto flex items-center gap-2">
                             <ThemeToggle />
-                            <Bell size={18} />
+                            <NotificationDropdown />
                             <Button className="!p-0 border rounded-lg text-[10px] uppercase tracking-widest font-bold transition-all flex items-center gap-2">
                                 <Link
                                     href="/jobs/new"

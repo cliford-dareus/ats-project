@@ -22,7 +22,6 @@ import CommunicationLog from "@/models/communication-log";
 import EmailTemplate from "@/models/email-templates";
 import Note from "@/models/notes";
 import Thread from "@/models/threads";
-import Trigger from "@/models/trigger";
 
 export interface OrganizationDeletionCounts {
     // Drizzle (MySQL) tables, in delete order.
@@ -39,7 +38,6 @@ export interface OrganizationDeletionCounts {
     organization_member: number;
     organization: number;
     // Mongo collections.
-    triggers: number;
     candidate_details: number;
     mongo_attachments: number;
     notes: number;
@@ -66,8 +64,7 @@ export interface OrganizationDeletionCounts {
  *   because its FK has no cascade either. Children with cascades
  *   (score_cards, job_technologies, stages, attachments) are still deleted
  *   explicitly so the counts are exact.
- * - Mongo: Trigger (smart tasks, via application_id), CandidateDetails (via
- *   candidate_id), Attachment (via organization_id, plus candidate_id for
+ * - Mongo: CandidateDetails (via candidate_id), Attachment (via organization_id, plus candidate_id for
  *   legacy docs created before organization_id was stamped), Note, Thread,
  *   CommunicationLog and EmailTemplate (via organization_id / organizationId).
  *
@@ -113,7 +110,6 @@ export const delete_organization_data = async (
 
             const counts: Omit<
                 OrganizationDeletionCounts,
-                | "triggers"
                 | "candidate_details"
                 | "mongo_attachments"
                 | "notes"
@@ -224,16 +220,6 @@ export const delete_organization_data = async (
     // ── Mongo: org-scoped collections (no FKs, order does not matter) ───────
     await mongodb();
 
-    // Smart tasks are keyed only by application_id.
-    const triggers_deleted =
-        application_ids.length > 0
-            ? (
-                  await Trigger.deleteMany({
-                      application_id: { $in: application_ids },
-                  })
-              ).deletedCount ?? 0
-            : 0;
-
     // Candidate details are keyed only by candidate_id.
     const candidate_details_deleted =
         candidate_ids.length > 0
@@ -277,7 +263,6 @@ export const delete_organization_data = async (
 
     const full_counts: OrganizationDeletionCounts = {
         ...counts,
-        triggers: triggers_deleted,
         candidate_details: candidate_details_deleted,
         mongo_attachments: mongo_attachments_deleted,
         notes: notes_deleted,

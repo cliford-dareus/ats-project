@@ -1,19 +1,15 @@
 'use client';
 
-import React, { createContext, useContext, useState } from 'react';
-import { StageTrigger, TriggerTask } from "@/plugins/smart-trigger/types";
-import { get_all_tasks_action } from "@/server/actions/application_actions";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { automationEngine, type AutomationExecutionResult } from '@/lib/automation-engine';
+import type { PendingExecution } from '@/types';
 
 type KanbanContextType = {
-    tasks: TriggerTask[];
-    setTasks: (tasks: TriggerTask[]) => void;
-    triggers: StageTrigger[];
-    setTriggers: (triggers: StageTrigger[]) => void;
     jobStages: any[];  // StageResponseType[]
     setJobStages: (stages: any[]) => void;
-    fetchApplicationTasks: () => Promise<void>;
     orgMembers: Member[];
     setOrgMembers: (members: Member[]) => void;
+    pendingApplicationIds: Set<number>;
 };
 
 type Member = {
@@ -24,39 +20,65 @@ type Member = {
 
 const KanbanContext = createContext<KanbanContextType | undefined>(undefined);
 
-export function KanbanProvider({ children, initialTriggers = [], initialStages = [], initialOrgMembers = [] }: {
+export function KanbanProvider({ children, initialStages = [], initialOrgMembers = [] }: {
     children: React.ReactNode;
-    initialTriggers?: StageTrigger[];
     initialStages?: any[];
     initialOrgMembers?: Member[];
 }) {
-    const [tasks, setTasks] = useState<TriggerTask[]>([])
-    const [triggers, setTriggers] = useState(initialTriggers);
     const [jobStages, setJobStages] = useState(initialStages);
     const [orgMembers, setOrgMembers] = useState<Member[]>(initialOrgMembers);
 
-    const fetchApplicationTasks = async () => {
-        const tasks = await get_all_tasks_action();
-        // The action returns an error object (not JSON) when the session is
-        // missing or lacks application:view — don't JSON.parse that.
-        if (typeof tasks !== "string") {
-            return;
-        }
-        const parsedTasks = JSON.parse(tasks) as { tasks: TriggerTask[] };
-        setTasks(parsedTasks.tasks);
-    };
+    // Track which applications have pending delayed automation executions.
+    // Using a ref so listeners always see the latest set without stale closures.
+    const [pendingIds, setPendingIds] = useState<Set<number>>(new Set());
 
-    const contextValue: KanbanContextType = {
-        tasks,
-        setTasks,
+    const addPending = useCallback((applicationId: number) => {
+        setPendingIds(prev => {
+            const next = new Set(prev);
+            next.add(applicationId);
+            return next;
+        });
+    }, []);
+
+    const removePending = useCallback((applicationId: number) => {
+        setPendingIds(prev => {
+            const next = new Set(prev);
+            next.delete(applicationId);
+            return next;
+        });
+    }, []);
+
+    useEffect(() => {
+        const onScheduled = (pending: PendingExecution) => {
+            addPending(pending.applicationId);
+        };
+
+        const onCompleted = (result: AutomationExecutionResult) => {
+            removePending(result.applicationId);
+        };
+
+        const onFailed = (result: AutomationExecutionResult) => {
+            removePending(result.applicationId);
+        };
+
+        automationEngine.on('execution:scheduled', onScheduled);
+        automationEngine.on('execution:completed', onCompleted);
+        automationEngine.on('execution:failed', onFailed);
+
+        return () => {
+            automationEngine.off('execution:scheduled', onScheduled);
+            automationEngine.off('execution:completed', onCompleted);
+            automationEngine.off('execution:failed', onFailed);
+        };
+    }, [addPending, removePending]);
+
+    const contextValue: KanbanContextType = useMemo(() => ({
         jobStages,
         setJobStages,
-        triggers,
-        setTriggers,
-        fetchApplicationTasks,
         orgMembers,
         setOrgMembers,
-    };
+        pendingApplicationIds: pendingIds,
+    }), [jobStages, orgMembers, pendingIds]);
 
     return (
         <KanbanContext.Provider value={contextValue}>

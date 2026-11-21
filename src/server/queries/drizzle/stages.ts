@@ -2,7 +2,6 @@
 import {db} from "@/drizzle/db";
 import {stages} from "@/drizzle/schema";
 import { CACHE_TAGS, dbCache, getGlobalTag } from "@/lib/cache";
-// import { TriggerAction } from "@/plugins/smart-trigger/types";
 import { eq } from "drizzle-orm";
 import { JOB_STAGES } from "@/zod";
 
@@ -18,10 +17,3 @@ export const get_applications_stages_db = async (stageName: typeof JOB_STAGES._t
     return await db.select().from(stages).where(eq(stages.stage_name, stageName));
 };
 
-// export const add_trigger_to_stage = async (stageId: number, action: TriggerAction) => {
-//     return await db.insert(triggers).values({
-//         action_type: action.action_type,
-//         config: action.config,
-//         stage_id: stageId,
-//     });
-// };
