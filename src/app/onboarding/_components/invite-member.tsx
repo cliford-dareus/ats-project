@@ -4,7 +4,7 @@ import { ArrowLeft, ArrowRight, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { create_organization_invite } from "@/server/actions/organization_actions";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { InvitedMember } from "./onboarding";
 
 type Props = {
@@ -15,11 +15,10 @@ type Props = {
     setInvitedMembers: React.Dispatch<React.SetStateAction<InvitedMember[]>>;
 };
 
-const InviteMember = ({ orgId, orgName, subdomain }: Props) => {
+const InviteMember = ({ orgId, orgName, subdomain, invitedMembers, setInvitedMembers }: Props) => {
     const router = useRouter();
     const inputRef = useRef<HTMLInputElement | null>(null);
-    const [, setInvitees] = useState<{ email: string, id: string }[]>([])
-    const [isCreatePending, startCreateTransaction] = useTransition();
+    const [, startCreateTransaction] = useTransition();
     const [email, setEmail] = useState<string>("");
     const [role, setRole] = useState<'Recruiter' | 'Hiring Lead' | 'Interviewer'>('Hiring Lead');
     const [error, setError] = useState<string | null>(null);
@@ -32,25 +31,54 @@ const InviteMember = ({ orgId, orgName, subdomain }: Props) => {
         router.push(`/onboarding?${params.toString()}`);
     };
 
-    // Sends a real Clerk organization invitation via the server action — the
-    // single invite path. The action uses the session orgId only (never the
-    // client-supplied orgId) and requires the member:invite permission.
-    // The invitation email goes out immediately.
-    const onComplete = async () => {
-        startCreateTransaction(async () => {
-            if (!email || !orgId || !orgName) {
-                inputRef.current?.focus();
-                setError("Please fill in all fields");
-                return;
-            };
+    // Queues an invite locally only — no invitation is sent here. Invites are
+    // sent when the user continues (see handleContinue).
+    const handleAddInvite = () => {
+        const trimmedEmail = email.trim();
+        if (!trimmedEmail || !trimmedEmail.includes('@')) {
+            setError("Please enter a valid email address");
+            return;
+        }
+        setInvitedMembers((prev) => [
+            ...prev,
+            { id: crypto.randomUUID(), email: trimmedEmail, role },
+        ]);
+        setEmail("");
+        setError(null);
+    };
 
-            try {
-                const invitationId = await create_organization_invite({
-                    organizationId: orgId,
-                    emailAddress: email,
-                });
-                setInvitees((prev) => [...prev, { email, id: invitationId }]);
+    const handleRemoveInvite = (id: string) =>
+        setInvitedMembers((prev) => prev.filter((m) => m.id !== id));
+
+    // Sends each queued invite via the server action, sequentially. The action
+    // uses the session orgId and rejects a mismatched client orgId. If nothing
+    // is queued and no valid email is typed, this is "Skip for Now" and goes
+    // straight to success.
+    const handleContinue = () => {
+        startCreateTransaction(async () => {
+            const trimmedEmail = email.trim();
+            let members = invitedMembers;
+            if (trimmedEmail) {
+                if (!trimmedEmail.includes('@')) {
+                    setError("Please enter a valid email address");
+                    return;
+                }
+                members = [...invitedMembers, { id: crypto.randomUUID(), email: trimmedEmail, role }];
+                setInvitedMembers(members);
                 setEmail("");
+                setError(null);
+            }
+            if (members.length === 0) {
+                goToSuccess();
+                return;
+            }
+            try {
+                for (const member of members) {
+                    await create_organization_invite({
+                        organizationId: orgId!,
+                        emailAddress: member.email,
+                    });
+                }
                 goToSuccess();
             } catch (e) {
                 console.error(e);
@@ -58,6 +86,8 @@ const InviteMember = ({ orgId, orgName, subdomain }: Props) => {
             }
         });
     };
+
+    const onBack = () => router.push('/onboarding?step=department');
 
     useEffect(() => {
         inputRef.current?.focus();
@@ -145,6 +175,12 @@ const InviteMember = ({ orgId, orgName, subdomain }: Props) => {
                     </p>
                 )}
             </div>
+
+            {error && (
+                <p role="alert" className="text-sm text-destructive">
+                    {error}
+                </p>
+            )}
 
             <div className="flex items-center gap-3 pt-1">
                 <button

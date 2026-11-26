@@ -1,15 +1,9 @@
 "use client";
 
-import { ArrowRight, Building2, Plus, UserPlus } from "lucide-react";
+import { ArrowRight, Plus, UserPlus } from "lucide-react";
 import { redirect, useRouter } from "next/navigation";
 import { useOrganizationList } from "@clerk/nextjs";
-import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
-
-const SUGGESTED_ORGS = [
-  { id: 'org-1', name: 'Design Studio', domain: 'designstudio.com', rolesCount: 8, membersCount: 14 },
-  { id: 'org-2', name: 'TechFlow', domain: 'techflow.io', rolesCount: 12, membersCount: 29 }
-];
+import { motion } from "motion/react";
 
 const Organization = ({ userId }: { userId: string }) => {
     const router = useRouter();
@@ -22,8 +16,8 @@ const Organization = ({ userId }: { userId: string }) => {
         redirect("/sign-in");
     }
 
-    const onSelectOrg = (orgId: string, orgName: string, orgDomain: string) => {
-        router.push(`/onboarding/workspace-dock?orgId=${orgId}&orgName=${encodeURIComponent(orgName)}&orgDomain=${orgDomain}`);
+    const onJoinByInvitation = () => {
+        router.push("/onboarding?step=join");
     };
 
     const onCreateNew = () => {
@@ -48,31 +42,27 @@ const Organization = ({ userId }: { userId: string }) => {
             </div>
 
             <div className="space-y-3">
-                <p className="text-xs font-medium text-muted-foreground">Suggested workspaces</p>
-                <div className="space-y-2.5">
-                    {SUGGESTED_ORGS.map((org) => (
-                        <button
-                            key={org.id}
-                            onClick={() => onSelectOrg(org.id, org.name, org.domain)}
-                            className="w-full flex items-center justify-between p-4 bg-card border border-border rounded-2xl hover:border-primary/60 hover:bg-secondary transition-all group cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                        >
-                            <div className="flex items-center gap-3.5 min-w-0">
-                                <div className="w-10 h-10 rounded-xl bg-secondary border border-border flex items-center justify-center shrink-0">
-                                    <Building2 className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                                </div>
-                                <div className="min-w-0">
-                                    <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
-                                        {org.name}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground truncate">
-                                        {org.domain} · <span className="tabular-nums">{org.rolesCount}</span> open roles
-                                    </p>
-                                </div>
-                            </div>
-                            <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
-                        </button>
-                    ))}
-                </div>
+                <button
+                    onClick={onJoinByInvitation}
+                    className="w-full flex items-center justify-between p-4 bg-card border border-border rounded-2xl hover:border-primary/60 hover:bg-secondary transition-all group cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="w-10 h-10 rounded-xl bg-secondary border border-border flex items-center justify-center shrink-0">
+                            <UserPlus className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+                                Join by invitation
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">
+                                {pendingCount > 0
+                                    ? `${pendingCount} pending invitation${pendingCount === 1 ? "" : "s"}`
+                                    : "Your team admin invites you by email"}
+                            </p>
+                        </div>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
+                </button>
             </div>
 
             <div className="relative py-1">

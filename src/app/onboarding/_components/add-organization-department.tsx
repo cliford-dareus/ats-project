@@ -1,31 +1,29 @@
 "use client"
 
 import React, { useState, useTransition } from 'react';
-import { AlertCircle, ArrowLeft, Building, Plus, Check, ArrowRight } from "lucide-react";
+import { ArrowLeft, Plus, Check, ArrowRight } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { add_department_in_organization } from "@/server/actions/organization_actions";
-import OnboardingLayout from './onboarding-layout';
-import { DEPARTMENTS, DEPARTMENT_PRESETS } from '@/lib/constant';
-import { Button } from '@/components/ui/button';
+import { DEPARTMENTS } from '@/lib/constant';
 import { cn } from '@/lib/utils';
-import { Input } from '@/components/ui/input';
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 
 
 type Props = {
-    orgName: string | null;
     orgId: string | null;
+    orgName: string | null;
     subdomain: string | null;
     newDept: string;
     setNewDept: React.Dispatch<React.SetStateAction<string>>;
+    selectedDepartments: string[];
+    setSelectedDepartments: React.Dispatch<React.SetStateAction<string[]>>;
 };
 
-const AddOrganizationDepartment = ({ orgId, orgName, subdomain, newDept, setNewDept }: Props) => {
+const AddOrganizationDepartment = ({ orgId, orgName, subdomain, newDept, setNewDept, selectedDepartments, setSelectedDepartments }: Props) => {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
     const [error, setError] = useState<string | null>(null);
-    const [isCreatePending, startCreateTransaction] = useTransition();
+    const [, startCreateTransaction] = useTransition();
 
     const handleSelectDepartment = (department: string) => {
         setError(null);
@@ -44,6 +42,8 @@ const AddOrganizationDepartment = ({ orgId, orgName, subdomain, newDept, setNewD
             setNewDept('');
         }
     };
+
+    const onBack = () => router.push('/onboarding?step=create');
 
     const onComplete = async () => {
         startCreateTransaction(async () => {
@@ -91,16 +91,16 @@ const AddOrganizationDepartment = ({ orgId, orgName, subdomain, newDept, setNewD
             {/* Interactive Department Controls */}
             <div className="space-y-3">
                 <p className="text-xs font-medium text-muted-foreground">
-                    Active teams · <span className="tabular-nums text-foreground/70">{departments.length}</span> selected
+                    Active teams · <span className="tabular-nums text-foreground/70">{selectedDepartments.length}</span> selected
                 </p>
                 <div className="flex flex-wrap gap-2">
-                    {Array.from(new Set([...DEPARTMENT_PRESETS, ...departments])).map((dept) => {
-                        const isSelected = departments.includes(dept);
+                    {Array.from(new Set([...DEPARTMENTS, ...selectedDepartments])).map((dept) => {
+                        const isSelected = selectedDepartments.includes(dept);
                         return (
                             <button
                                 key={dept}
                                 type="button"
-                                onClick={() => togglePreset(dept)}
+                                onClick={() => handleSelectDepartment(dept)}
                                 className={cn(
                                     'px-3.5 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 border',
                                     isSelected
@@ -126,14 +126,14 @@ const AddOrganizationDepartment = ({ orgId, orgName, subdomain, newDept, setNewD
                     onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                             e.preventDefault();
-                            addCustomDept();
+                            addDept();
                         }
                     }}
                     className="flex-1 px-4 py-3 bg-card border border-input rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
                 />
                 <button
                     type="button"
-                    onClick={addCustomDept}
+                    onClick={addDept}
                     disabled={!newDept.trim()}
                     className="px-4 py-3 bg-secondary border border-border text-foreground rounded-xl hover:border-primary/50 disabled:opacity-40 transition-colors cursor-pointer whitespace-nowrap shrink-0 text-xs font-semibold flex items-center gap-1.5"
                 >
@@ -141,6 +141,8 @@ const AddOrganizationDepartment = ({ orgId, orgName, subdomain, newDept, setNewD
                     <span>Add</span>
                 </button>
             </div>
+
+            {error && (<p role="alert" className="text-sm text-destructive">{error}</p>)}
 
             <div className="flex items-center gap-3 pt-1">
                 <button

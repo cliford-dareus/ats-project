@@ -49,6 +49,7 @@ const Onboarding = ({ userId }: Props) => {
     const [orgName, setOrgName] = useState(params.get("orgName") || '');
     const [subdomain, setSubdomain] = useState(params.get("subdomain") || '');
     const [newDept, setNewDept] = useState('');
+    const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
     const [invitedMembers, setInvitedMembers] = useState<InvitedMember[]>([]);
     const [isLoading, setIsLoading] = useState(step === null);
 
@@ -83,13 +84,14 @@ const Onboarding = ({ userId }: Props) => {
                                 : null;
 
     useEffect(() => {
+        if (step !== null) return;
         const timer = setTimeout(() => {
             setIsLoading(false);
             router.push('/onboarding?step=intro');
         }, 2500);
 
         return () => clearTimeout(timer);
-    }, []);
+    }, [step]);
 
     if (isLoading) {
         return <LoadingScreen />;
@@ -154,6 +156,8 @@ const Onboarding = ({ userId }: Props) => {
                                     subdomain={subdomain}
                                     newDept={newDept}
                                     setNewDept={setNewDept}
+                                    selectedDepartments={selectedDepartments}
+                                    setSelectedDepartments={setSelectedDepartments}
                                 />
                             )}
                             {step === "invite" && (
@@ -168,7 +172,7 @@ const Onboarding = ({ userId }: Props) => {
                             )}
                             {step === "join" && <JoinOrganization key="join" />}
                             {step === "success" && (
-                                <Success key="success" orgId={orgId} orgName={orgName} subdomain={subdomain} />
+                                <Success key="success" orgId={orgId} orgName={orgName} subdomain={subdomain} departmentsCount={selectedDepartments.length} invitedCount={invitedMembers.length} />
                             )}
                         </AnimatePresence>
                     </div>
@@ -179,7 +183,7 @@ const Onboarding = ({ userId }: Props) => {
                             step={step as OnboardingStep}
                             orgName={orgName as string}
                             orgDomain={subdomain as string}
-                            departments={[newDept]}
+                            departments={selectedDepartments}
                             invitedMembers={invitedMembers}
                             onQuickStart={() => 'organization'}
                         />}

@@ -4,15 +4,17 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CheckCircle2, ArrowRight } from "lucide-react";
 import { get_app_url, ROOT_DOMAIN } from "@/lib/marketing";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 
 type Props = {
     orgId: string | null;
     orgName: string | null;
     subdomain: string | null;
+    departmentsCount: number;
+    invitedCount: number;
 };
 
-const Success = ({ orgId, orgName, subdomain }: Props) => {
+const Success = ({ orgId, orgName, subdomain, departmentsCount, invitedCount }: Props) => {
     const router = useRouter();
     const [copied, setCopied] = useState(false);
 
@@ -23,6 +25,8 @@ const Success = ({ orgId, orgName, subdomain }: Props) => {
     }, [router, orgId]);
 
     const careerUrl = subdomain ? `https://${subdomain}.${ROOT_DOMAIN}` : null;
+
+    const onFinish = () => router.push(`${get_app_url()}/dashboard`);
 
     const copyCareerUrl = async () => {
         if (!careerUrl) return;
@@ -58,9 +62,22 @@ const Success = ({ orgId, orgName, subdomain }: Props) => {
             <div className="divide-y divide-border border-y border-border text-sm">
                 <div className="py-3 flex items-center justify-between">
                     <span className="text-muted-foreground">Career Portal</span>
-                    <span className="font-mono text-xs text-foreground">
-                        careers.{orgDomain.replace(/^https?:\/\//, '')}
-                    </span>
+                    {careerUrl ? (
+                        <span className="flex items-center gap-2">
+                            <span className="font-mono text-xs text-foreground">
+                                {careerUrl}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={copyCareerUrl}
+                                className="px-2 py-1 rounded-md border border-border bg-card text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors cursor-pointer shrink-0"
+                            >
+                                {copied ? "Copied" : "Copy"}
+                            </button>
+                        </span>
+                    ) : (
+                        <span className="font-mono text-xs text-muted-foreground">—</span>
+                    )}
                 </div>
                 <div className="py-3 flex items-center justify-between">
                     <span className="text-muted-foreground">Departments</span>

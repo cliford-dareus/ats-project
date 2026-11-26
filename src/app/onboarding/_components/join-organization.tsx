@@ -2,9 +2,7 @@
 
 import { ArrowLeft, ArrowRight, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { motion } from "motion/react";
 
 // Joining an organization is by invitation only: an org admin invites the
 // user by email (a Clerk organization invitation, sent via the
@@ -13,17 +11,14 @@ import { cn } from "@/lib/utils";
 // user add themselves to an arbitrary org — the previous
 // /api/organization/join route did exactly that and was removed.
 const JoinOrganization = () => {
-    const orgName = "";
-    const orgDomain = "";
     const router = useRouter();
 
     const onBack = () => {
-        router.back();
+        router.push("/onboarding?step=organization");
     };
 
-    const onJoin = () => {
-        // TODO: Implement join logic
-        router.push("/dashboard");
+    const onCreateInstead = () => {
+        router.push("/onboarding?step=create");
     };
 
     return (
@@ -36,10 +31,10 @@ const JoinOrganization = () => {
         >
             <div className="space-y-2">
                 <h2 className="font-['Plus_Jakarta_Sans'] text-2xl font-bold tracking-tight text-foreground [text-wrap:balance]">
-                    Join {orgName}
+                    Join an Organization
                 </h2>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                    Confirm your access request to connect with the {orgName} recruiting team.
+                    Joining is by invitation — an admin of the organization invites you by email.
                 </p>
             </div>
 
@@ -49,12 +44,11 @@ const JoinOrganization = () => {
                         <Users className="w-4 h-4 text-primary" />
                     </div>
                     <div>
-                        <p className="text-sm font-semibold text-foreground">{orgName}</p>
-                        <p className="text-xs text-muted-foreground">{orgDomain} · Workspace Member Access</p>
+                        <p className="text-sm font-semibold text-foreground">Ask an admin to invite you</p>
                     </div>
                 </div>
                 <p className="text-xs text-muted-foreground pt-2 border-t border-border">
-                    The workspace administrator will be notified when you enter the dashboard.
+                    Once they send the invitation, accept it from the email and you&apos;ll be added to their organization.
                 </p>
             </div>
 
@@ -69,10 +63,10 @@ const JoinOrganization = () => {
                 </button>
                 <button
                     type="button"
-                    onClick={onJoin}
+                    onClick={onCreateInstead}
                     className="flex-1 py-3.5 px-6 bg-foreground text-background rounded-xl font-semibold text-sm hover:opacity-90 transition-colors flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap shrink-0"
                 >
-                    <span>Continue to Dashboard</span>
+                    <span>Create an Organization Instead</span>
                     <ArrowRight className="w-4 h-4" />
                 </button>
             </div>
