@@ -1,6 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-    ChevronDown,
     Mail,
     Phone,
     Calendar,
@@ -16,27 +15,25 @@ import {
     ArrowLeft,
     CheckCircle,
     XCircle,
-    AlertCircle,
-    Eye,
-    Plus
 } from "lucide-react";
 import { CustomTabsTrigger, Tabs, TabsContent, TabsList } from "@/components/ui/tabs";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-import { Textarea } from "@/components/ui/textarea";
 import { get_application_by_id_action } from "@/server/actions/application_actions";
 import { get_candidate_by_id_action } from "@/server/actions/candidates-actions";
+import { get_job_listings_stages_action } from "@/server/actions/job-listings-actions";
+import { get_org_members_action } from "@/server/actions/organization_actions";
+import { get_candidate_notes } from "@/server/queries/mongo/note";
+import { derive_interview_status } from "@/lib/interview-status";
+import type { MentionUser } from "@/components/mentions-text-area";
+import type { NoteType } from "@/types";
+import ReviewHeaderActions from "./_components/review-header-actions";
+import ScheduleInterviewButton from "./_components/schedule-interview-button";
+import InterviewFeedbackButton from "./_components/interview-feedback-button";
+import ReviewNotesTab from "./_components/review-notes-tab";
 import Link from "next/link";
 
 type Props = {
@@ -55,6 +52,7 @@ const INTERVIEW_STATUS_LABELS: Record<string, string> = {
 
 /** The interview fields the review page renders (see get_candidate_by_id_db). */
 type ReviewInterview = {
+    id: number;
     start_at: Date | string | null;
     end_at: Date | string | null;
     type: string | null;
@@ -64,7 +62,8 @@ type ReviewInterview = {
     hold_status: string | null;
 };
 
-/** Hold-aware status label, mirroring application-interview-card. */
+/** Hold-aware status label, mirroring application-interview-card. A past
+ * SCHEDULE interview derives to AWAITING_FEEDBACK (see interview-status). */
 function interview_status_label(interview: ReviewInterview): string {
     switch (interview.hold_status) {
         case "TENTATIVE": return "Awaiting candidate";
@@ -73,10 +72,8 @@ function interview_status_label(interview: ReviewInterview): string {
         case "EXPIRED": return "Hold expired";
         case "RELEASED": return "Hold released";
         default: {
-            if (interview.status) {
-                return INTERVIEW_STATUS_LABELS[interview.status] ?? interview.status;
-            }
-            return "Scheduled";
+            const derived = derive_interview_status(interview);
+            return INTERVIEW_STATUS_LABELS[derived] ?? derived;
         }
     }
 }
@@ -126,11 +123,64 @@ const Page = async ({ params }: Props) => {
     const applications = candidateResult.application || [];
     const interviews = candidateResult.interview || [];
     const attachments = candidateResult.attachment || [];
-    // Score cards aren't loaded by get_candidate_by_id (the query has that
-    // select commented out), so the notes history is always empty until the
-    // query is wired up. Kept explicit rather than reading a field the
-    // query doesn't return.
-    const scoreCards: never[] = [];
+    const scoreCards = candidateResult.scoreCards ?? [];
+
+    const reviewedApplication = applicationResult[0];
+    const jobId = reviewedApplication.job_id;
+    const jobName = reviewedApplication.job_apply ?? "Position";
+    const department = reviewedApplication.department ?? "";
+    const currentStageName: string | null = reviewedApplication.current_stage ?? null;
+
+    // Job stages for the progress card and the Advance menu. A failure
+    // here must not take the whole page down — fall back to no stages.
+    let stages: { id: number; stage_name: string | null; stage_order_id: number | null; color: string | null }[] = [];
+    try {
+        // job_id can be null when the job join misses — then there are
+        // simply no stages to list.
+        const stagesResult =
+            jobId !== null ? await get_job_listings_stages_action(jobId) : [];
+        if (Array.isArray(stagesResult)) {
+            stages = stagesResult.map(
+                (stage: { id: number; stage_name: string | null; stage_order_id: number | null; color: string | null }) => ({
+                    id: stage.id,
+                    stage_name: stage.stage_name ?? null,
+                    stage_order_id: stage.stage_order_id ?? null,
+                    color: stage.color ?? null,
+                }),
+            );
+        }
+    } catch {
+        stages = [];
+    }
+    const sortedStages = [...stages].sort(
+        (a, b) => (a.stage_order_id ?? Number.MAX_SAFE_INTEGER) - (b.stage_order_id ?? Number.MAX_SAFE_INTEGER),
+    );
+    const currentStageIndex = Math.max(
+        0,
+        sortedStages.findIndex((stage) => stage.stage_name === currentStageName),
+    );
+    const progressPercent =
+        sortedStages.length > 1
+            ? Math.round((currentStageIndex / (sortedStages.length - 1)) * 100)
+            : 100;
+
+    // Org members for the @mention picker in the note composer.
+    let users: MentionUser[] = [];
+    try {
+        users = await get_org_members_action();
+    } catch {
+        users = [];
+    }
+
+    // Real candidate notes for the Notes tab (JSON string from the query).
+    let candidateNotes: NoteType[] = [];
+    try {
+        const notesJson = await get_candidate_notes(String(candidateId));
+        if (notesJson) candidateNotes = JSON.parse(notesJson);
+        if (!Array.isArray(candidateNotes)) candidateNotes = [];
+    } catch {
+        candidateNotes = [];
+    }
 
     return (
         <div className="p-6 max-w-7xl mx-auto">
@@ -207,79 +257,17 @@ const Page = async ({ params }: Props) => {
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
-                            <Button variant="outline" size="sm">
-                                <MessageSquare size={16} className="mr-2" />
-                                Add Note
-                            </Button>
-                            <Button variant="outline" size="sm">
-                                <Calendar size={16} className="mr-2" />
-                                Schedule Interview
-                            </Button>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button className="gap-2">
-                                        <CheckCircle size={16} />
-                                        <span>Advance</span>
-                                        <ChevronDown size={16} />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>Advance Candidate</DropdownMenuLabel>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem>
-                                        <Eye size={16} className="mr-2" />
-                                        Move to Screening
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem>
-                                        <Phone size={16} className="mr-2" />
-                                        Move to Phone Interview
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem>
-                                        <User size={16} className="mr-2" />
-                                        Move to Interview
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem>
-                                        <FileText size={16} className="mr-2" />
-                                        Move to Offer
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem>
-                                        <Star size={16} className="mr-2" />
-                                        Mark as Hired
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="destructive" className="gap-2">
-                                        <XCircle size={16} />
-                                        <span>Reject</span>
-                                        <ChevronDown size={16} />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>Rejection Reasons</DropdownMenuLabel>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem>
-                                        <AlertCircle size={16} className="mr-2" />
-                                        Not qualified
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem>
-                                        <CheckCircle size={16} className="mr-2" />
-                                        Position filled
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem>
-                                        <Clock size={16} className="mr-2" />
-                                        No response
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem>
-                                        <XCircle size={16} className="mr-2" />
-                                        Other
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
+                        <ReviewHeaderActions
+                            applicationId={Number(applicationId)}
+                            candidateId={Number(candidateId)}
+                            jobId={jobId}
+                            jobName={jobName}
+                            department={department}
+                            stages={stages}
+                            currentStageName={currentStageName}
+                            application={reviewedApplication}
+                            users={users}
+                        />
                     </div>
                 </CardContent>
             </Card>
@@ -296,15 +284,17 @@ const Page = async ({ params }: Props) => {
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
                             <span className="text-sm font-medium">Current Stage</span>
-                            <Badge variant="secondary">Screening</Badge>
+                            <Badge variant="secondary">{currentStageName ?? "No stage"}</Badge>
                         </div>
-                        <Progress value={40} className="w-full" />
+                        <Progress value={progressPercent} className="w-full" />
                         <div className="flex justify-between text-xs text-muted-foreground">
-                            <span>Applied</span>
-                            <span>Screening</span>
-                            <span>Interview</span>
-                            <span>Offer</span>
-                            <span>Hired</span>
+                            {sortedStages.length > 0 ? (
+                                sortedStages.map((stage) => (
+                                    <span key={stage.id}>{stage.stage_name ?? `Stage ${stage.id}`}</span>
+                                ))
+                            ) : (
+                                <span>{currentStageName ?? "No stages for this job"}</span>
+                            )}
                         </div>
                     </div>
                 </CardContent>
@@ -449,7 +439,7 @@ const Page = async ({ params }: Props) => {
                                             {candidate?.cv_path && (
                                                 <Button variant="outline" size="sm" asChild>
                                                     <a
-                                                        href={`https://ffwqzrdbkpjdhhnlaxvl.supabase.co/storage/v1/object/public/${candidate.cv_path}`}
+                                                        href={`/api/candidates/${candidateId}/resume`}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                     >
@@ -463,7 +453,7 @@ const Page = async ({ params }: Props) => {
                                     <CardContent>
                                         {candidate?.cv_path ? (
                                             <object
-                                                data={`https://ffwqzrdbkpjdhhnlaxvl.supabase.co/storage/v1/object/public/${candidate.cv_path}`}
+                                                data={`/api/candidates/${candidateId}/resume?view=1`}
                                                 type="application/pdf"
                                                 width="100%"
                                                 height="800px"
@@ -474,7 +464,7 @@ const Page = async ({ params }: Props) => {
                                                     <p className="text-muted-foreground mb-4">Unable to display PDF in browser</p>
                                                     <Button variant="outline" asChild>
                                                         <a
-                                                            href={`https://ffwqzrdbkpjdhhnlaxvl.supabase.co/storage/v1/object/public/${candidate.cv_path}`}
+                                                            href={`/api/candidates/${candidateId}/resume`}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                         >
@@ -517,7 +507,7 @@ const Page = async ({ params }: Props) => {
                                                     </div>
                                                     <Button variant="ghost" size="sm" asChild>
                                                         <a
-                                                            href={`https://ffwqzrdbkpjdhhnlaxvl.supabase.co/storage/v1/object/public/${candidate.cv_path}`}
+                                                            href={`/api/candidates/${candidateId}/resume`}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                         >
@@ -527,16 +517,22 @@ const Page = async ({ params }: Props) => {
                                                 </div>
                                             )}
                                             {attachments.map((_attachment: any, index: number) => (
-                                                <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                                                <div key={_attachment.id ?? index} className="flex items-center justify-between p-3 border rounded-lg">
                                                     <div className="flex items-center gap-3">
                                                         <FileText size={16} className="text-blue-500" />
                                                         <div>
-                                                            <div className="text-sm font-medium">Document {index + 1}</div>
+                                                            <div className="text-sm font-medium">{_attachment.file_name ?? `Document ${index + 1}`}</div>
                                                             <div className="text-xs text-muted-foreground">Attachment</div>
                                                         </div>
                                                     </div>
-                                                    <Button variant="ghost" size="sm">
-                                                        <Download size={14} />
+                                                    <Button variant="ghost" size="sm" asChild>
+                                                        <a
+                                                            href={`/api/attachments/${_attachment.id}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                        >
+                                                            <Download size={14} />
+                                                        </a>
                                                     </Button>
                                                 </div>
                                             ))}
@@ -565,11 +561,13 @@ const Page = async ({ params }: Props) => {
                             <CardContent>
                                 <div className="space-y-4">
                                     {applications.length > 0 ? (
-                                        applications.map((app: any, index: number) => (
+                                        applications.map((app: any, index: number) => {
+                                            const isReviewed = app.id === Number(applicationId);
+                                            return (
                                             <div key={index} className="border rounded-lg p-6 hover:bg-muted transition-colors">
                                                 <div className="flex justify-between items-start mb-4">
                                                     <div className="flex-1">
-                                                        <h3 className="font-semibold text-lg text-foreground">Position #{index + 1}</h3>
+                                                        <h3 className="font-semibold text-lg text-foreground">{isReviewed ? jobName : `Application #${app.id}`}</h3>
                                                         <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                                                             <div className="flex items-center gap-1">
                                                                 <Calendar size={14} />
@@ -582,7 +580,7 @@ const Page = async ({ params }: Props) => {
                                                         </div>
                                                     </div>
                                                     <Badge variant="secondary">
-                                                        Active Application
+                                                        {isReviewed ? (currentStageName ?? "No stage") : (candidate?.status || 'ACTIVE')}
                                                     </Badge>
                                                 </div>
                                                 <Separator className="my-4" />
@@ -597,7 +595,8 @@ const Page = async ({ params }: Props) => {
                                                     </div>
                                                 </div>
                                             </div>
-                                        ))
+                                            );
+                                        })
                                     ) : (
                                         <div className="text-center py-12">
                                             <Briefcase size={48} className="mx-auto text-muted-foreground mb-4" />
@@ -619,10 +618,11 @@ const Page = async ({ params }: Props) => {
                                         <Calendar size={20} />
                                         Interview History
                                     </CardTitle>
-                                    <Button>
-                                        <Plus size={16} className="mr-2" />
-                                        Schedule Interview
-                                    </Button>
+                                    <ScheduleInterviewButton
+                                        application={reviewedApplication}
+                                        jobName={jobName}
+                                        department={department}
+                                    />
                                 </div>
                             </CardHeader>
                             <CardContent>
@@ -662,9 +662,19 @@ const Page = async ({ params }: Props) => {
                                                                 )}
                                                             </div>
                                                         </div>
-                                                        <Badge variant={interview.status === 'COMPLETE' ? 'default' : 'secondary'}>
-                                                            {interview_status_label(interview)}
-                                                        </Badge>
+                                                        <div className="flex items-center gap-2">
+                                                            <InterviewFeedbackButton
+                                                                interview={interview}
+                                                                candidateName={candidate?.name ?? ""}
+                                                                jobName={jobName}
+                                                                existing={scoreCards.find(
+                                                                    (card) => card.interviews_id === interview.id,
+                                                                )}
+                                                            />
+                                                            <Badge variant={derive_interview_status(interview) === 'COMPLETE' ? 'default' : 'secondary'}>
+                                                                {interview_status_label(interview)}
+                                                            </Badge>
+                                                        </div>
                                                     </div>
                                                     {interview.link && !hold_released && (
                                                         <a
@@ -684,10 +694,12 @@ const Page = async ({ params }: Props) => {
                                             <Calendar size={48} className="mx-auto text-muted-foreground mb-4" />
                                             <h3 className="text-lg font-medium text-foreground mb-2">No interviews scheduled</h3>
                                             <p className="text-muted-foreground mb-4">Schedule an interview to continue the evaluation process.</p>
-                                            <Button>
-                                                <Plus size={16} className="mr-2" />
-                                                Schedule First Interview
-                                            </Button>
+                                            <ScheduleInterviewButton
+                                                application={reviewedApplication}
+                                                jobName={jobName}
+                                                department={department}
+                                                label="Schedule First Interview"
+                                            />
                                         </div>
                                     )}
                                 </div>
@@ -697,71 +709,12 @@ const Page = async ({ params }: Props) => {
 
                     {/* Notes Tab */}
                     <TabsContent value="notes" className="mt-0">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {/* Add Note */}
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2">
-                                        <Plus size={20} />
-                                        Add New Note
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <Textarea
-                                        placeholder="Add your notes about this candidate..."
-                                        className="min-h-[120px]"
-                                    />
-                                    <div className="flex justify-between items-center">
-                                        <div className="flex items-center gap-2">
-                                            <input type="checkbox" id="private" className="rounded" />
-                                            <label htmlFor="private" className="text-sm text-muted-foreground">Private note</label>
-                                        </div>
-                                        <Button>
-                                            <MessageSquare size={16} className="mr-2" />
-                                            Add Note
-                                        </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
-
-                            {/* Notes History */}
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2">
-                                        <MessageSquare size={20} />
-                                        Notes & Feedback
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="space-y-4 max-h-96 overflow-y-auto">
-                                        {scoreCards.length > 0 ? (
-                                            scoreCards.map((scoreCard: any, index: number) => (
-                                                <div key={index} className="border-l-4 border-blue-500 pl-4 py-2">
-                                                    <div className="flex justify-between items-start mb-2">
-                                                        <div className="font-medium text-sm">Evaluation #{index + 1}</div>
-                                                        <div className="text-xs text-muted-foreground">
-                                                            {new Date(scoreCard.created_at || '').toLocaleDateString()}
-                                                        </div>
-                                                    </div>
-                                                    <p className="text-sm text-foreground">
-                                                        Score: {scoreCard.score || 'Not scored'}
-                                                    </p>
-                                                    {scoreCard.feedback && (
-                                                        <p className="text-sm text-muted-foreground mt-1">{scoreCard.feedback}</p>
-                                                    )}
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <div className="text-center py-8">
-                                                <MessageSquare size={32} className="mx-auto text-muted-foreground mb-2" />
-                                                <p className="text-sm text-muted-foreground">No notes or feedback yet</p>
-                                                <p className="text-xs text-muted-foreground mt-1">Add the first note to start tracking feedback</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </div>
+                        <ReviewNotesTab
+                            candidateId={Number(candidateId)}
+                            users={users}
+                            notes={candidateNotes}
+                            scoreCards={scoreCards}
+                        />
                     </TabsContent>
                 </div>
             </Tabs>

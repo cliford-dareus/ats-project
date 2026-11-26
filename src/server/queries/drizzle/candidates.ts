@@ -4,6 +4,7 @@ import { and, eq, inArray, sql, SQL } from "drizzle-orm";
 import { CACHE_TAGS, dbCache, getGlobalTag, getIdTag, getOrgTag, revalidateDbCache } from "@/lib/cache";
 import { filterCandidateSchema, newCandidateFormSchema, updateCandidateSchema } from "@/zod";
 import { z } from "zod";
+import { get_score_cards_for_candidate_db } from "@/server/queries/drizzle/score-cards";
 
 // organization/subdomain are required here — the action always fills them
 // from the session org before calling.
@@ -99,7 +100,7 @@ export const get_candidate_by_id_db = async (unsafedata: number, orgId: string) 
         application,
         attachment,
         interview,
-        // scoreCard,
+        scoreCards,
     ] = await Promise.all([
         db.select().from(candidates).where(and(eq(candidates.id, unsafedata), eq(candidates.organization, orgId))),
         db.select().from(applications).where(and(eq(applications.candidate, unsafedata), eq(applications.organization, orgId))),
@@ -138,7 +139,9 @@ export const get_candidate_by_id_db = async (unsafedata: number, orgId: string) 
             .from(interviews)
             .innerJoin(applications, eq(applications.id, interviews.applications_id))
             .where(and(eq(applications.candidate, unsafedata), eq(applications.organization, orgId))),
-        // db.select().from(scoreCards).where(eq(scoreCards.interviews_id, unsafedata)),
+        // Scorecards for this candidate's interviews (org-scoped through
+        // the interview's application — see score-cards.ts).
+        get_score_cards_for_candidate_db(unsafedata, orgId),
     ]);
 
     return {
@@ -146,7 +149,7 @@ export const get_candidate_by_id_db = async (unsafedata: number, orgId: string) 
         application,
         attachment,
         interview,
-        // scoreCard,
+        scoreCards,
     };
 };
 

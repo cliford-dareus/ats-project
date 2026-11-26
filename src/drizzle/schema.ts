@@ -359,7 +359,15 @@ export const score_cards = mysqlTable('score_cards', {
     interviewer: varchar({ length: 255 }).notNull(),
     decision: mysqlEnum('decision', ["ADVANCE IMMEDIATELY", "REJECT IMMEDIATELY", "NO_DECISION"]).default("NO_DECISION"),
     overall_recommendations: mysqlEnum('overall_recommendations', ["DEFINITELY_NO", "NO", "YES", "STRONG_YES", "NO_DECISION"]).default("NO_DECISION"),
-});
+    // Written feedback from the interviewer (D3: the column the review page
+    // used to render never existed). Nullable so legacy rows stay valid.
+    feedback: text('feedback'),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+    updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+    // One scorecard per interview (interviews.score is a `one` relation).
+    interview_unique: uniqueIndex('score_cards_interview_unique').on(table.interviews_id),
+}));
 
 export const score_cards_relations = relations(score_cards, ({ one }) => ({
     interviews: one(interviews, {
