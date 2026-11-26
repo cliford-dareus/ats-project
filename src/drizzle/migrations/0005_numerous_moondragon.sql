@@ -1,0 +1,1 @@
+ALTER TABLE `job_listing` ADD `salary_from` varchar(255);

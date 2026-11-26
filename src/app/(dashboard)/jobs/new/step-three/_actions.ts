@@ -5,7 +5,9 @@ import { redirect } from 'next/navigation';
 import { FormErrors } from "@/types";
 import { auth } from '@clerk/nextjs/server';
 import { canCreateJob } from '@/server/permissions';
+import { update_job_draft_stages } from "@/server/queries/drizzle/job-listings";
 import { get_oganization_users } from '@/server/queries';
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 
 export const stepThreeFormAction = async (
     prevState: FormErrors | undefined,
@@ -22,7 +24,29 @@ export const stepThreeFormAction = async (
         return errors;
     }
 
-    redirect('/jobs/new/step-review');
+    const { userId, orgId } = await auth();
+    if (!userId || !orgId || !(await canCreateJob())) {
+        return { general: "You are not authorized to create job listings" };
+    }
+
+    const draftIdRaw = formData.get("draftId");
+    const draftId = typeof draftIdRaw === "string" && draftIdRaw !== "" ? Number(draftIdRaw) : null;
+
+    try {
+        // Persist this step's stages to the draft row (when the wizard is
+        // carrying one); without a draft there is nothing to save yet.
+        if (draftId !== null && !Number.isNaN(draftId)) {
+            await update_job_draft_stages(draftId, orgId, String(userId), validated.data);
+            redirect(`/jobs/new/step-review?draft=${draftId}`);
+        }
+        redirect('/jobs/new/step-review');
+    } catch (error) {
+        if (isRedirectError(error)) {
+            throw error;
+        }
+        console.error("Error saving job draft:", error);
+        return { general: "Could not save your progress. Please try again." };
+    }
 };
 
 // Users for the job wizard. The org always comes from the session —

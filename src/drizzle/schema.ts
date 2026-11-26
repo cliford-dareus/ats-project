@@ -110,6 +110,7 @@ export const job_listings = mysqlTable('job_listing', {
     location: varchar({ length: 255 }).notNull(),
     description: text('description').notNull(),
     salary_up_to: varchar({ length: 255 }).notNull(),
+    salary_from: varchar({ length: 255 }),
     department: int().notNull(),
     subdomain: varchar({ length: 255 }).notNull(),
     organization: varchar({ length: 255 }).notNull(),

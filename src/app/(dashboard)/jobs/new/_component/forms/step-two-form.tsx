@@ -13,18 +13,35 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/compon
 import { Button } from "@/components/ui/button";
 import { z } from "zod";
 import { Plus, X, Code, Award } from "lucide-react";
-import { useNewJobContext } from "@/providers/new-job-provider";
+import { useNewJobContext, type WizardDraftData } from "@/providers/new-job-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import SidePreview from "@/app/(dashboard)/jobs/new/_component/side-preview";
 
 const initialState: FormErrors = {};
 
-const StepTwoForm = () => {
+const StepTwoForm = ({ draftId, initialDraft }: { draftId?: number | null; initialDraft?: WizardDraftData | null }) => {
     const [currentStages, setCurrentStages] = useState<z.infer<typeof jobTechSchema>[]>([]);
-    const [, formAction] = useActionState(stepTwoFormAction, initialState);
-    const { updateNewJobDetails, newJobData, removeJob } = useNewJobContext();
+    const [serverErrors, formAction] = useActionState(stepTwoFormAction, initialState);
+    const { updateNewJobDetails, newJobData, removeJob, draftJobId, setDraftJobId, loadDraft } = useNewJobContext();
     const form = useForm();
+
+    // Hydrate a resumed draft (fresh browser deep-linking here with
+    // ?draft=<id>), or keep the draft id from the URL in context so the
+    // submit carries it and the step action updates the draft row.
+    useEffect(() => {
+        if (initialDraft) {
+            if (initialDraft.draftId !== draftJobId) {
+                loadDraft(initialDraft);
+            }
+            return;
+        }
+        if (draftId !== null && draftId !== undefined && draftId !== draftJobId) {
+            setDraftJobId(draftId);
+        }
+        // Mount-only: the draft is fixed at entry.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         setCurrentStages(newJobData.jobTechnology);
@@ -33,6 +50,9 @@ const StepTwoForm = () => {
     return (
         <form action={formData => {
             formData.append("jobTechnology", JSON.stringify(currentStages))
+            if (draftJobId !== null) {
+                formData.append("draftId", String(draftJobId))
+            }
             formAction(formData)
         }} className="w-full flex gap-4 h-[calc(100vh_-_200px)]">
             <ScrollArea className="flex-1">
@@ -46,6 +66,9 @@ const StepTwoForm = () => {
                         <p className="text-sm text-muted-foreground">Add the technologies and experience levels required</p>
                     </CardHeader>
                     <CardContent className="space-y-6">
+                        {serverErrors?.general && (
+                            <p className="text-sm text-red-600">{serverErrors.general}</p>
+                        )}
                         {/* Current Requirements */}
                         {currentStages.length > 0 && (
                             <div className="space-y-3">

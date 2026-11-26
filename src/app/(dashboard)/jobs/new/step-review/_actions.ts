@@ -2,10 +2,18 @@
 
 import { FormErrors } from "@/types";
 import { redirect } from "next/navigation";
-import { create_job_action } from "@/server/actions/job-listings-actions";
+import { create_job_action, publish_job_draft_action } from "@/server/actions/job-listings-actions";
+import { update_job_draft_info, update_job_draft_stages, update_job_draft_technologies } from "@/server/queries/drizzle/job-listings";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { auth } from "@clerk/nextjs/server";
 import { canCreateJob } from "@/server/permissions";
+
+const parseDraftId = (formData: FormData): number | null => {
+    const raw = formData.get("draftId");
+    if (typeof raw !== "string" || raw === "") return null;
+    const id = Number(raw);
+    return Number.isNaN(id) ? null : id;
+};
 
 export const stepReviewFormAction = async (
     prevState: FormErrors | undefined,
@@ -61,19 +69,26 @@ export const stepReviewFormAction = async (
             },
             jobTechnology,
             jobStages,
-            jobOptional: {
-                job_effective_date: new Date(),
-                job_agency: ""
-            },
             userId: String(userId),
         };
-        // Create the job listing
-        await create_job_action(completeJobData);
-
-        console.log(completeJobData);
-        // The create_job_action will handle the redirect
+        // Publish: when the wizard is carrying a draft row, flip that row
+        // to OPEN; otherwise create a new OPEN job. Either way the action
+        // redirects to the live job on success — a returned error object
+        // means validation failed.
+        const draftId = parseDraftId(formData);
+        const result = draftId !== null
+            ? await publish_job_draft_action(completeJobData, draftId)
+            : await create_job_action(completeJobData, { status: "OPEN" });
+        if (result && "error" in result && result.error) {
+            return { general: result.message ?? "There was an error creating your job listing. Please try again." };
+        }
         return undefined;
     } catch (error) {
+        // redirect() throws a special error — let it through, otherwise a
+        // successful publish would be swallowed and shown as a failure.
+        if (isRedirectError(error)) {
+            throw error;
+        }
         console.error('Error creating job listing:', error);
         return {
             general: "There was an error creating your job listing. Please try again."
@@ -112,22 +127,34 @@ export const saveDraftAction = async (prevState: FormErrors | undefined, formDat
             return { general: "Give the job a name before saving a draft." };
         }
 
-        await create_job_action({
-            jobInfo: {
-                ...jobInfo,
-                job_description: jobInfo.job_description || "",
-                job_location: jobInfo.job_location || "",
-                salary_up_to: jobInfo.salary_up_to || "",
-                organization: orgId,
-            },
+        const draftId = parseDraftId(formData);
+        const normalizedJobInfo = {
+            ...jobInfo,
+            job_description: jobInfo.job_description || "",
+            job_location: jobInfo.job_location || "",
+            salary_up_to: jobInfo.salary_up_to || "",
+            organization: orgId,
+        };
+
+        // When the wizard is carrying a draft row, update that row in
+        // place instead of creating a second draft.
+        if (draftId !== null) {
+            await update_job_draft_info(draftId, orgId, normalizedJobInfo);
+            await update_job_draft_technologies(draftId, orgId, jobTechnology);
+            await update_job_draft_stages(draftId, orgId, String(userId), jobStages);
+            redirect('/jobs?tab=drafts');
+        }
+
+        const result = await create_job_action({
+            jobInfo: normalizedJobInfo,
             jobTechnology,
             jobStages,
-            jobOptional: {
-                job_effective_date: new Date(),
-                job_agency: ""
-            },
             userId: ""
         }, { status: "DRAFT" });
+
+        if (result && "error" in result && result.error) {
+            return { general: result.message ?? "There was an error saving your draft. Please try again." };
+        }
 
         redirect('/jobs?tab=drafts');
     } catch (error) {

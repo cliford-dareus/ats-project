@@ -3,10 +3,10 @@
 import { Input } from "@/components/ui/input";
 import { FormErrors } from "@/types/index";
 import CustomButton from "@/components/custom-button";
-import React, { useActionState } from "react";
+import React, { useActionState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useNewJobContext } from "@/providers/new-job-provider";
+import { useNewJobContext, WIZARD_STORAGE_KEY, type WizardDraftData } from "@/providers/new-job-provider";
 import {
     Select,
     SelectContent,
@@ -26,11 +26,32 @@ const initialState: FormErrors = {};
 type Props = {
     orgId: string;
     departments: { id: number, organization_id: string, name: string | null }[]
+    // A DRAFT row loaded by the page when resuming from ?draft=<id>.
+    initialDraft?: WizardDraftData | null;
 }
 
-const StepOneForm = ({ orgId, departments }: Props) => {
+const StepOneForm = ({ orgId, departments, initialDraft }: Props) => {
     const [serverErrors, formAction] = useActionState(stepOneFormAction, initialState);
-    const { updateNewJobDetails, newJobData } = useNewJobContext();
+    const { updateNewJobDetails, newJobData, draftJobId, loadDraft, resetLocalStorage } = useNewJobContext();
+
+    // Hydrate a resumed draft, or start blank. The provider outlives the
+    // wizard (it is mounted at the app root), so after a publish/draft-save
+    // the previous job would otherwise linger in memory: when there is no
+    // draft to resume and nothing stored in the browser, reset to a clean
+    // form. Mid-wizard navigation always has stored data, so it is safe.
+    useEffect(() => {
+        if (initialDraft) {
+            if (initialDraft.draftId !== draftJobId) {
+                loadDraft(initialDraft);
+            }
+            return;
+        }
+        if (typeof window !== "undefined" && !localStorage.getItem(WIZARD_STORAGE_KEY)) {
+            resetLocalStorage();
+        }
+        // Mount-only: the draft and stored state are fixed at entry.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         updateNewJobDetails({ [e.target.name]: e.target.value }, "jobInfo");
@@ -50,6 +71,8 @@ const StepOneForm = ({ orgId, departments }: Props) => {
 
     return (
         <form action={formAction} className="w-full flex gap-4 h-[calc(100vh_-_200px)]">
+            {/* The draft row this wizard is editing, if any. */}
+            <input type="hidden" name="draftId" value={draftJobId ?? ""} />
             <ScrollArea className="flex-1">
                 {/* Job Information Card */}
                 <Card className="relative overflow-hidden rounded-md">
@@ -63,6 +86,9 @@ const StepOneForm = ({ orgId, departments }: Props) => {
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-6">
+                        {serverErrors?.general && (
+                            <p className="text-sm text-red-600">{serverErrors.general}</p>
+                        )}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <Label htmlFor="job_name" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -129,19 +155,36 @@ const StepOneForm = ({ orgId, departments }: Props) => {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="salary_up_to" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                                     <DollarSign size={16} className="inline mr-1" />
-                                    Salary (Annual)
+                                    Salary Range (Annual)
                                 </Label>
-                                <Input
-                                    type="number"
-                                    id="salary_up_to"
-                                    name="salary_up_to"
-                                    placeholder="e.g. 120000"
-                                    onChange={handleInputChange}
-                                    defaultValue={newJobData.jobInfo["salary_up_to"]}
-                                    className="h-11"
-                                />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <Input
+                                            type="number"
+                                            id="salary_from"
+                                            name="salary_from"
+                                            placeholder="Min e.g. 80000"
+                                            aria-label="Minimum salary (annual)"
+                                            onChange={handleInputChange}
+                                            defaultValue={newJobData.jobInfo["salary_from"]}
+                                            className="h-11"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Input
+                                            type="number"
+                                            id="salary_up_to"
+                                            name="salary_up_to"
+                                            placeholder="Max e.g. 120000"
+                                            aria-label="Maximum salary (annual)"
+                                            onChange={handleInputChange}
+                                            defaultValue={newJobData.jobInfo["salary_up_to"]}
+                                            className="h-11"
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

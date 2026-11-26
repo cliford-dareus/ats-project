@@ -14,6 +14,7 @@ import {
     X
 } from "lucide-react";
 import EditJobListingModal from '@/components/modal/edit-joblisting-modal';
+import { formatSalaryRange } from "@/lib/format-salary-range";
 
 type Props = {
     data: JobResponseType;
@@ -79,7 +80,7 @@ const JobPreview = ({ data }: Props) => {
                             <div className="grid grid-cols-2 gap-y-4 pt-4 border-t border-background/10">
                                 <div>
                                     <p className="text-[10px] font-bold text-background/40 uppercase tracking-widest">Salary</p>
-                                    <p className="text-sm font-bold font-mono">{data.salary}</p>
+                                    <p className="text-sm font-bold font-mono">{formatSalaryRange(data.salary_from, data.salary)}</p>
                                 </div>
                                 <div className="text-right">
                                     <p className="text-[10px] font-bold text-background/40 uppercase tracking-widest">Location</p>

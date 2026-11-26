@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useActionState, useTransition } from "react";
+import React, { useActionState, useEffect, useTransition } from "react";
 import { FormErrors } from "@/types";
 import { stepReviewFormAction, saveDraftAction } from "@/app/(dashboard)/jobs/new/step-review/_actions";
-import { useNewJobContext } from "@/providers/new-job-provider";
+import { useNewJobContext, type WizardDraftData } from "@/providers/new-job-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,25 +23,44 @@ import {
 import Link from "next/link";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import SidePreview from "@/app/(dashboard)/jobs/new/_component/side-preview";
+import { formatSalaryRange } from "@/lib/format-salary-range";
 
 const initialState: FormErrors = {};
 
-export default function StepReviewForm() {
+export default function StepReviewForm({ initialDraft }: { initialDraft?: WizardDraftData | null }) {
     const [publishErrors, publishAction] = useActionState(stepReviewFormAction, initialState);
     const [draftErrors, draftAction] = useActionState(saveDraftAction, initialState);
     const [, starTransition] = useTransition();
-    const { newJobData } = useNewJobContext();
+    const { newJobData, clearWizardStorage, draftJobId, loadDraft } = useNewJobContext();
+
+    // Hydrate a resumed draft (fresh browser deep-linking here with
+    // ?draft=<id>) so the review shows the saved draft, not a blank form.
+    useEffect(() => {
+        if (initialDraft && initialDraft.draftId !== draftJobId) {
+            loadDraft(initialDraft);
+        }
+        // Mount-only: the draft is fixed at entry.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const createFormDataWithJobData = () => {
         const formData = new FormData();
         formData.append('jobInfo', JSON.stringify(newJobData.jobInfo));
         formData.append('jobTechnology', JSON.stringify(newJobData.jobTechnology));
         formData.append('jobStages', JSON.stringify(newJobData.jobStages));
+        // When the wizard is carrying a draft row, the actions update that
+        // row in place instead of creating a second job/draft.
+        if (draftJobId !== null) {
+            formData.append('draftId', String(draftJobId));
+        }
         return formData;
     };
 
     const handlePublish = () => {
         const formData = createFormDataWithJobData();
+        // The draft row already holds everything (each step saved it), so
+        // the browser copy can go — a fresh "Create New Job" starts blank.
+        clearWizardStorage();
         starTransition(() => {
             publishAction(formData);
         });
@@ -50,6 +69,9 @@ export default function StepReviewForm() {
 
     const handleSaveDraft = () => {
         const formData = createFormDataWithJobData();
+        // Same as publish: the draft row holds the data, the browser copy
+        // can go.
+        clearWizardStorage();
         draftAction(formData);
     };
 
@@ -94,10 +116,10 @@ export default function StepReviewForm() {
                                                 <MapPin size={14} />
                                                 <span>{newJobData.jobInfo.job_location || 'Location not set'}</span>
                                             </div>
-                                            {newJobData.jobInfo.salary_up_to && (
+                                            {(newJobData.jobInfo.salary_from || newJobData.jobInfo.salary_up_to) && (
                                                 <div className="flex items-center gap-1">
                                                     <DollarSign size={14} />
-                                                    <span>${parseInt(newJobData.jobInfo.salary_up_to).toLocaleString()}/year</span>
+                                                    <span>{formatSalaryRange(newJobData.jobInfo.salary_from, newJobData.jobInfo.salary_up_to)}/year</span>
                                                 </div>
                                             )}
                                             {newJobData.jobInfo.department && (

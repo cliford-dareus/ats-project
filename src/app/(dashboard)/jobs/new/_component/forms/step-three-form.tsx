@@ -7,7 +7,7 @@ import { stepThreeFormAction } from "@/app/(dashboard)/jobs/new/step-three/_acti
 import { JOB_ENUM, jobStageSchema } from "@/zod";
 import { z } from "zod";
 import { Plus, X, Users, Settings, Workflow, GripVertical, Building2 } from "lucide-react";
-import { useNewJobContext } from "@/providers/new-job-provider";
+import { useNewJobContext, type WizardDraftData } from "@/providers/new-job-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -43,12 +43,15 @@ const JOB_STAGES = [
     'Phone Interview',
     'Interview',
     'Offer',
-    'Drafted'
+    // NOTE: 'Applied' and 'Drafted' are system stages added automatically
+    // on job creation — they are intentionally not offered here, since
+    // picking one used to collide with the (job_id, stage_name) unique
+    // index and fail the whole job creation.
 ];
 
-const StepThreeForm = ({ users }: { users: { id: number; organization_id: string; name: string | null }[] }) => {
+const StepThreeForm = ({ users, draftId, initialDraft }: { users: { id: number; organization_id: string; name: string | null }[]; draftId?: number | null; initialDraft?: WizardDraftData | null }) => {
     const [currentStages, setCurrentStages] = useState<z.infer<typeof jobStageSchema>[]>([]);
-    const [, formAction] = useActionState(stepThreeFormAction, initialState);
+    const [serverErrors, formAction] = useActionState(stepThreeFormAction, initialState);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [newStage, setNewStage] = useState<z.infer<typeof jobStageSchema>>({
         stage_name: 'New Candidate',
@@ -56,7 +59,24 @@ const StepThreeForm = ({ users }: { users: { id: number; organization_id: string
         need_schedule: false,
         color: '#3B82F6'
     });
-    const { updateStageOptions, newJobData } = useNewJobContext();
+    const { updateStageOptions, newJobData, draftJobId, setDraftJobId, loadDraft } = useNewJobContext();
+
+    // Hydrate a resumed draft (fresh browser deep-linking here with
+    // ?draft=<id>), or keep the draft id from the URL in context so the
+    // submit carries it and the step action updates the draft row.
+    useEffect(() => {
+        if (initialDraft) {
+            if (initialDraft.draftId !== draftJobId) {
+                loadDraft(initialDraft);
+            }
+            return;
+        }
+        if (draftId !== null && draftId !== undefined && draftId !== draftJobId) {
+            setDraftJobId(draftId);
+        }
+        // Mount-only: the draft is fixed at entry.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         setCurrentStages(newJobData.jobStages);
@@ -94,6 +114,9 @@ const StepThreeForm = ({ users }: { users: { id: number; organization_id: string
     return (
         <form action={formData => {
             formData.append("jobStages", JSON.stringify(currentStages));
+            if (draftJobId !== null) {
+                formData.append("draftId", String(draftJobId));
+            }
             formAction(formData);
         }} className="w-full flex gap-4 h-[calc(100vh_-_200px)]">
             <ScrollArea className=" flex-1">
@@ -109,6 +132,9 @@ const StepThreeForm = ({ users }: { users: { id: number; organization_id: string
                         </p>
                     </CardHeader>
                     <CardContent className="space-y-6">
+                        {serverErrors?.general && (
+                            <p className="text-sm text-red-600">{serverErrors.general}</p>
+                        )}
                         {/* Default Applied Stage */}
                         <div className="p-4 bg-muted border border-border rounded-lg">
                             <div className="flex items-center gap-3">

@@ -20,6 +20,7 @@ export const jobFormSchema = z.object({
         job_type: JOB_TYPE,
         organization: z.string(),
         salary_up_to: z.string(),
+        salary_from: z.string().optional(),
     }).required(),
     jobTechnology: z.array(
         z.object({
@@ -34,10 +35,6 @@ export const jobFormSchema = z.object({
             color: z.string(),
             need_schedule: z.boolean().optional(),
         })),
-    jobOptional: z.object({
-        job_effective_date: z.date().optional(),
-        job_agency: z.string().optional(),
-    }),
     userId: z.string().nullish(),
 });
 
@@ -48,6 +45,7 @@ export const updateJobListingSchema = z.object({
     department: z.string().optional(),
     organization: z.string().optional(),
     salary_up_to: z.string().optional(),
+    salary_from: z.string().optional(),
     status: JOB_STATUS.optional(),
     type: JOB_TYPE.optional(),
     jobId: z.number(),
@@ -289,6 +287,7 @@ export const stepOneSchema = z.object({
     job_description: z.string(),
     job_location: z.string(),
     salary_up_to: z.string(),
+    salary_from: z.string().optional(),
     job_type: JOB_TYPE,
     department: z.string(),
 });

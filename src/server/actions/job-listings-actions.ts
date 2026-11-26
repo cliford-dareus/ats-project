@@ -6,7 +6,9 @@ import {
     delete_job_listing,
     get_all_job_listings,
     get_job_by_id,
+    get_job_draft_for_wizard,
     get_job_listings_stages,
+    publish_job_draft,
     update_job_listing
 } from "@/server/queries";
 import {auth} from "@clerk/nextjs/server";
@@ -18,19 +20,52 @@ const jobIdSchema = z.number();
 
 // TODO: Fix validation later
 export const create_job_action = async (
-    unsafeData: z.infer<typeof jobFormSchema>, 
+    unsafeData: z.infer<typeof jobFormSchema>,
     opts?: { status?: "OPEN" | "CLOSED" | "DRAFT" | "ARCHIVED" | "PENDING" }
 ) => {
-    // const { success, data } = await jobFormSchema.spa(unsafeData);
-    // if (!success) {
-    //     return { error: true, message: "There was an error creating your product" }
-    // }
+    const { success, data, error } = await jobFormSchema.spa(unsafeData);
+    if (!success) {
+        return {
+            error: true,
+            message: "Invalid job data: " + error.issues.map((issue) => issue.message).slice(0, 3).join("; "),
+        };
+    }
 
     const { userId } = await requirePermission("job:create");
-    console.log('Job created:');
 
-    const {id} = await create_job_listing({...unsafeData, userId: String(userId), ...opts});
+    const { id } = await create_job_listing({ ...data, userId: String(userId), ...opts });
     redirect(`/jobs/${id}`);
+};
+
+// Load a DRAFT job for the wizard (resume flow). Org comes from the
+// session; the query itself only returns DRAFT rows belonging to it.
+export const get_job_draft_action = async (jobId: number) => {
+    const { orgId } = await getAuthOrThrow();
+    await requirePermission("job:create");
+    const draft = await get_job_draft_for_wizard(jobId, orgId);
+    if (!draft) {
+        return { error: true, message: "Draft not found" };
+    }
+    return draft;
+};
+
+// Publish a draft row: validates the full job data, flips the DRAFT to
+// OPEN, and redirects to the live job with a confirmation flag.
+export const publish_job_draft_action = async (
+    unsafeData: z.infer<typeof jobFormSchema>,
+    draftId: number,
+) => {
+    const { success, data, error } = await jobFormSchema.spa(unsafeData);
+    if (!success) {
+        return {
+            error: true,
+            message: "Invalid job data: " + error.issues.map((issue) => issue.message).slice(0, 3).join("; "),
+        };
+    }
+
+    const { userId, orgId } = await requirePermission("job:create");
+    await publish_job_draft(draftId, orgId, { ...data, userId: String(userId) });
+    redirect(`/jobs/${draftId}?published=1`);
 };
 
 export const update_job_action = async (unsafeData: z.infer<typeof updateJobListingSchema>) => {

@@ -28,12 +28,19 @@ type Props = {
         joblistingId: string;
         organizationId: string;
     }>;
+    searchParams: Promise<{
+        published?: string | string[];
+    }>;
 };
 
-const Page = async ({ params }: Props) => {
+const Page = async ({ params, searchParams }: Props) => {
     const { joblistingId: jobListingId } = await params;
     const { orgId } = await auth();
     if (!orgId) return;
+
+    // Set by the wizard's publish redirect — a one-time confirmation that
+    // the job is live (the param is not persisted anywhere).
+    const justPublished = (await searchParams)?.published === "1";
 
     const [
         jobsResponse,
@@ -58,6 +65,13 @@ const Page = async ({ params }: Props) => {
     return (
         <KanbanProvider>
             <div className="">
+                {justPublished && (
+                    <div className="mx-4 mt-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+                        <p className="text-sm font-medium text-green-900">
+                            Your job is live — candidates can now apply on your careers page.
+                        </p>
+                    </div>
+                )}
                 <div className="flex flex-col md:flex-row items-center justify-between w-full p-4 overflow-hidden">
                     <div>
                         <div className="flex flex-col">

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNewJobContext } from "@/providers/new-job-provider";
 import { Briefcase } from "lucide-react";
+import { formatSalaryRange } from "@/lib/format-salary-range";
 
 type Props = {
     departments: { id: number, organization_id: string, name: string | null }[]
@@ -40,7 +41,7 @@ const StepOneCollapse = ({ departments }: Props) => {
                     </div>
                     <div className="flex items-center justify-between text-xs">
                         <span className="text-muted-foreground">Salary</span>
-                        <span className="font-medium">${newJobData.jobInfo.salary_up_to !== "" ? newJobData.jobInfo.salary_up_to : "0000"}</span>
+                        <span className="font-medium">{formatSalaryRange(newJobData.jobInfo.salary_from, newJobData.jobInfo.salary_up_to) || "$0000"}</span>
                     </div>
                 </div>
 

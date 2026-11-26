@@ -20,10 +20,122 @@ import {
     revalidateDbCache,
 } from "@/lib/cache";
 import { z } from "zod";
-import { filterJobSchema, jobFormSchema, updateJobListingSchema } from "@/zod";
+import { filterJobSchema, JOB_STAGES, jobFormSchema, updateJobListingSchema } from "@/zod";
 import { ApplicationType, CandidateType, InterviewType, JobListingType } from "@/types";
 
 type Technology = typeof technologies.$inferSelect;
+
+// Stage names the system always inserts itself. Custom stages picked by
+// the user that duplicate one of these (or each other) would collide with
+// the unique (job_id, stage_name) index and fail the whole job creation,
+// so they are skipped here — and the stage picker no longer offers them.
+const SYSTEM_STAGE_NAMES = new Set(["Applied", "Drafted"]);
+
+const dedupeCustomStages = <T extends { stage_name: string }>(customStages: T[]): T[] => {
+    const seen = new Set<string>(SYSTEM_STAGE_NAMES);
+    return customStages.filter((stage) => {
+        if (seen.has(stage.stage_name)) return false;
+        seen.add(stage.stage_name);
+        return true;
+    });
+};
+
+// The transaction object type, inferred from db.transaction so the helpers
+// below stay typed without importing drizzle internals.
+type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+type DraftTech = { technology: string; year_of_experience: string };
+type DraftStage = {
+    stage_name: z.infer<typeof JOB_STAGES>;
+    stage_assign_to: string;
+    color: string;
+    // Always a plain boolean in wizard-shaped data (the draft loader
+    // coalesces null to false); kept optional to match the form schema.
+    need_schedule?: boolean;
+};
+
+// Replace a job's technologies wholesale (links are deleted, then fresh
+// technology rows + links are inserted — the same pattern create uses).
+const replaceJobTechnologies = async (trx: DbTx, jobId: number, techs: DraftTech[]) => {
+    await trx.delete(job_technologies).where(eq(job_technologies.job_id, jobId));
+    if (techs.length === 0) return;
+    const inserted = await trx
+        .insert(technologies)
+        .values(
+            techs.map((item) => ({
+                name: item.technology,
+                years_experience: Number(item.year_of_experience),
+            })),
+        )
+        .$returningId();
+    for (const tech of inserted) {
+        await trx.insert(job_technologies).values({
+            id: tech.id * 2,
+            job_id: jobId,
+            technology_id: tech.id,
+        });
+    }
+};
+
+// Replace a job's stages wholesale: the two system stages first, then the
+// user's (deduped) custom stages. Only ever used on DRAFT rows — a live
+// job's stages may already carry applications.
+const replaceJobStages = async (trx: DbTx, jobId: number, userId: string, customStages: DraftStage[]) => {
+    await trx.delete(stages).where(eq(stages.job_id, jobId));
+    await trx.insert(stages).values([
+        {
+            job_id: jobId,
+            stage_name: 'Applied',
+            stage_order_id: 0,
+            assign_to: userId,
+            need_schedule: false,
+            color: '#a21caf',
+        },
+        {
+            job_id: jobId,
+            stage_name: 'Drafted',
+            stage_order_id: 1,
+            assign_to: userId,
+            need_schedule: false,
+            color: '#52525b',
+        },
+        ...dedupeCustomStages(customStages).map((item, i) => ({
+            job_id: jobId,
+            stage_name: item.stage_name,
+            stage_order_id: i + 2,
+            assign_to: String(item.stage_assign_to),
+            need_schedule: item.need_schedule ?? false,
+            color: item.color,
+        })),
+    ]);
+};
+
+// The job row a draft update is allowed to touch: it must belong to the
+// org and still be a DRAFT. Anything else is refused, so a draft id can
+// never be used to rewrite a live job.
+const assertDraftRow = async (trx: DbTx, jobId: number, orgId: string) => {
+    const [row] = await trx
+        .select({ id: job_listings.id })
+        .from(job_listings)
+        .where(and(
+            eq(job_listings.id, jobId),
+            eq(job_listings.organization, orgId),
+            eq(job_listings.status, "DRAFT"),
+        ))
+        .limit(1);
+    if (!row) {
+        throw new Error("Draft job not found");
+    }
+    return row;
+};
+
+const revalidateJob = (jobId: number, orgId: string) => {
+    revalidateDbCache({
+        tag: CACHE_TAGS.jobs,
+        id: String(jobId),
+        orgId,
+    });
+};
 
 interface FilterInterface extends z.infer<typeof filterJobSchema> {
     organization: string;
@@ -52,6 +164,7 @@ export const create_job_listing = async (
                 name: data.jobInfo.job_name,
                 location: data.jobInfo.job_location,
                 salary_up_to: data.jobInfo.salary_up_to,
+                salary_from: data.jobInfo.salary_from || null,
                 type: data.jobInfo.job_type,
                 created_by: String(data.userId),
                 description: data.jobInfo.job_description,
@@ -65,55 +178,10 @@ export const create_job_listing = async (
         if (!inserted_job) return trx.rollback();
 
         // ── Technologies ──────────────────────────────────────────────────────
-        const techs = await trx
-            .insert(technologies)
-            .values(
-                data.jobTechnology.map((item) => ({
-                    name: item.technology,
-                    years_experience: Number(item.year_of_experience),
-                })),
-            )
-            .$returningId();
-
-        for (const tech of techs) {
-            await trx.insert(job_technologies).values({
-                id: tech.id * 2,
-                job_id: inserted_job.id,
-                technology_id: tech.id,
-            });
-        }
-        ;
+        await replaceJobTechnologies(trx, inserted_job.id, data.jobTechnology);
 
         // ── Stages ────────────────────────────────────────────────────────────
-        await trx.insert(stages).values([
-            // Add Applied as the first stage (order 0)
-            {
-                job_id: inserted_job.id,
-                stage_name: 'Applied',
-                stage_order_id: 0,
-                assign_to: String(data.userId),
-                need_schedule: false,
-                color: '#a21caf',
-            },
-            // Add Drafted as the second stage (order 1)
-            {
-                job_id: inserted_job.id,
-                stage_name: 'Drafted',
-                stage_order_id: 1,
-                assign_to: String(data.userId),
-                need_schedule: false,
-                color: '#52525b', // Gray color for applied state
-            },
-            // Then add the custom stages starting from order 2
-            ...data.jobStages.map((item, i) => ({
-                job_id: inserted_job.id,
-                stage_name: item.stage_name,
-                stage_order_id: i + 2,
-                assign_to: String(item.stage_assign_to),
-                need_schedule: item.need_schedule,
-                color: item.color,
-            })),
-        ]);
+        await replaceJobStages(trx, inserted_job.id, String(data.userId), data.jobStages);
 
         revalidateDbCache({
             tag: CACHE_TAGS.jobs,
@@ -123,6 +191,150 @@ export const create_job_listing = async (
 
         return inserted_job;
     });
+};
+
+// ── Draft persistence (job wizard) ────────────────────────────────────────
+// The wizard keeps its in-progress job as a DRAFT row so progress survives
+// refresh, browser switch, and logout. Every function below only touches a
+// row that belongs to the org and is still a DRAFT — a draft id can never
+// be used to rewrite a live job.
+
+export const update_job_draft_info = async (
+    jobId: number,
+    orgId: string,
+    jobInfo: z.infer<typeof jobFormSchema>["jobInfo"],
+) => {
+    await db.transaction(async (trx) => {
+        await assertDraftRow(trx, jobId, orgId);
+        await trx
+            .update(job_listings)
+            .set({
+                name: jobInfo.job_name,
+                location: jobInfo.job_location,
+                description: jobInfo.job_description,
+                department: Number(jobInfo.department),
+                type: jobInfo.job_type,
+                salary_up_to: jobInfo.salary_up_to,
+                salary_from: jobInfo.salary_from || null,
+            })
+            .where(eq(job_listings.id, jobId));
+    });
+    revalidateJob(jobId, orgId);
+};
+
+export const update_job_draft_technologies = async (
+    jobId: number,
+    orgId: string,
+    techs: DraftTech[],
+) => {
+    await db.transaction(async (trx) => {
+        await assertDraftRow(trx, jobId, orgId);
+        await replaceJobTechnologies(trx, jobId, techs);
+    });
+    revalidateJob(jobId, orgId);
+};
+
+export const update_job_draft_stages = async (
+    jobId: number,
+    orgId: string,
+    userId: string,
+    customStages: DraftStage[],
+) => {
+    await db.transaction(async (trx) => {
+        await assertDraftRow(trx, jobId, orgId);
+        await replaceJobStages(trx, jobId, userId, customStages);
+    });
+    revalidateJob(jobId, orgId);
+};
+
+// Publish a draft: final data + status OPEN, in one transaction. Returns
+// the job id. Throws when the row is not an org DRAFT.
+export const publish_job_draft = async (
+    jobId: number,
+    orgId: string,
+    data: z.infer<typeof jobFormSchema>,
+) => {
+    await db.transaction(async (trx) => {
+        await assertDraftRow(trx, jobId, orgId);
+        await trx
+            .update(job_listings)
+            .set({
+                name: data.jobInfo.job_name,
+                location: data.jobInfo.job_location,
+                description: data.jobInfo.job_description,
+                department: Number(data.jobInfo.department),
+                type: data.jobInfo.job_type,
+                salary_up_to: data.jobInfo.salary_up_to,
+                salary_from: data.jobInfo.salary_from || null,
+                status: "OPEN",
+            })
+            .where(eq(job_listings.id, jobId));
+        await replaceJobTechnologies(trx, jobId, data.jobTechnology);
+        await replaceJobStages(trx, jobId, String(data.userId), data.jobStages);
+    });
+    revalidateJob(jobId, orgId);
+    return jobId;
+};
+
+export type WizardDraft = {
+    draftId: number;
+    jobInfo: z.infer<typeof jobFormSchema>["jobInfo"];
+    jobTechnology: DraftTech[];
+    jobStages: DraftStage[];
+};
+
+// Load a DRAFT row shaped for the wizard provider, or null when it isn't
+// an org DRAFT. System stages (Applied/Drafted) are omitted — the wizard
+// re-adds them on publish.
+export const get_job_draft_for_wizard = async (jobId: number, orgId: string): Promise<WizardDraft | null> => {
+    const [job] = await db
+        .select()
+        .from(job_listings)
+        .where(and(
+            eq(job_listings.id, jobId),
+            eq(job_listings.organization, orgId),
+            eq(job_listings.status, "DRAFT"),
+        ))
+        .limit(1);
+    if (!job) return null;
+
+    const techRows = await db
+        .select({ name: technologies.name, years_experience: technologies.years_experience })
+        .from(job_technologies)
+        .innerJoin(technologies, eq(technologies.id, job_technologies.technology_id))
+        .where(eq(job_technologies.job_id, jobId));
+
+    const stageRows = await db
+        .select()
+        .from(stages)
+        .where(eq(stages.job_id, jobId))
+        .orderBy(stages.stage_order_id);
+
+    return {
+        draftId: job.id,
+        jobInfo: {
+            job_name: job.name,
+            job_description: job.description,
+            job_location: job.location,
+            department: String(job.department),
+            job_type: job.type ?? "FULL_TIME",
+            organization: job.organization,
+            salary_up_to: job.salary_up_to ?? "",
+            salary_from: job.salary_from ?? "",
+        },
+        jobTechnology: techRows.map((t) => ({
+            technology: t.name,
+            year_of_experience: String(t.years_experience ?? ""),
+        })),
+        jobStages: stageRows
+            .filter((s) => s.stage_name !== null && !SYSTEM_STAGE_NAMES.has(s.stage_name))
+            .map((s) => ({
+                stage_name: s.stage_name as z.infer<typeof JOB_STAGES>,
+                stage_assign_to: s.assign_to ?? "",
+                color: s.color ?? "#3B82F6",
+                need_schedule: s.need_schedule ?? false,
+            })),
+    };
 };
 
 export const update_job_listing = async (data: z.infer<typeof updateJobListingSchema>) => {
@@ -149,6 +361,7 @@ export const update_job_listing = async (data: z.infer<typeof updateJobListingSc
             ...(department_id !== null && { department_id: department_id }),
             ...(data.organization && { organization: data.organization }),
             ...(data.salary_up_to && { salary_up_to: data.salary_up_to }),
+            ...(data.salary_from !== undefined && { salary_from: data.salary_from || null }),
             ...(data.type && { type: data.type }),
         })
         .where(eq(job_listings.id, data.jobId));
@@ -382,6 +595,7 @@ export const get_all_job_listings_db = async (filter: FilterInterface) => {
             organization: job_listings.organization,
             type: job_listings.type,
             salary: job_listings.salary_up_to,
+            salary_from: job_listings.salary_from,
             description: job_listings.description,
             created_at: job_listings.created_at,
             updated_at: job_listings.updated_at,

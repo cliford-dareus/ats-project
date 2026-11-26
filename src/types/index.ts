@@ -9,6 +9,7 @@ export type JobResponseType = {
     location: string;
     description: string;
     salary: string;
+    salary_from: string | null;
     createdBy: string;
     created_at: Date;
     type: typeof JOB_TYPE._type;

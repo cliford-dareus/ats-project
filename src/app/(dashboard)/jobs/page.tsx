@@ -5,6 +5,7 @@ import {get_all_job_listings_action} from "@/server/actions/job-listings-actions
 import ListPageTop from "@/components/list-page-top";
 import React from "react";
 import {JOB_STATUS} from "@/zod";
+import Link from "next/link";
 
 type Props = {
     searchParams: Promise<{
@@ -14,11 +15,16 @@ type Props = {
 
 const Page = async ({searchParams}: Props) => {
     const {orgId} = await auth();
-    const {location, salary, status, type, department, page, per_page} = (await searchParams) ?? {};
+    const {location, salary, status, type, department, page, per_page, tab} = (await searchParams) ?? {};
 
     const limit = typeof per_page === "string" ? parseInt(per_page) : 8;
     const offset = typeof page === "string" ? (parseInt(page) - 1) * limit : 0;
-    const statuses = status ? (status as string).split(",") as (typeof JOB_STATUS._type)[] : undefined;
+    // The drafts tab lists only the org's DRAFT jobs — the status filter
+    // is ignored here so a saved draft always lands on a working view.
+    const isDraftsTab = tab === "drafts";
+    const statuses = isDraftsTab
+        ? (["DRAFT"] as (typeof JOB_STATUS._type)[])
+        : status ? (status as string).split(",") as (typeof JOB_STATUS._type)[] : undefined;
     const types = type ? (type as string).split(",") : undefined
     const locations = location ? (location as string).split(",") : undefined;
     const departments = department ? (department as string).split(",") : undefined;
@@ -56,6 +62,24 @@ const Page = async ({searchParams}: Props) => {
                 file="jobs"
                 data={jobs as JobResponseType[]}
             />
+            <div className="flex gap-2 mb-4">
+                <Link
+                    href="/jobs"
+                    className={isDraftsTab
+                        ? "px-3 py-1.5 text-sm font-medium rounded-md border border-border text-muted-foreground hover:text-foreground"
+                        : "px-3 py-1.5 text-sm font-medium rounded-md bg-foreground text-background"}
+                >
+                    All Jobs
+                </Link>
+                <Link
+                    href="/jobs?tab=drafts"
+                    className={isDraftsTab
+                        ? "px-3 py-1.5 text-sm font-medium rounded-md bg-foreground text-background"
+                        : "px-3 py-1.5 text-sm font-medium rounded-md border border-border text-muted-foreground hover:text-foreground"}
+                >
+                    Drafts
+                </Link>
+            </div>
             <JobListingsList jobs={jobs as JobResponseType[]} pageCount={pageCount}/>
         </div>
     );
