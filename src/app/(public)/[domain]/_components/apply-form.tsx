@@ -30,7 +30,7 @@ const STEPS = [
     { id: 5, name: "Review", icon: FileText },
 ];
 
-const ApplyForm = ({ jobId, subdomain }: { jobId: number; subdomain: string }) => {
+const ApplyForm = ({ jobId, subdomain, companyName }: { jobId: number; subdomain: string; companyName: string }) => {
     const [currentStep, setCurrentStep] = useState(1);
     const [complete, setComplete] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -174,7 +174,7 @@ const ApplyForm = ({ jobId, subdomain }: { jobId: number; subdomain: string }) =
                 </motion.div>
                 <h2 className="text-3xl font-bold text-zinc-900 mb-2">Application Submitted!</h2>
                 <p className="text-zinc-500 mb-8 max-w-md mx-auto">
-                    Thank you for applying to HireSync. We have received your information and our recruiting team will review it shortly.
+                    Thank you for applying to {companyName}. We have received your information and our recruiting team will review it shortly.
                 </p>
                 <Button onClick={() => window.location.reload()} size="lg">
                     Back to Careers

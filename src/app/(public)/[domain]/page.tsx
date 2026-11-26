@@ -2,16 +2,29 @@ import { db } from "@/drizzle/db";
 import { departments, job_listings } from "@/drizzle/schema";
 import { and, eq } from "drizzle-orm";
 import { get_organization_by_subdomain_action } from "@/server/actions/organization_actions";
+import {
+    resolveCompanyName,
+    resolveFontFamily,
+    resolvePrimaryColor,
+} from "@/lib/org-branding";
 import OpenJobList from "./_components/open-job-list";
 
 const CareerPage = async ({ params }: { params: Promise<{ domain: string }> }) => {
     const { domain } = await params;
-    
-    const tenant = await get_organization_by_subdomain_action(domain);
+
+    const [tenant] = await get_organization_by_subdomain_action(domain);
     if (!tenant) {
         return <div>Tenant not found</div>;
     }
-    
+
+    // Branding comes from the org resolved from this page's own subdomain.
+    // There is no tagline/about column on the organization table, so no
+    // subheading is rendered rather than inventing one.
+    const companyName = resolveCompanyName(tenant.name, domain);
+    const activeTheme = {
+        primaryColor: resolvePrimaryColor(tenant.primary_color),
+    };
+
     const openJobs = await db.select({
         id: job_listings.id,
         name: job_listings.name,
@@ -31,35 +44,27 @@ const CareerPage = async ({ params }: { params: Promise<{ domain: string }> }) =
         .where(and(eq(job_listings.subdomain, domain), eq(job_listings.status, 'OPEN')))
         .leftJoin(departments, eq(job_listings.department, departments.id));
 
-    const defaultTheme = {
-        primaryColor: '#4f46e5', // brand-600
-        headingText: 'Join our mission to build the future of work.',
-        subheadingText: "We're looking for passionate individuals to help us redefine how companies hire and grow.",
-        companyName: 'TalentPortal'
-    };
-
-    const activeTheme = defaultTheme;
-
-    if (openJobs?.length === 0) {
-        return (
-            <div className="text-center">
-                No Open Job Available...
-            </div>
-        )
-    };
-
     return (
-        <main className="max-w-6xl mx-auto px-6 py-12">
+        <main
+            id="open-positions"
+            className="max-w-6xl mx-auto px-6 py-12"
+            style={{ fontFamily: resolveFontFamily(tenant.font_family) }}
+        >
             <div>
                 <div className="max-w-2xl">
-                    <h2 className="text-4xl font-bold text-zinc-900 mb-4">{activeTheme.headingText}</h2>
-                    <p className="text-lg text-zinc-500">{activeTheme.subheadingText}</p>
+                    <h2 className="text-4xl font-bold text-zinc-900 mb-4">Open roles at {companyName}</h2>
                 </div>
 
-                <OpenJobList
-                    openJobs={openJobs}
-                    activeTheme={activeTheme}
-                />
+                {openJobs?.length === 0 ? (
+                    <p className="text-lg text-zinc-500">
+                        No open roles at {companyName} right now — check back soon.
+                    </p>
+                ) : (
+                    <OpenJobList
+                        openJobs={openJobs}
+                        activeTheme={activeTheme}
+                    />
+                )}
             </div>
         </main>
     );

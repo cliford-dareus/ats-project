@@ -34,16 +34,9 @@ import {
 } from "@/components/ui/select";
 import { update_general_settings_action } from "@/server/actions/organization_actions";
 import { GeneralSettingsInput, generalSettingsSchema } from "@/zod";
+import { BRAND_COLOR_PRESETS } from "@/lib/org-branding";
 
-const COLOR_PRESETS = [
-    { value: "purple", label: "Purple", swatch: "#7c3aed" },
-    { value: "blue", label: "Blue", swatch: "#2563eb" },
-    { value: "indigo", label: "Indigo", swatch: "#4f46e5" },
-    { value: "emerald", label: "Emerald", swatch: "#059669" },
-    { value: "rose", label: "Rose", swatch: "#e11d48" },
-    { value: "orange", label: "Orange", swatch: "#ea580c" },
-    { value: "zinc", label: "Zinc", swatch: "#3f3f46" },
-];
+const COLOR_PRESETS = BRAND_COLOR_PRESETS;
 
 const FONT_OPTIONS = [
     { value: "sans", label: "Sans (modern)" },
