@@ -24,7 +24,7 @@
 import { z } from "zod";
 import { db } from "@/drizzle/db";
 import { eq, and } from "drizzle-orm";
-import { candidates, job_listings, organization } from "@/drizzle/schema";
+import { applications, candidates, job_listings, organization } from "@/drizzle/schema";
 import { enqueueTrigger } from "@/lib/enqueue-trigger";
 import { ATSContext } from "@/types";
 
@@ -34,11 +34,14 @@ const PublicEventSchema = z.discriminatedUnion("type", [
         type: z.literal("candidate_applied"),
         candidateId: z.string().min(1),
         jobId: z.string().min(1),
+        // applications.id — distinct from candidateId (candidates.id).
+        applicationId: z.number().min(1).optional(),
     }),
     z.object({
         type: z.literal("resume_uploaded"),
         candidateId: z.string().min(1),
         fileUrl: z.string().url(),
+        applicationId: z.number().min(1).optional(),
     }),
 ]);
 
@@ -121,6 +124,24 @@ export async function fire_public_trigger_action(
             if (!candidate) {
                 console.warn("[trigger-action] Candidate not found or wrong org", context.candidate.id);
                 return { ok: false, error: "Candidate not found" };
+            }
+        }
+
+        // ── 3b. Verify the application belongs to this org + job (when supplied)
+        if (event.applicationId) {
+            const [application] = await db
+                .select({ id: applications.id })
+                .from(applications)
+                .where(and(
+                    eq(applications.id, event.applicationId),
+                    eq(applications.job_id, context.jobId),
+                    eq(applications.organization, org.orgId),
+                ))
+                .limit(1);
+
+            if (!application) {
+                console.warn("[trigger-action] Application not found or wrong org/job", event.applicationId);
+                return { ok: false, error: "Application not found" };
             }
         }
 

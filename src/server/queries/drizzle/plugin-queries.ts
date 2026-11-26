@@ -139,6 +139,15 @@ const build_org_plugin_state = (
     const installed: InstalledPlugin[]    = [];
 
     for (const manifest of AVAILABLE_PLUGINS) {
+        // Manifest entries with no real provider (hasProvider !== true)
+        // are "Coming soon": never report them as installed, even if an
+        // older install left them enabled + active in the DB — there is
+        // no factory or config UI behind them.
+        if (!manifest.hasProvider) {
+            flags[manifest.id] = false;
+            continue;
+        }
+
         const settings  = record.settings?.[manifest.id];
         const isEnabled = enabled.includes(manifest.id) && settings?.active === true;
         flags[manifest.id] = isEnabled;

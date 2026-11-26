@@ -62,6 +62,14 @@ export interface PluginManifestEntry {
     logoUrl?: string;
     providerColor?: string;
     icon?: string
+    /**
+     * True only when a real provider exists for this plugin (a factory in
+     * src/lib/initialize-plugins.ts + a config UI). Entries without one are
+     * "Coming soon": the UI must not offer Install for them and
+     * build_org_plugin_state must not report them as installed.
+     * Only "resend" and "google" have providers today.
+     */
+    hasProvider?: boolean;
 }
 
 // ── Factory function type ─────────────────────────────────────────────────────

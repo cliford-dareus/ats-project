@@ -160,11 +160,22 @@ const Kanban = ({ data, stages, jobDetails }: Props) => {
             // );
 
             const fromStage = snapshot.find((c) => c.id === cardId)?.stage ?? column!;
+            const moved = snapshot.find((c) => c.id === cardId);
+            // candidateId is the CANDIDATE id, applicationId the APPLICATION
+            // id — never the same value. The server action re-resolves both
+            // from the DB for the session org; user_id below is replaced by
+            // the server action from the Clerk session and never trusted.
             await automationEngine.evaluate(
-                { type: "stage_changed", candidateId: cardId.toString(), fromStage: fromStage, toStage: column! },
+                {
+                    type: "stage_changed",
+                    candidateId: moved?.candidate?.id?.toString() ?? "",
+                    applicationId: cardId,
+                    fromStage: fromStage,
+                    toStage: column!,
+                },
                 {
                     organization_id: applications[0]?.organization,
-                    user_id: (applications[0]?.candidate).toString(),
+                    user_id: "",
                     job: { ...jobDetails, job_id: applications[0].job_id },
                     settings: {}
                 }

@@ -9,7 +9,7 @@
 // src/lib/plugin-encryption.ts) and are decrypted server-side only, at the
 // point of use (BullMQ worker dispatch, server-action email sends).
 // ─────────────────────────────────────────────────────────────────────────────
-import { pluginRegistry } from "./plugin-registry";
+import { pluginRegistry, ATSPluginRegistry } from "./plugin-registry";
 import type { InstalledPlugin } from "@/types";
 
 // ── Provider factory map ──────────────────────────────────────────────────────
@@ -38,15 +38,20 @@ async function getFactory(pluginId: string) {
 }
 
 // ── Main bootstrap ────────────────────────────────────────────────────────────
+// `registry` defaults to the client-side singleton. Server/worker callers
+// MUST pass a fresh registry per org (see initialize-plugins.server.ts) —
+// sharing one registry across orgs would let one org's jobs dispatch with
+// another org's providers/keys.
 export async function initializePluginSystem(
     installed: InstalledPlugin[],
-    orgId?: string
+    orgId?: string,
+    registry: ATSPluginRegistry = pluginRegistry,
 ): Promise<void> {
-    if (pluginRegistry.isInitialized()) {
+    if (registry.isInitialized()) {
         // Already booted — update any newly enabled/disabled providers
-        for (const p of pluginRegistry.getAllProviders()) {
+        for (const p of registry.getAllProviders()) {
             const stillInstalled = installed.find((i) => i.id === p.id);
-            if (!stillInstalled) pluginRegistry.unregister(p.id);
+            if (!stillInstalled) registry.unregister(p.id);
         }
     }
 
@@ -55,21 +60,21 @@ export async function initializePluginSystem(
         if (!factory) continue;
 
         const provider = factory(plugin);
-        pluginRegistry.register(provider);
+        registry.register(provider);
     }
 
-    if (orgId) pluginRegistry.markInitialized(orgId);
+    if (orgId) registry.bindOrg(orgId);
 
     const allEnabled = installed.reduce((acc, plugin) => ({
         ...acc,
         ...plugin.settings.enabledIntegrations,
     }), {} as Record<string, boolean>);
 
-    pluginRegistry.setEnabledIntegrations(allEnabled);
+    registry.setEnabledIntegrations(allEnabled);
 
     console.log(
-        `[PluginSystem] Initialized with ${pluginRegistry.getAllProviders().length} providers:`,
-        pluginRegistry.getAllProviders().map((p) => p.id)
+        `[PluginSystem] Initialized with ${registry.getAllProviders().length} providers:`,
+        registry.getAllProviders().map((p) => p.id)
     );
 };
 

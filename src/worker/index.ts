@@ -3,7 +3,7 @@ import {Worker, type Job} from "bullmq";
 import redis from "@/lib/redis";
 import {QueueJobData} from "@/lib/queue";
 import {automationEngine} from "@/lib/automation-engine";
-import {pluginRegistry} from "@/lib/plugin-registry";
+import {executeActionInternal} from "@/lib/automation-engine-executor";
 import {initializePluginSystemForWorker} from "@/lib/initialize-plugins.server";
 import {db_save_resume_score} from "@/server/queries";
 import {db_get_job_automation_rules} from "@/server/queries/drizzle/plugin-queries";
@@ -35,60 +35,78 @@ const worker = new Worker<QueueJobData>(
 
         console.log(`[Worker] Processing job ${job.id}: ${event.type} for org ${org_id}`);
 
-        if(event.type === "candidate_applied") {
-            // ── 1. Boot registry for this org ──────────────────────────────────────
-            await job.updateProgress(10);
-            await initializePluginSystemForWorker(org_id);
+        // Every enqueued event type is processed the same way (dispatch +
+        // automation rules). Previously only `candidate_applied` was handled
+        // and every other enqueued event (e.g. `resume_uploaded`) completed
+        // as a silent no-op.
+        // ── 1. Boot a fresh per-org registry ──────────────────────────────────
+        // A new registry per job: the registry is bound to this org only, so
+        // concurrent jobs for different orgs (concurrency 5) can never
+        // dispatch with each other's providers/keys.
+        await job.updateProgress(10);
+        const registry = await initializePluginSystemForWorker(org_id);
 
-            // ── 2. Load automation rules for this job ───────────────────────────────
-            await job.updateProgress(20);
-            const existingRules = automationEngine.getRulesForJob(Number(job_id));
-            if (existingRules.length === 0) {
-                const rules = await db_get_job_automation_rules(Number(job_id), org_id);
-                automationEngine.loadJobRules(Number(job_id), rules);
-            }
-
-            // ── 3. Dispatch plugins ─────────────────────────────────────────────────
-            await job.updateProgress(40);
-            let pluginResults: Awaited<ReturnType<typeof pluginRegistry.dispatch>> = [];
-            try {
-                pluginResults = await pluginRegistry.dispatch(event, context);
-                console.log(`[Worker] Fired ${pluginResults.length} integrations`);
-            } catch (err) {
-                console.error("[Worker] Plugin dispatch failed:", err);
-                // Don't rethrow — automation rules should still run
-            }
-
-            const [fired_resume_score] = pluginResults.filter((result) => result.integrationId === "resume-score");
-            const payload = fired_resume_score.result.data as ScorePayload;
-
-            console.log("[trigger/public] fired_resume_score:", fired_resume_score);
-
-            if (fired_resume_score.result.success) {
-                await db_save_resume_score({...payload, applicationId: context.settings.applicationId as number, model: fired_resume_score.result.metadata?.model ?? "unknown"})
-            }
-
-            // ── 4. Run automation rules ─────────────────────────────────────────────
-            await job.updateProgress(70);
-            try {
-                await automationEngine.evaluate(event, context);
-            } catch (err) {
-                console.error("[Worker] Automation engine failed:", err);
-            }
-
-            await job.updateProgress(100);
-
-            // Return a summary stored in BullMQ for debugging
-            return {
-                fired:   pluginResults.length,
-                results: pluginResults.map(r => ({
-                    integration: r.integrationName,
-                    success:     r.result.success,
-                    error:       r.result.error ?? null,
-                })),
-            };
-
+        // ── 2. Reload automation rules from the DB on every job ───────────────
+        // Rule edits/disables/deletes must take effect without a worker
+        // restart — never serve a cached snapshot.
+        await job.updateProgress(20);
+        if (job_id) {
+            const rules = await db_get_job_automation_rules(Number(job_id), org_id);
+            automationEngine.loadJobRules(Number(job_id), rules);
         }
+
+        // ── 3. Dispatch plugins ─────────────────────────────────────────────────
+        await job.updateProgress(40);
+        let pluginResults: Awaited<ReturnType<typeof registry.dispatch>> = [];
+        try {
+            pluginResults = await registry.dispatch(event, context);
+            console.log(`[Worker] Fired ${pluginResults.length} integrations`);
+        } catch (err) {
+            console.error("[Worker] Plugin dispatch failed:", err);
+            // Don't rethrow — automation rules should still run
+        }
+
+        // ── 4. Resume score (candidate_applied only) ──────────────────────────
+        // Guarded: when Google/resume-score isn't installed nothing fires,
+        // and the job must NOT crash — automation rules still run below.
+        if (event.type === "candidate_applied") {
+            const [fired_resume_score] = pluginResults.filter((result) => result.integrationId === "resume-score");
+
+            if (fired_resume_score?.result?.success) {
+                const payload = fired_resume_score.result.data as ScorePayload;
+                const applicationId = event.applicationId ?? context.settings.applicationId as number;
+
+                console.log("[trigger/public] fired_resume_score:", fired_resume_score);
+
+                await db_save_resume_score({...payload, applicationId, model: fired_resume_score.result.metadata?.model ?? "unknown"})
+            }
+        }
+
+        // ── 5. Run automation rules ─────────────────────────────────────────────
+        // The worker has no Clerk session, so rules run through the internal
+        // executor (org-verified queue context + this job's registry), never
+        // through the authenticated server action.
+        await job.updateProgress(70);
+        try {
+            await automationEngine.evaluate(event, context, {
+                executor: (action, evt, ctx) =>
+                    executeActionInternal(action, evt, ctx, { registry }),
+            });
+        } catch (err) {
+            console.error("[Worker] Automation engine failed:", err);
+        }
+
+        await job.updateProgress(100);
+
+        // Return a summary stored in BullMQ for debugging
+        return {
+            fired:   pluginResults.length,
+            results: pluginResults.map(r => ({
+                integration: r.integrationName,
+                success:     r.result.success,
+                error:       r.result.error ?? null,
+            })),
+        };
     },
     { connection: redis, concurrency: 5 }
 );

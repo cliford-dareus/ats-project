@@ -317,13 +317,18 @@ export type NoteType = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ── Trigger Events ────────────────────────────────────────────────────────────
+// candidateId is ALWAYS the candidates.id. applicationId (when known) is the
+// applications.id — the two must never be conflated: add_note targets the
+// candidate, move_stage targets the application. Call sites that only know
+// the application must send applicationId and let the server resolve the
+// candidate; call sites that only know the candidate may omit it.
 export type TriggerEvent =
-    | { type: "candidate_applied"; candidateId: string; jobId: string }
-    | { type: "stage_changed"; candidateId: string; fromStage: string; toStage: string }
-    | { type: "interview_scheduled"; candidateId: string; interviewerId: string; at: Date }
-    | { type: "offer_extended"; candidateId: string; amount: number }
-    | { type: "resume_uploaded"; candidateId: string; fileUrl: string }
-    | { type: "score_updated"; candidateId: string; score: number; dimension: string };
+    | { type: "candidate_applied"; candidateId: string; jobId: string; applicationId?: number }
+    | { type: "stage_changed"; candidateId: string; fromStage: string; toStage: string; applicationId?: number }
+    | { type: "interview_scheduled"; candidateId: string; interviewerId: string; at: Date; applicationId?: number }
+    | { type: "offer_extended"; candidateId: string; amount: number; applicationId?: number }
+    | { type: "resume_uploaded"; candidateId: string; fileUrl: string; applicationId?: number }
+    | { type: "score_updated"; candidateId: string; score: number; dimension: string; applicationId?: number };
 
 export type TriggerEventType = TriggerEvent["type"];
 
@@ -496,7 +501,7 @@ export interface PendingExecution {
     id: string;
     ruleId: string;
     ruleName: string;
-    applicationId: number;        // candidateId / application ID the execution targets
+    applicationId: number;        // applications.id the execution targets
     scheduledAt: number;          // Date.now() + delayMs
     event: Record<string, unknown>;
     context: Record<string, unknown>;

@@ -106,12 +106,20 @@ export const get_organization_by_subdomain_action = async (
  * is client-callable, so full keys must never leave the server here.
  * Server-side consumers that need usable keys use
  * db_get_organization_plugins (decrypted) directly.
+ *
+ * Plugin settings (masked keys, config, contact emails) are admin-only:
+ * requires plugin:manage. (No read-specific plugin permission exists in
+ * the 26-permission map — plugin:manage is the only plugin permission.)
  */
 export const get_organization_plugins = async (_clientOrgId?: string) => {
   const { userId, orgId } = await auth();
 
   if (!userId || !orgId) {
     throw new Error("Unauthorized");
+  }
+
+  if (!(await hasPermission("plugin:manage"))) {
+    throw new Error("You are not authorized to view plugins");
   }
 
   const org = await get_organization_by_id(orgId);

@@ -9,9 +9,11 @@ import { ATSIntegration } from "@/lib/plugin-interfaces";
 import type { OrgPluginSettings, PluginAuthState } from "@/types";
 import { pluginRegistry } from "@/lib/plugin-registry";
 import { Badge } from "@/components/ui/badge";
-import { SetStateAction, useEffect, useState } from "react";
+import { SetStateAction, useCallback, useEffect, useRef, useState } from "react";
 import { ConfigProps, mask_key_for_display } from "./shared/types";
 import ApiKeySection from "./shared/api-key-section";
+import { verifyResend } from "@/server/actions/stage_actions";
+import { listResendDomains } from "@/server/actions/plugin-actions";
 
 
 const ResendConfig = ({ pluginId, onSave, settings }: ConfigProps) => {
@@ -25,9 +27,19 @@ const ResendConfig = ({ pluginId, onSave, settings }: ConfigProps) => {
     const [apiKey, setApiKey] = useState("");
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
-    const [domains, setDomains] = useState<{ name: string }[]>([]);
-    const [domainsLoading, ] = useState(false);
+    // Connect/disconnect failures surface inline (via the error auth
+    // below) with the server's real message — never a generic alert.
+    const [connectError, setConnectError] = useState<string | null>(null);
+    // A stored (masked) key means the plugin is configured even though
+    // nothing was verified this session — config can still be saved.
     const maskedKey = mask_key_for_display(settings?.credentials?.apiKey);
+    const hasSavedKey = Boolean(maskedKey);
+    const displayAuth = connectError ? { status: "error" as const, error: connectError } : auth;
+    const [domains, setDomains] = useState<{ name: string; status: string }[]>([]);
+    const [domainsLoading, setDomainsLoading] = useState(false);
+    const [domainsError, setDomainsError] = useState<string | null>(null);
+    // Validation error for the From-domain text input (shown under it).
+    const [domainError, setDomainError] = useState<string | null>(null);
 
     const provider = pluginRegistry.getProvider(pluginId);
     const INTERGRATIONS = provider?.getIntegrations();
@@ -73,56 +85,96 @@ const ResendConfig = ({ pluginId, onSave, settings }: ConfigProps) => {
         // still stale at click time (setState hasn't re-rendered yet).
         const apiKeyToUse = (key ?? apiKey).trim();
         if (!apiKeyToUse) return;
+        setConnectError(null);
         try {
-            await authenticate("resend", { apiKey: apiKeyToUse });
-            // auth.status is now "authenticated" — badge updates automatically
-            // because authenticate() calls pluginRegistry.stateManager.setState()
-            // which triggers useSyncExternalStore re-renders everywhere
-            // Persist the verified credentials for the session org.
-            // (Encrypted server-side on save; the parent adopts the masked
-            // settings the server returns.)
+            // 1. Verify ONLY — no badge change yet.
+            const check = await verifyResend(apiKeyToUse);
+            if (!check.success) throw new Error(check.message);
+            // 2. Persist FIRST (encrypted server-side). If this throws —
+            // e.g. missing PLUGIN_ENCRYPTION_KEY — the badge never
+            // claimed "Connected" for a key that isn't stored.
             await onSave({ ...settings, active: true, credentials: { apiKey: apiKeyToUse } });
+            // 3. Only now mark the session authenticated. authenticate()
+            // re-verifies and keeps only the masked key client-side.
+            await authenticate("resend", { apiKey: apiKeyToUse });
             setApiKey("");
         } catch (e) {
-            // auth.status is now "error", auth.error has the message
-            console.error(e);
+            setConnectError((e as Error).message || "Failed to connect Resend");
         }
     };
 
     const handleDisconnect = async () => {
+        setConnectError(null);
         try {
+            // Clear server-side FIRST; only drop the local auth state on
+            // success, so a failed clear doesn't leave the UI claiming
+            // "Not connected" while the server still holds the key.
+            await onSave({ ...settings, active: false, credentials: {} });
             setDomains([]);
+            setDomainsError(null);
             setApiKey("");
             await pluginRegistry.getProvider("resend")?.deauthenticate();
-            // Clear the stored credentials for the session org.
-            await onSave({ ...settings, active: false, credentials: {} });
         } catch (e) {
-            console.error("Failed to disconnect Resend", e);
+            setConnectError((e as Error).message || "Failed to disconnect Resend");
         }
     };
 
-    // const loadDomains = async (key) => {
-    //     setDomainsLoading(true);
-    //     try {
-    //         // Real: const res = await fetch("/api/plugins/resend/domains");
-    //         await new Promise(r => setTimeout(r, 800));
-    //         setDomains([
-    //             { name: "mail.acme.com", verified: true },
-    //             { name: "hiring.acme.com", verified: true },
-    //             { name: "noreply.acme.com", verified: true },
-    //         ]);
-    //     } finally {
-    //         setDomainsLoading(false);
-    //     }
-    // };
+    // ── Verified domains (H14) ───────────────────────────────────────────────
+    // Real list from the server action (GET /domains with the org's stored
+    // key, decrypted server-side). Loads once a key is connected or saved;
+    // a sending-only key can't list domains, so that failure leaves the
+    // domain field as a text input instead of a dead select.
+    const loadDomains = useCallback(async () => {
+        setDomainsLoading(true);
+        setDomainsError(null);
+        try {
+            const result = await listResendDomains();
+            if (!result.success) throw new Error(result.message);
+            setDomains(result.domains ?? []);
+        } catch (e) {
+            setDomains([]);
+            setDomainsError((e as Error).message || "Failed to load verified domains");
+        } finally {
+            setDomainsLoading(false);
+        }
+    }, []);
+
+    const domainsLoadedFor = useRef<string | null>(null);
+    useEffect(() => {
+        const key = maskedKey ?? "";
+        if ((isConnected || key) && domainsLoadedFor.current !== key) {
+            domainsLoadedFor.current = key;
+            void loadDomains();
+        }
+        if (!isConnected && !key) {
+            domainsLoadedFor.current = null;
+            setDomains([]);
+            setDomainsError(null);
+        }
+    }, [isConnected, maskedKey, loadDomains]);
 
     // ── Save ───────────────────────────────────────────────────────────────────
     const handleSave = async () => {
         setSaving(true);
+        setDomainError(null);
         try {
-            const fromAddress = config.fromAlias && config.fromDomain
-                ? `${config.fromAlias}@${config.fromDomain}`
-                : undefined;
+            // A typed domain must look like a domain; the select only ever
+            // offers verified ones, but the text fallback (sending-only
+            // keys, load failures, no verified domains) is user-typed.
+            const domain = config.fromDomain.trim();
+            if (domain && !/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/i.test(domain)) {
+                setDomainError("Enter a valid domain, e.g. mail.acme.com");
+                return;
+            }
+            // Preserve the stored From address when the form doesn't
+            // supply a complete one: the server replaces config wholesale,
+            // so omitting fromAddress here used to silently wipe it.
+            const storedFromAddress = typeof settings?.config?.fromAddress === "string"
+                ? settings.config.fromAddress
+                : "";
+            const fromAddress = config.fromAlias.trim() && domain
+                ? `${config.fromAlias.trim()}@${domain}`
+                : storedFromAddress || undefined;
             // Only send credentials when the user typed a NEW key — otherwise
             // omit them and the server preserves the stored (encrypted) key.
             const next_settings: OrgPluginSettings = {
@@ -182,29 +234,29 @@ const ResendConfig = ({ pluginId, onSave, settings }: ConfigProps) => {
                 <div
                     className="flex items-center gap-6 py-1 px-3 rounded-md text-sm"
                     style={{
-                        background: isConnected ? "#0d1a14" : "#111",
-                        border: `1px solid ${isConnected ? "#10b981" : "#1f1f1f"}`,
-                        color: isConnected ? "#10b981" : "#4b5563",
+                        background: isConnected ? "#0d1a14" : hasSavedKey ? "#171207" : "#111",
+                        border: `1px solid ${isConnected ? "#10b981" : hasSavedKey ? "#f59e0b" : "#1f1f1f"}`,
+                        color: isConnected ? "#10b981" : hasSavedKey ? "#f59e0b" : "#4b5563",
                         // fontFamily: "'Geist Mono', monospace",
                     }}>
                     <div className="w-5 h-5 rounded-full  bg-card shadow-[0_0_4px_#10b981] dark:bg-card dark:shadow-[0_0_4px_#374151]">
-                        <div className="w-5 h-5 rounded-full bg-[#10b981] dark:bg-[#374151]" />
+                        <div className="w-5 h-5 rounded-full" style={{ background: isConnected ? "#10b981" : hasSavedKey ? "#f59e0b" : "#374151" }} />
                     </div>
-                    {isConnected ? "Connected" : "Not connected"}
+                    {isConnected ? "Connected" : hasSavedKey ? "Saved" : "Not connected"}
                 </div>
 
                 {/* Save */}
                 <Button
                     onClick={handleSave}
-                    disabled={!isConnected || saving}
+                    disabled={(!isConnected && !hasSavedKey) || saving}
                     className="rounded-md"
                     style={{
                         padding: "7px 18px", borderRadius: 6,
-                        background: saved ? "#0d1a14" : (isConnected ? "#fff" : "#111"),
+                        background: saved ? "#0d1a14" : (isConnected || hasSavedKey ? "#fff" : "#111"),
                         border: saved ? "1px solid #10b981" : "none",
-                        color: saved ? "#10b981" : (isConnected ? "#000" : "#374151"),
+                        color: saved ? "#10b981" : (isConnected || hasSavedKey ? "#000" : "#374151"),
                         fontSize: 12, fontWeight: 600,
-                        cursor: isConnected ? "pointer" : "not-allowed",
+                        cursor: (isConnected || hasSavedKey) ? "pointer" : "not-allowed",
                         fontFamily: "'Geist Mono', monospace",
                         transition: "all 0.2s",
                     }}
@@ -230,7 +282,7 @@ const ResendConfig = ({ pluginId, onSave, settings }: ConfigProps) => {
                         apiKey={apiKey}
                         maskedKey={maskedKey}
                         onApiKeyChange={setApiKey}
-                        auth={auth}
+                        auth={displayAuth}
                         onConnect={handleConnect}
                         onDisconnect={handleDisconnect}
                         pluginId={pluginId}
@@ -240,15 +292,18 @@ const ResendConfig = ({ pluginId, onSave, settings }: ConfigProps) => {
                         config={config}
                         onChange={setConfig}
                         domains={domains}
-                        auth={auth}
+                        auth={displayAuth}
                         domainsLoading={domainsLoading}
+                        domainsError={domainsError}
+                        hasSavedKey={hasSavedKey}
+                        domainError={domainError}
                     />
 
                     <IntegrationsSection
                         enabled={enabledIntegrations}
                         onChange={setEnabledIntegrations}
                         intergrations={INTERGRATIONS!}
-                        isConnected={isConnected}
+                        isConnected={isConnected || hasSavedKey}
                     />
                 </div>
             </div>
@@ -275,16 +330,27 @@ type SenderConfig = {
 type SenderSectionProps = {
     config: SenderConfig;
     onChange: (config: SenderConfig) => void;
-    domains: { name: string }[];
+    domains: { name: string; status: string }[];
     domainsLoading: boolean;
+    domainsError: string | null;
+    hasSavedKey: boolean;
+    domainError: string | null;
     auth: PluginAuthState;
 };
 
-const SenderSection = ({ config, onChange, domains, domainsLoading, auth }: SenderSectionProps) => {
+const SenderSection = ({ config, onChange, domains, domainsLoading, domainsError, hasSavedKey, domainError, auth }: SenderSectionProps) => {
     const isConnected = auth.status === "authenticated";
-    // const domainOptions = domains.length > 0
-    //     ? domains
-    //     : [{ name: "No verified domains", verified: false }];
+    const hasKey = isConnected || hasSavedKey;
+    // Only verified domains may send. Keep a stored domain selectable even
+    // if it no longer appears in the verified list, so a save can't strand it.
+    const verifiedDomains = domains.filter(d => d.status === "verified");
+    const domainOptions = config.fromDomain && !verifiedDomains.some(d => d.name === config.fromDomain)
+        ? [...verifiedDomains, { name: config.fromDomain, status: "stored" }]
+        : verifiedDomains;
+    // No verified domains to pick from (sending-only key, load failure, or
+    // none verified): fall back to a validated text input instead of a
+    // permanently disabled select.
+    const useDomainInput = domainOptions.length === 0 && !domainsLoading;
 
     return (
         <section className="bg-card overflow-hidden rounded-md mb-3 border">
@@ -354,26 +420,42 @@ const SenderSection = ({ config, onChange, domains, domainsLoading, auth }: Send
                             borderLeft: "1px solid #1f1f1f",
                             display: "flex", alignItems: "center",
                         }}>@</div>
-                        <select
-                            value={config.fromDomain}
-                            onChange={e => onChange({ ...config, fromDomain: e.target.value })}
-                            disabled={domainsLoading || domains.length === 0}
-                            style={{
-                                background: "#0d0d0d", border: "none",
-                                borderLeft: "1px solid #1f1f1f",
-                                color: domains.length > 0 ? "#e5e7eb" : "#374151",
-                                padding: "9px 12px", fontSize: 13,
-                                fontFamily: "'Geist Mono', monospace",
-                                outline: "none", cursor: domains.length > 0 ? "pointer" : "not-allowed",
-                                minWidth: 160,
-                            }}
-                        >
-                            {domainsLoading && <option>Loading…</option>}
-                            {!domainsLoading && domains.length === 0 && <option value="">No verified domains</option>}
-                            {domains.map(d => (
-                                <option key={d.name} value={d.name}>{d.name}</option>
-                            ))}
-                        </select>
+                        {useDomainInput ? (
+                            <input
+                                value={config.fromDomain}
+                                onChange={e => onChange({ ...config, fromDomain: e.target.value })}
+                                placeholder="yourdomain.com"
+                                disabled={!hasKey}
+                                style={{
+                                    flex: 1, background: "#0d0d0d", border: "none",
+                                    borderLeft: "1px solid #1f1f1f",
+                                    color: "#e5e7eb", padding: "9px 12px", fontSize: 13,
+                                    fontFamily: "'Geist Mono', monospace",
+                                    outline: "none", minWidth: 160,
+                                }}
+                            />
+                        ) : (
+                            <select
+                                value={config.fromDomain}
+                                onChange={e => onChange({ ...config, fromDomain: e.target.value })}
+                                disabled={domainsLoading || domainOptions.length === 0}
+                                style={{
+                                    background: "#0d0d0d", border: "none",
+                                    borderLeft: "1px solid #1f1f1f",
+                                    color: domainOptions.length > 0 ? "#e5e7eb" : "#374151",
+                                    padding: "9px 12px", fontSize: 13,
+                                    fontFamily: "'Geist Mono', monospace",
+                                    outline: "none", cursor: domainOptions.length > 0 ? "pointer" : "not-allowed",
+                                    minWidth: 160,
+                                }}
+                            >
+                                {domainsLoading && <option>Loading…</option>}
+                                {!domainsLoading && domainOptions.length === 0 && <option value="">No verified domains</option>}
+                                {domainOptions.map(d => (
+                                    <option key={d.name} value={d.name}>{d.name}{d.status === "stored" ? " (unverified)" : ""}</option>
+                                ))}
+                            </select>
+                        )}
                     </div>
                     {config.fromAlias && config.fromDomain && (
                         <p style={{ margin: "5px 0 0", fontSize: 11, color: "#10b981", fontFamily: "monospace" }}>
@@ -381,9 +463,34 @@ const SenderSection = ({ config, onChange, domains, domainsLoading, auth }: Send
                         </p>
                     )}
 
-                    {!isConnected && auth.status !== "error" && (
+                    {domainError && (
+                        <p style={{ margin: "5px 0 0", fontSize: 11, color: "#f87171", fontFamily: "monospace" }}>
+                            ⚠ {domainError}
+                        </p>
+                    )}
+                    {!hasKey && auth.status !== "error" && (
                         <p style={{ margin: "5px 0 0", fontSize: 11, color: "#374151", fontFamily: "monospace" }}>
-                            {domains.length > 0 ? "Must use a verified Resend domain" : "Connect API key to load verified domains"}
+                            Connect an API key to load verified domains
+                        </p>
+                    )}
+                    {hasKey && domainsLoading && (
+                        <p style={{ margin: "5px 0 0", fontSize: 11, color: "#374151", fontFamily: "monospace" }}>
+                            Loading verified domains…
+                        </p>
+                    )}
+                    {hasKey && !domainsLoading && domainsError && (
+                        <p style={{ margin: "5px 0 0", fontSize: 11, color: "#f59e0b", fontFamily: "monospace" }}>
+                            ⚠ {domainsError}
+                        </p>
+                    )}
+                    {hasKey && !domainsLoading && !domainsError && domainOptions.length === 0 && (
+                        <p style={{ margin: "5px 0 0", fontSize: 11, color: "#374151", fontFamily: "monospace" }}>
+                            No verified domains in this Resend account — add one in Resend, or type the domain
+                        </p>
+                    )}
+                    {hasKey && !domainsLoading && !domainsError && domainOptions.length > 0 && (
+                        <p style={{ margin: "5px 0 0", fontSize: 11, color: "#374151", fontFamily: "monospace" }}>
+                            Must use a verified Resend domain
                         </p>
                     )}
                     {auth.status === "error" && (

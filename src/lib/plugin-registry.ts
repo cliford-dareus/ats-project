@@ -21,6 +21,29 @@ export class ATSPluginRegistry extends EventEmitter {
     private initializedOrgs = new Set<string>(); // orgId
     public stateManager = new ProviderStateManager();
     private enabledIntegrations = new Map<string, boolean>();
+    /**
+     * Org this registry instance is bound to, or null when unbound.
+     * Server/worker registries are created fresh per org (see
+     * initialize-plugins.server.ts) and bound here; the client-side
+     * singleton stays unbound (masked credentials only). dispatch()
+     * refuses to run with another org's providers when bound.
+     */
+    private boundOrgId: string | null = null;
+
+    /** Bind this registry to one org. Throws if already bound to another org. */
+    bindOrg(orgId: string): void {
+        if (this.boundOrgId !== null && this.boundOrgId !== orgId) {
+            throw new Error(
+                `[Registry] Refusing to rebind registry from org ${this.boundOrgId} to ${orgId} — create a fresh registry per org instead`,
+            );
+        }
+        this.boundOrgId = orgId;
+        this.markInitialized(orgId);
+    }
+
+    getBoundOrgId(): string | null {
+        return this.boundOrgId;
+    }
 
     // ── Registration ──────────────────────────────────────────────────────────
     register(provider: ATSPluginProvider): void {
@@ -115,6 +138,13 @@ export class ATSPluginRegistry extends EventEmitter {
         event: TriggerEvent,
         context: ATSContext
     ): Promise<FiredTrigger[]> {
+        // Cross-tenant guard: a registry bound to one org must never dispatch
+        // another org's events with this org's providers/keys.
+        if (this.boundOrgId !== null && context.organization_id !== this.boundOrgId) {
+            throw new Error(
+                `[Registry] Dispatch refused: registry is bound to org ${this.boundOrgId} but event is for org ${context.organization_id}`,
+            );
+        }
         const keys = this.triggerIndex.get(event.type) ?? new Set<string>();
         const fired: FiredTrigger[] = [];
         console.log(`[Registry] Dispatching ${event.type} to ${keys.size} integrations`);

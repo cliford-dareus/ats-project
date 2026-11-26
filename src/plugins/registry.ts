@@ -6,6 +6,11 @@
 import type { PluginManifestEntry } from "@/lib/plugin-interfaces";
 
 export const AVAILABLE_PLUGINS: PluginManifestEntry[] = [
+    // NOTE: only "resend" and "google" have a real provider (factory +
+    // config UI) — see hasProvider. The other five are "Coming soon":
+    // installable-looking but with no provider, they used to offer an
+    // Install button that silently did nothing useful. Do not set
+    // hasProvider here until the provider + config UI actually exist.
     {
         id: "openai-scoring",
         name: "OpenAI Resume Scoring",
@@ -52,7 +57,8 @@ export const AVAILABLE_PLUGINS: PluginManifestEntry[] = [
         description: "Post to Resend when candidates move stages or key events fire.",
         capabilities: ["communication"],
         providerColor: "#000000",
-        icon: "Zap"
+        icon: "Zap",
+        hasProvider: true,
     },
     {
         id: "google",
@@ -60,7 +66,8 @@ export const AVAILABLE_PLUGINS: PluginManifestEntry[] = [
         description: "Uses Google suites to shedule interviews and use Gemini to score resumes and rank candidates.",
         capabilities: ["calendar_integration", "llm_scoring"],
         providerColor: "#4285F4",
-        icon: "Zap"
+        icon: "Zap",
+        hasProvider: true,
     }
 ];
 

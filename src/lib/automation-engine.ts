@@ -27,6 +27,30 @@ export interface AutomationExecutionResult {
     at: Date;
 }
 
+/**
+ * Runs one automation action. The default executor is the authenticated
+ * `executeAction` server action (browser/dashboard path). The BullMQ
+ * worker passes its own executor bound to the internal, org-verified
+ * `executeActionInternal` — the worker has no Clerk session, so it must
+ * never go through the server action.
+ */
+export type AutomationActionExecutor = (
+    action: AutomationAction,
+    event: TriggerEvent,
+    context: ATSContext,
+) => Promise<unknown>;
+
+export interface AutomationEvaluateOptions {
+    executor?: AutomationActionExecutor;
+}
+
+/** The applications.id an event targets (never the candidate id). */
+function eventApplicationId(event: TriggerEvent, context: ATSContext): number {
+    if (typeof event.applicationId === "number") return event.applicationId;
+    const fromSettings = Number(context.settings?.applicationId);
+    return Number.isFinite(fromSettings) && fromSettings > 0 ? fromSettings : 0;
+}
+
 // ── AutomationEngine ──────────────────────────────────────────────────────────
 const EMPTY_RULES: AutomationRule[] = [];
 
@@ -65,7 +89,11 @@ export class AutomationEngine extends EventEmitter {
     }
 
     // ── Evaluation ────────────────────────────────────────────────────────────
-    async evaluate(event: TriggerEvent, context: ATSContext): Promise<void> {
+    async evaluate(
+        event: TriggerEvent,
+        context: ATSContext,
+        opts: AutomationEvaluateOptions = {},
+    ): Promise<void> {
         const jobId = context.job?.job_id;
         if (!jobId) return;
         const rules = this.rules.get(jobId) ?? [];
@@ -76,14 +104,14 @@ export class AutomationEngine extends EventEmitter {
             const delayMs = delayToMs(rule.delay);
 
             if (delayMs === 0) {
-                await this._run(rule, event, context);
+                await this._run(rule, event, context, opts);
             } else {
                 // Schedule delayed execution
                 const pending: PendingExecution = {
                     id: `exec_${rule.id}_${Date.now()}`,
                     ruleId: rule.id,
                     ruleName: rule.name,
-                    applicationId: Number(event.candidateId) ?? 0,
+                    applicationId: eventApplicationId(event, context),
                     scheduledAt: Date.now() + delayMs,
                     event: event as unknown as Record<string, unknown>,
                     context: context as unknown as Record<string, unknown>,
@@ -94,7 +122,7 @@ export class AutomationEngine extends EventEmitter {
                 // In production: enqueue to Redis/BullMQ/Inngest instead of setTimeout
                 const timerId = setTimeout(async () => {
                     this.pending.delete(rule.id);
-                    await this._run(rule, event, context);
+                    await this._run(rule, event, context, opts);
                 }, delayMs);
 
                 this.pending.set(rule.id, timerId);
@@ -120,14 +148,19 @@ export class AutomationEngine extends EventEmitter {
         rule: AutomationRule,
         event: TriggerEvent,
         context: ATSContext,
+        opts: AutomationEvaluateOptions = {},
     ): Promise<void> {
-        const applicationId = Number(event.candidateId) ?? 0;
+        const applicationId = eventApplicationId(event, context);
         try {
+            // Default executor: the authenticated server action (browser path).
             // Dynamically import the server-only action handlers so that
             // `node:crypto` (used by plugin-encryption) is never bundled for
             // the client. The import resolves at runtime when the action runs.
-            const { executeAction } = await import("./automation-engine-actions");
-            const output = await executeAction(rule.action, event, context);
+            const executor: AutomationActionExecutor = opts.executor ?? (async (action, evt, ctx) => {
+                const { executeAction } = await import("./automation-engine-actions");
+                return executeAction(action, evt, ctx);
+            });
+            const output = await executor(rule.action, event, context);
             const result: AutomationExecutionResult = {
                 ruleId: rule.id,
                 ruleName: rule.name,

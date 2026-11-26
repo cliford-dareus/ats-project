@@ -125,6 +125,7 @@ const ApplyForm = ({ jobId, subdomain }: { jobId: number; subdomain: string }) =
                     type: "candidate_applied",
                     candidateId: String(response?.candidate_id),
                     jobId: String(response?.job_id),
+                    applicationId: response?.application_id,
                 },
                 context: {
                     subdomain: subdomain,   // ← "bridge" | "hisgra" — from params or env

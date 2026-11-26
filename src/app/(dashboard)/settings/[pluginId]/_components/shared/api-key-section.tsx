@@ -1,11 +1,24 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // API Key section
+//
+// Honest auth states — a stored key is NEVER "verified" on page load:
+//   • "authenticated"  — this session's key was just verified via
+//     authenticate() (verifyGoogle / verifyResend). Only this state
+//     shows "Connected · API verified".
+//   • saved key only   — the server sent a MASKED value (•••• + last 4),
+//     so a key is stored but nothing was verified this session:
+//     "Saved · key stored, not verified this session".
+//   • generic mask     — the stored key could not be decrypted (e.g. the
+//     encryption key was rotated without a re-encryption pass), so the
+//     server could only send "••••••••": "needs re-entry".
 // ─────────────────────────────────────────────────────────────────────────────
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 
+/** Generic mask the server sends when it cannot decrypt a stored key. */
+const GENERIC_MASK = "••••••••";
 
 type Props = {
     apiKey: string;
@@ -25,8 +38,14 @@ type Props = {
 const ApiKeySection = ({ apiKey, maskedKey, onApiKeyChange, auth, onConnect, onDisconnect, pluginId }: Props) => {
     const [show, setShow] = useState(false);
     const [localKey, setLocalKey] = useState(apiKey);
+    const [reentering, setReentering] = useState(false);
     const isConnected = auth.status === "authenticated";
     const isLoading = auth.status === "authenticating";
+    // A masked value proves a key is STORED, not that it works: providers
+    // only report "authenticated" after a verify call this session.
+    const hasSavedKey = !isConnected && !!maskedKey;
+    const needsReentry = hasSavedKey && maskedKey === GENERIC_MASK;
+    const showingStoredKey = isConnected || (hasSavedKey && !reentering);
 
     // Keep the input in sync when the parent clears its key state
     // (after a save, or on disconnect) so a stale typed key doesn't
@@ -34,6 +53,24 @@ const ApiKeySection = ({ apiKey, maskedKey, onApiKeyChange, auth, onConnect, onD
     useEffect(() => {
         setLocalKey(apiKey);
     }, [apiKey]);
+
+    // A new stored key (connect) or a cleared one (disconnect) ends any
+    // re-entry in progress.
+    useEffect(() => {
+        setReentering(false);
+    }, [maskedKey]);
+
+    const statusText = isConnected ? `Connected · ${pluginId} API verified this session` :
+        isLoading ? "Verifying API key…" :
+            auth.status === "error" ? "Connection failed" :
+                needsReentry ? "Saved key couldn't be read — re-enter your key" :
+                    hasSavedKey ? "Saved · key stored, not verified this session" :
+                        "Not connected";
+    const dotColor = isConnected ? "#10b981" :
+        isLoading ? "#f59e0b" :
+            auth.status === "error" ? "#f87171" :
+                needsReentry ? "#f59e0b" :
+                    hasSavedKey ? "#9ca3af" : "#374151";
 
     return (
         <section className="bg-card overflow-hidden rounded-md mb-3 border">
@@ -62,12 +99,12 @@ const ApiKeySection = ({ apiKey, maskedKey, onApiKeyChange, auth, onConnect, onD
                     <div style={{ flex: 1, position: "relative" }}>
                         <Input
                             type={show ? "text" : "password"}
-                            value={isConnected ? (maskedKey ?? "••••••••") : localKey}
+                            value={showingStoredKey ? (maskedKey ?? GENERIC_MASK) : localKey}
                             onChange={(v) => setLocalKey(v.target.value)}
                             placeholder={pluginId === "google" ? "AIza••••••••••••••••••••••••••" : "re_live_••••••••••••••••••"}
-                            disabled={isConnected}
+                            disabled={showingStoredKey}
                         />
-                        {!isConnected && (
+                        {!showingStoredKey && (
                             <button
                                 onClick={() => setShow(s => !s)}
                                 style={{
@@ -82,7 +119,7 @@ const ApiKeySection = ({ apiKey, maskedKey, onApiKeyChange, auth, onConnect, onD
                         )}
                     </div>
 
-                    {isConnected ? (
+                    {showingStoredKey ? (
                         <Button
                             onClick={onDisconnect}
 
@@ -108,7 +145,28 @@ const ApiKeySection = ({ apiKey, maskedKey, onApiKeyChange, auth, onConnect, onD
                     )}
                 </div>
 
-                {!isConnected && auth.status !== "error" && (
+                {hasSavedKey && !reentering && (
+                    <p style={{ margin: "5px 0 0", fontSize: 11, color: "#374151", fontFamily: "monospace" }}>
+                        <button
+                            onClick={() => { setLocalKey(""); setReentering(true); }}
+                            style={{ background: "none", border: "none", padding: 0, color: "#9ca3af", cursor: "pointer", fontSize: 11, fontFamily: "monospace", textDecoration: "underline" }}
+                        >
+                            Re-enter a different key
+                        </button>
+                    </p>
+                )}
+                {reentering && (
+                    <p style={{ margin: "5px 0 0", fontSize: 11, color: "#374151", fontFamily: "monospace" }}>
+                        <button
+                            onClick={() => setReentering(false)}
+                            style={{ background: "none", border: "none", padding: 0, color: "#9ca3af", cursor: "pointer", fontSize: 11, fontFamily: "monospace", textDecoration: "underline" }}
+                        >
+                            Cancel — keep the saved key
+                        </button>
+                    </p>
+                )}
+
+                {!showingStoredKey && auth.status !== "error" && (
                     <p style={{ margin: "5px 0 0", fontSize: 11, color: "#374151", fontFamily: "monospace" }}>
                         {`Don't have an API key? Create one at ${pluginId}.com — 'Sending access' permission is enough`}
                     </p>
@@ -124,21 +182,18 @@ const ApiKeySection = ({ apiKey, maskedKey, onApiKeyChange, auth, onConnect, onD
             <div className="flex items-center gap-3 py-[10px] px-[14px] bg-foreground rounded-md border">
                 <div style={{
                     width: 7, height: 7, borderRadius: "50%", flexShrink: 0,
-                    background:
-                        isConnected ? "#10b981" :
-                            isLoading ? "#f59e0b" :
-                                auth.status === "error" ? "#f87171" : "#374151",
+                    background: dotColor,
                     boxShadow: isConnected ? "0 0 6px #10b981" : "none",
                     animation: isLoading ? "pulse 1s ease-in-out infinite" : "none",
                 }} />
                 <span style={{ fontSize: 11, color: "#6b7280", fontFamily: "'Geist Mono', monospace" }}>
-                    {isConnected ? `Connected · ${pluginId} API verified` :
-                        isLoading ? "Verifying API key…" :
-                            auth.status === "error" ? "Connection failed" :
-                                "Not connected"}
+                    {statusText}
                 </span>
                 {isConnected && (
                     <Badge style={{ color: "#10b981", backgroundColor: "#0d1a14" }}>ACTIVE</Badge>
+                )}
+                {hasSavedKey && !isConnected && (
+                    <Badge style={{ color: "#9ca3af", backgroundColor: "#111827" }}>SAVED</Badge>
                 )}
             </div>
         </section>

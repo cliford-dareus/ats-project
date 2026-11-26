@@ -18,7 +18,7 @@ import { NextRequest, NextResponse } from "next/server";
 // ── DB import — replace with your actual query ────────────────────────────────
 import { db } from "@/drizzle/db";
 import { eq, and } from "drizzle-orm";
-import { job_listings, organization } from "@/drizzle/schema";
+import { job_listings, organization, applications } from "@/drizzle/schema";
 import { ATSContext } from "@/types";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -33,11 +33,14 @@ const PublicEventSchema = z.discriminatedUnion("type", [
         type: z.literal("candidate_applied"),
         candidateId: z.string().min(1),
         jobId: z.string().min(1),
+        // applications.id — distinct from candidateId (candidates.id).
+        applicationId: z.number().min(1).optional(),
     }),
     z.object({
         type: z.literal("resume_uploaded"),
         candidateId: z.string().min(1),
         fileUrl: z.string().url(),
+        applicationId: z.number().min(1).optional(),
     }),
 ]);
 
@@ -232,6 +235,26 @@ export async function POST(req: NextRequest) {
             { error: "Job not found" },
             { status: 404, headers: cors },
         );
+    }
+
+    // ── 5b. Verify the application belongs to this org + job (when supplied) ──
+    if (event.applicationId) {
+        const [application] = await db
+            .select({ id: applications.id })
+            .from(applications)
+            .where(and(
+                eq(applications.id, event.applicationId),
+                eq(applications.job_id, context.jobId),
+                eq(applications.organization, org.orgId),
+            ))
+            .limit(1);
+
+        if (!application) {
+            return NextResponse.json(
+                { error: "Application not found" },
+                { status: 404, headers: cors },
+            );
+        }
     }
 
     // ── 6. Build context — orgId comes from DB, not client ────────────────────

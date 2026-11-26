@@ -120,9 +120,26 @@ export const toggle_organization_plugin = async (orgId: string, enabled: boolean
             ? [...new Set([...pluginsData.enabled, pluginId])] // install extension
             : pluginsData.enabled.filter((id: string) => id !== pluginId); // uninstall extension
 
+        const existing_settings = (pluginsData.settings?.[pluginId] ?? {}) as OrgPluginSettings;
         const updatedSettings = enabled
-            ? { ...pluginsData.settings, [pluginId]: { ...pluginsData.settings[pluginId], ...config, active: true } }
-            : { ...pluginsData.settings, [pluginId]: { ...pluginsData.settings[pluginId], active: false } };
+            ? { ...pluginsData.settings, [pluginId]: { ...existing_settings, ...config, active: true } }
+            : {
+                ...pluginsData.settings,
+                [pluginId]: {
+                    ...existing_settings,
+                    active: false,
+                    // Uninstall clears credentials exactly like Disconnect
+                    // does (update_organization_plugins with active:false +
+                    // credentials:{} via resolve_saved_plugin_credentials):
+                    // a later re-install must not silently re-authenticate
+                    // with a stale stored key.
+                    credentials: resolve_saved_plugin_credentials(
+                        existing_settings.credentials,
+                        {},
+                        { clear_on_empty: true },
+                    ),
+                },
+            };
 
         const updatedPlugins: OrgPluginRecord = {
             ...pluginsData,
