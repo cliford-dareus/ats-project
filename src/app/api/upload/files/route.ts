@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { and, eq } from "drizzle-orm";
 import { uploadResumeToR2 } from "@/lib/upload-file-to-r2";
+import { ALLOWED_RESUME_MIME, MAX_RESUME_BYTES } from "@/lib/resume-validation";
 import { db } from "@/drizzle/db";
 import { candidates } from "@/drizzle/schema";
 import { canEditCandidate } from "@/server/permissions";
@@ -13,15 +14,6 @@ const ALLOWED_ATTACHMENT_TYPES = new Set([
   "COVER_LETTER",
   "OFFER_LETTER",
   "OTHER",
-]);
-
-const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10 MB
-const ALLOWED_MIME = new Set([
-  "application/pdf",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "image/png",
-  "image/jpeg",
 ]);
 
 export async function POST(req: Request) {
@@ -63,7 +55,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid attachment_type" }, { status: 400 });
     }
 
-    if (file.size <= 0 || file.size > MAX_FILE_BYTES) {
+    if (file.size <= 0 || file.size > MAX_RESUME_BYTES) {
       return NextResponse.json(
         { error: "File must be between 1 byte and 10 MB" },
         { status: 400 }
@@ -72,7 +64,7 @@ export async function POST(req: Request) {
 
     // MIME type is required and must be allowlisted — an empty file.type
     // previously skipped this check entirely.
-    if (!file.type || !ALLOWED_MIME.has(file.type)) {
+    if (!file.type || !ALLOWED_RESUME_MIME.has(file.type)) {
       return NextResponse.json(
         { error: "Unsupported file type" },
         { status: 400 }

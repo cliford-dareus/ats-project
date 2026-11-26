@@ -33,6 +33,8 @@ const STEPS = [
 const ApplyForm = ({ jobId, subdomain, companyName }: { jobId: number; subdomain: string; companyName: string }) => {
     const [currentStep, setCurrentStep] = useState(1);
     const [complete, setComplete] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [file, setFile] = useState<File | null>(null);
     const [resumeName, setResumeName] = useState<string | null>(null);
@@ -64,6 +66,9 @@ const ApplyForm = ({ jobId, subdomain, companyName }: { jobId: number; subdomain
             ],
             additionalInfo: {
                 coverLetter: "",
+                referralSource: "",
+                expectedSalary: "",
+                earliestStartDate: "",
             }
         },
     });
@@ -91,6 +96,7 @@ const ApplyForm = ({ jobId, subdomain, companyName }: { jobId: number; subdomain
         if (currentStep === 5) isValid = true;
 
         if (isValid) {
+            setSubmitError(null);
             if (currentStep < STEPS.length) {
                 setCurrentStep((prev) => prev + 1);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -99,6 +105,7 @@ const ApplyForm = ({ jobId, subdomain, companyName }: { jobId: number; subdomain
     };
 
     const prevStep = () => {
+        setSubmitError(null);
         if (currentStep > 1) {
             setCurrentStep((prev) => prev - 1);
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -106,6 +113,10 @@ const ApplyForm = ({ jobId, subdomain, companyName }: { jobId: number; subdomain
     };
 
     const onSubmit = async (data: z.infer<typeof applicationSchema>) => {
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+        setSubmitError(null);
+
         const payload = {
             ...data, file: { file_: file as File }, jobId, subdomain
         };
@@ -113,7 +124,9 @@ const ApplyForm = ({ jobId, subdomain, companyName }: { jobId: number; subdomain
         try {
             const response = await create_application_action(payload);
             if (!response.success) {
-                console.log(payload);
+                // Stay on the Review step and show the server's reason
+                // inline instead of failing silently.
+                setSubmitError(response.message ?? "There was an error submitting your application. Please try again.");
                 return;
             }
 
@@ -143,11 +156,12 @@ const ApplyForm = ({ jobId, subdomain, companyName }: { jobId: number; subdomain
             });
 
             // Show success message
-            console.log("Application submitted successfully:", response.message);
             setComplete(true);
         } catch (error) {
             console.error("Error submitting application:", error);
-            alert("There was an error submitting your application. Please try again.");
+            setSubmitError("There was an error submitting your application. Please try again.");
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -236,15 +250,15 @@ const ApplyForm = ({ jobId, subdomain, companyName }: { jobId: number; subdomain
                         type="button"
                         variant="ghost"
                         onClick={prevStep}
-                        disabled={currentStep === 1}
+                        disabled={currentStep === 1 || isSubmitting}
                         className={cn(currentStep === 1 ? "opacity-0" : "opacity-100")}
                     >
                         <ArrowLeft className="h-4 w-4 mr-2" /> Back
                     </Button>
 
                     {currentStep === STEPS.length ? (
-                        <Button type="submit" size="lg" className="px-8 bg-green-600 hover:bg-green-700 border-green-600">
-                            Submit Application <ArrowRight className="h-4 w-4 ml-2" />
+                        <Button type="submit" size="lg" disabled={isSubmitting} className="px-8 bg-green-600 hover:bg-green-700 border-green-600">
+                            {isSubmitting ? "Submitting…" : "Submit Application"} <ArrowRight className="h-4 w-4 ml-2" />
                         </Button>
                     ) : (
                         <Button type="button" size="lg" onClick={nextStep} className="px-8">
@@ -252,6 +266,12 @@ const ApplyForm = ({ jobId, subdomain, companyName }: { jobId: number; subdomain
                         </Button>
                     )}
                 </div>
+
+                {submitError && (
+                    <div role="alert" className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                        {submitError}
+                    </div>
+                )}
             </form>
         </div>
     );

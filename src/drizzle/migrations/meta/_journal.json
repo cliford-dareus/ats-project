@@ -22,6 +22,13 @@
       "when": 1795049785672,
       "tag": "0002_slim_pretty_boy",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1795732477395,
+      "tag": "0003_late_boom_boom",
+      "breakpoints": true
     }
   ]
 }

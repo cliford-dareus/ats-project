@@ -32,11 +32,14 @@ const Page = async ({ params }: Props) => {
     const candidate_details = JSON.parse(candidate_details_raw || "{}");
     const candidate_notes = await get_candidate_notes(candidateId);
 
-    // The candidate row has no role/rating/LinkedIn columns — these come from
-    // the Mongo details doc when present, otherwise the previous fallbacks.
+    // The candidate row has no role/rating columns — these come from the
+    // Mongo details doc when present, otherwise the previous fallbacks.
+    // LinkedIn/portfolio live on the candidate row (collected on the apply
+    // form), with the details doc kept as a fallback.
     const headline = candidate_details?.current_role ?? candidate_details?.title ?? "Software Engineer";
     const rating = candidate_details?.rating ?? 4.5;
-    const linkedInUrl = candidate_details?.linkedin_url ?? candidate_details?.linkedIn;
+    const linkedInUrl = candidate.candidate?.linkedin_url ?? candidate_details?.linkedin_url ?? candidate_details?.linkedIn;
+    const portfolioUrl = candidate.candidate?.portfolio_url ?? candidate_details?.portfolio_url;
 
     return (
         <>
@@ -128,6 +131,18 @@ const Page = async ({ params }: Props) => {
                         >
                             <ExternalLink className="w-4 h-4 text-brand-600" />
                             LinkedIn Profile
+                        </a>
+                    )}
+
+                    {portfolioUrl && (
+                        <a
+                            href={portfolioUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex-1 lg:flex-none px-5 py-2.5 bg-muted hover:bg-muted border border-border rounded-2xl text-xs font-bold text-foreground transition-all flex items-center justify-center gap-2"
+                        >
+                            <ExternalLink className="w-4 h-4 text-brand-600" />
+                            Portfolio
                         </a>
                     )}
                 </div>

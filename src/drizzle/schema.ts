@@ -1,4 +1,4 @@
-import { int, mysqlTable, varchar, mysqlEnum, timestamp, boolean, json, unique, index, text } from 'drizzle-orm/mysql-core';
+import { int, mysqlTable, varchar, mysqlEnum, timestamp, boolean, json, unique, uniqueIndex, index, text } from 'drizzle-orm/mysql-core';
 import { relations } from "drizzle-orm";
 import { createId } from '@paralleldrive/cuid2';
 
@@ -227,6 +227,10 @@ export const candidates = mysqlTable('candidate', {
     state: varchar({ length: 255 }).notNull(),
     zip_code: varchar({ length: 255 }).notNull(),
     organization: varchar({ length: 255 }).notNull(),
+    // Collected on the public apply form (personal info step); null when the
+    // candidate never provided them.
+    portfolio_url: varchar('portfolio_url', { length: 255 }),
+    linkedin_url: varchar('linkedin_url', { length: 255 }),
     status: mysqlEnum('status', ['ACTIVE', 'REJECTED', 'HIRED']).default('ACTIVE'),
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
@@ -259,6 +263,13 @@ export const applications = mysqlTable('applications', {
     organization: varchar({ length: 255 }).notNull(),
     subdomain: varchar({ length: 255 }).notNull(),
 
+    // Collected on the public apply form (review/additional step); null when
+    // the candidate never provided them.
+    cover_letter: text('cover_letter'),
+    referral_source: varchar('referral_source', { length: 255 }),
+    expected_salary: varchar('expected_salary', { length: 255 }),
+    earliest_start_date: varchar('earliest_start_date', { length: 255 }),
+
     resume_score: int("resume_score"),
     resume_score_fit: int("resume_score_fit"),
     resume_score_skills: int("resume_score_skills"),
@@ -276,6 +287,13 @@ export const applications = mysqlTable('applications', {
     ),
     applications_job_idx: index("applications_job_idx").on(table.job_id),
     candidate_idx: index("candidate_idx").on(table.candidate),
+    // Race-safe duplicate guard: one application per (job, candidate).
+    // create_application checks first and returns a friendly message, but
+    // the constraint is what makes it hold under concurrent submits.
+    application_job_candidate_unique: uniqueIndex("application_job_candidate_unique").on(
+        table.job_id,
+        table.candidate
+    ),
 }));
 
 export const applications_relations = relations(applications, ({ one, many }) => ({

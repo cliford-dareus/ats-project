@@ -26,8 +26,26 @@ import {
 } from "@/zod";
 import { z } from "zod";
 import { uploadResumeToR2 } from "@/lib/upload-file-to-r2";
+import { validateResumeFile } from "@/lib/resume-validation";
 import { create_candidate_details } from "../mongo/candidate-details";
 import { check_organization_subdomain } from "./organization";
+
+// Public apply-page lookup: the job the applicant is applying to, resolved
+// by id + subdomain. The page uses this to refuse the form for missing or
+// non-OPEN jobs before the applicant fills anything in.
+export const get_public_job_for_apply = async (jobId: number, subdomain: string) => {
+    const [job] = await db
+        .select({
+            id: job_listings.id,
+            name: job_listings.name,
+            status: job_listings.status,
+        })
+        .from(job_listings)
+        .where(and(eq(job_listings.id, jobId), eq(job_listings.subdomain, subdomain)))
+        .limit(1);
+
+    return job ?? null;
+};
 
 export const create_application = async (data: z.infer<typeof applicationFormSchema>) => {
     const jobId = data.jobId;
@@ -39,12 +57,20 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
             id: job_listings.id,
             name: job_listings.name,
             description: job_listings.description,
+            status: job_listings.status,
         })
         .from(job_listings)
         .where(and(eq(job_listings.id, jobId), eq(job_listings.subdomain, subdomain)));
 
     if (!job) {
         return { success: false, message: "Job not found" };
+    }
+
+    // Only OPEN jobs accept applications — closed/archived/draft/pending jobs
+    // must not accept submissions via a direct link (same check the apply
+    // page performs before rendering the form).
+    if (job.status !== "OPEN") {
+        return { success: false, message: "This job is no longer accepting applications" };
     }
 
     // 1. Get "Applied" stage
@@ -63,27 +89,7 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
         return { success: false, message: "Applied stage not found for this job" };
     }
 
-    // 2. Check for duplicate application
-    if (data.candidate) {
-        const existingApp = await db
-            .select()
-            .from(applications)
-            .where(
-                and(
-                    eq(applications.job_id, jobId),
-                    eq(applications.candidate, Number(data.candidate)),
-                ),
-            );
-
-        if (existingApp.length > 0) {
-            return {
-                success: false,
-                message: "Candidate already has an application for this job",
-            };
-        }
-    }
-
-    // 3. check if an organization has this subdomain
+    // 2. check if an organization has this subdomain
     const existingSubdomain = await check_organization_subdomain(subdomain);
     if (existingSubdomain.length == 0) {
         return {
@@ -91,86 +97,165 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
             message: "No organization found with this subdomain",
         };
     }
+    const orgId = existingSubdomain[0].id;
+
+    const info = data.personalInfo as {
+        firstName: string;
+        lastName: string;
+        email: string;
+        phone: string;
+        address: string;
+        city: string;
+        state: string;
+        zipCode: string;
+        portfolioUrl: string | undefined;
+        linkedinUrl: string | undefined;
+    };
+    const additional = data.additionalInfo ?? {};
+    const resumeFile = data?.file?.file_ as File | undefined;
+    const hasResume = !!resumeFile && resumeFile.size > 0;
+
+    // Validate the resume up front — same limits as the dashboard upload
+    // path — so a bad file fails before any row is written.
+    if (hasResume) {
+        const resumeError = validateResumeFile(resumeFile);
+        if (resumeError) {
+            return { success: false, message: resumeError };
+        }
+    }
+
+    const emptyToNull = (value: string | undefined): string | null =>
+        value && value.trim() ? value.trim() : null;
 
     try {
-        let candidate_id: number;
+        // 3. Resolve the candidate. An explicit id (dashboard callers) wins
+        // when it belongs to this org; otherwise the public form resolves by
+        // email within this org — email is the identity across applies.
+        let candidate_id: number | null = null;
         if (data.candidate) {
-            // === EXISTING CANDIDATE ===
-            candidate_id = Number(data.candidate);
-        } else {
-            // === NEW CANDIDATE ===
-            const info = data.personalInfo as {
-                firstName: string;
-                lastName: string;
-                email: string;
-                phone: string;
-                address: string;
-                city: string;
-                state: string;
-                zipCode: string;
-                portfolioUrl: string | undefined;
-                linkedinUrl: string | undefined;
-            };
-
-            // Better uniqueness check: email (not name)
-            const existingCandidate = await db
-                .select({ id: candidates.id, file_key: candidates.cv_path })
+            const [byId] = await db
+                .select({ id: candidates.id })
                 .from(candidates)
-                .where(eq(candidates.email, info.email));
+                .where(
+                    and(
+                        eq(candidates.id, Number(data.candidate)),
+                        eq(candidates.organization, orgId),
+                    ),
+                )
+                .limit(1);
+            if (byId) candidate_id = byId.id;
+        }
+        if (!candidate_id) {
+            const [byEmail] = await db
+                .select({ id: candidates.id })
+                .from(candidates)
+                .where(
+                    and(
+                        eq(candidates.email, info.email),
+                        eq(candidates.organization, orgId),
+                    ),
+                )
+                .limit(1);
+            if (byEmail) candidate_id = byEmail.id;
+        }
 
-            if (existingCandidate.length > 0) {
-                candidate_id = existingCandidate[0].id;
-            } else {
-                const resumeFile = data?.file?.file_ as File | undefined;
-                console.log("Form Submitted:", data.file);
-                let cvKey = `no-resume-${info.firstName}-${Date.now()}`;
+        const candidateFullName = `${info.firstName} ${info.lastName}`;
 
-                const candidateFullName = `${info.firstName} ${info.lastName}`;
-                if (resumeFile && resumeFile.size > 0) {
-                    cvKey = await uploadResumeToR2(resumeFile, candidateFullName);
+        // 4. Duplicate check: one application per (job, candidate), however
+        // the candidate was resolved. The unique index on
+        // (job_id, candidate) is the race-safe backstop — see the catch below.
+        if (candidate_id) {
+            const existingApp = await db
+                .select({ id: applications.id })
+                .from(applications)
+                .where(
+                    and(
+                        eq(applications.job_id, jobId),
+                        eq(applications.candidate, candidate_id),
+                    ),
+                )
+                .limit(1);
+
+            if (existingApp.length > 0) {
+                // A returning applicant's new resume is still worth keeping:
+                // persist it on the candidate record instead of dropping it.
+                if (hasResume) {
+                    const cvKey = await uploadResumeToR2(resumeFile, candidateFullName, {
+                        orgId,
+                        candidateId: candidate_id,
+                    });
+                    await persistCandidateResume(candidate_id, cvKey, `${info.firstName}'s Resume`);
                 }
-
-                // Create candidate
-                const [new_candidate] = await db
-                    .insert(candidates)
-                    .values({
-                        organization: existingSubdomain[0].id,
-                        name: candidateFullName,
-                        email: info.email,
-                        phone: info.phone,
-                        location: info.city,
-                        address: info.address,
-                        city: info.city,
-                        state: info.state,
-                        zip_code: info.zipCode,
-                        cv_path: cvKey,
-                        subdomain: subdomain,
-                    })
-                // .$returningId();
-
-                candidate_id = new_candidate.insertId;
-
-                // Create attachment record
-                await db.insert(attachments).values({
-                    file_name: `${info.firstName}'s Resume`,
-                    file_url: cvKey, // we store the R2 key
-                    candidate_id: candidate_id,
-                    attachment_type: "RESUME",
-                });
-
-                // Create candidate details record
-                await create_candidate_details({
-                    candidate_id: candidate_id,
-                    resumeSummary: "No resume summary provided",
-                    skills: [],
-                    experience: data.workExperience ?? [],
-                    education: data.education ?? [],
-                    references: data.references ?? [],
-                    key_accomplishments: [],
-                });
-
-                revalidateDbCache({ tag: CACHE_TAGS.candidates, orgId: existingSubdomain[0].id });
+                return {
+                    success: false,
+                    message: "You've already applied for this role. Our team will be in touch soon.",
+                };
             }
+        }
+
+        if (!candidate_id) {
+            // === NEW CANDIDATE ===
+            // cv_path starts empty — never a fabricated `no-resume-...` key;
+            // it is filled in below when a resume was actually uploaded.
+            const [new_candidate] = await db
+                .insert(candidates)
+                .values({
+                    organization: orgId,
+                    name: candidateFullName,
+                    email: info.email,
+                    phone: info.phone,
+                    location: info.city,
+                    address: info.address,
+                    city: info.city,
+                    state: info.state,
+                    zip_code: info.zipCode,
+                    cv_path: "",
+                    subdomain: subdomain,
+                    portfolio_url: emptyToNull(info.portfolioUrl),
+                    linkedin_url: emptyToNull(info.linkedinUrl),
+                });
+
+            candidate_id = new_candidate.insertId;
+
+            // Create candidate details record
+            await create_candidate_details({
+                candidate_id: candidate_id,
+                resumeSummary: "No resume summary provided",
+                skills: [],
+                experience: data.workExperience ?? [],
+                education: data.education ?? [],
+                references: data.references ?? [],
+                key_accomplishments: [],
+            });
+
+            revalidateDbCache({ tag: CACHE_TAGS.candidates, orgId });
+        } else {
+            // === RETURNING CANDIDATE ===
+            // Keep the stored profile current with what they just provided.
+            await db
+                .update(candidates)
+                .set({
+                    ...(emptyToNull(info.portfolioUrl)
+                        ? { portfolio_url: emptyToNull(info.portfolioUrl) }
+                        : {}),
+                    ...(emptyToNull(info.linkedinUrl)
+                        ? { linkedin_url: emptyToNull(info.linkedinUrl) }
+                        : {}),
+                    ...(info.phone ? { phone: info.phone } : {}),
+                })
+                .where(eq(candidates.id, candidate_id));
+        }
+
+        // 5. Persist the resume when one was uploaded (new or returning
+        // candidate): org-scoped R2 key, cv_path updated, RESUME attachment
+        // upserted. No resume → cv_path stays as-is ("" for a new candidate)
+        // and no attachment row is created.
+        if (hasResume) {
+            const cvKey = await uploadResumeToR2(resumeFile, candidateFullName, {
+                orgId,
+                candidateId: candidate_id,
+            });
+            await persistCandidateResume(candidate_id, cvKey, `${info.firstName}'s Resume`);
         }
 
         const [candidate] = await db
@@ -181,34 +266,38 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
         const file_key = candidate.cv_path;
 
         // === CREATE APPLICATION ===
-        // 4. Create application (shared for both paths)
+        // 6. Create application (shared for both paths)
         const [new_application] = await db
             .insert(applications)
             .values({
-                organization: existingSubdomain[0].id,
+                organization: orgId,
                 job_id: jobId,
                 candidate: candidate_id,
                 current_stage_id: appliedStage.id,
                 subdomain: subdomain, // make subdomain unique in the database
+                cover_letter: emptyToNull(additional.coverLetter),
+                referral_source: emptyToNull(additional.referralSource),
+                expected_salary: emptyToNull(additional.expectedSalary),
+                earliest_start_date: emptyToNull(additional.earliestStartDate),
             })
             .$returningId();
 
         // Revalidate cache
         revalidateDbCache({
             tag: CACHE_TAGS.applications,
-            orgId: existingSubdomain[0].id,
+            orgId,
         });
 
         revalidateDbCache({
             tag: CACHE_TAGS.candidates,
             id: String(candidate_id),
-            orgId: existingSubdomain[0].id,
+            orgId,
         });
 
         revalidateDbCache({
             tag: CACHE_TAGS.jobs,
             id: String(jobId),
-            orgId: existingSubdomain[0].id,
+            orgId,
         });
 
         return {
@@ -222,8 +311,48 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
             message: "Application created successfully",
         };
     } catch (err) {
+        // Two concurrent submits can both pass the duplicate check above;
+        // the unique (job_id, candidate) index rejects the second insert —
+        // report it as a duplicate, not a crash.
+        if ((err as { code?: string })?.code === "ER_DUP_ENTRY") {
+            return {
+                success: false,
+                message: "You've already applied for this role. Our team will be in touch soon.",
+            };
+        }
         console.error("Create application error:", err);
         throw new Error((err as Error).message || "Failed to create application");
+    }
+};
+
+// Store a resume key on the candidate and keep exactly one RESUME
+// attachment pointing at it (update the existing one, or insert).
+const persistCandidateResume = async (candidateId: number, cvKey: string, fileName: string) => {
+    await db.update(candidates).set({ cv_path: cvKey }).where(eq(candidates.id, candidateId));
+
+    const [existing] = await db
+        .select({ id: attachments.id })
+        .from(attachments)
+        .where(
+            and(
+                eq(attachments.candidate_id, candidateId),
+                eq(attachments.attachment_type, "RESUME"),
+            ),
+        )
+        .limit(1);
+
+    if (existing) {
+        await db
+            .update(attachments)
+            .set({ file_name: fileName, file_url: cvKey })
+            .where(eq(attachments.id, existing.id));
+    } else {
+        await db.insert(attachments).values({
+            file_name: fileName,
+            file_url: cvKey,
+            candidate_id: candidateId,
+            attachment_type: "RESUME",
+        });
     }
 };
 
@@ -421,7 +550,14 @@ export const get_application_by_id_db = async (applicationId: number, orgId: str
             candidate_email: candidates.email,
             candidate_phone: candidates.phone,
             candidate_cv: candidates.cv_path,
+            candidate_portfolio: candidates.portfolio_url,
+            candidate_linkedin: candidates.linkedin_url,
             can_contact: applications.can_contact,
+            // Collected on the public apply form (review/additional step).
+            cover_letter: applications.cover_letter,
+            referral_source: applications.referral_source,
+            expected_salary: applications.expected_salary,
+            earliest_start_date: applications.earliest_start_date,
             // job
             job_id: job_listings.id,
             job_apply: job_listings.name,

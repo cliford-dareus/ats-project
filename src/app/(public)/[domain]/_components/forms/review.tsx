@@ -1,4 +1,4 @@
-import { FormTextarea } from "../fields";
+import { FormInput, FormTextarea } from "../fields";
 import { Briefcase, FileText, GraduationCap, User, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
@@ -101,6 +101,23 @@ const ReviewForm = ({ register, setCurrentStep, getValues }: Props) => {
                 <Card className="p-6">
                     <div className="flex items-center justify-between mb-4 border-bottom pb-2">
                         <h3 className="font-bold flex items-center gap-2"><FileText className="h-4 w-4" /> Additional</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <FormInput
+                            label="Referral Source"
+                            placeholder="e.g. LinkedIn, employee referral, job board"
+                            {...register("additionalInfo.referralSource")}
+                        />
+                        <FormInput
+                            label="Expected Salary"
+                            placeholder="e.g. $80,000"
+                            {...register("additionalInfo.expectedSalary")}
+                        />
+                        <FormInput
+                            label="Earliest Start Date"
+                            type="date"
+                            {...register("additionalInfo.earliestStartDate")}
+                        />
                     </div>
                     <FormTextarea
                         label="Anything else you'd like us to know?"

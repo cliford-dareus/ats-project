@@ -38,7 +38,13 @@ export type ApplicationResponseType = {
     candidate_name: string;
     candidate_email: string;
     candidate_phone: string;
+    candidate_portfolio: string | null;
+    candidate_linkedin: string | null;
     can_contact: boolean;
+    cover_letter: string | null;
+    referral_source: string | null;
+    expected_salary: string | null;
+    earliest_start_date: string | null;
     status: JOB_ENUM;
     job_apply: string;
     job_id: number;
