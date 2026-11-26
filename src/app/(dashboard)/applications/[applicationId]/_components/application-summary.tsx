@@ -51,14 +51,14 @@ export const ApplicationSummary = ({ candidate_id, resumeSummary, key_accomplish
                 </button>
             </div>
             <div className="p-4">
-                <div className="prose prose prose-sm max-w-none text-muted-foreground leading-relaxed">
+                <div className="prose prose-sm max-w-none text-muted-foreground leading-relaxed">
                     <div className="flex gap-2 group">
                         <div className="min-w-4 h-full pt-1">
                             <GenerateFieldButton field_name="resumeSummary" candidate_id={candidate_id} />
                         </div>
-                        <p>{resumeSummary}</p>
+                        <p className="text-xs font-medium text-muted-foreground leading-relaxed">{resumeSummary}</p>
                     </div>
-                    <h4 className="text-foreground font-bold mt-4 mb-2">
+                    <h4 className="text-sm text-foreground font-bold mt-4 mb-2">
                         Key Accomplishments:
                     </h4>
                     <div className="flex gap-2 group">
@@ -67,7 +67,7 @@ export const ApplicationSummary = ({ candidate_id, resumeSummary, key_accomplish
                         </div>
                         <ul className="list-disc pl-5 space-y-1">
                             {key_accomplishments.map((accomplishment, index) => (
-                                <li key={index} className="truncate-ellipsis ">{accomplishment}</li>
+                                <li key={index} className="truncate-ellipsis text-xs font-medium text-muted-foreground leading-relaxed">{accomplishment}</li>
                             ))}
                         </ul>
                     </div>
@@ -90,7 +90,7 @@ export const ApplicationSoftSkills = ({ softSkills }: { softSkills: string[] }) 
             </div>
             <div className="flex flex-wrap gap-2 p-4">
                 {softSkills.map((skill, index) => (
-                    <div key={index} className="px-4 py-2 bg-accent/10 text-accent break-keep rounded-lg">{skill}</div>
+                    <div key={index} className="px-3 py-1.5 bg-muted border border-border rounded-xl text-xs font-bold text-foreground">{skill}</div>
                 ))}
             </div>
         </div>
@@ -112,7 +112,7 @@ export const ApplicationExperience = ({ experience, }: { experience: CandidateEx
                             <p className="text-sm text-muted-foreground">
                                 {experience.company} • {experience.period}
                             </p>
-                            <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                            <p className="mt-2 text-xs font-medium text-muted-foreground leading-relaxed">
                                 {experience.description}
                             </p>
                         </div>
