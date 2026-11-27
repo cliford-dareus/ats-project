@@ -14,7 +14,7 @@ type Props = {
 
 const Page = async ({ searchParams }: Props) => {
     const { orgId } = await auth();
-    const { page, per_page, location, status, department } = (await searchParams) ?? {};
+    const { page, per_page, location, status, department, search, keyword, sort } = (await searchParams) ?? {};
 
     const limit = typeof per_page === "string" ? parseInt(per_page) : 8;
     const offset = typeof page === "string" ? (parseInt(page) - 1) * limit : 0;
@@ -23,6 +23,11 @@ const Page = async ({ searchParams }: Props) => {
     const statuses = status ? (status as string).split(",") as (typeof JOB_STAGES._type)[] : undefined;
     const locations = location ? (location as string).split(",") : undefined;
     const departments = department ? (department as string).split(",") : undefined;
+    // B10: the sidebar search input writes ?search=… — read it as the
+    // keyword filter (same pattern as the candidates page). The query
+    // already supported keywords; the page just never passed them.
+    const searchTerm = typeof search === "string" ? search : typeof keyword === "string" ? keyword : undefined;
+    const keywords = searchTerm ? searchTerm.split(",") : undefined;
 
     const result = await get_all_applications_action({
         limit,
@@ -30,6 +35,10 @@ const Page = async ({ searchParams }: Props) => {
         stages: statuses,
         location: locations,
         department: departments,
+        keywords,
+        // B9: sort rides in filterApplicationsSchema and is validated
+        // against the allowlist in the query.
+        sort: typeof sort === "string" ? sort : undefined,
         organization: orgId!,
     });
 

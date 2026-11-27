@@ -15,7 +15,7 @@ type Props = {
 
 const Page = async ({searchParams}: Props) => {
     const {orgId} = await auth();
-    const {location, salary, status, type, department, page, per_page, tab} = (await searchParams) ?? {};
+    const {location, salary, status, type, department, page, per_page, tab, search, keyword, sort} = (await searchParams) ?? {};
 
     const limit = typeof per_page === "string" ? parseInt(per_page) : 8;
     const offset = typeof page === "string" ? (parseInt(page) - 1) * limit : 0;
@@ -29,6 +29,11 @@ const Page = async ({searchParams}: Props) => {
     const locations = location ? (location as string).split(",") : undefined;
     const departments = department ? (department as string).split(",") : undefined;
     const salaries = salary ? (salary as string).split(",") : undefined;
+    // B10: the sidebar search input writes ?search=… — read it as the
+    // keyword filter (same pattern as the candidates page). The query
+    // already supported keywords; the page just never passed them.
+    const searchTerm = typeof search === "string" ? search : typeof keyword === "string" ? keyword : undefined;
+    const keywords = searchTerm ? searchTerm.split(",") : undefined;
 
     const result = await get_all_job_listings_action({
         offset,
@@ -38,6 +43,8 @@ const Page = async ({searchParams}: Props) => {
         status: statuses,
         type: types,
         department: departments,
+        keywords,
+        sort: typeof sort === "string" ? sort : undefined,
         organization: orgId as string,
     });
 

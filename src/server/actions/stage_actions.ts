@@ -1,8 +1,11 @@
 'use server';
 
 import { auth } from "@clerk/nextjs/server";
-import { canEditJob, canMoveApplication, canViewJob, hasPermission } from "@/server/permissions";
-import { get_stage_by_name, get_stage_by_name_for_job } from "@/server/queries/drizzle/stages";
+import { revalidatePath } from "next/cache";
+import { FormErrors } from "@/types";
+import { AuthzError, assertJobBelongsToOrg, canEditJob, canViewJob, hasPermission, requirePermission } from "@/server/permissions";
+import { create_stage_for_job, get_stage_by_name, get_stage_by_name_for_job } from "@/server/queries/drizzle/stages";
+import { CACHE_TAGS, revalidateDbCache } from "@/lib/cache";
 import { JOB_STAGES } from "@/zod";
 
 export const get_stage_by_name_action = async (stageName: string) => {
@@ -43,6 +46,59 @@ export const get_stage_by_name_for_job_action = async (stageName: string, jobId:
         return { error: true, message: "Stage not found" }
     }
     return stage;
+};
+
+// ── Create a stage for one job (B13) ──────────────────────────────────────────
+// The "Add new stage" dialog in job-options submits here. Org-scoped and
+// permission-gated (job:edit); the job is asserted to belong to the session
+// org, and the name is deduped against that job's existing stages (the
+// unique (job_id, stage_name) index is a backstop). The new stage is
+// assigned to the creating user: the dialog has no member picker, and the
+// old free-text "assign to" field could only ever store a raw string
+// against the users_table FK. Stage triggers themselves are still out of
+// scope — nothing here wires add_trigger_to_stage_action.
+export const create_stage_action = async (prevState: FormErrors | undefined, formData: FormData) => {
+    const jobId = Number(formData.get("job_id"));
+    const stageName = formData.get("stage_name");
+    const color = String(formData.get("color") ?? "").trim();
+
+    if (!Number.isInteger(jobId) || jobId <= 0) {
+        return { _form: "Invalid job." };
+    }
+    const parsedStage = JOB_STAGES.safeParse(stageName);
+    if (!parsedStage.success) {
+        return { stage_name: "Choose a valid stage name." };
+    }
+    // <input type="color"> always yields #rrggbb; anything else falls back
+    // to the default rather than failing the submit.
+    const safeColor = /^#[0-9a-fA-F]{6}$/.test(color) ? color : "#3B82F6";
+
+    try {
+        const { userId, orgId } = await requirePermission("job:edit");
+        await assertJobBelongsToOrg(jobId, orgId);
+
+        const existing = await get_stage_by_name_for_job(parsedStage.data, jobId);
+        if (existing) {
+            return { stage_name: "This stage already exists for this job." };
+        }
+
+        await create_stage_for_job({
+            jobId,
+            stageName: parsedStage.data,
+            color: safeColor,
+            assignTo: userId,
+            needSchedule: false,
+        });
+        revalidateDbCache({ tag: CACHE_TAGS.stages, id: String(jobId) });
+        revalidatePath(`/jobs/${jobId}`);
+        return { _success: "Stage added." };
+    } catch (err) {
+        if (err instanceof AuthzError) {
+            return { _form: err.status === 404 ? "Job not found." : err.message };
+        }
+        console.error("create_stage_action failed:", err);
+        return { _form: "There was an error adding the stage." };
+    }
 };
 
 export const add_trigger_to_stage_action = async () => {

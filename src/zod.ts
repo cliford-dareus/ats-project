@@ -228,7 +228,24 @@ export const filterApplicationsSchema = z.object({
     limit: z.number().optional(),
     offset: z.number().optional(),
     organization: z.string(),
+    // ?sort= for the applications list (newest / oldest / name-asc). Kept
+    // as a raw string here and validated against the allowlist in the
+    // query — anything else falls back to newest-first. (The jobs list
+    // validates sort in its action instead; the applications action file
+    // is owned by another batch, so the schema carries it through.)
+    sort: z.string().optional(),
 });
+
+// Salary filter ranges for the jobs list (?salary=). Values are the URL
+// values the jobs sidebar writes; the jobs query matches a job when its
+// stored [salary_from, salary_up_to] range (plain numeric strings)
+// overlaps the selected range. `max: null` means open-ended.
+export const JOB_SALARY_RANGES = [
+    { value: "under-50k", label: "Under $50k", min: 0, max: 50000 },
+    { value: "50k-100k", label: "$50k – $100k", min: 50000, max: 100000 },
+    { value: "100k-150k", label: "$100k – $150k", min: 100000, max: 150000 },
+    { value: "150k-plus", label: "$150k+", min: 150000, max: null },
+] as const;
 
 export const filterCandidateSchema = z.object({
     name: z.string().optional(),

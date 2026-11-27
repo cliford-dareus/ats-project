@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import EditJobListingModal from '@/components/modal/edit-joblisting-modal';
 import { formatSalaryRange } from "@/lib/format-salary-range";
+import { copyTextToClipboard, formatJobTypeLabel } from "@/lib/job-display";
+import { get_job_career_url_action } from "@/app/(dashboard)/jobs/[joblistingId]/_actions/job-options-actions";
 
 type Props = {
     data: JobResponseType;
@@ -24,6 +26,20 @@ type Props = {
 const JobPreview = ({ data }: Props) => {
     const router = useRouter();
     const [isEditJobOpen, setIsEditJobOpen] = useState(false);
+    const [shareNotice, setShareNotice] = useState<string | null>(null);
+
+    // The preview row carries no subdomain, so the public apply link is
+    // built server-side from the job row (org-scoped) and copied here.
+    const handleShare = async () => {
+        const result = await get_job_career_url_action(data.id);
+        if (!result.success) {
+            setShareNotice("Couldn't build the share link.");
+        } else {
+            const ok = await copyTextToClipboard(result.url);
+            setShareNotice(ok ? "Link copied." : "Copy failed — copy the link from your career page.");
+        }
+        window.setTimeout(() => setShareNotice(null), 2500);
+    };
 
     return (
         <>
@@ -47,8 +63,11 @@ const JobPreview = ({ data }: Props) => {
                         </BreadcrumbItem>
                     </BreadcrumbList>
                 </Breadcrumb>
-                <span className='flex items-center justify-center text-sm text-muted-foreground sm:gap-2.5'>
-                    <Share size={16} />
+                <span className='flex items-center justify-center gap-2 text-sm text-muted-foreground sm:gap-2.5'>
+                    {shareNotice && <span role="status" className="text-xs">{shareNotice}</span>}
+                    <button type="button" onClick={handleShare} title="Copy public job link" aria-label="Copy public job link" className="cursor-pointer hover:text-foreground transition-colors">
+                        <Share size={16} />
+                    </button>
                 </span>
             </div>
 
@@ -66,8 +85,12 @@ const JobPreview = ({ data }: Props) => {
                                         {data.status}
                                     </div>
                                     <div className="flex gap-2">
-                                        <Edit3 size={16} className="text-background/40 cursor-pointer hover:text-background transition-colors" />
-                                        <Share2 size={16} className="text-background/40 cursor-pointer hover:text-background transition-colors" />
+                                        <button type="button" onClick={() => setIsEditJobOpen(true)} title="Edit job" aria-label="Edit job">
+                                            <Edit3 size={16} className="text-background/40 cursor-pointer hover:text-background transition-colors" />
+                                        </button>
+                                        <button type="button" onClick={handleShare} title="Copy public job link" aria-label="Copy public job link">
+                                            <Share2 size={16} className="text-background/40 cursor-pointer hover:text-background transition-colors" />
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -88,7 +111,7 @@ const JobPreview = ({ data }: Props) => {
                                 </div>
                                 <div>
                                     <p className="text-[10px] font-bold text-background/40 uppercase tracking-widest">Type</p>
-                                    <p className="text-sm font-bold">Full-Time</p>
+                                    <p className="text-sm font-bold">{formatJobTypeLabel(data.type)}</p>
                                 </div>
                             </div>
                         </div>
@@ -105,8 +128,7 @@ const JobPreview = ({ data }: Props) => {
                                     <Users className="w-4 h-4" />
                                     <span className="text-xs font-bold uppercase tracking-wider">Applicants</span>
                                 </div>
-                                {/*<p className="text-xl font-bold text-foreground">{data?.candidatesCount}</p>*/}
-                                <p className="text-xl font-bold text-foreground">100</p>
+                                <p className="text-xl font-bold text-foreground">{data.application_count}</p>
                             </div>
                             <div className="bg-muted p-4 rounded-2xl border border-border">
                                 <div className="flex items-center gap-2 text-muted-foreground mb-1">
@@ -117,27 +139,12 @@ const JobPreview = ({ data }: Props) => {
                             </div>
                         </div>
 
-                        {/* Description Placeholder */}
+                        {/* Description */}
                         <div className="space-y-4 pt-4 border-t border-border">
                             <h4 className="text-sm font-bold text-foreground">Job Description</h4>
-                            <div className="space-y-3">
-                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                    We are lo
-                                    oking for a talented {data?.name} to join our growing team in {data?.location}.
-                                    As a key member of the {data?.department} department, you will be responsible for
-                                    driving
-                                    innovation
-                                    and delivering high-quality solutions.
-                                </p>
-                                <ul className="space-y-2">
-                                    {['Lead development of core features', 'Collaborate with cross-functional teams', 'Mentor junior engineers', 'Participate in code reviews'].map((item, i) => (
-                                        <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 flex-shrink-0" />
-                                            {item}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
+                            <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                                {data.description}
+                            </p>
                         </div>
                     </div>
                 </div>

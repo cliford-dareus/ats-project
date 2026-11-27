@@ -582,6 +582,14 @@ export const get_all_applications = async (filter: z.infer<typeof filterApplicat
     return cacheFn(filter);
 };
 
+// Sort for the applications list (?sort= URL param). The sort value rides
+// in filterApplicationsSchema (src/zod.ts) as a raw string and is validated
+// against this allowlist in the query — anything else falls back to
+// newest-first.
+export type ApplicationListSort = "newest" | "oldest" | "name-asc";
+
+export const APPLICATION_LIST_SORTS: ApplicationListSort[] = ["newest", "oldest", "name-asc"];
+
 export const get_job_all_applications = async (jobId: number, orgId: string) => {
     const cacheFn = dbCache(get_job_all_applications_db, {
         keyParts: ["job-applications", String(jobId), orgId],
@@ -671,8 +679,11 @@ export const get_all_applications_db = async (filter: z.infer<typeof filterAppli
     const filters: SQL[] = [];
 
     if (filter.keywords && filter.keywords.length > 0) {
+        // B10: keywords match the candidate name or the job title — the
+        // old version only matched the job title, so searching for an
+        // applicant by name silently returned nothing.
         const keywordFilters = filter.keywords.map(
-            (keyword) => sql`${job_listings.name} LIKE ${`%${keyword}%`}`,
+            (keyword) => sql`(${candidates.name} LIKE ${`%${keyword}%`} OR ${job_listings.name} LIKE ${`%${keyword}%`})`,
         );
         filters.push(sql`(${sql.join(keywordFilters, sql` OR `)})`);
     }
@@ -693,11 +704,24 @@ export const get_all_applications_db = async (filter: z.infer<typeof filterAppli
         filters.push(inArray(stages.stage_name, filter.stages));
     }
 
+    // B9: ?sort=: newest (default) / oldest / candidate name A–Z. Anything
+    // outside the allowlist falls back to newest-first.
+    const sort: ApplicationListSort | undefined = APPLICATION_LIST_SORTS.includes(filter.sort as ApplicationListSort)
+        ? (filter.sort as ApplicationListSort)
+        : undefined;
+    const orderBy =
+        sort === "oldest"
+            ? asc(applications.created_at)
+            : sort === "name-asc"
+                ? asc(candidates.name)
+                : desc(applications.created_at);
+
     const [{ count }] = await db
         .select({ count: sql<number>`count(*)` })
         .from(applications)
         .leftJoin(job_listings, eq(applications.job_id, job_listings.id))
         .leftJoin(departments, eq(job_listings.department, departments.id))
+        .leftJoin(candidates, eq(applications.candidate, candidates.id))
         .leftJoin(stages, eq(applications.current_stage_id, stages.id))
         .where(and(...filters, eq(applications.organization, filter.organization), isNull(applications.deleted_at)));
 
@@ -728,6 +752,7 @@ export const get_all_applications_db = async (filter: z.infer<typeof filterAppli
         .leftJoin(candidates, eq(applications.candidate, candidates.id))
         .leftJoin(stages, eq(applications.current_stage_id, stages.id))
         .where(and(...filters, eq(job_listings.organization, filter.organization), isNull(applications.deleted_at)))
+        .orderBy(orderBy)
         .limit(filter.limit!)
         .offset(filter.offset!);
 

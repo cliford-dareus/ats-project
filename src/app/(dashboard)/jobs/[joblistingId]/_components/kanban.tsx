@@ -1,7 +1,8 @@
 "use client";
 
 import Column from "@/components/kanban/column";
-import { DragEvent, useEffect, useState } from "react";
+import { DragEvent, useEffect, useRef, useState } from "react";
+import { X } from "lucide-react";
 import { ApplicationType, StageResponseType } from "@/types";
 import { useSocket } from "@/providers/socket-provider";
 import { moveApplicationAndReorder } from "@/server/actions/application_actions";
@@ -33,7 +34,20 @@ const Kanban = ({ data, stages, jobDetails }: Props) => {
     const [applications, setApplications] = useState<ApplicationType[]>(data);
     const [showTriggers, setShowTriggers] = useState(false);
     const [active, setActive] = useState(false);
-    // const dispatch = useDispatch();
+    // Last failed drag/reorder, shown as a dismissible banner. There is no
+    // app-wide toast library (the only toast in the codebase is a local
+    // useState simulation on the landing page), so this uses the same
+    // local-state pattern: visible, role="alert", auto-cleared.
+    const [moveError, setMoveError] = useState<string | null>(null);
+    const moveErrorTimer = useRef<number | null>(null);
+    const showMoveError = (message: string) => {
+        setMoveError(message);
+        if (moveErrorTimer.current) window.clearTimeout(moveErrorTimer.current);
+        moveErrorTimer.current = window.setTimeout(() => setMoveError(null), 8000);
+    };
+    useEffect(() => () => {
+        if (moveErrorTimer.current) window.clearTimeout(moveErrorTimer.current);
+    }, []);
 
     useEffect(() => {
         setApplications(data)
@@ -93,6 +107,7 @@ const Kanban = ({ data, stages, jobDetails }: Props) => {
                 if (!result.success) {
                     console.error("Socket move failed to sync; rolling back.");
                     if (snapshot) setApplications(snapshot);
+                    showMoveError(result.error ?? "Couldn't move the application. Please try again.");
                 }
             }
         };
@@ -140,24 +155,11 @@ const Kanban = ({ data, stages, jobDetails }: Props) => {
             const result = await moveApplicationAndReorder(payload);
 
             if (!result.success) {
-                // Roll back optimistic update
+                // Roll back optimistic update and tell the user why.
                 setApplications(snapshot);
-                // TODO: surface a toast/error to the user here
+                showMoveError(result.error ?? "Couldn't move the application. Please try again.");
                 return;
             }
-
-            // const fired = await dispatch(
-            //     // The trigger even
-            //     { type: "candidate_applied", candidateId: String(candidateId), jobId: String(applications[0]?.job_id) },
-            //     // The ATS context — tells integrations who/what/where
-            //     {
-            //         organizationId: applications[0]?.organization,
-            //         userId: String(applications[0]?.stage_order_id),
-            //         candidate: { id: candidateId, name: "Maya Okafor", email: "maya@example.com" },
-            //         job: { id: 1, title: "Sr. Engineer", department: "Engineering" },
-            //         settings: {},
-            //     }
-            // );
 
             const fromStage = snapshot.find((c) => c.id === cardId)?.stage ?? column!;
             const moved = snapshot.find((c) => c.id === cardId);
@@ -187,6 +189,7 @@ const Kanban = ({ data, stages, jobDetails }: Props) => {
             const result = await moveApplicationAndReorder(payload);
             if (!result.success) {
                 setApplications(snapshot);
+                showMoveError(result.error ?? "Couldn't reorder the applications. Please try again.");
             }
         }
     };
@@ -202,6 +205,14 @@ const Kanban = ({ data, stages, jobDetails }: Props) => {
 
     return (
         <div className="flex flex-col h-full w-full gap-4 overflow-x-scroll [&::-webkit-scrollbar]:hidden">
+            {moveError && (
+                <div role="alert" className="flex items-center justify-between gap-4 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-2 text-sm text-destructive shrink-0">
+                    <span>{moveError}</span>
+                    <button type="button" onClick={() => setMoveError(null)} aria-label="Dismiss error" className="cursor-pointer hover:opacity-70 transition-opacity">
+                        <X size={16} />
+                    </button>
+                </div>
+            )}
             <AutomationBuilder job_id={jobDetails.jobId} stages={stages} applications={applications} />
             <div className="flex gap-4">
                 {stages?.map((stage) => (

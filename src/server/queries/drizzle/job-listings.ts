@@ -11,7 +11,7 @@ import {
     technologies,
 } from "@/drizzle/schema";
 import { db } from "@/drizzle/db";
-import { and, eq, inArray, isNotNull, isNull, sql, SQL } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, sql, SQL } from "drizzle-orm";
 import mongodb from "@/lib/mongodb";
 import Note from "@/models/notes";
 import {
@@ -23,7 +23,7 @@ import {
     revalidateDbCache,
 } from "@/lib/cache";
 import { z } from "zod";
-import { filterJobSchema, JOB_STAGES, jobFormSchema, updateJobListingSchema } from "@/zod";
+import { filterJobSchema, JOB_SALARY_RANGES, JOB_STAGES, JOB_TYPE, jobFormSchema, updateJobListingSchema } from "@/zod";
 import { ApplicationType, CandidateType, InterviewType, JobListingType } from "@/types";
 
 type Technology = typeof technologies.$inferSelect;
@@ -503,7 +503,14 @@ export const get_job_listings_stages = (jobId: number) => {
     return cacheFn(jobId);
 };
 
-export const get_all_job_listings = (filter: FilterInterface) => {
+// Sort for the jobs list (?sort= URL param). Kept out of
+// filterJobSchema (src/zod.ts) — the action validates the raw param
+// against this allowlist and passes it through alongside the zod filter.
+export type JobListSort = "newest" | "oldest" | "name-asc";
+
+export const JOB_LIST_SORTS: JobListSort[] = ["newest", "oldest", "name-asc"];
+
+export const get_all_job_listings = (filter: FilterInterface & { sort?: JobListSort }) => {
     const cacheFn = dbCache(get_all_job_listings_db, {
         keyParts: ["jobs", filter.organization, JSON.stringify(filter)],
         tags: [
@@ -674,7 +681,7 @@ export const get_job_by_id_db = async (jobId: number, org_id: string): Promise<J
     return [jobListing];
 };
 
-export const get_all_job_listings_db = async (filter: FilterInterface) => {
+export const get_all_job_listings_db = async (filter: FilterInterface & { sort?: JobListSort }) => {
     const filters: SQL[] = [];
 
     if (filter.keywords && filter.keywords.length > 0) {
@@ -697,6 +704,52 @@ export const get_all_job_listings_db = async (filter: FilterInterface) => {
         const statuses = Array.isArray(filter.status) ? filter.status : [filter.status];
         filters.push(inArray(job_listings.status, statuses));
     }
+
+    // B8-1: the type filter was passed in by the sidebar/page but never
+    // applied here. Unknown values are dropped, never trusted as-is.
+    if (filter.type) {
+        const types = (Array.isArray(filter.type) ? filter.type : [filter.type]).filter(
+            (t): t is (typeof JOB_TYPE._type) => (JOB_TYPE.options as string[]).includes(t),
+        );
+        if (types.length > 0) {
+            filters.push(inArray(job_listings.type, types));
+        }
+    }
+
+    // B8-2: the salary filter was passed in but never applied either. The
+    // sidebar writes JOB_SALARY_RANGES keys (?salary=50k-100k, ...); a job
+    // matches when its stored [salary_from, salary_up_to] range (plain
+    // numeric strings, "" / null when unset) overlaps the selected range.
+    // Jobs with no salary stored (empty salary_up_to) never match a salary
+    // filter. Unknown range keys are ignored.
+    if (filter.salary) {
+        const salaries = Array.isArray(filter.salary) ? filter.salary : [filter.salary];
+        const ranges = salaries.flatMap((value) =>
+            JOB_SALARY_RANGES.filter((range) => range.value === value),
+        );
+        if (ranges.length > 0) {
+            const salaryConditions = ranges.map((range) => {
+                // CAST(NULLIF(col, '') AS UNSIGNED): "" / NULL -> NULL, and
+                // a NULL comparison is never true, so unset bounds behave
+                // as "no bound" on the from-side and "no salary" on the
+                // up-to side.
+                const jobMax = sql`CAST(NULLIF(${job_listings.salary_up_to}, '') AS UNSIGNED)`;
+                const jobMin = sql`CAST(NULLIF(${job_listings.salary_from}, '') AS UNSIGNED)`;
+                return range.max === null
+                    ? sql`${jobMax} >= ${range.min}`
+                    : sql`(${jobMax} >= ${range.min} AND (${jobMin} IS NULL OR ${jobMin} <= ${range.max}))`;
+            });
+            filters.push(sql`(${sql.join(salaryConditions, sql` OR `)})`);
+        }
+    }
+
+    // B9: ?sort=: newest (default) / oldest / name A–Z.
+    const orderBy =
+        filter.sort === "oldest"
+            ? asc(job_listings.created_at)
+            : filter.sort === "name-asc"
+                ? asc(job_listings.name)
+                : desc(job_listings.created_at);
 
     const [{ count }] = await db
         .select({ count: sql<number>`count(*)` })
@@ -726,10 +779,39 @@ export const get_all_job_listings_db = async (filter: FilterInterface) => {
         .from(job_listings)
         .leftJoin(departments, eq(job_listings.department, departments.id))
         .where(and(...filters, eq(job_listings.organization, filter.organization), isNull(job_listings.deleted_at)))
+        .orderBy(orderBy)
         .limit(filter.limit!)
         .offset(filter.offset!);
 
     return [count, jobListings];
+};
+
+// B16: real counts for the jobs sidebar footer — live (non-trashed) OPEN
+// jobs and live candidates for the session org. No trend/delta figures:
+// there is no real source for them, so none are computed.
+export const get_jobs_sidebar_counts = (orgId: string) => {
+    const cacheFn = dbCache(get_jobs_sidebar_counts_db, {
+        keyParts: ["jobs-sidebar-counts", orgId],
+        tags: [
+            getOrgTag(orgId, CACHE_TAGS.jobs),
+            getOrgTag(orgId, CACHE_TAGS.candidates),
+        ],
+    });
+    return cacheFn(orgId);
+};
+
+const get_jobs_sidebar_counts_db = async (orgId: string) => {
+    const [[{ activeJobs }], [{ candidateCount }]] = await Promise.all([
+        db
+            .select({ activeJobs: sql<number>`count(*)` })
+            .from(job_listings)
+            .where(and(eq(job_listings.organization, orgId), eq(job_listings.status, "OPEN"), isNull(job_listings.deleted_at))),
+        db
+            .select({ candidateCount: sql<number>`count(*)` })
+            .from(candidates)
+            .where(and(eq(candidates.organization, orgId), isNull(candidates.deleted_at))),
+    ]);
+    return { activeJobs, candidates: candidateCount };
 };
 
 export const get_job_listings_stages_db = async (jobId: number) => {

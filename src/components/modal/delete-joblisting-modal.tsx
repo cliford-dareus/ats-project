@@ -6,8 +6,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Command, Trash2 } from "lucide-react";
-import React from "react";
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { delete_job_action } from "@/server/actions/job-listings-actions";
 
 type DeleteJobModalProps = {
   isDeleteJobOpen: boolean;
@@ -20,6 +22,26 @@ const DeleteJobListingModal = ({
   setIsDeleteJobOpen,
   data,
 }: DeleteJobModalProps) => {
+  const router = useRouter();
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // The confirm button used to only close the dialog (onDelete was commented
+  // out), so single-row delete from the jobs list did nothing. It now calls
+  // the same soft-delete action the bulk bar uses.
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    setError(null);
+    const result = await delete_job_action(data.id);
+    if (result && "error" in result) {
+      setError(result.message ?? "There was an error deleting the job");
+      setIsDeleting(false);
+      return;
+    }
+    setIsDeleting(false);
+    setIsDeleteJobOpen(false);
+    router.refresh();
+  };
   return (
     <Dialog open={isDeleteJobOpen} onOpenChange={setIsDeleteJobOpen}>
       <DialogContent>
@@ -46,25 +68,29 @@ const DeleteJobListingModal = ({
               the job brings them back; deleting forever from Trash removes
               them permanently.
             </p>
+            {error && (
+              <p role="alert" className="text-sm text-red-600 bg-red-50 p-3 rounded-xl border border-red-100">
+                {error}
+              </p>
+            )}
           </div>
 
           <div className="flex gap-3">
             <Button
               variant="ghost"
+              disabled={isDeleting}
               onClick={() => setIsDeleteJobOpen(false)}
               className="flex-1 py-3 border border-zinc-200 text-zinc-700 rounded-xl font-bold hover:bg-zinc-50 transition-all"
             >
               Cancel
             </Button>
             <Button
-              onClick={() => {
-                // onDelete(job.id);
-                setIsDeleteJobOpen(false);
-              }}
+              disabled={isDeleting}
+              onClick={handleDelete}
               className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-all shadow-lg shadow-red-500/20 flex items-center justify-center gap-2"
             >
               <Trash2 className="w-4 h-4" />
-              Delete Job
+              {isDeleting ? "Deleting…" : "Delete Job"}
             </Button>
           </div>
         </div>

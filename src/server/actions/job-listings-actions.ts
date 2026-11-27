@@ -8,6 +8,9 @@ import {
     get_job_by_id,
     get_job_draft_for_wizard,
     get_job_listings_stages,
+    get_jobs_sidebar_counts,
+    JOB_LIST_SORTS,
+    JobListSort,
     publish_job_draft,
     update_job_listing
 } from "@/server/queries";
@@ -139,7 +142,7 @@ export const delete_job_action = async (unsafeData: z.infer<typeof jobIdSchema>)
     return {success: true, message: "Job moved to Trash"};
 };
 
-export const get_all_job_listings_action = async (unsafeData: z.infer<typeof filterJobSchema>) => {
+export const get_all_job_listings_action = async (unsafeData: z.infer<typeof filterJobSchema> & { sort?: string }) => {
     const {userId} = await getAuthOrThrow();
     await requirePermission("job:view");
     const {success, data} = await filterJobSchema.spa(unsafeData);
@@ -148,7 +151,27 @@ export const get_all_job_listings_action = async (unsafeData: z.infer<typeof fil
         return {error: true, message: "There was an error creating your product"}
     }
 
-    return await get_all_job_listings(data);
+    // B9: `sort` is not part of filterJobSchema — validate it against the
+    // allowlist and pass it through alongside the zod filter.
+    const sort: JobListSort | undefined = JOB_LIST_SORTS.includes(unsafeData.sort as JobListSort)
+        ? (unsafeData.sort as JobListSort)
+        : undefined;
+
+    return await get_all_job_listings({ ...data, sort });
+};
+
+// B16: real counts for the jobs sidebar footer (live OPEN jobs + live
+// candidates for the session org). Session-gated (job:view); the org
+// always comes from the session, never from the caller.
+export const get_jobs_sidebar_counts_action = async () => {
+    const { userId, orgId } = await getAuthOrThrow();
+    await requirePermission("job:view");
+
+    if (!userId || !orgId) {
+        return { error: true, message: "There was an error retrieving job counts" };
+    }
+
+    return await get_jobs_sidebar_counts(orgId);
 };
 
 export const get_job_by_id_action = async (unsafeData: z.infer<typeof jobIdSchema>) => {

@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useEffect, useCallback } from "react";
+import React, { useEffect, useCallback, useState } from "react";
 import { BriefcaseBusiness, CircleUser, Edit3, Settings, Share2, Table2 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import JobPipeline from "./job-pipeline";
 import JobOptions from "./job-options";
+import EditJobListingModal from "@/components/modal/edit-joblisting-modal";
+import { buildCareerApplyUrl, copyTextToClipboard } from "@/lib/job-display";
 import {
     CustomTabsTrigger,
     Tabs,
@@ -35,6 +37,12 @@ const JobTabs = ({ applications, stages, jobs, jobListingId, singleJob }: Props)
     const router = useRouter();
     const searchParams = useSearchParams();
     const [activeTab, setActiveTab] = React.useState<TabValue>(DEFAULT_TAB);
+    const [isEditJobOpen, setIsEditJobOpen] = useState(false);
+    const [shareState, setShareState] = useState<"idle" | "copied" | "failed">("idle");
+
+    // The edit modal takes the list-shaped job row; the detail-shaped
+    // singleJob lacks salary/organization, so map from the jobs prop.
+    const currentJob = jobs.find((job) => job.id === Number(jobListingId));
 
     const handleTabChange = useCallback((value: string) => {
         const newPath = value === DEFAULT_TAB
@@ -42,6 +50,25 @@ const JobTabs = ({ applications, stages, jobs, jobListingId, singleJob }: Props)
             : `${pathname}?tab=${value}`;
         router.push(newPath);
     }, [pathname, router]);
+
+    // Share copies the public apply link for this job on the org's career
+    // subdomain — the same URL construction the organization settings
+    // page uses for the career page.
+    const handleShare = useCallback(async () => {
+        const url = buildCareerApplyUrl(singleJob.job_subdomain, Number(jobListingId));
+        const ok = await copyTextToClipboard(url);
+        setShareState(ok ? "copied" : "failed");
+        window.setTimeout(() => setShareState("idle"), 2500);
+    }, [singleJob.job_subdomain, jobListingId]);
+
+    const handleEditJobAd = useCallback(() => {
+        if (currentJob) {
+            setIsEditJobOpen(true);
+        } else {
+            // No list row to edit — fall back to the options tab.
+            handleTabChange("options");
+        }
+    }, [currentJob, handleTabChange]);
 
     useEffect(() => {
         const tabParam = searchParams.get('tab') as TabValue;
@@ -67,16 +94,22 @@ const JobTabs = ({ applications, stages, jobs, jobListingId, singleJob }: Props)
                         </TabsList>
                         <div className="flex items-center gap-6">
                             <button
+                                type="button"
+                                onClick={handleShare}
                                 className="flex items-center gap-2 text-[10px] font-bold text-foreground/40 uppercase tracking-widest hover:text-primary transition-colors">
                                 <Share2 size={14} />
-                                Share
+                                {shareState === "copied" ? "Copied!" : shareState === "failed" ? "Copy failed" : "Share"}
                             </button>
                             <button
+                                type="button"
+                                onClick={() => handleTabChange("options")}
                                 className="flex items-center gap-2 text-[10px] font-bold text-foreground/40 uppercase tracking-widest hover:text-primary transition-colors">
                                 <Settings size={14} />
                                 Setting
                             </button>
                             <button
+                                type="button"
+                                onClick={handleEditJobAd}
                                 className="flex items-center gap-2 text-[10px] font-bold text-foreground/40 uppercase tracking-widest hover:text-primary transition-colors">
                                 <Edit3 size={14} />
                                 Edit Job Ad
@@ -103,6 +136,9 @@ const JobTabs = ({ applications, stages, jobs, jobListingId, singleJob }: Props)
                     </TabsContent>
                 </Tabs>
             </div>
+            {currentJob && (
+                <EditJobListingModal isEditJobOpen={isEditJobOpen} setIsEditJobOpen={setIsEditJobOpen} data={currentJob} />
+            )}
         </div>
     );
 };
