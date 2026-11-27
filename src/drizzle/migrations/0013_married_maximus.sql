@@ -1,0 +1,1 @@
+ALTER TABLE `activity_log` MODIFY COLUMN `entity_type` enum('job','candidate','application','interview','plugin') NOT NULL;

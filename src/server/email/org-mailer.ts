@@ -13,7 +13,8 @@ import { SYSTEM_TEMPLATES } from "@/lib/constant";
 import CommunicationLog, { CommunicationType } from "@/models/communication-log";
 import EmailTemplate from "@/models/email-templates";
 import Thread from "@/models/threads";
-import { db_get_org_plugin_state } from "@/server/queries/drizzle/plugin-queries";
+import { db_get_organization_plugins_raw } from "@/server/queries/drizzle/plugin-queries";
+import { decrypt_plugin_secret } from "@/lib/plugin-encryption";
 
 export type TemplateVars = Record<string, string | number | null | undefined>;
 
@@ -75,21 +76,62 @@ export async function render_org_template(orgId: string, templateId: string, var
     };
 }
 
-async function resolve_resend(orgId: string) {
-    let apiKey = process.env.RESEND_API_KEY ?? "";
-    let fromAddress = process.env.RESEND_FROM_EMAIL ?? "";
+/**
+ * B9 — resolve the Resend key for an org, distinguishing three cases:
+ *
+ *   1. Resend NOT configured for the org → platform key fallback
+ *      (existing behaviour, unchanged).
+ *   2. Resend configured and its key loads → the org's key.
+ *   3. Resend configured but its key cannot be loaded/decrypted →
+ *      `resendBroken: true` — the caller must FAIL, not silently fall
+ *      back to the platform key (which used to send org mail from the
+ *      wrong key with only a console.warn).
+ *
+ * Only Resend's own key is decrypted (listResendDomains pattern), so a
+ * bad Google key can never break Resend sends. When the raw read itself
+ * fails, configured-ness cannot be determined, so the previous platform
+ * fallback is kept rather than failing mail the platform could send.
+ */
+async function resolve_resend(orgId: string): Promise<{
+    apiKey: string;
+    fromAddress: string;
+    resendBroken: boolean;
+    resendError?: string;
+}> {
+    const platformKey = process.env.RESEND_API_KEY ?? "";
+    const platformFrom = process.env.RESEND_FROM_EMAIL ?? "";
+    const fallbackFrom = platformFrom || "onboarding@resend.dev";
 
     try {
-        const { installed } = await db_get_org_plugin_state(orgId);
-        const resend = installed.find((p) => p.id === "resend");
-        if (resend?.settings.credentials?.apiKey) apiKey = resend.settings.credentials.apiKey;
-        const configured = resend?.settings.config?.fromAddress;
-        if (typeof configured === "string" && configured.includes("@")) fromAddress = configured;
+        const record = await db_get_organization_plugins_raw(orgId);
+        const stored = record.settings?.["resend"];
+        const config = stored?.config ?? {};
+        const configuredFrom =
+            typeof config?.fromAddress === "string" && config.fromAddress.includes("@")
+                ? config.fromAddress
+                : fallbackFrom;
+
+        // Not configured → platform fallback (case 1).
+        if (stored?.active !== true || !stored?.credentials?.apiKey) {
+            return { apiKey: platformKey, fromAddress: configuredFrom, resendBroken: false };
+        }
+
+        // Configured: decrypt only Resend's key (case 2 / 3).
+        try {
+            const apiKey = decrypt_plugin_secret(stored.credentials.apiKey);
+            return { apiKey, fromAddress: configuredFrom, resendBroken: false };
+        } catch (err) {
+            return {
+                apiKey: "",
+                fromAddress: configuredFrom,
+                resendBroken: true,
+                resendError: `Resend is configured for this organization but its API key could not be loaded (${err instanceof Error ? err.message : String(err)})`,
+            };
+        }
     } catch (err) {
         console.warn("[org-mailer] could not load org plugin state", (err as Error).message);
+        return { apiKey: platformKey, fromAddress: fallbackFrom, resendBroken: false };
     }
-
-    return { apiKey, fromAddress: fromAddress || "onboarding@resend.dev" };
 }
 
 export type SendOrgEmailInput = {
@@ -122,13 +164,19 @@ export async function send_org_email(input: SendOrgEmailInput): Promise<SendOrgE
 
     const org = await get_org_profile(input.orgId);
     const companyName = org?.name ?? "Talent Team";
-    const { apiKey, fromAddress } = await resolve_resend(input.orgId);
+    const { apiKey, fromAddress, resendBroken, resendError } = await resolve_resend(input.orgId);
 
     let status: "sent" | "failed" = "sent";
     let resendId: string | undefined;
     let error: string | undefined;
 
-    if (apiKey) {
+    if (resendBroken) {
+        // B9: the org's Resend key is broken — fail with a clear error
+        // (logged to CommunicationLog below) instead of silently
+        // sending from the platform key.
+        status = "failed";
+        error = resendError;
+    } else if (apiKey) {
         try {
             const res = await sendEmail({
                 apiKey,

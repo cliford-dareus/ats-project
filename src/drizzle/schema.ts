@@ -498,7 +498,7 @@ export const activity_log = mysqlTable('activity_log', {
     actor_id: varchar('actor_id', { length: 255 }).notNull(),
     actor_name: varchar('actor_name', { length: 255 }).notNull(),
     action: varchar('action', { length: 64 }).notNull(),
-    entity_type: mysqlEnum('entity_type', ['job', 'candidate', 'application', 'interview']).notNull(),
+    entity_type: mysqlEnum('entity_type', ['job', 'candidate', 'application', 'interview', 'plugin']).notNull(),
     entity_id: int('entity_id').notNull(),
     summary: varchar('summary', { length: 512 }).notNull(),
     created_at: timestamp('created_at').defaultNow().notNull(),

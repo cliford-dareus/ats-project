@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 import { AVAILABLE_PLUGINS } from "@/plugins/registry";
 import { toggle_organization_plugin_action } from "@/server/actions/organization_actions";
 import { InstalledPlugin } from "@/types";
-import { ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
@@ -87,12 +86,9 @@ const AvailableExtensions = ({ orgId, installed }: { orgId: string, installed: I
                                     {pluginNotice.ok ? "✓ " : "⚠ "}{pluginNotice.message}
                                 </p>
                             )}
-                            <div className="mt-6 flex items-center gap-3">
-                                <span className="text-[10px] font-bold text-muted-foreground flex items-center gap-1 group-hover:text-muted-foreground">
-                                    <ExternalLink
-                                        className="w-3 h-3" /> Learn more
-                                </span>
-                            </div>
+                            {/* No "Learn more" link: the manifest carries no docs URL
+                                for any plugin, so the old dead span (no href, no
+                                onClick) was removed rather than linked nowhere. */}
                         </div>
                     );
                 })}

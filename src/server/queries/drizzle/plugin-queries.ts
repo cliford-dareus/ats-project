@@ -149,7 +149,9 @@ const build_org_plugin_state = (
         }
 
         const settings  = record.settings?.[manifest.id];
-        const isEnabled = enabled.includes(manifest.id) && settings?.active === true;
+        // B4: a flagged plugin (credentials undecryptable) is never
+        // installed — it must not dispatch with a missing key.
+        const isEnabled = enabled.includes(manifest.id) && settings?.active === true && !settings?.credentialsError;
         flags[manifest.id] = isEnabled;
 
         if (isEnabled) {
@@ -204,20 +206,36 @@ export async function db_get_organization_plugins_raw(orgId: string): Promise<Or
 
 // SERVER-ONLY point of use: same as the raw read, with credentials DECRYPTED.
 // Legacy plaintext values (no `enc:v1:` prefix) pass through unchanged.
-// Throws on undecryptable ciphertext (wrong key / tampered value) —
-// callers that send email or dispatch integrations must fail rather than
-// run with a garbage key.
+// B4 — fault-isolating: credentials are decrypted PER PLUGIN inside
+// try/catch. One undecryptable value used to throw and poison the whole
+// org blob (worker init, Resend sends). Now that plugin is skipped and
+// flagged (`credentialsError: true`, credentials emptied) and the rest
+// still load; build_org_plugin_state treats a flagged plugin as
+// not-installed. The flag names the plugin id only — never a key value.
 export async function db_get_organization_plugins(orgId: string): Promise<OrgPluginRecord> {
     const record = await db_get_organization_plugins_raw(orgId);
 
     const settings: Record<string, OrgPluginSettings> = {};
     for (const [pluginId, plugin_settings] of Object.entries(record.settings ?? {})) {
-        settings[pluginId] = plugin_settings.credentials
-            ? {
-                  ...plugin_settings,
-                  credentials: decrypt_plugin_credentials(plugin_settings.credentials),
-              }
-            : plugin_settings;
+        if (!plugin_settings.credentials) {
+            settings[pluginId] = plugin_settings;
+            continue;
+        }
+        try {
+            settings[pluginId] = {
+                ...plugin_settings,
+                credentials: decrypt_plugin_credentials(plugin_settings.credentials),
+            };
+        } catch (err) {
+            console.warn(
+                `[plugin-queries] Skipping plugin "${pluginId}" for org ${orgId}: credentials could not be decrypted (${err instanceof Error ? err.message : String(err)})`,
+            );
+            settings[pluginId] = {
+                ...plugin_settings,
+                credentials: {},
+                credentialsError: true,
+            };
+        }
     }
 
     return { ...record, settings };

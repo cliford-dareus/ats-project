@@ -1,11 +1,11 @@
-// Provider: Google  ·  5 integrations, one per meaningful ATS trigger
+// Provider: Google  ·  1 live integration
 //
 // Integrations:
 //   1. resume-score               candidate_applied, resume_uploaded       → Automatically score resume
-//   2. stage-transition-notify    stage_changed                            → email candidate + hiring manager
-//   3. interview-reminder         interview_scheduled                      → reminder email to both parties
-//   4. offer-letter               offer_extended                           → formal offer email to candidate
-//   5. resume-score-report        score_updated                            → internal scorecard email to recruiter
+//
+// No calendar integration exists: the Google Calendar card in General
+// settings is a separate Clerk OAuth flow (see
+// settings/_components/calendar-connection-card.tsx), not this plugin.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Integration 1 — Resume Score
@@ -70,24 +70,19 @@ class ResumeScoreIntegration implements ATSIntegration {
         }
 
         const { score, breakdown, summary } = res.data;
-        if (!score || !breakdown) {
+        // A legitimate score of 0 must not be treated as a failure.
+        if (score == null || !breakdown) {
             return { success: false, error: "Failed to score resume" };
         }
 
         return {
             success: true,
             data: { score, breakdown, summary },
-            metadata: { model: "Gemini-2.0", orgId: this.orgId },
+            // Model actually used by score_resume — src/server/resume-processing.ts:230.
+            metadata: { model: "gemini-2.5-flash", orgId: this.orgId },
         };
     }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Integration 2 — Resume Score
-// Fires on: candidate_applied, resume_uploaded
-// Sends:    Automatically score resume
-// ─────────────────────────────────────────────────────────────────────────────
-
 
 // ── Provider ──────────────────────────────────────────────────────────────────
 import { ATSIntegration, ATSPluginProvider } from "@/lib/plugin-interfaces";
@@ -98,8 +93,8 @@ import { ATSContext, ATSIntegrationResult, InstalledPlugin, PluginAuthState, Plu
 export class GoogleProvider implements ATSPluginProvider {
     readonly id = "google";
     readonly name = "Google";
-    readonly description = "Uses Google suites to shedule interviews and use Gemini to score resumes and rank candidates.";
-    readonly capabilities: PluginCapability[] = ["calendar_integration", "llm_scoring"];
+    readonly description = "Uses Gemini to score resumes 0–100 on fit, skills, and experience.";
+    readonly capabilities: PluginCapability[] = ["llm_scoring"];
     readonly providerColor = "#4285F4";
 
     private authState: PluginAuthState;

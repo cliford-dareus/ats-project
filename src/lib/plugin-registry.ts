@@ -60,6 +60,9 @@ export class ATSPluginRegistry extends EventEmitter {
     unregister(providerId: string): void {
         this._removeFromIndex(providerId);
         this.providers.delete(providerId);
+        // Drop the provider's auth state too — otherwise a re-registered
+        // provider could inherit a stale "authenticated" state.
+        this.stateManager.clearState(providerId);
         this.emit("provider:unregistered", providerId);
     }
 
@@ -113,6 +116,11 @@ export class ATSPluginRegistry extends EventEmitter {
 
     setEnabledIntegrations(map: Record<string, boolean>): void {
         this.enabledIntegrations = new Map(Object.entries(map));
+    }
+
+    /** True when the integration is enabled — defaults to true when no explicit toggle exists (mirrors dispatch()). */
+    isIntegrationEnabled(integrationId: string): boolean {
+        return this.enabledIntegrations.get(integrationId) ?? true;
     }
 
     getInstalledIntegrations(): ATSIntegration[] {
@@ -175,14 +183,26 @@ export class ATSPluginRegistry extends EventEmitter {
             for (const trigger of integration.getSupportedTriggers()) {
                 if (!trigger.on.includes(event.type)) continue;
                 if (trigger.condition) {
-                    const pass = await trigger.condition(event, context);
+                    // B3: the condition call used to sit outside the try
+                    // below — a throwing condition was swallowed by
+                    // Promise.allSettled with no log and no event. Treat
+                    // it like an execution failure: log + emit, skip this
+                    // trigger.
+                    let pass: boolean;
+                    try {
+                        pass = await trigger.condition(event, context);
+                    } catch (err) {
+                        const error = err instanceof Error ? err.message : String(err);
+                        console.error(`[Registry] Condition failed for ${key}:`, error);
+                        this.emit("integration:error", { key, event, error });
+                        continue;
+                    }
                     if (!pass) continue;
                 }
 
                 try {
-                    console.log(`[Registry] Integration ${event.type} completed`);
                     const result = await integration.execute(event, context);
-                    console.log(`[Registry] Dispatching ${event.type} to ${integration.id}`);
+                    console.log(`[Registry] Integration ${integration.id} completed for ${event.type}`);
                     const entry: FiredTrigger = {
                         integrationId: integration.id,
                         integrationName: integration.name,

@@ -94,7 +94,10 @@ async function resolveAutomationTarget(
         throw new Error("Cannot run automation action: no application ID in event");
     }
 
-    const { assertApplicationBelongsToOrg } = await import("@/server/permissions");
+    // Worker-safe assert: @/server/permissions carries `import
+    // "server-only"` and throws under plain tsx, so the worker resolves
+    // the target through the worker-safe ./org-asserts module instead.
+    const { assertApplicationBelongsToOrg } = await import("@/server/org-asserts");
     const application = await assertApplicationBelongsToOrg(applicationId, orgId);
 
     // An application always has a candidate and a job — fail closed if not.
@@ -173,18 +176,48 @@ async function resolveAutomationTarget(
 
 /** Org's Resend plugin settings (decrypted server-side), for email sends. */
 async function getOrgResendSettings(orgId: string) {
-    const { db_get_organization_plugins } = await import(
-        "@/server/queries/drizzle/plugin-queries"
-    );
-    const plugins = await db_get_organization_plugins(orgId);
-    const resendSettings = plugins.settings?.["resend"];
-    return {
-        apiKey: resendSettings?.credentials?.apiKey as string | undefined,
-        fromAddress: resendSettings?.config?.fromAddress as string | undefined,
-        companyName: resendSettings?.config?.companyName as string | undefined,
-        recruiterEmail: resendSettings?.config?.recruiterEmail as string | undefined,
-        hiringManagerEmail: resendSettings?.config?.hiringManagerEmail as string | undefined,
+    // B4: decrypt ONLY Resend's key (same pattern as listResendDomains) —
+    // a bad Google key must not break Resend sends and vice versa. Any
+    // failure degrades to "no Resend settings" (callers fall back to the
+    // env key / dev behaviour) instead of throwing.
+    const empty = {
+        apiKey: undefined as string | undefined,
+        fromAddress: undefined as string | undefined,
+        companyName: undefined as string | undefined,
+        recruiterEmail: undefined as string | undefined,
+        hiringManagerEmail: undefined as string | undefined,
     };
+    try {
+        const { db_get_organization_plugins_raw } = await import(
+            "@/server/queries/drizzle/plugin-queries"
+        );
+        const { decrypt_plugin_secret } = await import("@/lib/plugin-encryption");
+        const record = await db_get_organization_plugins_raw(orgId);
+        const stored = record.settings?.["resend"];
+        const config = stored?.config ?? {};
+        const base = {
+            fromAddress: config?.fromAddress as string | undefined,
+            companyName: config?.companyName as string | undefined,
+            recruiterEmail: config?.recruiterEmail as string | undefined,
+            hiringManagerEmail: config?.hiringManagerEmail as string | undefined,
+        };
+        const encryptedKey = stored?.credentials?.apiKey;
+        if (!encryptedKey) return { ...empty, ...base };
+        try {
+            return { ...base, apiKey: decrypt_plugin_secret(encryptedKey) };
+        } catch (err) {
+            console.warn(
+                `[AutomationEngine] Resend API key for org ${orgId} could not be decrypted — sending without org key (${err instanceof Error ? err.message : String(err)})`,
+            );
+            return { ...empty, ...base };
+        }
+    } catch (err) {
+        console.warn(
+            `[AutomationEngine] Could not load Resend settings for org ${orgId}:`,
+            err instanceof Error ? err.message : String(err),
+        );
+        return empty;
+    }
 }
 
 /**

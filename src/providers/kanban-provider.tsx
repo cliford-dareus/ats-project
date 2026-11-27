@@ -10,6 +10,9 @@ type KanbanContextType = {
     orgMembers: Member[];
     setOrgMembers: (members: Member[]) => void;
     pendingApplicationIds: Set<number>;
+    /** Latest failed automation execution, if any — cleared on dismiss. */
+    lastAutomationError: AutomationExecutionResult | null;
+    dismissAutomationError: () => void;
 };
 
 type Member = {
@@ -31,6 +34,14 @@ export function KanbanProvider({ children, initialStages = [], initialOrgMembers
     // Track which applications have pending delayed automation executions.
     // Using a ref so listeners always see the latest set without stale closures.
     const [pendingIds, setPendingIds] = useState<Set<number>>(new Set());
+
+    // A failed automation used to only clear the pending id — the failure
+    // itself was invisible in the UI. Keep the latest failure so the
+    // board shows it until dismissed. (There is no toast library in the
+    // app, so this uses the same inline dismissible banner pattern as the
+    // plugin settings save-error banner.)
+    const [lastAutomationError, setLastAutomationError] = useState<AutomationExecutionResult | null>(null);
+    const dismissAutomationError = useCallback(() => setLastAutomationError(null), []);
 
     const addPending = useCallback((applicationId: number) => {
         setPendingIds(prev => {
@@ -59,6 +70,7 @@ export function KanbanProvider({ children, initialStages = [], initialOrgMembers
 
         const onFailed = (result: AutomationExecutionResult) => {
             removePending(result.applicationId);
+            setLastAutomationError(result);
         };
 
         automationEngine.on('execution:scheduled', onScheduled);
@@ -78,10 +90,21 @@ export function KanbanProvider({ children, initialStages = [], initialOrgMembers
         orgMembers,
         setOrgMembers,
         pendingApplicationIds: pendingIds,
-    }), [jobStages, orgMembers, pendingIds]);
+        lastAutomationError,
+        dismissAutomationError,
+    }), [jobStages, orgMembers, pendingIds, lastAutomationError, dismissAutomationError]);
 
     return (
         <KanbanContext.Provider value={contextValue}>
+            {lastAutomationError && (
+                <div className="rounded-md border border-red-500/50 bg-red-500/10 px-4 py-3 text-sm text-red-400 flex items-start justify-between gap-4" role="alert">
+                    <span>
+                        ⚠ Automation &ldquo;{lastAutomationError.ruleName}&rdquo; failed
+                        {lastAutomationError.error ? `: ${lastAutomationError.error}` : "."}
+                    </span>
+                    <button onClick={dismissAutomationError} className="text-red-400 underline shrink-0">Dismiss</button>
+                </div>
+            )}
             {children}
         </KanbanContext.Provider>
     );

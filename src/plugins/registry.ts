@@ -54,7 +54,7 @@ export const AVAILABLE_PLUGINS: PluginManifestEntry[] = [
     {
         id: "resend",
         name: "Resend",
-        description: "Post to Resend when candidates move stages or key events fire.",
+        description: "Sends a branded confirmation email when a candidate applies.",
         capabilities: ["communication"],
         providerColor: "#000000",
         icon: "Zap",
@@ -63,8 +63,8 @@ export const AVAILABLE_PLUGINS: PluginManifestEntry[] = [
     {
         id: "google",
         name: "Google",
-        description: "Uses Google suites to shedule interviews and use Gemini to score resumes and rank candidates.",
-        capabilities: ["calendar_integration", "llm_scoring"],
+        description: "Uses Gemini to score resumes 0–100 on fit, skills, and experience.",
+        capabilities: ["llm_scoring"],
         providerColor: "#4285F4",
         icon: "Zap",
         hasProvider: true,

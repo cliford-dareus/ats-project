@@ -1,7 +1,13 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Responsibilities:
 //   1. Receive InstalledPlugin[] from the server (passed as a prop from layout)
-//   2. Call initializePluginSystem() exactly once per session
+//   2. Re-run initializePluginSystem() whenever `installed` changes
+//      (e.g. after router.refresh() following an install / toggle / save)
+//      — the old empty-deps effect ran once per session, so the client
+//      registry and auth state stayed stale until a full reload.
+//      initializePluginSystem() unregisters removed providers and
+//      register() overwrites re-registered ones (de-indexing first), so
+//      re-runs are safe.
 //   3. Make flags available via context for feature-gating in child components
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -11,7 +17,6 @@ import React, {
     createContext,
     useContext,
     useEffect,
-    useRef,
     useState,
 } from "react";
 import { initializePluginSystem } from "@/lib/initialize-plugins";
@@ -48,19 +53,23 @@ export function PluginSystemProvider({
     children,
 }: PluginSystemProviderProps) {
     const [ready, setReady] = useState(false);
-    const initialized = useRef(false);
 
     useEffect(() => {
-        if (initialized.current) return;
-        initialized.current = true;
+        let cancelled = false;
 
         initializePluginSystem(installed)
-            .then(() => setReady(true))
+            .then(() => {
+                if (!cancelled) setReady(true);
+            })
             .catch((err) => {
                 console.error("[PluginSystemProvider] Failed to initialize:", err);
-                setReady(true); // still render — graceful degradation
+                if (!cancelled) setReady(true); // still render — graceful degradation
             });
-    }, []); // empty deps: run once, installed is stable from SSR
+
+        return () => {
+            cancelled = true;
+        };
+    }, [installed]);
 
     const isEnabled = (pluginId: string) => flags[pluginId] === true;
 

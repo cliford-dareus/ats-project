@@ -370,6 +370,13 @@ export interface OrgPluginSettings {
     credentials?: Record<string, string>;
     config?: Record<string, unknown>;
     enabledIntegrations?: Record<string, boolean>;
+    /**
+     * B4: set when the stored credentials could not be decrypted (wrong
+     * key / tampered value). The plugin is skipped by the blob read and
+     * treated as not-installed — it must never dispatch with a missing
+     * key. Never contains a key value.
+     */
+    credentialsError?: boolean;
 };
 
 // ── Installed plugin (hydrated from DB + AVAILABLE_PLUGINS manifest) ─────────
@@ -452,7 +459,13 @@ export function delayToMs(d: AutomationDelay): number {
         hours: 3_600_000,
         days: 86_400_000,
     };
-    return d.value * factors[d.unit];
+    // B5: a garbage unit (or non-finite / negative value) used to yield
+    // NaN, which setTimeout treats inconsistently across runtimes. Fail
+    // closed to 0 (run immediately) instead of NaN.
+    if (!d || !Number.isFinite(d.value) || d.value < 0) return 0;
+    const factor = factors[d.unit];
+    if (!Number.isFinite(factor)) return 0;
+    return d.value * factor;
 };
 
 export function delayLabel(d: AutomationDelay): string {

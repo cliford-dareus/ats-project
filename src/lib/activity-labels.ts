@@ -19,6 +19,14 @@ export const ACTION_LABELS: Record<string, string> = {
     "interview.rescheduled": "Interview rescheduled",
     "interview.cancelled": "Interview cancelled",
     "interview.feedback_submitted": "Feedback submitted",
+    "plugin.installed": "Plugin installed",
+    "plugin.enabled": "Plugin enabled",
+    "plugin.disabled": "Plugin disabled",
+    "plugin.uninstalled": "Plugin uninstalled",
+    "plugin.settings_saved": "Plugin settings saved",
+    "plugin.credentials_updated": "Plugin credentials updated",
+    "plugin.dispatch_failed": "Plugin dispatch failed",
+    "automation.execution_failed": "Automation failed",
 };
 
 export const time_ago = (date: Date): string => {

@@ -1,10 +1,13 @@
 import "dotenv/config";
 import {Worker, type Job} from "bullmq";
 import redis from "@/lib/redis";
-import {QueueJobData} from "@/lib/queue";
-import {automationEngine} from "@/lib/automation-engine";
+import {QueueJobData, taskQueue, type DelayedAutomationJobData} from "@/lib/queue";
+import { ATSPluginRegistry } from "@/lib/plugin-registry";
+import {automationEngine, type AutomationExecutionResult} from "@/lib/automation-engine";
 import {executeActionInternal} from "@/lib/automation-engine-executor";
 import {initializePluginSystemForWorker} from "@/lib/initialize-plugins.server";
+import { record_activity_system } from "@/server/activity/record-activity-system";
+import type { ATSContext, TriggerEvent } from "@/types";
 import {db_save_resume_score} from "@/server/queries";
 import {db_get_job_automation_rules} from "@/server/queries/drizzle/plugin-queries";
 import {get_stale_holds_db, mark_hold_expired_db} from "@/server/queries/drizzle/interview";
@@ -18,10 +21,137 @@ interface ScorePayload {
     summary: string;
 }
 
+/** The applications.id an event targets (never the candidate id). */
+function eventApplicationId(event: TriggerEvent, context: ATSContext): number {
+    if (typeof event.applicationId === "number") return event.applicationId;
+    const fromSettings = Number(context.settings?.applicationId);
+    return Number.isFinite(fromSettings) && fromSettings > 0 ? fromSettings : 0;
+}
+
+type ExecutionFailure = {
+    ruleId: string;
+    ruleName: string;
+    applicationId: number;
+    error: string;
+};
+
+/**
+ * Best-effort worker-side audit write (never throws). Truncated: the
+ * activity summary column is varchar(512). Error text is an integration
+ * / automation message — never a credential value.
+ */
+async function persistWorkerActivity(
+    orgId: string,
+    action: string,
+    applicationId: number,
+    summary: string,
+): Promise<void> {
+    await record_activity_system({
+        orgId,
+        action,
+        entity_type: "application",
+        entity_id: applicationId || 0,
+        summary: summary.slice(0, 450),
+    });
+}
+
+/**
+ * Attach per-job execution listeners to the shared automationEngine
+ * singleton. MUST be detached after the job — the engine is
+ * process-wide, so a leaked listener would fire for other orgs' jobs.
+ * Returns the collected failures and a detach function.
+ */
+function attachExecutionListeners(
+    orgId: string,
+    persist: (failure: ExecutionFailure) => void,
+): { failures: ExecutionFailure[]; detach: () => void } {
+    const failures: ExecutionFailure[] = [];
+    const onCompleted = (result: AutomationExecutionResult) => {
+        console.log(`[Worker] Automation rule "${result.ruleName}" (${result.ruleId}) completed for application ${result.applicationId} (org ${orgId})`);
+    };
+    const onFailed = (result: AutomationExecutionResult) => {
+        const failure: ExecutionFailure = {
+            ruleId: result.ruleId,
+            ruleName: result.ruleName,
+            applicationId: result.applicationId,
+            error: result.error ?? "Unknown error",
+        };
+        failures.push(failure);
+        console.error(`[Worker] Automation rule "${result.ruleName}" (${result.ruleId}) failed for application ${result.applicationId} (org ${orgId}): ${result.error}`);
+        persist(failure);
+    };
+    automationEngine.on("execution:completed", onCompleted);
+    automationEngine.on("execution:failed", onFailed);
+    return {
+        failures,
+        detach: () => {
+            automationEngine.off("execution:completed", onCompleted);
+            automationEngine.off("execution:failed", onFailed);
+        },
+    };
+}
+
+/**
+ * B8 — delayed automation job: a rule whose delay was scheduled by an
+ * earlier trigger job as a durable BullMQ delayed job (not setTimeout).
+ * Runs the stored rule action via executeActionInternal with the stored
+ * event/context and a fresh per-org registry.
+ */
+async function handleDelayedAutomationJob(job: Job<QueueJobData>) {
+    const { rule, event, context } = (job.data as DelayedAutomationJobData).delayedAutomation;
+    const org_id = context.organization_id;
+    console.log(`[Worker] Running delayed automation (rule "${rule.name}" ${rule.id}) for org ${org_id}`);
+
+    let registry: ATSPluginRegistry;
+    try {
+        registry = await initializePluginSystemForWorker(org_id);
+    } catch (err) {
+        console.error(`[Worker] Plugin init failed for org ${org_id} (delayed job ${job.id}) — continuing with empty registry:`, err);
+        registry = new ATSPluginRegistry();
+    }
+
+    const persistPromises: Promise<void>[] = [];
+    const { failures, detach } = attachExecutionListeners(org_id, (failure) => {
+        persistPromises.push(persistWorkerActivity(
+            org_id,
+            "automation.execution_failed",
+            failure.applicationId,
+            `Automation rule "${failure.ruleName}" failed: ${failure.error}`,
+        ));
+    });
+    try {
+        // runStoredExecution never throws (_run catches and emits
+        // execution:failed) — the try is a guard only.
+        await automationEngine.runStoredExecution(rule, event, context, {
+            executor: (action, evt, ctx) =>
+                executeActionInternal(action, evt, ctx, { registry }),
+        });
+    } catch (err) {
+        console.error(`[Worker] Delayed automation (rule "${rule.name}") failed:`, err);
+    } finally {
+        detach();
+    }
+    await Promise.allSettled(persistPromises);
+
+    return {
+        delayed: true,
+        ruleId: rule.id,
+        ruleName: rule.name,
+        failures,
+    };
+}
+
 const worker = new Worker<QueueJobData>(
     'aplico_queue',
 
     async (job : Job<QueueJobData>) => {
+        // B8: delayed automation jobs carry a different payload (no
+        // `event`) — run the stored rule, don't fall through to the
+        // legacy-job skip below.
+        if ("delayedAutomation" in job.data) {
+            return handleDelayedAutomationJob(job);
+        }
+
         // Legacy smart-trigger jobs carry a different payload (no `event`)
         // and have no processor — the smart-trigger executor was never wired
         // into this worker. Skip them instead of crashing on the missing
@@ -45,8 +175,38 @@ const worker = new Worker<QueueJobData>(
         // A new registry per job: the registry is bound to this org only, so
         // concurrent jobs for different orgs (concurrency 5) can never
         // dispatch with each other's providers/keys.
+        //
+        // B1: init used to sit outside any try/catch — one bad credential
+        // (or DB blip) killed the whole job. On failure, continue with an
+        // empty unbound registry: dispatch is a no-op (no providers) but
+        // the automation rules below still run.
         await job.updateProgress(10);
-        const registry = await initializePluginSystemForWorker(org_id);
+        let registry: ATSPluginRegistry;
+        try {
+            registry = await initializePluginSystemForWorker(org_id);
+        } catch (err) {
+            console.error(`[Worker] Plugin init failed for org ${org_id} (job ${job.id}) — continuing with empty registry:`, err);
+            registry = new ATSPluginRegistry();
+        }
+
+        // B3: integration failures used to be emitted into the void (zero
+        // listeners existed). Collect them here, persist each via the
+        // worker-safe activity helper, and include them in the job return
+        // value below. The registry is per-job, so no listener cleanup is
+        // needed. Persist promises are awaited before the job returns.
+        const dispatchFailures: { integration: string; error: string }[] = [];
+        const persistPromises: Promise<void>[] = [];
+        registry.on("integration:error", (payload: { key: string; event: TriggerEvent; error: string }) => {
+            const integrationId = payload.key.split(":")[1] ?? payload.key;
+            dispatchFailures.push({ integration: integrationId, error: payload.error });
+            console.error(`[Worker] Integration ${integrationId} failed for org ${org_id} (job ${job.id}): ${payload.error}`);
+            persistPromises.push(persistWorkerActivity(
+                org_id,
+                "plugin.dispatch_failed",
+                eventApplicationId(payload.event, context),
+                `Integration ${integrationId} failed: ${payload.error}`,
+            ));
+        });
 
         // ── 2. Reload automation rules from the DB on every job ───────────────
         // Rule edits/disables/deletes must take effect without a worker
@@ -89,20 +249,52 @@ const worker = new Worker<QueueJobData>(
         // executor (org-verified queue context + this job's registry), never
         // through the authenticated server action.
         await job.updateProgress(70);
+        // B8: per-job execution listeners (log + persist failures via the
+        // worker-safe helper). Detached in the finally — the engine is a
+        // process-wide singleton.
+        const { failures: executionFailures, detach } = attachExecutionListeners(org_id, (failure) => {
+            persistPromises.push(persistWorkerActivity(
+                org_id,
+                "automation.execution_failed",
+                failure.applicationId,
+                `Automation rule "${failure.ruleName}" failed: ${failure.error}`,
+            ));
+        });
         try {
             await automationEngine.evaluate(event, context, {
                 executor: (action, evt, ctx) =>
                     executeActionInternal(action, evt, ctx, { registry }),
+                // B8: delayed rules become durable BullMQ delayed jobs
+                // carrying rule + event + context (keyed by execution id),
+                // not setTimeout — a worker restart no longer loses them.
+                scheduleDelayed: async (pending, rule, evt, evtContext, delayMs) => {
+                    await taskQueue.add("delayed_automation", {
+                        delayedAutomation: {
+                            executionId: pending.id,
+                            rule,
+                            event: evt,
+                            context: { ...evtContext, subdomain: context.subdomain },
+                        },
+                    }, { delay: delayMs, jobId: pending.id });
+                    console.log(`[Worker] Delayed automation ${pending.id} (rule "${rule.name}") scheduled in ${delayMs}ms for org ${org_id}`);
+                },
             });
         } catch (err) {
             console.error("[Worker] Automation engine failed:", err);
+        } finally {
+            detach();
         }
+
+        // Persisted failure entries must land before the job completes.
+        await Promise.allSettled(persistPromises);
 
         await job.updateProgress(100);
 
         // Return a summary stored in BullMQ for debugging
         return {
             fired:   pluginResults.length,
+            failures: dispatchFailures,
+            executionFailures,
             results: pluginResults.map(r => ({
                 integration: r.integrationName,
                 success:     r.result.success,

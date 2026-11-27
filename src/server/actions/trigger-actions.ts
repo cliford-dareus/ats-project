@@ -26,6 +26,7 @@ import { db } from "@/drizzle/db";
 import { eq, and, isNull } from "drizzle-orm";
 import { applications, candidates, job_listings, organization } from "@/drizzle/schema";
 import { enqueueTrigger } from "@/lib/enqueue-trigger";
+import { get_client_ip, rate_limit } from "@/lib/rate-limit";
 import { ATSContext } from "@/types";
 
 // ── Validation (mirrors /api/trigger/public) ─────────────────────────────────
@@ -72,10 +73,26 @@ type FirePublicTriggerResult =
     | { ok: true; jobId: string }
     | { ok: false; error: string };
 
+// B11: the /api/trigger/public route has a 30/min per-IP limit; this
+// action (the path the apply form actually uses) had none. Same budget
+// and key as the route (`trigger-public:<ip>`) so both entry points
+// share one limit. NOTE: the route calls rate_limit() without awaiting
+// it, so its limit is currently a no-op — fixing the route is a
+// follow-up (route.ts is outside this batch); this action awaits it.
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 30;
+
 export async function fire_public_trigger_action(
     unsafeInput: unknown
 ): Promise<FirePublicTriggerResult> {
     try {
+        const ip = await get_client_ip();
+        const allowed = await rate_limit(`trigger-public:${ip}`, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS);
+        if (!allowed) {
+            console.warn("[trigger-action] Rate limited", ip);
+            return { ok: false, error: "Too many requests — please try again shortly" };
+        }
+
         const parsed = RequestSchema.safeParse(unsafeInput);
         if (!parsed.success) {
             console.warn("[trigger-action] Validation failed", parsed.error.flatten());
@@ -127,10 +144,20 @@ export async function fire_public_trigger_action(
             }
         }
 
+        // ── 3a. Verify event.candidateId agrees with the context candidate ───
+        // B11: event.candidateId was never verified — a caller could fire
+        // triggers naming another candidate. Both values come from the
+        // caller, so they must agree when both are present; the
+        // application check below verifies the event against the DB.
+        if (context.candidate?.id && event.candidateId !== String(context.candidate.id)) {
+            console.warn("[trigger-action] Candidate mismatch between event and context", event.candidateId, context.candidate.id);
+            return { ok: false, error: "Candidate mismatch" };
+        }
+
         // ── 3b. Verify the application belongs to this org + job (when supplied)
         if (event.applicationId) {
             const [application] = await db
-                .select({ id: applications.id })
+                .select({ id: applications.id, candidate: applications.candidate })
                 .from(applications)
                 .where(and(
                     eq(applications.id, event.applicationId),
@@ -143,6 +170,12 @@ export async function fire_public_trigger_action(
             if (!application) {
                 console.warn("[trigger-action] Application not found or wrong org/job", event.applicationId);
                 return { ok: false, error: "Application not found" };
+            }
+
+            // The application's candidate must be the event's candidate.
+            if (String(application.candidate) !== event.candidateId) {
+                console.warn("[trigger-action] Application candidate does not match event candidate", event.applicationId);
+                return { ok: false, error: "Candidate mismatch" };
             }
         }
 

@@ -3,6 +3,7 @@
 // Server action = auth check + delegate to DB query
 import {AutomationRule, OrgPluginState} from "@/types";
 import {db_get_job_automation_rules, db_get_org_plugin_state_for_client, db_get_organization_plugins_raw, saveJobAutomationRule as db_save_job_automation_rule, deleteJobAutomationRule as db_delete_job_automation_rule} from "@/server/queries/drizzle/plugin-queries";
+import {automationRuleSchema} from "@/zod";
 import {decrypt_plugin_secret} from "@/lib/plugin-encryption";
 import {Resend} from "resend";
 import {assertJobBelongsToOrg, AuthzError, getAuthOrThrow, hasPermission, requirePermission} from "@/server/permissions";
@@ -169,7 +170,23 @@ export async function saveJobAutomationRule(jobId: number, rule: AutomationRule)
     await requirePermission("job:edit");
     await assertJobBelongsToOrg(jobId, orgId);
 
-    return db_save_job_automation_rule(jobId, rule, orgId);
+    // B5: the rule used to be persisted verbatim — unknown triggers,
+    // garbage delays, and fire_integration targets pointing at
+    // non-existent integrations all landed in the DB. Validate at this
+    // boundary; the DB layer keeps trusting its caller.
+    const parsed = automationRuleSchema.safeParse(rule);
+    if (!parsed.success) {
+        throw new Error(parsed.error.issues[0]?.message ?? "Invalid automation rule");
+    }
+    if (parsed.data.job_id !== jobId) {
+        throw new Error("Automation rule job does not match the requested job");
+    }
+
+    return db_save_job_automation_rule(jobId, {
+        ...parsed.data,
+        created_at: parsed.data.created_at ?? new Date().toISOString(),
+        updated_at: parsed.data.updated_at ?? new Date().toISOString(),
+    }, orgId);
 };
 
 export async function deleteJobAutomationRule(jobId: number, ruleId: string): Promise<void> {

@@ -8,7 +8,7 @@
 import { useSyncExternalStore, useCallback, useRef } from "react";
 import { pluginRegistry } from "@/lib/plugin-registry";
 import type { ATSIntegration, ATSPluginProvider } from "@/lib/plugin-interfaces";
-import type { ATSContext, AutomationRule, FiredTrigger, PluginAuthState, TriggerEvent } from "../types";
+import type { AutomationRule, PluginAuthState } from "../types";
 import { automationEngine } from "@/lib/automation-engine";
 
 // Stable server-side fallback — same reference every call, never triggers
@@ -74,16 +74,6 @@ export function useInstalledIntegrations(): ATSIntegration[] {
         (cb) => pluginRegistry.stateManager.subscribe(cb),
         getSnapshot,
         () => EMPTY_INTEGRATIONS,
-    );
-}
-
-// ── Dispatch hook — fires the registry and returns fired triggers ─────────────
-export function useDispatch() {
-    return useCallback(
-        async (event: TriggerEvent, context: ATSContext): Promise<FiredTrigger[]> => {
-            return pluginRegistry.dispatch(event, context);
-        },
-        []
     );
 }
 

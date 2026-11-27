@@ -1,12 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useRef, useState, useSyncExternalStore } from "react";
 import { ATSIntegration } from "@/lib/plugin-interfaces";
 import { AutomationRule, StageResponseType } from "@/types";
+import type { PluginAuthState } from "@/types";
 import { Move, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import RuleEditorModal from "./rule-editor-modal";
 import { Switch } from "../ui/switch";
+import { pluginRegistry } from "@/lib/plugin-registry";
+import { usePluginSystem } from "@/providers/plugin-system-provider";
+
+// Stable server snapshot for the auth-states store below.
+const EMPTY_AUTH_STATES: ReadonlyMap<string, PluginAuthState> = new Map();
+
+/** All providers' auth states, reactively (see action-editor.tsx). */
+function useAllAuthStates(): ReadonlyMap<string, PluginAuthState> {
+    const snapshotRef = useRef<ReadonlyMap<string, PluginAuthState>>(EMPTY_AUTH_STATES);
+
+    const getSnapshot = useCallback((): ReadonlyMap<string, PluginAuthState> => {
+        const next = pluginRegistry.stateManager.getAllStates();
+        const prev = snapshotRef.current;
+
+        let stable = next.size === prev.size;
+        if (stable) {
+            for (const [id, state] of next) {
+                if (prev.get(id)?.status !== state.status) {
+                    stable = false;
+                    break;
+                }
+            }
+        }
+
+        if (!stable) snapshotRef.current = new Map(next);
+        return snapshotRef.current;
+    }, []);
+
+    return useSyncExternalStore(
+        (cb) => pluginRegistry.stateManager.subscribe(cb),
+        getSnapshot,
+        () => EMPTY_AUTH_STATES,
+    );
+}
 
 export const ACTION_TYPES = [
     { type: "add_note", label: "Add note", icon: "📝", color: "#6366f1", description: "Append a note to the candidate profile" },
@@ -40,6 +75,29 @@ const RuleCard = ({ rule, onSave, onDelete, stages, installedIntegrations }: {
 }) => {
     const [editing, setEditing] = useState(!rule.name);
     const [draft, setDraft] = useState(rule);
+    const { isEnabled } = usePluginSystem();
+    const authStates = useAllAuthStates();
+    // Warn when a saved fire_integration target can't run: the plugin was
+    // disabled / uninstalled, the provider wasn't verified this session,
+    // or the integration toggle is off. Without this the rule showed a
+    // bare placeholder and failed silently at dispatch.
+    const integrationWarning = (() => {
+        if (draft.action.type !== "fire_integration") return null;
+        const { providerId, integrationId } = draft.action as { providerId?: string; integrationId?: string };
+        if (!providerId || !integrationId) return null;
+        const target = installedIntegrations.find(
+            (i) => i.providerId === providerId && i.id === integrationId,
+        );
+        if (!target) return "Integration unavailable — its plugin was removed or never installed.";
+        if (!isEnabled(providerId)) return "Integration unavailable — its plugin is disabled.";
+        if (authStates.get(providerId)?.status !== "authenticated") {
+            return "Integration unavailable — its provider is not connected this session.";
+        }
+        if (!pluginRegistry.isIntegrationEnabled(integrationId)) {
+            return "Integration unavailable — it is turned off in the plugin settings.";
+        }
+        return null;
+    })();
     const actionMeta = ACTION_TYPES.find(a => a.type === draft.action.type);
     const delayMeta = DELAY_PRESETS.find(d => d.value === draft.delay.value && d.unit === draft.delay.unit)
         ?? { label: `After ${draft.delay.value} ${draft.delay.unit}` };
@@ -76,6 +134,12 @@ const RuleCard = ({ rule, onSave, onDelete, stages, installedIntegrations }: {
                 </div>
 
                 <p className="text-xs font-medium text-zinc-700">{draft.name}</p>
+
+                {integrationWarning && (
+                    <p className="mt-2 rounded-md border border-amber-500/50 bg-amber-500/10 px-2 py-1 text-[11px] font-medium text-amber-700">
+                        ⚠ {integrationWarning}
+                    </p>
+                )}
 
                 <div className="flex items-center gap-2 bg-slate-50/50 rounded-2xl mt-2">
                     <div className="flex-1">

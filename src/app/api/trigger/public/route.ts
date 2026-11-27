@@ -78,12 +78,12 @@ const RequestSchema = z.object({
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 30;
 
-function isRateLimited(req: NextRequest): boolean {
+async function isRateLimited(req: NextRequest): Promise<boolean> {
     const forwarded = req.headers.get("x-forwarded-for");
     const ip = forwarded?.split(",")[0]?.trim()
         || req.headers.get("x-real-ip")
         || "unknown";
-    return !rate_limit(`trigger-public:${ip}`, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS);
+    return !(await rate_limit(`trigger-public:${ip}`, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS));
 }
 
 function verifySecret(req: NextRequest): boolean {
@@ -173,7 +173,12 @@ export async function POST(req: NextRequest) {
     const cors = corsHeaders(req);
 
     // ── 0. Rate limit (before auth, so it also slows secret-guessing) ─────────
-    if (isRateLimited(req)) {
+    // NOTE: isRateLimited is async — the un-awaited call used to return a
+    // Promise (always truthy), so `!Promise` was always false and this
+    // route never rate-limited. It shares the `trigger-public:<ip>` key
+    // with fire_public_trigger_action, so both entry points draw on one
+    // 30/min budget per IP.
+    if (await isRateLimited(req)) {
         return NextResponse.json(
             { error: "Too many requests" },
             { status: 429, headers: { ...cors, "Retry-After": "60" } },

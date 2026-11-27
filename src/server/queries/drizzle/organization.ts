@@ -24,78 +24,97 @@ export const create_organization = async (data: z.infer<typeof organizationSchem
     return result;
 };
 
-export const update_organization_plugins = async (orgId: string, pluginId: string, settings?: object) => {
+export const update_organization_plugins = async (orgId: string, pluginId: string, settings?: Partial<OrgPluginSettings>) => {
     try {
-        const result = await db
-            .select({ plugins: organization.plugins })
-            .from(organization)
-            .where(eq(organization.clerk_id, orgId));
+        // B6: the read-modify-write on the `plugins` JSON blob used to be a
+        // bare SELECT then UPDATE — two concurrent saves could each read
+        // the same blob and lose the other's write. The read + write now
+        // run in one transaction with SELECT ... FOR UPDATE, so the row is
+        // locked between them. revalidateDbCache runs AFTER the
+        // transaction commits, never inside it.
+        let saved_settings: OrgPluginSettings | undefined;
+        let found = true;
 
-        if (!result.length) {
+        await db.transaction(async (trx) => {
+            const result = await trx
+                .select({ plugins: organization.plugins })
+                .from(organization)
+                .where(eq(organization.clerk_id, orgId))
+                .for("update");
+
+            if (!result.length) {
+                found = false;
+                return;
+            }
+
+            const pluginsData = result[0].plugins as OrgPluginRecord;
+            const existing_settings = (pluginsData.settings?.[pluginId] ?? {}) as OrgPluginSettings;
+            const incoming_settings = (settings ?? {}) as Partial<OrgPluginSettings>;
+
+            // Credentials are resolved, never stored raw:
+            //  • absent in `incoming` → stored (encrypted) values preserved
+            //    (config-only saves, active toggles);
+            //  • masked echoes (`••••…`) → stored value preserved (the client
+            //    only ever sees masked values, so it echoes them back);
+            //  • new plaintext → AES-256-GCM encrypted — this THROWS when
+            //    PLUGIN_ENCRYPTION_KEY is missing/malformed, so a new key is
+            //    never stored plaintext (re-thrown below, not swallowed);
+            //  • empty object + active === false (disconnect) → cleared.
+            // Merging with the stored settings (instead of replacing them)
+            // also means a save can no longer wipe config/credentials the
+            // client didn't send.
+            const next_settings: OrgPluginSettings = {
+                ...existing_settings,
+                ...incoming_settings,
+                credentials: resolve_saved_plugin_credentials(
+                    existing_settings.credentials,
+                    incoming_settings.credentials,
+                    { clear_on_empty: incoming_settings.active === false },
+                ),
+            };
+            if (next_settings.credentials === undefined) {
+                delete next_settings.credentials;
+            }
+
+            const updatedPlugins: OrgPluginRecord = {
+                ...pluginsData,
+                settings: {
+                    ...pluginsData.settings,
+                    [pluginId]: next_settings,
+                },
+            };
+
+            // Lazy migration: one re-save re-encrypts any remaining legacy
+            // plaintext credentials across the whole org blob. Best-effort —
+            // a missing key must not block this save (the plugin being saved
+            // already threw above if IT needed the key).
+            let plugins_to_store = updatedPlugins;
+            try {
+                plugins_to_store = encrypt_org_plugin_record_credentials(updatedPlugins);
+            } catch (error) {
+                console.warn(
+                    "[plugin-encryption] Lazy migration skipped for org plugin blob:",
+                    error,
+                );
+            }
+
+            await trx
+                .update(organization)
+                .set({ plugins: plugins_to_store })
+                .where(eq(organization.clerk_id, orgId));
+
+            // Return the saved settings MASKED so the client can adopt them
+            // without a just-typed key lingering in browser state.
+            saved_settings = mask_plugin_settings(next_settings);
+        });
+
+        if (!found) {
             return { error: "Organization not found" };
-        };
-
-        const pluginsData = result[0].plugins as OrgPluginRecord;
-        const existing_settings = (pluginsData.settings?.[pluginId] ?? {}) as OrgPluginSettings;
-        const incoming_settings = (settings ?? {}) as Partial<OrgPluginSettings>;
-
-        // Credentials are resolved, never stored raw:
-        //  • absent in `incoming` → stored (encrypted) values preserved
-        //    (config-only saves, active toggles);
-        //  • masked echoes (`••••…`) → stored value preserved (the client
-        //    only ever sees masked values, so it echoes them back);
-        //  • new plaintext → AES-256-GCM encrypted — this THROWS when
-        //    PLUGIN_ENCRYPTION_KEY is missing/malformed, so a new key is
-        //    never stored plaintext (re-thrown below, not swallowed);
-        //  • empty object + active === false (disconnect) → cleared.
-        // Merging with the stored settings (instead of replacing them)
-        // also means a save can no longer wipe config/credentials the
-        // client didn't send.
-        const next_settings: OrgPluginSettings = {
-            ...existing_settings,
-            ...incoming_settings,
-            credentials: resolve_saved_plugin_credentials(
-                existing_settings.credentials,
-                incoming_settings.credentials,
-                { clear_on_empty: incoming_settings.active === false },
-            ),
-        };
-        if (next_settings.credentials === undefined) {
-            delete next_settings.credentials;
         }
-
-        const updatedPlugins: OrgPluginRecord = {
-            ...pluginsData,
-            settings: {
-                ...pluginsData.settings,
-                [pluginId]: next_settings,
-            },
-        };
-
-        // Lazy migration: one re-save re-encrypts any remaining legacy
-        // plaintext credentials across the whole org blob. Best-effort —
-        // a missing key must not block this save (the plugin being saved
-        // already threw above if IT needed the key).
-        let plugins_to_store = updatedPlugins;
-        try {
-            plugins_to_store = encrypt_org_plugin_record_credentials(updatedPlugins);
-        } catch (error) {
-            console.warn(
-                "[plugin-encryption] Lazy migration skipped for org plugin blob:",
-                error,
-            );
-        }
-
-        await db
-            .update(organization)
-            .set({ plugins: plugins_to_store })
-            .where(eq(organization.clerk_id, orgId));
 
         revalidateDbCache({ tag: CACHE_TAGS.organizations, id: orgId });
 
-        // Return the saved settings MASKED so the client can adopt them
-        // without a just-typed key lingering in browser state.
-        return { message: "Success", settings: mask_plugin_settings(next_settings) };
+        return { message: "Success", settings: saved_settings };
     } catch (error) {
         // Encryption failures fail LOUDLY: re-throw so the server action
         // surfaces the real reason instead of a generic error.
@@ -105,66 +124,78 @@ export const update_organization_plugins = async (orgId: string, pluginId: strin
     }
 };
 
-export const toggle_organization_plugin = async (orgId: string, enabled: boolean, pluginId: string, config?: any) => {
+export const toggle_organization_plugin = async (orgId: string, enabled: boolean, pluginId: string, config?: Partial<Omit<OrgPluginSettings, "credentials">>) => {
     try {
-        const org = await db.select()
-            .from(organization)
-            .where(eq(organization.clerk_id, orgId));
+        // B6: same read-modify-write race as update_organization_plugins —
+        // transaction + SELECT ... FOR UPDATE; revalidateDbCache AFTER commit.
+        let found = true;
 
-        if (org.length === 0) {
-            return { error: "Organization not found" };
-        }
+        await db.transaction(async (trx) => {
+            const org = await trx.select()
+                .from(organization)
+                .where(eq(organization.clerk_id, orgId))
+                .for("update");
 
-        const pluginsData = org[0].plugins as OrgPluginRecord;
-        const updatedEnabled = enabled
-            ? [...new Set([...pluginsData.enabled, pluginId])] // install extension
-            : pluginsData.enabled.filter((id: string) => id !== pluginId); // uninstall extension
+            if (org.length === 0) {
+                found = false;
+                return;
+            }
 
-        const existing_settings = (pluginsData.settings?.[pluginId] ?? {}) as OrgPluginSettings;
-        const updatedSettings = enabled
-            ? { ...pluginsData.settings, [pluginId]: { ...existing_settings, ...config, active: true } }
-            : {
-                ...pluginsData.settings,
-                [pluginId]: {
-                    ...existing_settings,
-                    active: false,
-                    // Uninstall clears credentials exactly like Disconnect
-                    // does (update_organization_plugins with active:false +
-                    // credentials:{} via resolve_saved_plugin_credentials):
-                    // a later re-install must not silently re-authenticate
-                    // with a stale stored key.
-                    credentials: resolve_saved_plugin_credentials(
-                        existing_settings.credentials,
-                        {},
-                        { clear_on_empty: true },
-                    ),
-                },
+            const pluginsData = org[0].plugins as OrgPluginRecord;
+            const updatedEnabled = enabled
+                ? [...new Set([...pluginsData.enabled, pluginId])] // install extension
+                : pluginsData.enabled.filter((id: string) => id !== pluginId); // uninstall extension
+
+            const existing_settings = (pluginsData.settings?.[pluginId] ?? {}) as OrgPluginSettings;
+            const updatedSettings = enabled
+                ? { ...pluginsData.settings, [pluginId]: { ...existing_settings, ...config, active: true } }
+                : {
+                    ...pluginsData.settings,
+                    [pluginId]: {
+                        ...existing_settings,
+                        active: false,
+                        // Uninstall clears credentials exactly like Disconnect
+                        // does (update_organization_plugins with active:false +
+                        // credentials:{} via resolve_saved_plugin_credentials):
+                        // a later re-install must not silently re-authenticate
+                        // with a stale stored key.
+                        credentials: resolve_saved_plugin_credentials(
+                            existing_settings.credentials,
+                            {},
+                            { clear_on_empty: true },
+                        ),
+                    },
+                };
+
+            const updatedPlugins: OrgPluginRecord = {
+                ...pluginsData,
+                enabled: updatedEnabled,
+                settings: updatedSettings,
             };
 
-        const updatedPlugins: OrgPluginRecord = {
-            ...pluginsData,
-            enabled: updatedEnabled,
-            settings: updatedSettings,
-        };
+            // Toggle never introduces new credentials (install passes no
+            // config today; keys are only set via the encrypting save path),
+            // so this is just the lazy migration pass — best-effort, never
+            // blocks an install/uninstall when the key is unconfigured.
+            let plugins_to_store = updatedPlugins;
+            try {
+                plugins_to_store = encrypt_org_plugin_record_credentials(updatedPlugins);
+            } catch (error) {
+                console.warn(
+                    "[plugin-encryption] Lazy migration skipped for org plugin blob:",
+                    error,
+                );
+            }
 
-        // Toggle never introduces new credentials (install passes no
-        // config today; keys are only set via the encrypting save path),
-        // so this is just the lazy migration pass — best-effort, never
-        // blocks an install/uninstall when the key is unconfigured.
-        let plugins_to_store = updatedPlugins;
-        try {
-            plugins_to_store = encrypt_org_plugin_record_credentials(updatedPlugins);
-        } catch (error) {
-            console.warn(
-                "[plugin-encryption] Lazy migration skipped for org plugin blob:",
-                error,
-            );
+            await trx
+                .update(organization)
+                .set({ plugins: plugins_to_store })
+                .where(eq(organization.clerk_id, orgId));
+        });
+
+        if (!found) {
+            return { error: "Organization not found" };
         }
-
-        await db
-            .update(organization)
-            .set({ plugins: plugins_to_store })
-            .where(eq(organization.clerk_id, orgId));
 
         revalidateDbCache({ tag: CACHE_TAGS.organizations, id: orgId });
         return { message: "Success" };

@@ -1,11 +1,13 @@
-// Provider: Resend  ·  5 integrations, one per meaningful ATS trigger
+// Provider: Resend  ·  1 live integration
 //
 // Integrations:
 //   1. application-confirmation   candidate_applied       → confirm receipt to candidate
-//   2. stage-transition-notify    stage_changed           → email candidate + hiring manager
-//   3. interview-reminder         interview_scheduled     → reminder email to both parties
-//   4. offer-letter               offer_extended          → formal offer email to candidate
-//   5. resume-score-report        score_updated           → internal scorecard email to recruiter
+//
+// Stage-transition, interview-reminder, offer-letter and score-report
+// emails are NOT implemented — no integration sends them, and the
+// config UI's contact-email / offer-URL fields are stored but unused
+// by any integration today. Do not re-add the "5 integrations" claims
+// until those integrations actually exist.
 
 import ApplicationConfirmationTemplate from "@/emails/application_submitted_template";
 import { createElement } from "react";
@@ -107,14 +109,9 @@ class ApplicationConfirmationIntegration implements ATSIntegration {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Integration 2 — stage-transition- 
-// Fires on: stage_changed
-// Sends:    email candidate + hiring manager
-// ─────────────────────────────────────────────────────────────────────────────
-
-
-// ─────────────────────────────────────────────────────────────────────────────
-// ResendProvider — owns all 5 integrations
+// ResendProvider — owns the single application-confirmation integration.
+// (Stage-transition / interview-reminder / offer-letter / score-report
+// integrations do not exist — see the file header.)
 // ─────────────────────────────────────────────────────────────────────────────
 import { ATSIntegration, ATSPluginProvider } from "@/lib/plugin-interfaces";
 import { pluginRegistry } from "@/lib/plugin-registry";
@@ -126,7 +123,7 @@ import { render } from "@react-email/components";
 export class ResendProvider implements ATSPluginProvider {
     readonly id = "resend";
     readonly name = "Resend";
-    readonly description = "Transactional email for every stage of the hiring pipeline — confirmations, transitions, offers, and internal reports.";
+    readonly description = "Sends a branded confirmation email when a candidate applies.";
     readonly capabilities: PluginCapability[] = ["communication"];
     readonly providerColor = "#000000";
 
@@ -201,18 +198,8 @@ export class ResendProvider implements ATSPluginProvider {
             new ApplicationConfirmationIntegration(
                 this.id, this.apiKey, this.fromAddress, this.companyName,
             ),
-            // new StageTransitionNotifyIntegration(
-            //     this.id, this.apiKey, this.fromAddress, this.companyName, this.hiringManagerEmail,
-            // ),
-            // new InterviewReminderIntegration(
-            //     this.id, this.apiKey, this.fromAddress, this.companyName,
-            // ),
-            // new OfferLetterIntegration(
-            //     this.id, this.apiKey, this.fromAddress, this.companyName, this.offerSigningUrl,
-            // ),
-            // new ScoreReportIntegration(
-            //     this.id, this.apiKey, this.fromAddress, this.companyName, this.recruiterEmail,
-            // ),
+            // Stage-transition / interview-reminder / offer-letter /
+            // score-report integrations do not exist yet (see file header).
         ];
     }
 };

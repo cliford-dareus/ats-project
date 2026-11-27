@@ -5,7 +5,13 @@ import { eq } from "drizzle-orm";
 import { db } from "@/drizzle/db";
 import { activity_log, usersTable } from "@/drizzle/schema";
 
-export type ActivityEntityType = 'job' | 'candidate' | 'application' | 'interview';
+export type ActivityEntityType = 'job' | 'candidate' | 'application' | 'interview' | 'plugin';
+
+// Worker-safe system logger lives in record-activity-system.ts (no
+// `server-only`, no Clerk — the tsx worker cannot import this file, so
+// the implementation cannot live here). Re-exported so server-side
+// importers see one API; the worker imports the system file directly.
+export { record_activity_system } from "./record-activity-system";
 
 /**
  * Append one entry to the org's activity / audit log.

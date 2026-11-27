@@ -1,6 +1,9 @@
 import { auth } from "@clerk/nextjs/server";
 import PluginConfigClient from "./_components/provider-config-client";
 import { getOrgPluginState } from "@/server/actions/plugin-actions";
+import { get_organization_plugins } from "@/server/actions/organization_actions";
+import { AVAILABLE_PLUGINS } from "@/plugins/registry";
+import { ReactivateButton } from "../_components/installed-extentions";
 import { hasPermission } from "@/server/permissions";
 
 type Props = {
@@ -33,6 +36,30 @@ const ProviderConfig = async ({ params }: Props) => {
     const { flags, installed } = await getOrgPluginState(orgId)
     const available = installed.find(p => p.id === pluginId);
     if (!available || !flags[pluginId]) {
+        // Distinguish a disabled plugin from an unknown id: a disabled
+        // plugin still has a settings row and an `enabled` entry (only
+        // `active` is false), while a typo'd id has neither. The raw
+        // record is masked and plugin:manage-gated, like this page.
+        const manifest = AVAILABLE_PLUGINS.find((p) => p.id === pluginId);
+        const record = await get_organization_plugins();
+        const isDisabled =
+            Boolean(manifest?.hasProvider) &&
+            record.enabled?.includes(pluginId) &&
+            Boolean(record.settings?.[pluginId]);
+        if (isDisabled && manifest) {
+            return (
+                <div>
+                    <h1>Provider Configuration</h1>
+                    <p>This plugin is disabled — its settings are kept, but it won&apos;t run until you reactivate it.</p>
+                    <div className="mt-4">
+                        <ReactivateButton
+                            plugin={{ ...manifest, settings: record.settings[pluginId] }}
+                            orgId={orgId}
+                        />
+                    </div>
+                </div>
+            );
+        }
         return (
             <div>
                 <h1>Provider Configuration</h1>

@@ -6,6 +6,7 @@ import {
     Calendar,
     FileUser,
     History,
+    Plug,
     Users,
 } from "lucide-react";
 import { get_activity_log_action } from "@/server/actions/activity-actions";
@@ -21,6 +22,9 @@ const ENTITY_ICONS: Record<ActivityLogEntry["entity_type"], React.ComponentType<
     candidate: Users,
     application: FileUser,
     interview: Calendar,
+    // Plugin entries never carry an entity_href (no plugin detail page),
+    // so the feed renders them with no View button.
+    plugin: Plug,
 };
 
 type Props = {

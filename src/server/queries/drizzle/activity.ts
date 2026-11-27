@@ -12,7 +12,7 @@ export type ActivityLogEntry = {
     id: number;
     actor_name: string;
     action: string;
-    entity_type: "job" | "candidate" | "application" | "interview";
+    entity_type: "job" | "candidate" | "application" | "interview" | "plugin";
     entity_id: number;
     summary: string;
     created_at: Date;
@@ -50,11 +50,15 @@ export const get_activity_log = async (
     const total = Number(countRows[0]?.total ?? 0);
 
     // Batch existence checks per entity type (one query each, not N).
+    // 'plugin' entries have no entity to link to (plugins have no numeric
+    // id — entity_id is always 0), so no href branch exists for them and
+    // entity_href stays null by design.
     const idsByType: Record<ActivityLogEntry["entity_type"], Set<number>> = {
         job: new Set(),
         candidate: new Set(),
         application: new Set(),
         interview: new Set(),
+        plugin: new Set(),
     };
     for (const row of rows) idsByType[row.entity_type].add(row.entity_id);
 

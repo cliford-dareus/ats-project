@@ -2,8 +2,11 @@ import { useAuthenticateProvider, useProviderAuthState } from "@/hooks/use-plugi
 import { pluginRegistry } from "@/lib/plugin-registry";
 import { verifyGoogle } from "@/server/actions/plugin-actions";
 import ApiKeySection from "./shared/api-key-section";
-import { useState } from "react";
+import { SetStateAction, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { ATSIntegration } from "@/lib/plugin-interfaces";
 import { ConfigProps, mask_key_for_display } from "./shared/types";
 
 const GoogleConfig = ({ pluginId, settings, onSave }: ConfigProps) => {
@@ -25,6 +28,38 @@ const GoogleConfig = ({ pluginId, settings, onSave }: ConfigProps) => {
     // nothing was verified this session — config can still be saved.
     const hasSavedKey = Boolean(maskedKey);
     const displayAuth = connectError ? { status: "error" as const, error: connectError } : auth;
+
+    // U10: the resume-score integration toggle, wired to
+    // enabledIntegrations like Resend's IntegrationsSection. Google
+    // previously had no integration control at all — the key was the
+    // whole config, so scoring could not be turned off without
+    // disconnecting.
+    const provider = pluginRegistry.getProvider(pluginId);
+    const INTERGRATIONS = provider?.getIntegrations();
+    const [enabledIntegrations, setEnabledIntegrations] = useState(
+        settings.enabledIntegrations
+    );
+
+    // ── Dirty tracking (U8) ────────────────────────────────────────────────
+    // Save is enabled whenever there are unsaved edits — a typed key or
+    // a flipped integration toggle — not only once connected/saved, and
+    // a beforeunload guard warns before navigating away with edits.
+    const initialEnabled = useMemo(
+        () => settings.enabledIntegrations ?? {},
+        [settings],
+    );
+    const isDirty =
+        apiKey.trim() !== "" ||
+        JSON.stringify(enabledIntegrations ?? {}) !== JSON.stringify(initialEnabled);
+
+    useEffect(() => {
+        if (!isDirty) return;
+        const guard = (e: BeforeUnloadEvent) => {
+            e.preventDefault();
+        };
+        window.addEventListener("beforeunload", guard);
+        return () => window.removeEventListener("beforeunload", guard);
+    }, [isDirty]);
 
     const handleConnect = async (key?: string) => {
         // The key comes from ApiKeySection — the parent's apiKey state is
@@ -71,7 +106,11 @@ const GoogleConfig = ({ pluginId, settings, onSave }: ConfigProps) => {
             // omit them and the server preserves the stored (encrypted) key.
             // (Sending the masked display value back would be useless; the
             // server also refuses to overwrite a stored key with a mask.)
-            const next_settings: typeof settings = { ...settings, active: true };
+            const next_settings: typeof settings = {
+                ...settings,
+                active: true,
+                enabledIntegrations,
+            };
             if (apiKey.trim()) {
                 next_settings.credentials = { apiKey: apiKey.trim() };
             } else {
@@ -105,7 +144,7 @@ const GoogleConfig = ({ pluginId, settings, onSave }: ConfigProps) => {
                     <div>
                         <div className="text-sm font-semibold text-background/80">Google</div>
                         <div className="text-xs text-background/20">
-                            Google Suites Integration
+                            Gemini Resume Scoring
                         </div>
                     </div>
                 </div>
@@ -127,18 +166,26 @@ const GoogleConfig = ({ pluginId, settings, onSave }: ConfigProps) => {
                     {isConnected ? "Connected" : hasSavedKey ? "Saved" : "Not connected"}
                 </div>
 
-                {/* Save */}
+                {/* Unsaved-changes indicator (U8) */}
+                {isDirty && !saving && (
+                    <span className="text-xs font-semibold whitespace-nowrap" style={{ color: "#f59e0b" }}>
+                        ● Unsaved changes
+                    </span>
+                )}
+
+                {/* Save — enabled whenever there are unsaved edits (U8), not
+                    only once connected/saved. */}
                 <Button
                     onClick={handleSave}
-                    disabled={(!isConnected && !hasSavedKey) || saving}
+                    disabled={!isDirty || saving}
                     className="rounded-md"
                     style={{
                         padding: "7px 18px", borderRadius: 6,
-                        background: saved ? "#0d1a14" : (isConnected || hasSavedKey ? "#fff" : "#111"),
+                        background: saved ? "#0d1a14" : (isDirty ? "#fff" : "#111"),
                         border: saved ? "1px solid #10b981" : "none",
-                        color: saved ? "#10b981" : (isConnected || hasSavedKey ? "#000" : "#374151"),
+                        color: saved ? "#10b981" : (isDirty ? "#000" : "#374151"),
                         fontSize: 12, fontWeight: 600,
-                        cursor: (isConnected || hasSavedKey) ? "pointer" : "not-allowed",
+                        cursor: isDirty ? "pointer" : "not-allowed",
                         fontFamily: "'Geist Mono', monospace",
                         transition: "all 0.2s",
                     }}
@@ -155,7 +202,7 @@ const GoogleConfig = ({ pluginId, settings, onSave }: ConfigProps) => {
                             Google Settings
                         </h1>
                         <p className="mt-1 text-[13px] text-muted-foreground leading-tight">
-                            Configure your Google integration
+                            Uses Gemini to score resumes 0–100 on fit, skills, and experience when a candidate applies or uploads a resume.
                         </p>
                     </div>
 
@@ -169,6 +216,13 @@ const GoogleConfig = ({ pluginId, settings, onSave }: ConfigProps) => {
                         onDisconnect={handleDisconnect}
                         pluginId={pluginId}
                     />
+
+                    <IntegrationsSection
+                        enabled={enabledIntegrations}
+                        onChange={setEnabledIntegrations}
+                        intergrations={INTERGRATIONS!}
+                        isConnected={isConnected || hasSavedKey}
+                    />
                 </div>
             </div>
         </div>
@@ -176,3 +230,88 @@ const GoogleConfig = ({ pluginId, settings, onSave }: ConfigProps) => {
 };
 
 export default GoogleConfig;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Integration toggles (U10) — mirrors Resend's IntegrationsSection pattern.
+// ─────────────────────────────────────────────────────────────────────────────
+type IntergrationSectionProps = {
+    enabled: Record<string, boolean> | undefined;
+    onChange: React.Dispatch<SetStateAction<Record<string, boolean> | undefined>>;
+    isConnected: boolean;
+    intergrations: ATSIntegration[]
+};
+
+function IntegrationsSection({ enabled, onChange, isConnected, intergrations }: IntergrationSectionProps) {
+    const triggerColors = {
+        candidate_applied: { color: "#818cf8", bg: "#1e1b4b" },
+        stage_changed: { color: "#0ea5e9", bg: "#0c1a2e" },
+        interview_scheduled: { color: "#8b5cf6", bg: "#1a0d2e" },
+        offer_extended: { color: "#f59e0b", bg: "#1f1500" },
+        resume_uploaded: { color: "#2dd4bf", bg: "#0d1f1c" },
+        score_updated: { color: "#10b981", bg: "#0d1a14" },
+    };
+
+    return (
+        <section className="bg-card overflow-hidden rounded-md mb-3 border">
+            <div className="px-5 py-4 border-b bg-transparent">
+                <div className="text-[13px] uppercase tracking-wide font-bold">
+                    Active Integrations
+                </div>
+
+                <div className="text-[11px] mt-0.5" >
+                    Toggle which automations fire. Individual integrations can also be controlled per pipeline stage.
+                </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                {intergrations?.map((intg) => {
+                    const trigger = intg.getSupportedTriggers()[0].on[0]
+                    const tc = triggerColors[trigger] ?? { color: "#6b7280", bg: "#111" };
+                    const isEnabled = (enabled && enabled[intg.id]) ?? false;
+
+                    return (
+                        <div
+                            key={intg.id}
+                            style={{
+                                display: "flex", alignItems: "center", gap: 14,
+                                padding: "12px 14px", borderRadius: 8,
+                                background: isEnabled ? "#0d0d0d" : "transparent",
+                                border: `1px solid ${isEnabled ? "#1f1f1f" : "transparent"}`,
+                                transition: "all 0.15s",
+                                opacity: !isConnected ? 0.4 : 1,
+                            }}
+                        >
+                            <span style={{ fontSize: 18, flexShrink: 0 }}>{intg.icon}</span>
+
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{
+                                    display: "flex", alignItems: "center", gap: 8, marginBottom: 3, flexWrap: "wrap",
+                                }}>
+                                    <span style={{
+                                        fontSize: 13, fontWeight: 600, color: "#d1d5db",
+                                        fontFamily: "'Instrument Sans', sans-serif",
+                                    }}>
+                                        {intg.name}
+                                    </span>
+                                    <Badge style={{ color: tc.color, backgroundColor: tc.bg }}>{trigger}</Badge>
+                                    {intg.to && (
+                                        <Badge style={{ color: "#4b5563", backgroundColor: "#0a0a0a" }}>→ {intg.to}</Badge>
+                                    )}
+                                </div>
+                                <div style={{ fontSize: 11, color: "#374151", fontFamily: "monospace", lineHeight: 1.5 }}>
+                                    {intg.description}
+                                </div>
+                            </div>
+
+                            <Switch
+                                checked={isEnabled}
+                                onCheckedChange={v => onChange({ ...enabled, [intg.id]: v })}
+                                disabled={!isConnected}
+                            />
+                        </div>
+                    );
+                })}
+            </div>
+        </section>
+    );
+};

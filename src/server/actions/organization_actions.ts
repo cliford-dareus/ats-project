@@ -26,9 +26,14 @@ import {
   generalSettingsSchema,
   inviteMemberSchema,
   organizationSchema,
+  orgPluginSettingsSchema,
+  pluginIdSchema,
 } from "@/zod";
-import { mask_org_plugin_record } from "@/lib/plugin-encryption";
-import type { OrgPluginRecord } from "@/types";
+import { mask_org_plugin_record, is_masked_plugin_secret } from "@/lib/plugin-encryption";
+import type { OrgPluginRecord, OrgPluginSettings } from "@/types";
+import { record_activity } from "@/server/activity/record-activity";
+import { db_get_organization_plugins_raw } from "../queries/drizzle/plugin-queries";
+import { AVAILABLE_PLUGINS } from "@/plugins/registry";
 
 export const create_organization_invite = async (
   unsafeData: z.infer<typeof inviteMemberSchema>
@@ -139,8 +144,55 @@ export const get_organization_plugins = async (_clientOrgId?: string) => {
 };
 
 /**
+ * B7 — semantic activity action for a plugin settings save, derived from
+ * the prior stored settings and the validated incoming settings.
+ * Priority: new credentials > active flip > plain settings save. Only the
+ * label depends on the prior read — the mutation itself is authoritative.
+ * A value counts as a "new credential" when it is a non-empty plaintext
+ * key; masked echoes (`••••…`) the client sends back on every save do
+ * not count. Never inspects a key value beyond the masked/empty checks.
+ */
+function derive_plugin_update_action(
+  prior: OrgPluginSettings | undefined,
+  incoming: Partial<OrgPluginSettings>,
+): string {
+  const hasNewCredential = Object.values(incoming.credentials ?? {}).some(
+    (v) => typeof v === "string" && v !== "" && !is_masked_plugin_secret(v),
+  );
+  if (hasNewCredential) return "plugin.credentials_updated";
+  if (
+    incoming.active !== undefined &&
+    prior?.active !== undefined &&
+    incoming.active !== prior.active
+  ) {
+    return incoming.active ? "plugin.enabled" : "plugin.disabled";
+  }
+  return "plugin.settings_saved";
+}
+
+/** B7 — semantic activity action for a plugin install/uninstall toggle. */
+function derive_plugin_toggle_action(enabled: boolean, hadSettingsRow: boolean): string {
+  if (!enabled) return "plugin.uninstalled";
+  return hadSettingsRow ? "plugin.enabled" : "plugin.installed";
+}
+
+const PLUGIN_ACTION_SUMMARIES: Record<string, (name: string) => string> = {
+  "plugin.installed": (name) => `Installed the ${name} plugin`,
+  "plugin.enabled": (name) => `Enabled the ${name} plugin`,
+  "plugin.disabled": (name) => `Disabled the ${name} plugin`,
+  "plugin.uninstalled": (name) => `Uninstalled the ${name} plugin`,
+  "plugin.settings_saved": (name) => `Updated settings for the ${name} plugin`,
+  "plugin.credentials_updated": (name) => `Updated credentials for the ${name} plugin`,
+};
+
+/**
  * Plugin settings updates are scoped to session orgId only.
  * `_clientOrgId` is ignored if present.
+ *
+ * B5: pluginId and settings are validated at this boundary — unknown
+ * plugin ids, non-allowlisted credential keys, mistyped config fields,
+ * and unknown integration ids are rejected with a clear message instead
+ * of being persisted verbatim.
  */
 export const update_organization_plugins_action = async (
   _clientOrgId: string,
@@ -154,22 +206,53 @@ export const update_organization_plugins_action = async (
     throw new Error("You are not authorized to update plugins");
   }
 
-  if (!pluginId || typeof pluginId !== "string") {
-    throw new Error("Invalid plugin id");
+  const parsedId = pluginIdSchema.safeParse(pluginId);
+  if (!parsedId.success) {
+    throw new Error(parsedId.error.issues[0]?.message ?? "Invalid plugin id");
   }
 
-  return await update_organization_plugins(orgId, pluginId, settings);
+  const parsedSettings = orgPluginSettingsSchema(pluginId).safeParse(settings);
+  if (!parsedSettings.success) {
+    throw new Error(parsedSettings.error.issues[0]?.message ?? "Invalid plugin settings");
+  }
+
+  // Prior settings, for the audit label only (fresh raw read, no cache).
+  const priorRecord = await db_get_organization_plugins_raw(orgId);
+  const priorSettings = priorRecord.settings?.[pluginId];
+
+  const result = await update_organization_plugins(orgId, pluginId, parsedSettings.data);
+
+  // B7: audit AFTER a successful mutation. Plugins have no numeric id,
+  // so entity_id is always 0 — the feed renders these entries with no
+  // View button. Never includes credential values.
+  if (!(result && typeof result === "object" && "error" in result && result.error)) {
+    const action = derive_plugin_update_action(priorSettings, parsedSettings.data);
+    const name = AVAILABLE_PLUGINS.find((p) => p.id === pluginId)?.name ?? pluginId;
+    await record_activity({
+      action,
+      entity_type: "plugin",
+      entity_id: 0,
+      summary: PLUGIN_ACTION_SUMMARIES[action]?.(name) ?? `Updated the ${name} plugin`,
+    });
+  }
+
+  return result;
 };
 
 /**
  * Plugin enable/disable is scoped to session orgId only.
  * `_clientOrgId` is ignored if present.
+ *
+ * B5: pluginId and the optional config are validated like the settings
+ * save above. Credentials are stripped here — toggle/install never
+ * introduces keys (they are only set via the encrypting save path), so a
+ * client must not smuggle one in through config.
  */
 export const toggle_organization_plugin_action = async (
   _clientOrgId: string,
   enabled: boolean,
   pluginId: string,
-  config?: unknown
+  config?: Partial<OrgPluginSettings>
 ) => {
   const { userId, orgId } = await auth();
   const canManage = await hasPermission("plugin:manage");
@@ -178,16 +261,45 @@ export const toggle_organization_plugin_action = async (
     throw new Error("You are not authorized to update plugins");
   }
 
-  if (!pluginId || typeof pluginId !== "string") {
-    throw new Error("Invalid plugin id");
+  const parsedId = pluginIdSchema.safeParse(pluginId);
+  if (!parsedId.success) {
+    throw new Error(parsedId.error.issues[0]?.message ?? "Invalid plugin id");
   }
 
-  return await toggle_organization_plugin(
+  let toggleConfig: Partial<Omit<OrgPluginSettings, "credentials">> | undefined;
+  if (config !== undefined) {
+    const parsedConfig = orgPluginSettingsSchema(pluginId).safeParse(config);
+    if (!parsedConfig.success) {
+      throw new Error(parsedConfig.error.issues[0]?.message ?? "Invalid plugin config");
+    }
+    const { credentials: _ignored, ...rest } = parsedConfig.data;
+    toggleConfig = rest;
+  }
+
+  // Prior settings row, for the audit label only (fresh raw read).
+  const priorRecord = await db_get_organization_plugins_raw(orgId);
+  const hadSettingsRow = priorRecord.settings?.[pluginId] !== undefined;
+
+  const result = await toggle_organization_plugin(
     orgId,
     Boolean(enabled),
     pluginId,
-    config
+    toggleConfig
   );
+
+  // B7: audit AFTER a successful mutation (entity_id 0 — see above).
+  if (!(result && typeof result === "object" && "error" in result && result.error)) {
+    const action = derive_plugin_toggle_action(Boolean(enabled), hadSettingsRow);
+    const name = AVAILABLE_PLUGINS.find((p) => p.id === pluginId)?.name ?? pluginId;
+    await record_activity({
+      action,
+      entity_type: "plugin",
+      entity_id: 0,
+      summary: PLUGIN_ACTION_SUMMARIES[action]?.(name) ?? `Updated the ${name} plugin`,
+    });
+  }
+
+  return result;
 };
 
 export const get_general_settings_action = async () => {

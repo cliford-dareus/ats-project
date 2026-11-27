@@ -1,6 +1,11 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Evaluates AutomationRules when TriggerEvents fire.
-// Handles delays with setTimeout (swap for a job queue in production).
+//
+// Delayed rules: the BullMQ worker passes `scheduleDelayed`, which hands
+// the execution to a durable delayed queue job instead of setTimeout.
+// The in-process setTimeout path below is kept ONLY for the non-worker
+// (browser/manual) path, where no queue exists — it is NOT durable
+// across a restart, and the worker must never use it.
 //
 // This file is client-safe: it contains only the event emitter, rule management,
 // and evaluation logic. The actual action handlers live in
@@ -42,6 +47,21 @@ export type AutomationActionExecutor = (
 
 export interface AutomationEvaluateOptions {
     executor?: AutomationActionExecutor;
+    /**
+     * B8 — worker-only durable scheduler for delayed rules. When set,
+     * a delayed execution is handed off here (the worker enqueues a
+     * BullMQ delayed job carrying rule + event + context) instead of
+     * using setTimeout. When unset (browser/manual path), the
+     * in-process setTimeout below is used — NOT durable across a
+     * restart, and kept only because no queue exists on that path.
+     */
+    scheduleDelayed?: (
+        pending: PendingExecution,
+        rule: AutomationRule,
+        event: TriggerEvent,
+        context: ATSContext,
+        delayMs: number,
+    ) => Promise<void>;
 }
 
 /** The applications.id an event targets (never the candidate id). */
@@ -106,9 +126,12 @@ export class AutomationEngine extends EventEmitter {
             if (delayMs === 0) {
                 await this._run(rule, event, context, opts);
             } else {
-                // Schedule delayed execution
+                // Schedule delayed execution — keyed by EXECUTION id, not
+                // rule id: the same rule can have several pending
+                // executions (one per event), and they must not overwrite
+                // each other in `this.pending`.
                 const pending: PendingExecution = {
-                    id: `exec_${rule.id}_${Date.now()}`,
+                    id: `exec_${rule.id}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
                     ruleId: rule.id,
                     ruleName: rule.name,
                     applicationId: eventApplicationId(event, context),
@@ -119,15 +142,38 @@ export class AutomationEngine extends EventEmitter {
                 console.log("AUTOMATION: ", pending)
                 this.emit("execution:scheduled", pending);
 
-                // In production: enqueue to Redis/BullMQ/Inngest instead of setTimeout
-                const timerId = setTimeout(async () => {
-                    this.pending.delete(rule.id);
-                    await this._run(rule, event, context, opts);
-                }, delayMs);
+                if (opts.scheduleDelayed) {
+                    // Worker path: durable BullMQ delayed job. The worker
+                    // job returns only after the handoff — nothing is left
+                    // to an in-process timer that dies with the process.
+                    await opts.scheduleDelayed(pending, rule, event, context, delayMs);
+                } else {
+                    // Non-worker path ONLY (browser/manual): in-process
+                    // setTimeout. NOT durable — a restart loses the
+                    // execution. There is no queue on this path.
+                    const timerId = setTimeout(async () => {
+                        this.pending.delete(pending.id);
+                        await this._run(rule, event, context, opts);
+                    }, delayMs);
 
-                this.pending.set(rule.id, timerId);
+                    this.pending.set(pending.id, timerId);
+                }
             }
         }
+    }
+
+    /**
+     * B8 — execute one already-scheduled (delayed) rule. Used by the
+     * worker's delayed-job branch with the rule/event/context stored in
+     * the queue job. Emits execution:completed/failed exactly like _run.
+     */
+    async runStoredExecution(
+        rule: AutomationRule,
+        event: TriggerEvent,
+        context: ATSContext,
+        opts: AutomationEvaluateOptions = {},
+    ): Promise<void> {
+        await this._run(rule, event, context, opts);
     }
 
     private _matchesTrigger(

@@ -9,7 +9,7 @@ import { ATSIntegration } from "@/lib/plugin-interfaces";
 import type { OrgPluginSettings, PluginAuthState } from "@/types";
 import { pluginRegistry } from "@/lib/plugin-registry";
 import { Badge } from "@/components/ui/badge";
-import { SetStateAction, useCallback, useEffect, useRef, useState } from "react";
+import { SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ConfigProps, mask_key_for_display } from "./shared/types";
 import ApiKeySection from "./shared/api-key-section";
 import { verifyResend } from "@/server/actions/stage_actions";
@@ -40,6 +40,13 @@ const ResendConfig = ({ pluginId, onSave, settings }: ConfigProps) => {
     const [domainsError, setDomainsError] = useState<string | null>(null);
     // Validation error for the From-domain text input (shown under it).
     const [domainError, setDomainError] = useState<string | null>(null);
+    // Per-field validation errors from handleSave (U7).
+    const [fieldErrors, setFieldErrors] = useState<{
+        hiringManagerEmail?: string;
+        recruiterEmail?: string;
+        offerSigningUrl?: string;
+        fromAlias?: string;
+    }>({});
 
     const provider = pluginRegistry.getProvider(pluginId);
     const INTERGRATIONS = provider?.getIntegrations();
@@ -79,6 +86,43 @@ const ResendConfig = ({ pluginId, onSave, settings }: ConfigProps) => {
             }));
         }
     }, [settings]);
+
+    // ── Dirty tracking (U8) ────────────────────────────────────────────────
+    // Snapshot of the last-saved values, derived the same way the
+    // hydration effect above derives them. Save is enabled whenever
+    // there are unsaved edits — not only once connected/saved — and a
+    // beforeunload guard warns before navigating away with edits.
+    const initialConfig = useMemo(() => {
+        const stored = settings?.config;
+        const fromAddress = typeof stored?.fromAddress === "string" ? stored.fromAddress : "";
+        const [alias, domain] = fromAddress.includes("@") ? fromAddress.split("@") : ["", ""];
+        return {
+            companyName: typeof stored?.companyName === "string" ? stored.companyName : "",
+            fromAlias: alias || "recruiting",
+            fromDomain: domain || "",
+            hiringManagerEmail: typeof stored?.hiringManagerEmail === "string" ? stored.hiringManagerEmail : "",
+            recruiterEmail: typeof stored?.recruiterEmail === "string" ? stored.recruiterEmail : "",
+            offerSigningUrl: typeof stored?.offerSigningUrl === "string" ? stored.offerSigningUrl : "",
+        };
+    }, [settings]);
+    const isDirty =
+        JSON.stringify(config) !== JSON.stringify(initialConfig) ||
+        JSON.stringify(enabledIntegrations ?? {}) !== JSON.stringify(settings.enabledIntegrations ?? {}) ||
+        apiKey.trim() !== "";
+    // Integration toggles need a sender identity to be meaningful.
+    const senderComplete =
+        config.companyName.trim() !== "" &&
+        config.fromAlias.trim() !== "" &&
+        config.fromDomain.trim() !== "";
+
+    useEffect(() => {
+        if (!isDirty) return;
+        const guard = (e: BeforeUnloadEvent) => {
+            e.preventDefault();
+        };
+        window.addEventListener("beforeunload", guard);
+        return () => window.removeEventListener("beforeunload", guard);
+    }, [isDirty]);
 
     const handleConnect = async (key?: string) => {
         // The key comes from ApiKeySection — the parent's apiKey state is
@@ -157,15 +201,51 @@ const ResendConfig = ({ pluginId, onSave, settings }: ConfigProps) => {
     const handleSave = async () => {
         setSaving(true);
         setDomainError(null);
+        // U7: validate everything the form collects, like the existing
+        // domain check — malformed contact emails and non-https offer
+        // URLs used to save silently, and a typed domain with an empty
+        // alias silently discarded the alias (falling back to the stored
+        // From address).
+        const errors: {
+            hiringManagerEmail?: string;
+            recruiterEmail?: string;
+            offerSigningUrl?: string;
+            fromAlias?: string;
+        } = {};
+        const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (config.hiringManagerEmail.trim() && !emailRe.test(config.hiringManagerEmail.trim())) {
+            errors.hiringManagerEmail = "Enter a valid email address.";
+        }
+        if (config.recruiterEmail.trim() && !emailRe.test(config.recruiterEmail.trim())) {
+            errors.recruiterEmail = "Enter a valid email address.";
+        }
+        if (config.offerSigningUrl.trim() && !config.offerSigningUrl.trim().startsWith("https://")) {
+            errors.offerSigningUrl = "Enter a full https:// URL.";
+        }
+        const domain = config.fromDomain.trim();
+        let domainInvalid = false;
+        if (domain && !/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/i.test(domain)) {
+            domainInvalid = true;
+        }
+        const alias = config.fromAlias.trim();
+        if (domain && !alias) {
+            errors.fromAlias = "Enter a sender name — the From address needs both parts (e.g. recruiting@yourdomain.com).";
+        } else if (alias && !/^[a-z0-9._-]+$/i.test(alias)) {
+            errors.fromAlias = "Use only letters, numbers, dots, underscores and hyphens.";
+        }
+        if (domainInvalid) {
+            setDomainError("Enter a valid domain, e.g. mail.acme.com");
+        }
+        if (domainInvalid || Object.keys(errors).length > 0) {
+            setFieldErrors(errors);
+            setSaving(false);
+            return;
+        }
+        setFieldErrors({});
         try {
             // A typed domain must look like a domain; the select only ever
             // offers verified ones, but the text fallback (sending-only
             // keys, load failures, no verified domains) is user-typed.
-            const domain = config.fromDomain.trim();
-            if (domain && !/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/i.test(domain)) {
-                setDomainError("Enter a valid domain, e.g. mail.acme.com");
-                return;
-            }
             // Preserve the stored From address when the form doesn't
             // supply a complete one: the server replaces config wholesale,
             // so omitting fromAddress here used to silently wipe it.
@@ -245,18 +325,28 @@ const ResendConfig = ({ pluginId, onSave, settings }: ConfigProps) => {
                     {isConnected ? "Connected" : hasSavedKey ? "Saved" : "Not connected"}
                 </div>
 
-                {/* Save */}
+                {/* Unsaved-changes indicator (U8) */}
+                {isDirty && !saving && (
+                    <span className="text-xs font-semibold whitespace-nowrap" style={{ color: "#f59e0b" }}>
+                        ● Unsaved changes
+                    </span>
+                )}
+
+                {/* Save — enabled whenever there are unsaved edits (U8), not
+                    only once connected/saved. A user who typed a new key but
+                    hasn't clicked Connect can now save; a no-op save stays
+                    disabled. */}
                 <Button
                     onClick={handleSave}
-                    disabled={(!isConnected && !hasSavedKey) || saving}
+                    disabled={!isDirty || saving}
                     className="rounded-md"
                     style={{
                         padding: "7px 18px", borderRadius: 6,
-                        background: saved ? "#0d1a14" : (isConnected || hasSavedKey ? "#fff" : "#111"),
+                        background: saved ? "#0d1a14" : (isDirty ? "#fff" : "#111"),
                         border: saved ? "1px solid #10b981" : "none",
-                        color: saved ? "#10b981" : (isConnected || hasSavedKey ? "#000" : "#374151"),
+                        color: saved ? "#10b981" : (isDirty ? "#000" : "#374151"),
                         fontSize: 12, fontWeight: 600,
-                        cursor: (isConnected || hasSavedKey) ? "pointer" : "not-allowed",
+                        cursor: isDirty ? "pointer" : "not-allowed",
                         fontFamily: "'Geist Mono', monospace",
                         transition: "all 0.2s",
                     }}
@@ -273,7 +363,7 @@ const ResendConfig = ({ pluginId, onSave, settings }: ConfigProps) => {
                             Resend Settings
                         </h1>
                         <p className="mt-1 text-[13px] text-muted-foreground leading-tight">
-                            Configure transactional email for your hiring pipeline — candidate confirmations, stage updates, offer letters, and internal reports.
+                            Sends a branded confirmation email when a candidate applies.
                         </p>
                     </div>
 
@@ -297,6 +387,7 @@ const ResendConfig = ({ pluginId, onSave, settings }: ConfigProps) => {
                         domainsError={domainsError}
                         hasSavedKey={hasSavedKey}
                         domainError={domainError}
+                        fieldErrors={fieldErrors}
                     />
 
                     <IntegrationsSection
@@ -304,6 +395,7 @@ const ResendConfig = ({ pluginId, onSave, settings }: ConfigProps) => {
                         onChange={setEnabledIntegrations}
                         intergrations={INTERGRATIONS!}
                         isConnected={isConnected || hasSavedKey}
+                        canEnable={senderComplete}
                     />
                 </div>
             </div>
@@ -336,9 +428,15 @@ type SenderSectionProps = {
     hasSavedKey: boolean;
     domainError: string | null;
     auth: PluginAuthState;
+    fieldErrors: {
+        hiringManagerEmail?: string;
+        recruiterEmail?: string;
+        offerSigningUrl?: string;
+        fromAlias?: string;
+    };
 };
 
-const SenderSection = ({ config, onChange, domains, domainsLoading, domainsError, hasSavedKey, domainError, auth }: SenderSectionProps) => {
+const SenderSection = ({ config, onChange, domains, domainsLoading, domainsError, hasSavedKey, domainError, auth, fieldErrors }: SenderSectionProps) => {
     const isConnected = auth.status === "authenticated";
     const hasKey = isConnected || hasSavedKey;
     // Only verified domains may send. Keep a stored domain selectable even
@@ -468,6 +566,11 @@ const SenderSection = ({ config, onChange, domains, domainsLoading, domainsError
                             ⚠ {domainError}
                         </p>
                     )}
+                    {fieldErrors.fromAlias && (
+                        <p style={{ margin: "5px 0 0", fontSize: 11, color: "#f87171", fontFamily: "monospace" }}>
+                            ⚠ {fieldErrors.fromAlias}
+                        </p>
+                    )}
                     {!hasKey && auth.status !== "error" && (
                         <p style={{ margin: "5px 0 0", fontSize: 11, color: "#374151", fontFamily: "monospace" }}>
                             Connect an API key to load verified domains
@@ -521,9 +624,14 @@ const SenderSection = ({ config, onChange, domains, domainsLoading, domainsError
                         type="email"
 
                     />
+                    {fieldErrors.hiringManagerEmail && (
+                        <p style={{ margin: "5px 0 0", fontSize: 11, color: "#f87171", fontFamily: "monospace" }}>
+                            ⚠ {fieldErrors.hiringManagerEmail}
+                        </p>
+                    )}
                     {!isConnected && auth.status !== "error" && (
                         <p style={{ margin: "5px 0 0", fontSize: 11, color: "#374151", fontFamily: "monospace" }}>
-                            Receives internal stage transition emails
+                            Stored for future notification emails — no automated email uses it yet
                         </p>
                     )}
                     {auth.status === "error" && (
@@ -550,9 +658,14 @@ const SenderSection = ({ config, onChange, domains, domainsLoading, domainsError
                         type="email"
 
                     />
+                    {fieldErrors.recruiterEmail && (
+                        <p style={{ margin: "5px 0 0", fontSize: 11, color: "#f87171", fontFamily: "monospace" }}>
+                            ⚠ {fieldErrors.recruiterEmail}
+                        </p>
+                    )}
                     {!isConnected && auth.status !== "error" && (
                         <p style={{ margin: "5px 0 0", fontSize: 11, color: "#374151", fontFamily: "monospace" }}>
-                            Receives internal score reports
+                            Stored for future notification emails — no automated email uses it yet
                         </p>
                     )}
                     {auth.status === "error" && (
@@ -579,9 +692,14 @@ const SenderSection = ({ config, onChange, domains, domainsLoading, domainsError
                     placeholder="https://app.docusign.com/sign/…"
 
                 />
+                {fieldErrors.offerSigningUrl && (
+                    <p style={{ margin: "5px 0 0", fontSize: 11, color: "#f87171", fontFamily: "monospace" }}>
+                        ⚠ {fieldErrors.offerSigningUrl}
+                    </p>
+                )}
                 {!isConnected && auth.status !== "error" && (
                     <p style={{ margin: "5px 0 0", fontSize: 11, color: "#374151", fontFamily: "monospace" }}>
-                        Optional — added as a CTA button in offer letter emails (DocuSign, PandaDoc, etc.)
+                        Optional — stored for a future offer-letter email; no automated email uses it yet
                     </p>
                 )}
                 {auth.status === "error" && (
@@ -602,9 +720,12 @@ type IntergrationSectionProps = {
     onChange: React.Dispatch<SetStateAction<Record<string, boolean> | undefined>>;
     isConnected: boolean;
     intergrations: ATSIntegration[]
+    /** Company name + a complete From address are set — required before
+        a toggle can be enabled (U7). */
+    canEnable: boolean;
 };
 
-function IntegrationsSection({ enabled, onChange, isConnected, intergrations }: IntergrationSectionProps) {
+function IntegrationsSection({ enabled, onChange, isConnected, intergrations, canEnable }: IntergrationSectionProps) {
     const triggerColors = {
         candidate_applied: { color: "#818cf8", bg: "#1e1b4b" },
         stage_changed: { color: "#0ea5e9", bg: "#0c1a2e" },
@@ -624,6 +745,11 @@ function IntegrationsSection({ enabled, onChange, isConnected, intergrations }: 
                 <div className="text-[11px] mt-0.5" >
                     Toggle which email automations fire. Individual integrations can also be controlled per pipeline stage.
                 </div>
+                {!canEnable && (
+                    <div className="text-[11px] mt-1 text-amber-500">
+                        Add a company name and a complete From address above before integrations can be enabled.
+                    </div>
+                )}
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -641,7 +767,7 @@ function IntegrationsSection({ enabled, onChange, isConnected, intergrations }: 
                                 background: isEnabled ? "#0d0d0d" : "transparent",
                                 border: `1px solid ${isEnabled ? "#1f1f1f" : "transparent"}`,
                                 transition: "all 0.15s",
-                                opacity: !isConnected ? 0.4 : 1,
+                                opacity: !isConnected || !canEnable ? 0.4 : 1,
                             }}
                         >
                             <span style={{ fontSize: 18, flexShrink: 0 }}>{intg.icon}</span>
@@ -669,7 +795,7 @@ function IntegrationsSection({ enabled, onChange, isConnected, intergrations }: 
                             <Switch
                                 checked={isEnabled}
                                 onCheckedChange={v => onChange({ ...enabled, [intg.id]: v })}
-                                disabled={!isConnected}
+                                disabled={!isConnected || !canEnable}
                             />
                         </div>
                     );

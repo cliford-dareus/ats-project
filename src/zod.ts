@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AVAILABLE_PLUGINS } from "@/plugins/registry";
 export const JOB_STAGES = z.enum(['New Candidate', 'Screening', 'Phone Interview', 'Interview', 'Offer', 'Applied', 'Drafted'] as const);
 export const FILE_TYPES = ['RESUME', 'COVER_LETTER', 'OFFER_LETTER', "OTHER"] as const;
 
@@ -429,3 +430,244 @@ export const subdomainSchema = z
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use lowercase letters, numbers, and hyphens only");
 
 export type GeneralSettingsInput = z.infer<typeof generalSettingsSchema>;
+
+// ── PLUGIN SETTINGS + AUTOMATION RULES (B5) ─────────────────────────────────
+// Validated at the server-action boundary (organization_actions.ts,
+// plugin-actions.ts) — the plugin blob used to accept any pluginId,
+// credential key, config value, and automation rule verbatim.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Integration ids that actually exist (one class each in the providers). */
+export const KNOWN_INTEGRATION_IDS = [
+    "resend-application-confirmation",
+    "resume-score",
+] as const;
+const KNOWN_INTEGRATION_ID_SET: ReadonlySet<string> = new Set(KNOWN_INTEGRATION_IDS);
+
+/** Which integration belongs to which provider (fire_integration targets). */
+const FIRE_INTEGRATION_TARGETS: Record<string, string> = {
+    "resend-application-confirmation": "resend",
+    "resume-score": "google",
+};
+
+/** pluginId must be one of the manifest ids in src/plugins/registry.ts. */
+export const pluginIdSchema = z.string().superRefine((id, ctx) => {
+    if (!AVAILABLE_PLUGINS.some((p) => p.id === id)) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Unknown plugin id "${id}"`,
+        });
+    }
+});
+
+/** Credential keys allowlisted per plugin — anything else is rejected. */
+export const PLUGIN_CREDENTIAL_KEYS: Record<string, readonly string[]> = {
+    resend: ["apiKey"],
+    google: ["apiKey", "orgId"],
+};
+
+/** Known config keys per plugin, with per-field typing. */
+const PLUGIN_CONFIG_KEYS: Record<string, readonly string[]> = {
+    resend: ["fromAddress", "companyName", "hiringManagerEmail", "recruiterEmail", "offerSigningUrl"],
+    google: [],
+};
+
+const emailFieldIssue = (
+    ctx: z.RefinementCtx,
+    config: Record<string, unknown>,
+    key: string,
+    label: string,
+) => {
+    const value = config[key];
+    if (value === undefined || value === "") return;
+    if (typeof value !== "string" || !z.string().email().safeParse(value).success) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [key],
+            message: `${label} must be a valid email address`,
+        });
+    }
+};
+
+/**
+ * One org's stored settings for a plugin. Unknown top-level keys are
+ * stripped (zod default); credential/config keys are allowlisted and
+ * config fields are typed, so a bad save fails with a clear message
+ * instead of persisting garbage.
+ */
+export const orgPluginSettingsSchema = (pluginId: string) =>
+    z.object({
+        active: z.boolean().optional(),
+        credentials: z
+            .record(z.string(), z.string())
+            .optional()
+            .superRefine((creds, ctx) => {
+                const allowed = PLUGIN_CREDENTIAL_KEYS[pluginId] ?? [];
+                for (const key of Object.keys(creds ?? {})) {
+                    if (!allowed.includes(key)) {
+                        ctx.addIssue({
+                            code: z.ZodIssueCode.custom,
+                            path: [key],
+                            message: `Unknown credential "${key}" for plugin "${pluginId}" (allowed: ${allowed.join(", ") || "none"})`,
+                        });
+                    }
+                }
+            }),
+        config: z
+            .record(z.string(), z.unknown())
+            .optional()
+            .superRefine((config, ctx) => {
+                const cfg = config ?? {};
+                const allowed = PLUGIN_CONFIG_KEYS[pluginId] ?? [];
+                for (const key of Object.keys(cfg)) {
+                    if (!allowed.includes(key)) {
+                        ctx.addIssue({
+                            code: z.ZodIssueCode.custom,
+                            path: [key],
+                            message: `Unknown config field "${key}" for plugin "${pluginId}"`,
+                        });
+                    }
+                }
+                emailFieldIssue(ctx, cfg, "fromAddress", "From address");
+                emailFieldIssue(ctx, cfg, "hiringManagerEmail", "Hiring manager email");
+                emailFieldIssue(ctx, cfg, "recruiterEmail", "Recruiter email");
+                const companyName = cfg["companyName"];
+                if (companyName !== undefined && companyName !== "" && typeof companyName !== "string") {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        path: ["companyName"],
+                        message: "Company name must be a string",
+                    });
+                }
+                const offerSigningUrl = cfg["offerSigningUrl"];
+                if (typeof offerSigningUrl === "string" && offerSigningUrl !== "") {
+                    let url: URL | null = null;
+                    try {
+                        url = new URL(offerSigningUrl);
+                    } catch {
+                        url = null;
+                    }
+                    if (!url || url.protocol !== "https:") {
+                        ctx.addIssue({
+                            code: z.ZodIssueCode.custom,
+                            path: ["offerSigningUrl"],
+                            message: "Offer signing URL must be a valid https URL",
+                        });
+                    }
+                } else if (offerSigningUrl !== undefined && offerSigningUrl !== "") {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        path: ["offerSigningUrl"],
+                        message: "Offer signing URL must be a valid https URL",
+                    });
+                }
+            }),
+        enabledIntegrations: z
+            .record(z.string(), z.boolean())
+            .optional()
+            .superRefine((map, ctx) => {
+                for (const key of Object.keys(map ?? {})) {
+                    if (!KNOWN_INTEGRATION_ID_SET.has(key)) {
+                        ctx.addIssue({
+                            code: z.ZodIssueCode.custom,
+                            path: [key],
+                            message: `Unknown integration id "${key}"`,
+                        });
+                    }
+                }
+            }),
+    });
+export type OrgPluginSettingsInput = z.infer<ReturnType<typeof orgPluginSettingsSchema>>;
+
+// ── AUTOMATION RULES ─────────────────────────────────────────────────────────
+export const automationDelaySchema = z.object({
+    value: z.number().finite().min(0, "Delay value must be 0 or more"),
+    unit: z.enum(["seconds", "minutes", "hours", "days"]),
+});
+
+export const automationTriggerSchema = z.discriminatedUnion("event", [
+    z.object({
+        event: z.literal("stage_changed"),
+        toStage: JOB_STAGES,
+        fromStage: JOB_STAGES.optional(),
+    }),
+    z.object({ event: z.literal("candidate_applied") }),
+    z.object({ event: z.literal("resume_uploaded") }),
+    z.object({ event: z.literal("offer_extended") }),
+    z.object({ event: z.literal("interview_scheduled") }),
+]);
+
+export const automationActionSchema = z.discriminatedUnion("type", [
+    z.object({
+        type: z.literal("add_note"),
+        content: z.string().min(1, "Note content is required"),
+        pinned: z.boolean().optional(),
+    }),
+    z.object({
+        type: z.literal("send_sms"),
+        to: z.enum(["candidate", "recruiter", "hiring_manager"]),
+        message: z.string().min(1, "SMS message is required"),
+    }),
+    z.object({
+        type: z.literal("send_email"),
+        to: z.enum(["candidate", "recruiter", "hiring_manager"]),
+        subject: z.string().min(1, "Email subject is required"),
+        body: z.string().min(1, "Email body is required"),
+        integrationId: z
+            .string()
+            .superRefine((id, ctx) => {
+                if (!KNOWN_INTEGRATION_ID_SET.has(id)) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        message: `Unknown integration id "${id}"`,
+                    });
+                }
+            })
+            .optional(),
+    }),
+    z.object({
+        type: z.literal("fire_integration"),
+        providerId: z.string(),
+        integrationId: z.string(),
+    }),
+    z.object({
+        type: z.literal("move_stage"),
+        toStage: JOB_STAGES,
+    }),
+    z.object({
+        type: z.literal("assign_recruiter"),
+        userId: z.string().min(1, "Assignee user id is required"),
+    }),
+]).superRefine((action, ctx) => {
+    // fire_integration targets must name a real integration on its real
+    // provider — checked here (on the union, not the option) because a
+    // refined option is no longer a valid discriminated-union member.
+    if (action.type !== "fire_integration") return;
+    const expectedProvider = FIRE_INTEGRATION_TARGETS[action.integrationId];
+    if (!expectedProvider) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["integrationId"],
+            message: `Unknown integration id "${action.integrationId}"`,
+        });
+    } else if (action.providerId !== expectedProvider) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["providerId"],
+            message: `Integration "${action.integrationId}" belongs to provider "${expectedProvider}", not "${action.providerId}"`,
+        });
+    }
+});
+
+export const automationRuleSchema = z.object({
+    id: z.string().min(1),
+    job_id: z.number().int().positive(),
+    name: z.string().trim().min(1, "Rule name is required").max(200),
+    enabled: z.boolean(),
+    trigger: automationTriggerSchema,
+    delay: automationDelaySchema,
+    action: automationActionSchema,
+    created_at: z.string().optional(),
+    updated_at: z.string().optional(),
+});
+export type AutomationRuleInput = z.infer<typeof automationRuleSchema>;

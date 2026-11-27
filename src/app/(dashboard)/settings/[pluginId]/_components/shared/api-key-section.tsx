@@ -20,6 +20,14 @@ import { useEffect, useState } from "react";
 /** Generic mask the server sends when it cannot decrypt a stored key. */
 const GENERIC_MASK = "••••••••";
 
+/** Where to create a key, per provider — the old generic hint sent
+ * Google users to "google.com" for a key with "'Sending access'
+ * permission", which is Resend-only and wrong for both. */
+const KEY_HINTS: Record<string, { url: string; note: string }> = {
+    google: { url: "aistudio.google.com", note: "create a Gemini API key in Google AI Studio" },
+    resend: { url: "resend.com", note: "'Sending access' permission is enough" },
+};
+
 type Props = {
     apiKey: string;
     /** Masked stored key (•••• + last 4) for display while connected.
@@ -168,7 +176,7 @@ const ApiKeySection = ({ apiKey, maskedKey, onApiKeyChange, auth, onConnect, onD
 
                 {!showingStoredKey && auth.status !== "error" && (
                     <p style={{ margin: "5px 0 0", fontSize: 11, color: "#374151", fontFamily: "monospace" }}>
-                        {`Don't have an API key? Create one at ${pluginId}.com — 'Sending access' permission is enough`}
+                        {`Don't have an API key? Create one at ${KEY_HINTS[pluginId]?.url ?? `${pluginId}.com`}${KEY_HINTS[pluginId]?.note ? ` — ${KEY_HINTS[pluginId].note}` : ""}`}
                     </p>
                 )}
                 {auth.status === "error" && (
