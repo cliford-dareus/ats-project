@@ -127,6 +127,61 @@ export const applicationFormSchema = z.object({
     subdomain: z.string(),
 });
 
+// ── SCREENING QUESTIONS ───────────────────────────────────────────────────
+// Backend contract for the screening-questions feature. The dashboard
+// (job wizard / job settings) manages questions; the public apply form
+// collects answers; the application detail page renders stored answers.
+// `validateScreeningAnswers` lives in src/lib/screening.ts (pure, no
+// server-only imports) so both the server actions and the apply-flow
+// query can use it.
+export const screeningQuestionTypeSchema = z.enum([
+    "short_text",
+    "long_text",
+    "yes_no",
+    "single_choice",
+    "number",
+] as const);
+export type ScreeningQuestionType = z.infer<typeof screeningQuestionTypeSchema>;
+
+// One question as configured for a job. `options` is only meaningful for
+// single_choice: it MUST carry 2–10 non-empty options, and every other
+// type MUST NOT carry options.
+export const screeningQuestionInputSchema = z
+    .object({
+        questionText: z.string().trim().min(1, "Question text is required").max(500, "Question text must be 500 characters or less"),
+        type: screeningQuestionTypeSchema,
+        options: z.array(z.string().trim().min(1, "Options must not be empty")).min(2).max(10).optional(),
+        isRequired: z.boolean().default(false),
+        sortOrder: z.number().int().min(0).optional(),
+    })
+    .superRefine((value, ctx) => {
+        if (value.type === "single_choice") {
+            if (!value.options || value.options.length < 2) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ["options"],
+                    message: "Single-choice questions require at least 2 options",
+                });
+            }
+        } else if (value.options && value.options.length > 0) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["options"],
+                message: "Options are only allowed for single-choice questions",
+            });
+        }
+    });
+export type ScreeningQuestionInput = z.infer<typeof screeningQuestionInputSchema>;
+
+// One answer as submitted from the public apply form. Per-type rules
+// (yes/no values, single-choice membership, numeric answers) are checked
+// server-side by validateScreeningAnswers, not here.
+export const screeningAnswerInputSchema = z.object({
+    questionId: z.number().int().positive(),
+    answer: z.string().max(5000, "Answer must be 5000 characters or less"),
+});
+export type ScreeningAnswerInput = z.infer<typeof screeningAnswerInputSchema>;
+
 export const updateApplicationSchema = z.object({
     applicationId: z.number(),
     job_id: z.number().optional(),

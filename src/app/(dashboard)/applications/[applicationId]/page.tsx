@@ -7,6 +7,7 @@ import { get_candidate_details } from '@/server/queries/mongo/candidate-details'
 import { ApplicationSummary, ApplicationExperienceMatch, EmptyApplicationSummary, ApplicationExperience, ApplicationSoftSkills } from './_components/application-summary';
 import { get_job_by_id_action } from '@/server/actions/job-listings-actions';
 import ApplicationDetails from './_components/application-details';
+import ScreeningAnswers from './_components/screening-answers';
 import AppicationHeader from './_components/application-header';
 import ApplicationInterviewCard from './_components/application-interview-card';
 import JobQuickViewCard from '@/components/job-quick-view-card';
@@ -78,6 +79,9 @@ const Page = async ({ params }: Props) => {
                             <div className="space-y-4">
                                 {/* Application Details */}
                                 <ApplicationDetails applicationResult={applicationResult} />
+
+                                {/* Screening Answers */}
+                                <ScreeningAnswers applicationId={applicationResult.id} />
 
                                 {/* Interview Status */}
                                 <ApplicationInterviewCard applicationResult={applicationResult} />

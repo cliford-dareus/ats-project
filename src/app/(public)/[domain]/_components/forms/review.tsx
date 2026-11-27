@@ -1,18 +1,23 @@
 import { FormInput, FormTextarea } from "../fields";
-import { Briefcase, FileText, GraduationCap, User, Users } from "lucide-react";
+import { Briefcase, ClipboardList, FileText, GraduationCap, User, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import type { Dispatch, SetStateAction } from "react";
 import type { UseFormGetValues, UseFormRegister } from "react-hook-form";
 import type { ApplicationFormValues } from "@/zod";
+import type { PublicScreeningQuestionDTO } from "@/server/actions/screening-actions";
 
 type Props = {
     register: UseFormRegister<ApplicationFormValues>;
     setCurrentStep: Dispatch<SetStateAction<number>>;
     getValues: UseFormGetValues<ApplicationFormValues>;
+    // Only present when the job has screening questions.
+    screeningQuestions?: PublicScreeningQuestionDTO[];
+    screeningAnswers?: Record<number, string>;
+    screeningStep?: number;
 };
 
-const ReviewForm = ({ register, setCurrentStep, getValues }: Props) => {
+const ReviewForm = ({ register, setCurrentStep, getValues, screeningQuestions, screeningAnswers, screeningStep }: Props) => {
     return (
         <motion.div
             key="step5"
@@ -97,6 +102,32 @@ const ReviewForm = ({ register, setCurrentStep, getValues }: Props) => {
                         ))}
                     </div>
                 </Card>
+
+                {screeningQuestions && screeningQuestions.length > 0 && (
+                    <Card className="p-6">
+                        <div className="flex items-center justify-between mb-4 border-bottom pb-2">
+                            <h3 className="font-bold flex items-center gap-2"><ClipboardList className="h-4 w-4" /> Screening</h3>
+                            {screeningStep !== undefined && (
+                                <button type="button" onClick={() => setCurrentStep(screeningStep)} className="text-xs text-zinc-500 hover:underline">Edit</button>
+                            )}
+                        </div>
+                        <div className="space-y-3">
+                            {screeningQuestions.map((question) => {
+                                const raw = (screeningAnswers?.[question.id] ?? "").trim();
+                                const display =
+                                    question.type === "yes_no" && raw !== ""
+                                        ? raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase()
+                                        : raw;
+                                return (
+                                    <div key={question.id} className="text-sm">
+                                        <p className="text-zinc-500 text-[10px] uppercase font-bold tracking-wider">{question.questionText}</p>
+                                        <p className="whitespace-pre-wrap">{display === "" ? "—" : display}</p>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </Card>
+                )}
 
                 <Card className="p-6">
                     <div className="flex items-center justify-between mb-4 border-bottom pb-2">

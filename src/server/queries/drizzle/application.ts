@@ -6,6 +6,8 @@ import {
     interviews,
     job_listings,
     score_cards,
+    screening_answers,
+    screening_questions,
     stages,
 } from "@/drizzle/schema";
 import { db } from "@/drizzle/db";
@@ -30,6 +32,7 @@ import {
 import { z } from "zod";
 import { uploadResumeToR2 } from "@/lib/upload-file-to-r2";
 import { validateResumeFile } from "@/lib/resume-validation";
+import { validateScreeningAnswers } from "@/lib/screening";
 import { create_candidate_details } from "../mongo/candidate-details";
 import { check_organization_subdomain } from "./organization";
 
@@ -96,7 +99,14 @@ const remove_trashed_application = async (jobId: number, candidateId: number, or
     await Note.deleteMany({ note_id: `application_${trashed.id}` });
 };
 
-export const create_application = async (data: z.infer<typeof applicationFormSchema>) => {
+export const create_application = async (
+    data: z.infer<typeof applicationFormSchema>,
+    // Optional screening answers from the public apply form. Shape:
+    // [{ questionId: number, answer: string }]. Validated server-side
+    // below (validateScreeningAnswers); omitted/empty + required
+    // questions on the job = validation failure.
+    screeningAnswers?: Array<{ questionId: number; answer: string }>,
+) => {
     const jobId = data.jobId;
     const subdomain = data.subdomain;
 
@@ -252,6 +262,35 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
             await remove_trashed_application(jobId, candidate_id, orgId);
         }
 
+        // 4b. Screening answers. Runs AFTER the duplicate check above, so
+        // a returning applicant still gets the duplicate message first,
+        // and BEFORE any new row is written, so a failed validation leaves
+        // nothing behind. If the job has required questions and
+        // screeningAnswers is omitted/empty, validateScreeningAnswers
+        // fails (required unanswered) and the form shows the message
+        // inline — same { success: false, message } shape as every other
+        // failure in this function.
+        const questionRows = await db
+            .select()
+            .from(screening_questions)
+            .where(eq(screening_questions.job_id, jobId))
+            .orderBy(asc(screening_questions.sort_order), asc(screening_questions.id));
+        const screeningResult = validateScreeningAnswers(
+            questionRows.map((row) => ({
+                id: row.id,
+                questionText: row.question_text,
+                type: row.type,
+                options: row.options,
+                isRequired: row.is_required,
+                sortOrder: row.sort_order,
+            })),
+            screeningAnswers,
+        );
+        if (!screeningResult.success) {
+            return { success: false, message: screeningResult.message };
+        }
+        const validatedScreeningAnswers = screeningResult.answers;
+
         if (!candidate_id) {
             // === NEW CANDIDATE ===
             // cv_path starts empty — never a fabricated `no-resume-...` key;
@@ -325,21 +364,42 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
         const file_key = candidate.cv_path;
 
         // === CREATE APPLICATION ===
-        // 6. Create application (shared for both paths)
-        const [new_application] = await db
-            .insert(applications)
-            .values({
-                organization: orgId,
-                job_id: jobId,
-                candidate: candidate_id,
-                current_stage_id: appliedStage.id,
-                subdomain: subdomain, // make subdomain unique in the database
-                cover_letter: emptyToNull(additional.coverLetter),
-                referral_source: emptyToNull(additional.referralSource),
-                expected_salary: emptyToNull(additional.expectedSalary),
-                earliest_start_date: emptyToNull(additional.earliestStartDate),
-            })
-            .$returningId();
+        // 6. Create application (shared for both paths) — and, in the SAME
+        // transaction, its screening answers, so an application is never
+        // left without the answers it was submitted with (and vice versa).
+        // The answers carry the question text/type/order snapshots
+        // produced by validateScreeningAnswers above.
+        const [new_application] = await db.transaction(async (tx) => {
+            const [app] = await tx
+                .insert(applications)
+                .values({
+                    organization: orgId,
+                    job_id: jobId,
+                    candidate: candidate_id,
+                    current_stage_id: appliedStage.id,
+                    subdomain: subdomain, // make subdomain unique in the database
+                    cover_letter: emptyToNull(additional.coverLetter),
+                    referral_source: emptyToNull(additional.referralSource),
+                    expected_salary: emptyToNull(additional.expectedSalary),
+                    earliest_start_date: emptyToNull(additional.earliestStartDate),
+                })
+                .$returningId();
+
+            if (validatedScreeningAnswers.length > 0) {
+                await tx.insert(screening_answers).values(
+                    validatedScreeningAnswers.map((answer) => ({
+                        application_id: app.id,
+                        question_id: answer.questionId,
+                        question_text: answer.questionText,
+                        question_type: answer.questionType,
+                        sort_order: answer.sortOrder,
+                        answer_text: answer.answer,
+                    })),
+                );
+            }
+
+            return [app];
+        });
 
         // Revalidate cache
         revalidateDbCache({

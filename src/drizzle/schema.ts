@@ -131,6 +131,7 @@ export const job_listings_relations = relations(job_listings, ({ many, one }) =>
     stages: many(stages),
     candidates: many(candidates),
     job_to_technologies: many(job_technologies),
+    screening_questions: many(screening_questions),
     departments: one(departments, {
         fields: [job_listings.department],
         references: [departments.id],
@@ -310,11 +311,73 @@ export const applications = mysqlTable('applications', {
 export const applications_relations = relations(applications, ({ one, many }) => ({
     interviews: many(interviews),
     score: many(score_cards),
+    screening_answers: many(screening_answers),
     candidates: one(candidates, { fields: [applications.candidate], references: [candidates.id] }),
     job: one(job_listings, { fields: [applications.job_id], references: [job_listings.id] }),
     stage: one(stages, {
         fields: [applications.current_stage_id],
         references: [stages.id],
+    }),
+}));
+
+// ── Screening questions & answers ─────────────────────────────────────────
+// Questions are configured per job by the hiring team (dashboard) and
+// answered by applicants on the public apply form.
+//
+// Snapshot rationale: `screening_answers` stores `question_text`,
+// `question_type` and `sort_order` as they were at answer time, so an
+// answer stays readable if the question is later edited, reordered or
+// deleted. `question_id` is ON DELETE SET NULL (not CASCADE) so deleting
+// a question never deletes answers — the snapshot columns are what the
+// application detail page renders.
+export const screening_questions = mysqlTable('screening_questions', {
+    id: int('id').primaryKey().autoincrement(),
+    job_id: int('job_id').notNull().references(() => job_listings.id, { onDelete: 'cascade' }),
+    question_text: text('question_text').notNull(),
+    type: mysqlEnum('type', ['short_text', 'long_text', 'yes_no', 'single_choice', 'number']).notNull(),
+    // Only used for single_choice — a JSON array of option strings.
+    // NULL / empty for every other type (enforced in zod).
+    options: json('options').$type<string[]>(),
+    is_required: boolean('is_required').notNull().default(false),
+    sort_order: int('sort_order').notNull().default(0),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+    updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+    job_idx: index('screening_questions_job_idx').on(table.job_id),
+}));
+
+export const screening_questions_relations = relations(screening_questions, ({ one, many }) => ({
+    job: one(job_listings, {
+        fields: [screening_questions.job_id],
+        references: [job_listings.id],
+    }),
+    answers: many(screening_answers),
+}));
+
+export const screening_answers = mysqlTable('screening_answers', {
+    id: int('id').primaryKey().autoincrement(),
+    application_id: int('application_id').notNull().references(() => applications.id, { onDelete: 'cascade' }),
+    // SET NULL on question delete — the snapshot columns below keep the
+    // answer readable; deleting a question must never delete answers.
+    question_id: int('question_id').references(() => screening_questions.id, { onDelete: 'set null' }),
+    // Snapshot of the question text/type/order at answer time.
+    question_text: text('question_text').notNull(),
+    question_type: varchar('question_type', { length: 32 }).notNull(),
+    sort_order: int('sort_order').notNull().default(0),
+    answer_text: text('answer_text').notNull(),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+    application_idx: index('screening_answers_application_idx').on(table.application_id),
+}));
+
+export const screening_answers_relations = relations(screening_answers, ({ one }) => ({
+    application: one(applications, {
+        fields: [screening_answers.application_id],
+        references: [applications.id],
+    }),
+    question: one(screening_questions, {
+        fields: [screening_answers.question_id],
+        references: [screening_questions.id],
     }),
 }));
 

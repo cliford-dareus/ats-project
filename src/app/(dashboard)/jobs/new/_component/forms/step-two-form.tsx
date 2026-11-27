@@ -17,6 +17,7 @@ import { useNewJobContext, type WizardDraftData } from "@/providers/new-job-prov
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import SidePreview from "@/app/(dashboard)/jobs/new/_component/side-preview";
+import ScreeningQuestionsEditor from "@/app/(dashboard)/jobs/new/_component/screening-questions-editor";
 
 const initialState: FormErrors = {};
 
@@ -160,6 +161,15 @@ const StepTwoForm = ({ draftId, initialDraft }: { draftId?: number | null; initi
                         </div>
                     </CardContent>
                 </Card>
+
+                {/* Screening Questions — saved on the draft job (step one
+                    creates the DRAFT row, so draftJobId is set by step two).
+                    A separate section in this Requirements step, not a new
+                    wizard step: the questions are what the role requires
+                    from applicants, next to the technical requirements. */}
+                <div className="mt-6">
+                    <ScreeningQuestionsEditor jobId={draftJobId} />
+                </div>
             </ScrollArea>
 
             {/* Previous Steps Summary */}

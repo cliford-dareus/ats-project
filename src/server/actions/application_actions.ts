@@ -12,7 +12,7 @@ import { auth } from "@clerk/nextjs/server";
 import { canDeleteApplication, canEditApplication, canMoveApplication, canViewApplication, requirePermission } from "@/server/permissions";
 import { record_activity } from "@/server/activity/record-activity";
 import { z } from "zod";
-import { applicationFormSchema, filterApplicationsSchema, moveAndReorderApplicationSchema, updateApplicationSchema, updateApplicationStageSchema } from "@/zod";
+import { applicationFormSchema, filterApplicationsSchema, moveAndReorderApplicationSchema, screeningAnswerInputSchema, updateApplicationSchema, updateApplicationStageSchema } from "@/zod";
 import { db } from "@/drizzle/db";
 import { applications, candidates, stages } from "@/drizzle/schema";
 import { and, eq } from "drizzle-orm";
@@ -51,14 +51,32 @@ const record_stage_move = async (applicationId: number, stageId: number, orgId: 
 // unauthenticated applicants. The dashboard "Add Applicant" modal uses
 // create_application_for_candidate_action instead (session-gated).
 // Do not add a session permission check here without splitting the two flows.
-export const create_application_action = async (unsafeData: z.infer<typeof applicationFormSchema>) => {
+export const create_application_action = async (
+    unsafeData: z.infer<typeof applicationFormSchema>,
+    // Optional screening answers from the apply form:
+    // [{ questionId: number, answer: string }]. Shape-checked here with
+    // screeningAnswerInputSchema; per-type rules + required questions are
+    // enforced server-side in create_application (validateScreeningAnswers)
+    // and failures come back as { success: false, message } for the form
+    // to show inline. Existing callers passing one argument are unaffected.
+    screeningAnswers?: Array<{ questionId: number; answer: string }>,
+) => {
     const { success, data } = await applicationFormSchema.spa(unsafeData);
 
     if (!success) {
         throw new Error("There was an error");
     }
 
-    return await create_application(data);
+    let validatedAnswers: Array<{ questionId: number; answer: string }> | undefined;
+    if (screeningAnswers !== undefined) {
+        const parsedAnswers = await z.array(screeningAnswerInputSchema).spa(screeningAnswers);
+        if (!parsedAnswers.success) {
+            return { success: false as const, message: "Invalid screening answers" };
+        }
+        validatedAnswers = parsedAnswers.data;
+    }
+
+    return await create_application(data, validatedAnswers);
 };
 
 // Dashboard-only quick-add: application for an existing candidate.
