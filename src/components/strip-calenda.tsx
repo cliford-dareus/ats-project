@@ -1,9 +1,9 @@
 import { useState } from "react";
+import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
-import { Avatar } from "@/components/ui/avatar";
 import { UpcomingInterview } from "@/app/(dashboard)/dashboard/_components/dashboard";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { subDays, addDays } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 
@@ -87,9 +87,10 @@ const StripCalendar: React.FC<{ interviews: UpcomingInterview[] }> = ({ intervie
                 >
                     {selectedInterviews.length > 0 ? (
                         selectedInterviews.map((interview) => (
-                            <div
+                            <Link
                                 key={interview.id}
-                                className="col-span-full bg-white rounded-md flex gap-2"
+                                href={`/applications/${interview.applicationId}`}
+                                className="col-span-full bg-white rounded-md flex gap-2 hover:bg-muted transition-colors"
                             >
                                 <div
                                     className="flex flex-col items-center justify-center w-14 h-14 rounded-md shadow-inner flex-shrink-0 bg-blue-100">
@@ -104,17 +105,17 @@ const StripCalendar: React.FC<{ interviews: UpcomingInterview[] }> = ({ intervie
                                         <p className="text-[11px]  text-zinc-500">Interview
                                             with {interview.candidateName}</p>
                                         <span className="text-[10px] font-black text-zinc-500 uppercase tracking-wider">
-                                            {new Date(interview.time).getHours()} : {new Date(interview.time).getMinutes()}am
+                                            {new Date(interview.time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                                         </span>
                                     </div>
-                                    {/*<div className="flex items-center gap-2 mt-2">*/}
-                                    {/*    <div*/}
-                                    {/*        className="px-2 py-1 bg-slate-50 rounded-lg text-[9px] font-black text-slate-400 uppercase tracking-widest">*/}
-                                    {/*        {interview.type}*/}
-                                    {/*    </div>*/}
-                                    {/*</div>*/}
+                                    <div className="flex items-center gap-2 mt-2">
+                                        <div
+                                            className="px-2 py-1 bg-slate-50 rounded-lg text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                            {interview.type}
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                            </Link>
                         ))
                     ) : (
                         <div
@@ -125,10 +126,10 @@ const StripCalendar: React.FC<{ interviews: UpcomingInterview[] }> = ({ intervie
                             <div className="text-center">
                                 <p className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest mb-1">No
                                     Interviews Scheduled</p>
-                                <button
+                                <Link href="/applications"
                                     className="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline">Schedule
                                     Now
-                                </button>
+                                </Link>
                             </div>
                         </div>
                     )}

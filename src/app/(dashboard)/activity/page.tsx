@@ -10,51 +10,17 @@ import {
 } from "lucide-react";
 import { get_activity_log_action } from "@/server/actions/activity-actions";
 import { hasPermission } from "@/server/permissions";
+import { ACTION_LABELS, time_ago } from "@/lib/activity-labels";
 import { Button } from "@/components/ui/button";
 import type { ActivityLogEntry } from "@/server/queries/drizzle/activity";
 
 const PAGE_SIZE = 20;
-
-// Short labels for the dotted action strings. Includes the Trash agent's
-// delete/restore actions so their entries render here too.
-const ACTION_LABELS: Record<string, string> = {
-    "job.created": "Job created",
-    "job.published": "Job published",
-    "job.draft_saved": "Draft saved",
-    "job.deleted": "Job deleted",
-    "job.restored": "Job restored",
-    "job.permanently_deleted": "Job permanently deleted",
-    "application.stage_moved": "Stage moved",
-    "application.deleted": "Application deleted",
-    "application.restored": "Application restored",
-    "application.permanently_deleted": "Application permanently deleted",
-    "candidate.status_changed": "Status changed",
-    "candidate.deleted": "Candidate deleted",
-    "candidate.restored": "Candidate restored",
-    "candidate.permanently_deleted": "Candidate permanently deleted",
-    "interview.scheduled": "Interview scheduled",
-    "interview.rescheduled": "Interview rescheduled",
-    "interview.cancelled": "Interview cancelled",
-    "interview.feedback_submitted": "Feedback submitted",
-};
 
 const ENTITY_ICONS: Record<ActivityLogEntry["entity_type"], React.ComponentType<{ className?: string }>> = {
     job: BriefcaseBusiness,
     candidate: Users,
     application: FileUser,
     interview: Calendar,
-};
-
-const time_ago = (date: Date): string => {
-    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-    if (seconds < 60) return "just now";
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    if (days < 30) return `${days}d ago`;
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 };
 
 type Props = {

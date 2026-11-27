@@ -2,73 +2,21 @@
 
 import React from 'react';
 import {
-    Search,
-    Briefcase,
-    TrendingUp,
-    Plus,
-    ArrowUpRight,
-    Sparkles,
     Settings,
-    PartyPopper
+    ArrowUpRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import Link from 'next/link';
 
 
 const SidebarDashboard = () => {
     return (
         <div className="flex flex-col overflow-y-auto h-[calc(100vh-125px)]">
-            <div className="px-4">
-                <div className="relative group overflow-hidden bg-card rounded-md border border-border p-4 flex flex-col justify-between min-h-[280px] shadow-sm">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-32 -mt-32 group-hover:bg-primary/10 transition-all duration-700" />
-                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-amber-500/5 rounded-full blur-3xl -ml-24 -mb-24 group-hover:bg-amber-500/10 transition-all duration-700" />
-
-                    <div className="relative space-y-4">
-                        <div className="flex items-center gap-2">
-                            <div className="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20">
-                                <Sparkles className="w-5 h-5 text-white" />
-                            </div>
-                            <div>
-                                <h2 className="text-sm font-bold text-foreground zinc-900 tracking-tight">Ask Apliko AI</h2>
-                                <p className="text-xs text-muted-foreground font-medium italic">Your intelligent recruitment partner</p>
-                            </div>
-                        </div>
-
-                        <h3 className="text-xl font-bold text-foreground max-w-md leading-tight pt-4">
-                            Ready To Find Top Candidates Or Revisit Your Pipeline?
-                        </h3>
-                    </div>
-
-                    <div className="relative pt-8 space-y-4">
-                        <div className="flex flex-wrap gap-2">
-                            {['Find Matches', 'My Pipeline', 'Insights'].map((label) => (
-                                <button key={label} className="px-2 py-1 bg-muted hover:bg-muted border border-border rounded-md text-[10px] font-bold text-muted-foreground transition-all flex items-center gap-2">
-                                    {label === 'Find Matches' && <Search className="w-3.5 h-3.5" />}
-                                    {label === 'My Pipeline' && <Briefcase className="w-3.5 h-3.5" />}
-                                    {label === 'Insights' && <TrendingUp className="w-3.5 h-3.5" />}
-                                    {label}
-                                </button>
-                            ))}
-                        </div>
-
-                        <div className="relative flex items-center">
-                            <Plus className="absolute left-4 w-4 h-4 text-muted-foreground" />
-                            <Input
-                                type="text"
-                                placeholder="Ask me anything about your recruitment data..."
-                                // value={query}
-                                // onChange={(e) => setQuery(e.target.value)}
-                                className="w-full bg-muted border border-border rounded-md py-4 pl-12 pr-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
-                            />
-                            <Button className="absolute right-0 p-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-all">
-                                <ArrowUpRight className="w-4 h-4" />
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/*<Separator />*/}
+            {/* The "Ask Apliko AI" card used to live here: an input and a
+                submit button with no backend, quick chips with no onClick,
+                and a "What's New / Connect Zapier" card for an integration
+                that does not exist. All of it was dead or false, so it was
+                removed rather than left pretending to work. */}
 
             <div className="space-y-6">
                 <div className='px-4'>
@@ -85,39 +33,20 @@ const SidebarDashboard = () => {
                         </div>
 
                         <p className="text-[11px] text-muted-foreground font-medium leading-relaxed my-2">
-                            Personalize your company&#39;s profile, invite team members and setup your company&#39;s career page.
+                            Personalize your company&apos;s profile, invite team members and setup your company&apos;s career page.
                         </p>
 
 
                         <Button
+                            asChild
                             className="!p-0 border rounded-lg text-[10px] uppercase tracking-widest font-bold transition-all flex items-center gap-2"
                         >
-                            Launch Assistant
-                            <ArrowUpRight className="w-4 h-4" />
+                            <Link href="/settings/organization">
+                                Complete Profile
+                                <ArrowUpRight className="w-4 h-4" />
+                            </Link>
                         </Button>
                     </div>
-                </div>
-            </div>
-
-            <div className="md:col-span-2 mt-auto p-4 bg-foreground rounded-md overflow-hidden relative group">
-                {/* Decorative background element */}
-                <div className="absolute -bottom-12 -right-12 w-48 h-48 bg-primary/20 rounded-full blur-3xl group-hover:bg-primary/20 transition-all duration-700" />
-
-                <div className="relative z-10 space-y-6">
-                    <div className="space-y-4">
-                        <div className='flex items-center gap-1'>
-                            <PartyPopper size={20} className='text-white'/>
-                            <h3 className="text-2xl font-bold text-white tracking-tight">What&#39;s New</h3>
-                        </div>
-                        <p className="text-muted-foreground text-sm max-w-md">
-                            Connect with over 2,000+ apps via our Zapier integration to build even more powerful workflows.
-                        </p>
-                    </div>
-                    <Button
-                        className="border text-[10px] uppercase tracking-widest flex items-center gap-2 px-6 py-3 bg-card text-foreground rounded-md font-bold text-sm hover:scale-105 transition-all active:scale-95"
-                    >
-                        Connect Zapier
-                    </Button>
                 </div>
             </div>
         </div>

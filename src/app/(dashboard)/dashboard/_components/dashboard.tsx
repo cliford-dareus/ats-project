@@ -2,28 +2,34 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
     Users,
     Briefcase,
     TrendingUp,
-    CheckCircle,
     Target,
     Activity,
-    MoreHorizontal,
     Calendar,
+    CalendarClock,
+    Clock,
+    Hourglass,
+    FileText,
+    FileUser,
+    BriefcaseBusiness,
     LayoutGrid,
-    List,
-    Zap
+    List
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import AnalyticsOverview from "./analytics-overview";
 import StripCalendar from "@/components/strip-calenda";
 import MetricCard from "@/components/metric-card";
 import ApplicationBreakdown from './application-breakdown';
+import QuickActions from './quick-actions';
+import { ACTION_LABELS, time_ago } from "@/lib/activity-labels";
+import type { ActivityLogEntry } from "@/server/queries/drizzle/activity";
+import type { AttentionStats, TrendRange } from "@/server/actions/dashboard-actions";
 
 interface DashboardMetrics {
     totalApplications: number;
@@ -32,21 +38,13 @@ interface DashboardMetrics {
     hiredThisMonth: number;
     applicationsTrend: number;
     candidatesTrend: number;
-    jobsTrend: number;
+    jobsTrend: number | null;
     hiresTrend: number;
-};
-
-interface RecentActivity {
-    id: string;
-    type: 'application' | 'interview' | 'hire' | 'job_posted';
-    candidate?: string;
-    job?: string;
-    timestamp: Date;
-    status?: string;
 };
 
 export interface UpcomingInterview {
     id: string;
+    applicationId: number;
     candidateName: string;
     candidateAvatar?: string;
     jobTitle: string;
@@ -55,6 +53,7 @@ export interface UpcomingInterview {
 };
 
 interface JobPipelineData {
+    jobId: number;
     jobTitle: string;
     totalApplications: number;
     stages: {
@@ -65,7 +64,7 @@ interface JobPipelineData {
 };
 
 export interface RecruitmentFunnel {
-    stage: "Applied" | "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | 'Hired' | "Drafted";
+    stage: "Applied" | "New Candidate" | "Screening" | "Phone Interview" | "Interview" | "Offer" | "Drafted";
     count: number;
     stageColor: string;
     conversion: number;
@@ -73,11 +72,13 @@ export interface RecruitmentFunnel {
 
 type Props = {
     metrics: DashboardMetrics;
-    recentActivity: RecentActivity[];
+    recentActivity: ActivityLogEntry[];
     upcomingInterviews: UpcomingInterview[];
     jobPipeline: JobPipelineData[];
     recruitmentFunnel: RecruitmentFunnel[];
     applicationTrend: { date: string, count: number }[]
+    trendRange: TrendRange;
+    attention: AttentionStats;
     userName: string;
 };
 
@@ -85,35 +86,16 @@ const Dashboard = ({
     metrics,
     recentActivity,
     upcomingInterviews,
-    // jobPipeline,
+    jobPipeline,
     recruitmentFunnel,
     applicationTrend,
+    trendRange,
+    attention,
     userName
 }: Props) => {
     const [timeOfDay, setTimeOfDay] = useState('');
-    const [viewMode, setViewMode] = useState('grid');
-
-    // Sample analytics data - in real app, this would come from props or API
-    const analyticsData = {
-        applications: applicationTrend,
-        hires: [
-            { date: '2024-01-01', count: 3 },
-            { date: '2024-01-02', count: 5 },
-            { date: '2024-01-03', count: 2 },
-            { date: '2024-01-04', count: 4 },
-            { date: '2024-01-05', count: 6 },
-            { date: '2024-01-06', count: 3 },
-            { date: '2024-01-07', count: 4 }
-        ],
-        sources: [
-            { name: 'LinkedIn', value: 145, color: '#0077B5' },
-            { name: 'Indeed', value: 98, color: '#2557A7' },
-            { name: 'Company Website', value: 76, color: '#00C49F' },
-            { name: 'Referrals', value: 54, color: '#FFBB28' },
-            { name: 'Other', value: 32, color: '#FF8042' }
-        ],
-        stages: recruitmentFunnel
-    };
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const router = useRouter();
 
     useEffect(() => {
         const hour = new Date().getHours();
@@ -122,35 +104,43 @@ const Dashboard = ({
         else setTimeOfDay('evening');
     }, []);
 
-    const getActivityIcon = (type: string) => {
-        switch (type) {
-            case 'application':
+    const handleRangeChange = (value: string) => {
+        router.push(`/dashboard?range=${value}`);
+    };
+
+    const getActivityIcon = (entityType: ActivityLogEntry["entity_type"]) => {
+        switch (entityType) {
+            case 'job':
+                return <BriefcaseBusiness className="h-4 w-4" />;
+            case 'candidate':
                 return <Users className="h-4 w-4" />;
+            case 'application':
+                return <FileUser className="h-4 w-4" />;
             case 'interview':
                 return <Calendar className="h-4 w-4" />;
-            case 'hire':
-                return <CheckCircle className="h-4 w-4" />;
-            case 'job_posted':
-                return <Briefcase className="h-4 w-4" />;
             default:
                 return <Activity className="h-4 w-4" />;
         }
     };
 
-    const getActivityColor = (type: string) => {
-        switch (type) {
-            case 'application':
+    const getActivityColor = (entityType: ActivityLogEntry["entity_type"]) => {
+        switch (entityType) {
+            case 'job':
+                return 'bg-purple-100 text-purple-600';
+            case 'candidate':
                 return 'bg-blue-100 text-blue-600';
+            case 'application':
+                return 'bg-green-100 text-green-600';
             case 'interview':
                 return 'bg-yellow-100 text-yellow-600';
-            case 'hire':
-                return 'bg-green-100 text-green-600';
-            case 'job_posted':
-                return 'bg-purple-100 text-purple-600';
             default:
                 return 'bg-muted text-muted-foreground';
         }
     };
+
+    const statusCounts = Object.entries(attention.jobsByStatus)
+        .filter(([, count]) => count > 0)
+        .map(([status, count]) => `${count} ${status.toLowerCase()}`);
 
     return (
         <div className="flex-1 w-full grid grid-cols-1 xl:grid-cols-12 gap-4 min-w-0">
@@ -168,27 +158,24 @@ const Dashboard = ({
                             today.</p>
                     </div>
                     <div className="flex items-center gap-4">
-                        <div className="flex bg-card border border-border p-1.5 rounded-md shadow-sm">
+                        <div className="flex bg-card border border-border p-1.5 rounded-md shadow-sm" role="group" aria-label="Pipeline view">
                             <button
                                 onClick={() => setViewMode('grid')}
+                                aria-pressed={viewMode === 'grid'}
+                                title="Grid view"
                                 className={`p-2 rounded-md transition-all ${viewMode === 'grid' ? 'bg-primary text-primary-foreground shadow-lg ' : 'text-muted-foreground hover:text-muted-foreground'}`}
                             >
                                 <LayoutGrid size={14} />
                             </button>
                             <button
                                 onClick={() => setViewMode('list')}
+                                aria-pressed={viewMode === 'list'}
+                                title="List view"
                                 className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'bg-primary text-primary-foreground shadow-lg ' : 'text-muted-foreground hover:text-muted-foreground'}`}
                             >
                                 <List size={14} />
                             </button>
                         </div>
-                        {/* <button
-                            // onClick={() => setIsModalOpen(true)}
-                            className="flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded-[1.25rem] font-black text-s transition-all shadow-2xl "
-                        >
-                            <Plus size={14} />
-                            New Automation
-                        </button> */}
                     </div>
                 </section>
 
@@ -224,69 +211,126 @@ const Dashboard = ({
                     />
                 </div>
 
-                {/* Analytics Overview */}
-                <AnalyticsOverview data={analyticsData} className='bg-card relative rounded-md border overflow-hidden shadow-sm hover:shadow-md transition-all group' />
+                {/* Needs attention — real counts, no trend badge: these are
+                    point-in-time queues, not month-over-month metrics. */}
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <Link href="/applications" className="block">
+                        <MetricCard
+                            title="Interviews Today"
+                            value={attention.interviewsToday}
+                            icon={CalendarClock}
+                            color="blue"
+                        />
+                    </Link>
+                    <Link href="/applications" className="block">
+                        <MetricCard
+                            title="Awaiting Feedback"
+                            value={attention.awaitingFeedback}
+                            icon={Clock}
+                            color="orange"
+                        />
+                    </Link>
+                    <Link href="/applications" className="block">
+                        <MetricCard
+                            title="Pending Holds"
+                            value={attention.pendingHolds}
+                            icon={Hourglass}
+                            color="purple"
+                        />
+                    </Link>
+                    <Link href="/jobs?tab=drafts" className="block">
+                        <MetricCard
+                            title="Draft Jobs"
+                            value={attention.draftJobs}
+                            icon={FileText}
+                            color="green"
+                        />
+                    </Link>
+                </div>
 
-                {/* Recent Views */}
+                {/* Analytics Overview */}
+                <AnalyticsOverview
+                    data={{ applications: applicationTrend }}
+                    range={trendRange}
+                    onRangeChange={handleRangeChange}
+                    className='bg-card relative rounded-md border overflow-hidden shadow-sm hover:shadow-md transition-all group'
+                />
+
+                {/* Job Pipeline — the view toggle above switches this section
+                    between grid cards and a compact list. Previously the
+                    toggle changed nothing, and this data was fetched but
+                    never rendered. */}
                 <div className="space-y-3">
                     <div className="flex flex-row items-center justify-between">
-                        <h2 className='text-xs font-bold text-brand-dark/40 uppercase tracking-widest'>Previously Viewed
-                            Applications</h2>
-
-                        <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                        </Button>
+                        <h2 className='text-xs font-bold text-brand-dark/40 uppercase tracking-widest'>Job Pipeline</h2>
+                        <p className="text-[11px] text-muted-foreground font-bold">
+                            {statusCounts.length > 0 ? statusCounts.join(' · ') : 'No jobs yet'}
+                        </p>
                     </div>
 
-                    <div className="flex items-center space-x-3 border-b border-border">
-                        <motion.div
-                            layout
-                            // layoutId={candidate.id}
-                            whileHover={{ y: -4 }}
-                            className="group bg-card border border-border rounded-md p-4 shadow-sm hover:shadow-2xl hover:border-primary/20 transition-all duration-500 cursor-pointer"
-                        >
-                            <div className="flex gap-6 items-center">
-                                <div className="relative flex-shrink-0">
-                                    <div
-                                        className="w-12 h-12 rounded-[1.25rem] overflow-hidden border-4 border-white shadow-xl ring-1 ring-border group-hover:rotate-3 transition-transform duration-500">
-                                        <Avatar>
-                                            <AvatarImage alt="" />
-                                            <AvatarFallback></AvatarFallback>
-                                        </Avatar>
-                                    </div>
-                                    {/* {hasActiveTrigger && ( */}
-                                    <div
-                                        className="absolute -top-1 -right-2 bg-primary text-primary-foreground p-1.5 rounded-xl shadow-lg border-2 border-white animate-bounce">
-                                        <Zap size={12} fill="currentColor" />
-                                    </div>
-                                    {/* )} */}
-                                </div>
-
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <h4 className="text-sm font-bold text-foreground truncate tracking-tight">John
-                                                Doe</h4>
-                                            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em] mt-1">Software
-                                                Engineer</p>
+                    {jobPipeline.length === 0 ? (
+                        <div className="text-center py-6 bg-muted rounded-xl border border-dashed border-border">
+                            <p className="text-xs text-muted-foreground mb-3">
+                                No open jobs yet — publish a job to see its pipeline here.
+                            </p>
+                            <Link href="/jobs/new" className="px-4 py-2 bg-card border border-border rounded-lg text-xs font-bold text-accent hover:bg-muted transition-all shadow-sm">
+                                Post a Job
+                            </Link>
+                        </div>
+                    ) : viewMode === 'grid' ? (
+                        <div className="grid gap-4 md:grid-cols-2">
+                            {jobPipeline.map((job) => {
+                                const maxStage = Math.max(1, ...job.stages.map((stage) => stage.count));
+                                return (
+                                    <Link key={job.jobId} href={`/jobs/${job.jobId}`} className="block bg-card border border-border rounded-md p-4 shadow-sm hover:shadow-md transition-all">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <h4 className="text-sm font-bold text-foreground truncate tracking-tight">{job.jobTitle}</h4>
+                                            <span className="text-[11px] text-muted-foreground font-bold shrink-0">
+                                                {job.totalApplications} applicant{job.totalApplications === 1 ? '' : 's'}
+                                            </span>
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
+                                        <div className="mt-4 space-y-2">
+                                            {job.stages.map((stage) => (
+                                                <div key={stage.name} className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: stage.color }} />
+                                                    <span className="text-[11px] font-bold text-muted-foreground w-28 truncate">{stage.name}</span>
+                                                    <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                                                        <div className="h-full rounded-full" style={{ width: `${Math.round((stage.count / maxStage) * 100)}%`, backgroundColor: stage.color }} />
+                                                    </div>
+                                                    <span className="text-[11px] font-bold text-muted-foreground w-6 text-right">{stage.count}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div className="bg-card border border-border rounded-md shadow-sm divide-y divide-border">
+                            {jobPipeline.map((job) => (
+                                <Link key={job.jobId} href={`/jobs/${job.jobId}`} className="flex items-center gap-4 px-4 py-3 hover:bg-muted transition-all">
+                                    <span className="text-sm font-bold text-foreground truncate flex-1">{job.jobTitle}</span>
+                                    <span className="text-[11px] text-muted-foreground font-bold shrink-0">
+                                        {job.totalApplications} applicant{job.totalApplications === 1 ? '' : 's'}
+                                    </span>
+                                    <span className="hidden md:flex items-center gap-3 text-[11px] text-muted-foreground font-bold">
+                                        {job.stages.map((stage) => (
+                                            <span key={stage.name} className="flex items-center gap-1">
+                                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: stage.color }} />
+                                                {stage.name} {stage.count}
+                                            </span>
+                                        ))}
+                                    </span>
+                                </Link>
+                            ))}
+                        </div>
+                    )}
 
-                            <div className="mt-4 flex items-center justify-between">
-                                <div
-                                    className={`px-4 py-1 rounded-xl border text-[10px] font-semibold uppercase tracking-[0.2em]`}>
-                                    Active
-                                </div>
-                                <div
-                                    className="flex items-center gap-2 text-[11px] text-muted-foreground font-bold bg-muted px-4 py-1 rounded-xl">
-                                    <Calendar size={12} className="text-blue-500" />
-                                    New Candidate
-                                </div>
-                            </div>
-                        </motion.div>
-                    </div>
+                    <p className="text-[11px] text-muted-foreground font-bold">
+                        {attention.timeToHire.avgDays !== null
+                            ? `Average time to hire: ${attention.timeToHire.avgDays} days across ${attention.timeToHire.hires} hire${attention.timeToHire.hires === 1 ? '' : 's'} (${attention.timeToHire.buckets.filter((bucket) => bucket.count > 0).map((bucket) => `${bucket.range}: ${bucket.count}`).join(' · ')})`
+                            : 'No hires yet — average time to hire will appear after your first hire.'}
+                    </p>
                 </div>
             </div>
 
@@ -298,54 +342,54 @@ const Dashboard = ({
                             <div>
                                 <CardTitle
                                     className="text-xs font-bold text-foreground/40 uppercase tracking-widest">Schedule</CardTitle>
-                                {/*<CardDescription className="">Manage your upcoming candidate meetings</CardDescription>*/}
                             </div>
                         </div>
-                        <Button variant="ghost" size="sm" className='hover:bg-primary/10'>
-                            <MoreHorizontal className="h-4 w-4 text-primary" />
-                        </Button>
                     </CardHeader>
                     <CardContent className="w-full min-h-[290px]">
                         <StripCalendar interviews={upcomingInterviews} />
                     </CardContent>
                 </Card>
 
-                {/* Activity */}
+                {/* Activity — reads the real activity_log, so deletes and
+                    stage moves show up here too. */}
                 <Card className="md:col-span-2 bg-card relative rounded-md border overflow-hidden shadow-sm hover:shadow-md transition-all group">
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div>
                             <CardTitle className="text-xs font-bold text-foreground/40 uppercase tracking-widest">Recent
                                 Activity</CardTitle>
-                            {/*<CardDescription>Latest updates from your recruitment pipeline</CardDescription>*/}
                         </div>
-                        <Button variant="ghost" size="sm" className='hover:bg-primary/10'>
-                            <MoreHorizontal className="h-4 w-4 text-primary" />
-                        </Button>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        {recentActivity.slice(0, 5).map((activity) => (
-                            <div
-                                key={activity.id}
-                                className={cn("flex items-center space-x-3 px-2 py-1.5 rounded-md", getActivityColor(activity.type).split(" ")[0])}
-                            >
-                                <div className={cn("p-2 rounded-full", getActivityColor(activity.type))}>
-                                    {getActivityIcon(activity.type)}
+                        {recentActivity.length === 0 ? (
+                            <p className="text-xs text-muted-foreground">
+                                No activity yet — publishing a job, moving a candidate to a
+                                new stage, or scheduling an interview will show up here.
+                            </p>
+                        ) : (
+                            recentActivity.map((activity) => (
+                                <div
+                                    key={activity.id}
+                                    className={cn("flex items-center space-x-3 px-2 py-1.5 rounded-md", getActivityColor(activity.entity_type).split(" ")[0])}
+                                >
+                                    <div className={cn("p-2 rounded-full", getActivityColor(activity.entity_type))}>
+                                        {getActivityIcon(activity.entity_type)}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-xs tracking-tight font-bold truncate">
+                                            {activity.actor_name} {ACTION_LABELS[activity.action] ?? activity.action} — {activity.summary}
+                                        </p>
+                                        <p className="text-[10px] text-muted-foreground">
+                                            {time_ago(activity.created_at)}
+                                        </p>
+                                    </div>
+                                    {activity.entity_href && (
+                                        <Link href={activity.entity_href} className="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline shrink-0">
+                                            View
+                                        </Link>
+                                    )}
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-xs tracking-tight font-bold truncate">
-                                        {activity.candidate && `${activity.candidate} `}
-                                        {activity.type === 'application' && 'applied for'}
-                                        {activity.type === 'interview' && 'scheduled interview for'}
-                                        {activity.type === 'hire' && 'was hired for'}
-                                        {activity.type === 'job_posted' && 'New job posted:'}
-                                        {activity.job && ` ${activity.job}`}
-                                    </p>
-                                    <p className="text-[10px] text-muted-foreground">
-                                        {activity.timestamp.toLocaleDateString()}
-                                    </p>
-                                </div>
-                            </div>
-                        ))}
+                            ))
+                        )}
                         <Button
                             variant="ghost"
                             asChild
@@ -361,8 +405,7 @@ const Dashboard = ({
                     className="md:col-span-2 bg-card relative rounded-md border overflow-hidden shadow-sm hover:shadow-md transition-all group"
                 />
 
-                {/*  Quick Actions */}
-                {/*<DashboardSummary className="lg:col-span-1" />*/}
+                <QuickActions />
             </div>
         </div>
     );

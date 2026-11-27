@@ -13,21 +13,20 @@ import {
 } from 'recharts';
 import { TrendingUp } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RecruitmentFunnel } from "@/app/(dashboard)/dashboard/_components/dashboard";
+import type { TrendRange } from "@/server/actions/dashboard-actions";
 
 interface AnalyticsData {
     applications: { date: string; count: number; }[];
-    hires: { date: string; count: number; }[];
-    sources: { name: string; value: number; color: string }[];
-    stages: RecruitmentFunnel[];
 };
 
 interface Props {
     data: AnalyticsData;
+    range: TrendRange;
+    onRangeChange: (range: string) => void;
     className?: string;
 };
 
-const AnalyticsOverview = ({ data, className }: Props) => {
+const AnalyticsOverview = ({ data, range, onRangeChange, className }: Props) => {
     return (
         <Card className={className}>
             <CardHeader className="flex flex-row items-center justify-between">
@@ -38,7 +37,7 @@ const AnalyticsOverview = ({ data, className }: Props) => {
                         </div>
                         <div>
                             <h3 className="font-black tracking-tight uppercase">Application Trends</h3>
-                            <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">Weekly Performance Metrics</p>
+                            <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">{range === '30d' ? 'Last 30 Days' : 'Last 7 Days'}</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -46,7 +45,7 @@ const AnalyticsOverview = ({ data, className }: Props) => {
                             <div className="w-2 h-2 rounded-full bg-accent" />
                             <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Applications</span>
                         </div>
-                        <Select>
+                        <Select value={range} onValueChange={onRangeChange}>
                             <SelectTrigger>
                                 <SelectValue />
                             </SelectTrigger>
