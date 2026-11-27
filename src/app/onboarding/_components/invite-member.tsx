@@ -7,6 +7,17 @@ import { create_organization_invite } from "@/server/actions/organization_action
 import { motion } from "motion/react";
 import { InvitedMember } from "./onboarding";
 
+// UI role labels mapped to real Clerk org role keys. Note: the custom
+// roles (org:recruiter, org:hiring_manager) must exist in the Clerk
+// dashboard or Clerk rejects the invitation and the onboarding shows
+// its error — the action validates the key but cannot verify the role
+// exists in Clerk.
+const ROLE_KEYS: Record<InvitedMember["role"], string> = {
+    "Hiring Lead": "org:hiring_manager",
+    Recruiter: "org:recruiter",
+    Interviewer: "org:member",
+};
+
 type Props = {
     orgId: string | null;
     orgName: string | null;
@@ -77,6 +88,7 @@ const InviteMember = ({ orgId, orgName, subdomain, invitedMembers, setInvitedMem
                     await create_organization_invite({
                         organizationId: orgId!,
                         emailAddress: member.email,
+                        role: ROLE_KEYS[member.role],
                     });
                 }
                 goToSuccess();

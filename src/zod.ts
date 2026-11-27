@@ -337,10 +337,11 @@ export const organizationSchema = z.object({
     subdomain: z.string().min(3).max(100),
 });
 
-// Only organizationId + emailAddress come from the client. inviterUserId,
-// role and redirectUrl are server-derived by create_organization_invite
-// (session user, hardcoded "org:member", Clerk default redirect) and are
-// optional here so callers can't spoof them.
+// Only organizationId + emailAddress come from the client. inviterUserId
+// and redirectUrl are server-derived by create_organization_invite
+// (session user, Clerk default redirect) and are optional here so callers
+// can't spoof them. `role` is client-requested but validated server-side
+// against the org role keys before it is passed to Clerk.
 export const inviteMemberSchema = z.object({
     organizationId: z.string(),
     inviterUserId: z.string().optional(),
@@ -357,6 +358,8 @@ export const generalSettingsSchema = z.object({
     email: z.string().email("Enter a valid company email"),
     primary_color: z.string().min(2).max(40),
     font_family: z.enum(["sans", "serif", "mono"]),
+    tagline: z.string().max(160, "Tagline must be 160 characters or less").optional(),
+    logo_url: z.string().max(500).nullable().optional(),
     subdomain: z
         .string()
         .min(3, "Subdomain must be at least 3 characters")

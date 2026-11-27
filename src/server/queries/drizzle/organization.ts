@@ -222,6 +222,8 @@ export const get_organization_by_subdomain_db = async (subdomain: string) => {
         primary_color: organization.primary_color,
         font_family: organization.font_family,
         subdomain: organization.subdomain,
+        logo_url: organization.logo_url,
+        tagline: organization.tagline,
     })
         .from(organization)
         .where(eq(organization.subdomain, subdomain))
@@ -274,7 +276,35 @@ export const update_organization_general_settings = async (orgId: string, data: 
             primary_color: data.primary_color,
             font_family: data.font_family,
             subdomain: data.subdomain,
+            tagline: data.tagline,
+            logo_url: data.logo_url,
         })
+        .where(eq(organization.clerk_id, orgId));
+
+    revalidateDbCache({ tag: CACHE_TAGS.organizations, id: orgId });
+
+    return { success: true };
+};
+
+/**
+ * Sets (or clears, with null) the org's logo R2 key only. Used by the
+ * logo upload route — the key comes from our own R2 upload, never from
+ * client input, and the row is scoped to the session org by the caller.
+ */
+export const update_organization_logo = async (orgId: string, logoKey: string | null) => {
+    const current = await db
+        .select({ clerk_id: organization.clerk_id })
+        .from(organization)
+        .where(eq(organization.clerk_id, orgId))
+        .limit(1);
+
+    if (!current.length) {
+        throw new Error("Organization not found");
+    }
+
+    await db
+        .update(organization)
+        .set({ logo_url: logoKey })
         .where(eq(organization.clerk_id, orgId));
 
     revalidateDbCache({ tag: CACHE_TAGS.organizations, id: orgId });

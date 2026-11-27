@@ -5,7 +5,9 @@ import { get_organization_by_subdomain_action } from "@/server/actions/organizat
 import {
     resolveCompanyName,
     resolveFontFamily,
+    resolveLogoUrl,
     resolvePrimaryColor,
+    resolveTagline,
 } from "@/lib/org-branding";
 import OpenJobList from "./_components/open-job-list";
 
@@ -18,9 +20,12 @@ const CareerPage = async ({ params }: { params: Promise<{ domain: string }> }) =
     }
 
     // Branding comes from the org resolved from this page's own subdomain.
-    // There is no tagline/about column on the organization table, so no
-    // subheading is rendered rather than inventing one.
+    // The tagline (when set) renders as a subheading under the heading,
+    // and the logo renders above it; with neither set the layout stays
+    // heading-only — no copy is invented.
     const companyName = resolveCompanyName(tenant.name, domain);
+    const tagline = resolveTagline(tenant.tagline);
+    const logoUrl = resolveLogoUrl(domain, tenant.logo_url);
     const activeTheme = {
         primaryColor: resolvePrimaryColor(tenant.primary_color),
     };
@@ -52,7 +57,18 @@ const CareerPage = async ({ params }: { params: Promise<{ domain: string }> }) =
         >
             <div>
                 <div className="max-w-2xl">
+                    {logoUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                            src={logoUrl}
+                            alt={companyName}
+                            className="h-16 w-auto max-w-48 object-contain mb-4"
+                        />
+                    )}
                     <h2 className="text-4xl font-bold text-zinc-900 mb-4">Open roles at {companyName}</h2>
+                    {tagline && (
+                        <p className="text-lg text-zinc-500 mb-4">{tagline}</p>
+                    )}
                 </div>
 
                 {openJobs?.length === 0 ? (

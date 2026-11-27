@@ -18,6 +18,7 @@ import {
   db_get_org_members,
   toggle_organization_plugin,
   update_organization_general_settings,
+  update_organization_logo,
 } from "../queries";
 import {
   departmentSchema,
@@ -48,6 +49,16 @@ export const create_organization_invite = async (
 
   // Invitees land on onboarding after accepting (Clerk rejects an empty
   // redirectUrl, so build a real app URL; override via NEXT_PUBLIC_APP_URL).
+  // The role comes from the caller but is validated against the org role
+  // keys — an unknown role never reaches Clerk. Callers that don't pass a
+  // role invite as org:member. Note: custom roles (org:recruiter,
+  // org:hiring_manager) must exist in the Clerk dashboard, or Clerk
+  // rejects the invitation and this throws.
+  const ORG_ROLE_KEYS = ["org:admin", "org:recruiter", "org:hiring_manager", "org:member"] as const;
+  const role = (data.role && (ORG_ROLE_KEYS as readonly string[]).includes(data.role)
+    ? data.role
+    : "org:member") as (typeof ORG_ROLE_KEYS)[number];
+
   const appUrl =
     process.env.NEXT_PUBLIC_APP_URL ??
     `https://app.${process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "aplico.online"}`;
@@ -55,7 +66,7 @@ export const create_organization_invite = async (
     organizationId: orgId,
     inviterUserId: userId,
     emailAddress: data.emailAddress,
-    role: "org:member",
+    role,
     redirectUrl: `${appUrl}/onboarding`,
   });
 
@@ -199,6 +210,8 @@ export const get_general_settings_action = async () => {
     primary_color: org.primary_color,
     font_family: (org.font_family as "sans" | "serif" | "mono") || "sans",
     subdomain: org.subdomain,
+    tagline: org.tagline ?? undefined,
+    logo_url: org.logo_url ?? null,
   } satisfies GeneralSettingsInput;
 };
 
@@ -225,6 +238,8 @@ export const update_general_settings_action = async (
     name: unsafeData.name.trim(),
     locations: unsafeData.locations.trim(),
     phone: unsafeData.phone.trim(),
+    tagline: unsafeData.tagline?.trim() || undefined,
+    logo_url: unsafeData.logo_url ?? null,
   });
 
   if (!parsed.success) {
@@ -239,7 +254,45 @@ export const update_general_settings_action = async (
     throw new Error("This career-page subdomain is already taken");
   }
 
-  await update_organization_general_settings(orgId, parsed.data);
+  await update_organization_general_settings(orgId, {
+    ...parsed.data,
+    tagline: parsed.data.tagline ?? null,
+    logo_url: parsed.data.logo_url ?? null,
+  });
+
+  revalidatePath("/settings/general-settings");
+  revalidatePath("/settings/organization");
+
+  return { success: true };
+};
+
+/**
+ * Sets (or clears, with null) the org's logo R2 key. The key must come
+ * from the logo upload route (our own R2 upload) — a caller passing an
+ * arbitrary key only changes what the public logo route serves for this
+ * org, and the route refuses keys outside the org branding prefix.
+ * Admin-gated: only settings managers may change org branding.
+ */
+export const set_org_logo_action = async (logoKey: string | null) => {
+  const { userId, orgId, orgRole } = await auth();
+  if (!userId || !orgId) {
+    throw new Error("Unauthorized");
+  }
+
+  const isAdmin = orgRole === "org:admin";
+  const canManageSettings = await hasPermission("settings:manage");
+  if (!isAdmin && !canManageSettings) {
+    throw new Error("You do not have permission to update organization settings");
+  }
+
+  if (logoKey !== null) {
+    // Keys are ours: orgs/<clerk-id>/branding/logo-<ts>.<ext>, image only.
+    if (!/^orgs\/[A-Za-z0-9_-]+\/branding\/logo-\d+\.(png|jpg|jpeg|webp)$/.test(logoKey)) {
+      throw new Error("Invalid logo reference");
+    }
+  }
+
+  await update_organization_logo(orgId, logoKey);
 
   revalidatePath("/settings/general-settings");
   revalidatePath("/settings/organization");

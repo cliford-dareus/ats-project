@@ -11,6 +11,8 @@ export const organization = mysqlTable('organization', {
     primary_color: varchar({ length: 255 }).notNull().default("purple"),
     font_family: varchar({ length: 255 }).notNull().default("sans"),
     subdomain: varchar({ length: 255 }).notNull().unique(),
+    logo_url: varchar({ length: 500 }),
+    tagline: varchar({ length: 160 }),
     plugins: json('plugins').notNull().default({ enabled: [], settings: {} }),
     theme: json('theme'),
 });

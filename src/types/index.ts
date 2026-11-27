@@ -294,6 +294,8 @@ export type GeneralSettingsUpdate = {
     primary_color: string;
     font_family: string;
     subdomain: string;
+    tagline: string | null;
+    logo_url: string | null;
 };
 
 export interface FormErrors {

@@ -34,7 +34,8 @@ import {
 } from "@/components/ui/select";
 import { update_general_settings_action } from "@/server/actions/organization_actions";
 import { GeneralSettingsInput, generalSettingsSchema } from "@/zod";
-import { BRAND_COLOR_PRESETS } from "@/lib/org-branding";
+import { BRAND_COLOR_PRESETS, resolveLogoUrl } from "@/lib/org-branding";
+import OrgLogoUpload from "@/app/(dashboard)/settings/_components/org-logo-upload";
 
 const COLOR_PRESETS = BRAND_COLOR_PRESETS;
 
@@ -63,6 +64,9 @@ const GeneralSettingsForm = ({ initial, rootDomain = "aplico.online" }: Props) =
     const subdomain = form.watch("subdomain");
     const primaryColor = form.watch("primary_color");
     const companyName = form.watch("name");
+    const tagline = form.watch("tagline");
+    const logoKey = form.watch("logo_url");
+    const logoUrl = subdomain ? resolveLogoUrl(subdomain, logoKey) : null;
 
     const careerUrl = useMemo(() => {
         const slug = (subdomain || "your-company").toLowerCase();
@@ -228,6 +232,7 @@ const GeneralSettingsForm = ({ initial, rootDomain = "aplico.online" }: Props) =
                                     </FormItem>
                                 )}
                             />
+
                         </div>
                     </section>
 
@@ -280,6 +285,32 @@ const GeneralSettingsForm = ({ initial, rootDomain = "aplico.online" }: Props) =
                                     </FormItem>
                                 )}
                             />
+
+                            <FormField
+                                control={form.control}
+                                name="tagline"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                                            Tagline
+                                        </FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                {...field}
+                                                value={field.value ?? ""}
+                                                maxLength={160}
+                                                placeholder="A short line about your company"
+                                                className="rounded-xl bg-muted"
+                                            />
+                                        </FormControl>
+                                        <FormDescription className="text-xs">
+                                            Shows under the company name on the public career
+                                            page (max 160 characters).
+                                        </FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
                         </div>
                     </section>
 
@@ -292,6 +323,31 @@ const GeneralSettingsForm = ({ initial, rootDomain = "aplico.online" }: Props) =
                             </h2>
                         </div>
                         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
+                            {/* Company logo */}
+                            <div className="md:col-span-2">
+                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                                    Company logo
+                                </p>
+                                <div className="flex items-start gap-4 mt-2">
+                                    <OrgLogoUpload
+                                        subdomain={subdomain}
+                                        logoKey={logoKey}
+                                        companyName={companyName}
+                                        onUploaded={(key) =>
+                                            form.setValue("logo_url", key, { shouldDirty: true })
+                                        }
+                                        onRemoved={() =>
+                                            form.setValue("logo_url", null, { shouldDirty: true })
+                                        }
+                                    />
+                                    <p className="text-xs text-muted-foreground pt-2">
+                                        PNG, JPG, or WebP, up to 2 MB. Shown on the public
+                                        career page. Uploading saves the logo right away;
+                                        saving this form keeps the logo in sync.
+                                    </p>
+                                </div>
+                            </div>
+
                             <FormField
                                 control={form.control}
                                 name="primary_color"
@@ -360,15 +416,25 @@ const GeneralSettingsForm = ({ initial, rootDomain = "aplico.online" }: Props) =
                             {/* Live preview card */}
                             <div className="md:col-span-2 rounded-2xl border border-border overflow-hidden">
                                 <div
-                                    className="px-5 py-4 text-white"
+                                    className="px-5 py-4 text-white flex items-center gap-3"
                                     style={{ backgroundColor: activeSwatch }}
                                 >
-                                    <p className="text-[10px] uppercase tracking-widest opacity-80">
-                                        Career page preview
-                                    </p>
-                                    <p className="text-lg font-semibold mt-1">
-                                        {companyName || "Your company"}
-                                    </p>
+                                    {logoUrl && (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img
+                                            src={logoUrl}
+                                            alt={`${companyName || "Company"} logo`}
+                                            className="h-10 w-10 rounded-lg bg-white object-contain p-1 shrink-0"
+                                        />
+                                    )}
+                                    <div className="min-w-0">
+                                        <p className="text-[10px] uppercase tracking-widest opacity-80">
+                                            Career page preview
+                                        </p>
+                                        <p className="text-lg font-semibold mt-1 truncate">
+                                            {companyName || "Your company"}
+                                        </p>
+                                    </div>
                                 </div>
                                 <div className="px-5 py-4 bg-muted text-sm text-muted-foreground">
                                     Open roles at{" "}
@@ -376,6 +442,9 @@ const GeneralSettingsForm = ({ initial, rootDomain = "aplico.online" }: Props) =
                                         {companyName || "your company"}
                                     </span>
                                     . Branding color and font apply to the public jobs site.
+                                    {tagline && (
+                                        <span className="block mt-1">{tagline}</span>
+                                    )}
                                 </div>
                             </div>
                         </div>

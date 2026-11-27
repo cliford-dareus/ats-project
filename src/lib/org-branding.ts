@@ -41,8 +41,6 @@ export function resolveFontFamily(value: string | null | undefined): string {
 
 /**
  * Org display name. Falls back to the subdomain — never a fake company name.
- * There is no tagline/about column on the organization table, so callers
- * should omit a tagline rather than invent one.
  */
 export function resolveCompanyName(
     name: string | null | undefined,
@@ -50,4 +48,23 @@ export function resolveCompanyName(
 ): string {
     const n = name?.trim();
     return n ? n : subdomain;
+}
+
+/** Tagline, trimmed — null when the org has none (render nothing, don't invent one). */
+export function resolveTagline(value: string | null | undefined): string | null {
+    const t = value?.trim();
+    return t ? t : null;
+}
+
+/**
+ * Public logo URL for an org, or null when it has no logo. The logo is
+ * served through the public logo route (the R2 key itself is never
+ * exposed to the browser); callers fall back to initials/subdomain.
+ */
+export function resolveLogoUrl(
+    subdomain: string,
+    logoKey: string | null | undefined
+): string | null {
+    if (!logoKey?.trim()) return null;
+    return `/api/orgs/${subdomain}/logo`;
 }

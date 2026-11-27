@@ -7,17 +7,17 @@ import { cn } from '@/lib/utils';
 const settingsData = [
     {
         title: "Plugins",
-        url: "/",
+        url: "/settings",
         icon: Puzzle,
     },
     {
         title: "Organization Profile",
-        url: "/organization",
+        url: "/settings/organization",
         icon: Building2
     },
     {
         title: "General Settings",
-        url: "/general-settings",
+        url: "/settings/general-settings",
         icon: SettingsIcon
     }
 ]
@@ -29,18 +29,12 @@ const SettingsSidebar = () => {
 
     useEffect(() => {
         if (pathname) {
-            const normalizedPathname = pathname.replace(/^\/settings\//, '/');
-            console.log(normalizedPathname)
-            const setting = settingsData.find((s) => s.url === normalizedPathname);
+            const setting = settingsData.find((s) => s.url === pathname);
             if (setting) {
                 setActive(setting.title);
             }
-
-            if (pathname == "/settings") {
-                setActive(settingsData[0].title)
-            }
         }
-    }, [pathname, active,]);
+    }, [pathname]);
 
     return (
         <>
@@ -52,7 +46,7 @@ const SettingsSidebar = () => {
                             // initial={{ opacity: 0, height: 0 }}
                             // animate={{ opacity: 1, height: 'auto' }}
                             // exit={{ opacity: 0, height: 0 }}
-                            onClick={() => router.push(`/settings/${setting.url}`)}
+                            onClick={() => router.push(setting.url)}
                             className={cn("w-full flex items-center justify-between px-2 py-4 rounded-xl text-[14px] transition-all duration-200 group ",
                                 active === setting.title ? "bg-primary text-primary-foreground shadow-md " : "text-muted-foreground hover:bg-primary/10 hover:text-foreground")}
                         >

@@ -5,13 +5,11 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-    Building2,
     Globe,
     Loader2,
     Mail,
     MapPin,
     Phone,
-    Plus,
     Save,
     X,
 } from "lucide-react";
@@ -27,6 +25,7 @@ import {
 } from "@/components/ui/form";
 import { update_general_settings_action } from "@/server/actions/organization_actions";
 import { GeneralSettingsInput, generalSettingsSchema } from "@/zod";
+import OrgLogoUpload from "@/app/(dashboard)/settings/_components/org-logo-upload";
 
 type Props = {
     /** Real org settings from the DB, or null when the org has no DB row yet. */
@@ -42,7 +41,11 @@ type Props = {
  * (`update_general_settings_action`, same schema and permission gate) —
  * no second save implementation. Branding-only fields (primary_color,
  * font_family) are carried in the form values and preserved on save; they
- * are edited in General Settings.
+ * are edited in General Settings. The tagline is edited here too. The
+ * logo is uploaded through OrgLogoUpload (the upload route persists it
+ * directly via set_org_logo_action); logo_url is carried in the form
+ * values and synced on upload/remove so a later profile save does not
+ * clobber it with the stale value.
  */
 const OrgProfileCard = ({ initial, rootDomain, canManage }: Props) => {
     const [editing, setEditing] = useState(false);
@@ -78,7 +81,22 @@ const OrgProfileCard = ({ initial, rootDomain, canManage }: Props) => {
 
     const companyName = form.watch("name") || initial.name;
     const subdomain = form.watch("subdomain") || initial.subdomain;
+    const tagline = form.watch("tagline") || initial.tagline;
+    const logoKey = form.watch("logo_url") ?? initial.logo_url;
     const careerUrl = `https://${subdomain}.${rootDomain}`;
+
+    // The upload route already persisted the key (set_org_logo_action);
+    // sync the form value so a later profile save keeps the new logo
+    // instead of overwriting it with the stale one.
+    const handleLogoUploaded = (key: string) => {
+        form.setValue("logo_url", key, { shouldDirty: false });
+        setMessage({ type: "ok", text: "Logo updated." });
+    };
+
+    const handleLogoRemoved = () => {
+        form.setValue("logo_url", null, { shouldDirty: false });
+        setMessage({ type: "ok", text: "Logo removed." });
+    };
 
     const onSubmit = (values: GeneralSettingsInput) => {
         setMessage(null);
@@ -107,14 +125,19 @@ const OrgProfileCard = ({ initial, rootDomain, canManage }: Props) => {
         <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
             <div className="p-8 border-b border-border flex items-start justify-between">
                 <div className="flex gap-6">
-                    <div className="w-24 h-24 rounded-2xl bg-muted border border-border flex items-center justify-center relative group">
-                        <Building2 className="w-10 h-10 text-muted-foreground group-hover:text-brand-600 transition-colors" />
-                        <button className="absolute -bottom-2 -right-2 p-1.5 bg-card border border-border rounded-lg shadow-sm hover:bg-muted">
-                            <Plus className="w-3.5 h-3.5 text-muted-foreground" />
-                        </button>
-                    </div>
+                    <OrgLogoUpload
+                        subdomain={subdomain}
+                        logoKey={logoKey}
+                        companyName={companyName}
+                        disabled={!canManage}
+                        onUploaded={handleLogoUploaded}
+                        onRemoved={handleLogoRemoved}
+                    />
                     <div className="space-y-1 py-2">
                         <h3 className="text-xl font-bold text-foreground">{companyName}</h3>
+                        {tagline && (
+                            <p className="text-sm text-muted-foreground">{tagline}</p>
+                        )}
                         <p className="text-muted-foreground text-sm flex items-center gap-2">
                             <Globe className="w-4 h-4" />
                             <a
@@ -255,6 +278,33 @@ const OrgProfileCard = ({ initial, rootDomain, canManage }: Props) => {
                                             className="w-full px-4 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20"
                                         />
                                     </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="tagline"
+                            render={({ field }) => (
+                                <FormItem className="space-y-1.5 md:col-span-2">
+                                    <FormLabel className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1">
+                                        Tagline
+                                    </FormLabel>
+                                    <FormControl>
+                                        <Input
+                                            {...field}
+                                            value={field.value ?? ""}
+                                            disabled={!editing}
+                                            maxLength={160}
+                                            placeholder="A short line about your company"
+                                            className="w-full px-4 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                                        />
+                                    </FormControl>
+                                    <p className="text-xs text-muted-foreground ml-1">
+                                        Shows under the company name on the public career page
+                                        (max 160 characters).
+                                    </p>
                                     <FormMessage />
                                 </FormItem>
                             )}

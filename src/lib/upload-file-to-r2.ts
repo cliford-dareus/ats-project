@@ -55,3 +55,35 @@ export async function uploadResumeToR2(
     await r2Client.send(command);
     return key; // we store the key (private + signed URLs later)
 };
+
+const LOGO_MIME_EXTENSIONS: Record<string, string> = {
+    "image/png": ".png",
+    "image/jpeg": ".jpg",
+    "image/webp": ".webp",
+};
+
+/**
+ * Org logo upload. Same PutObject pattern as resumes, but the key is
+ * org-scoped under branding/ and the file must be an image — the caller
+ * (logo upload route) validates mime + size before calling. Returns the
+ * R2 key, which is stored on the organization row and served publicly
+ * through /api/orgs/[subdomain]/logo.
+ */
+export async function uploadOrgLogoToR2(file: File, orgId: string): Promise<string> {
+    const ext = LOGO_MIME_EXTENSIONS[file.type];
+    if (!ext) {
+        throw new Error("Logo must be a PNG, JPG, or WebP image");
+    }
+    const orgSegment = orgId.replace(/[^A-Za-z0-9_-]/g, "");
+    const key = `orgs/${orgSegment}/branding/logo-${Date.now()}${ext}`;
+
+    const command = new PutObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME!,
+        Key: key,
+        Body: Buffer.from(await file.arrayBuffer()),
+        ContentType: file.type,
+    });
+
+    await r2Client.send(command);
+    return key;
+}
