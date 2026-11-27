@@ -19,6 +19,7 @@ import { update_application_stage_action } from "@/server/actions/application_ac
 import { update_candidate_action } from "@/server/actions/candidates-actions";
 import { create_note } from "@/server/queries/mongo/note";
 import { useHasPermission } from "@/lib/use-permission";
+import ResendPortalLinkButton from "./resend-portal-link";
 
 type Props = {
     applicationResult: ApplicationResponseType;
@@ -145,6 +146,11 @@ const AppicationHeader = ({ applicationResult, stages }: Props) => {
             </div>
 
             <div className="flex items-center gap-3">
+                <ResendPortalLinkButton
+                    applicationId={applicationResult.id}
+                    disabled={!canEditCandidate}
+                />
+
                 <a
                     href={`mailto:${applicationResult.candidate_email}`}
                     className="px-4 !py-2 border border-border rounded-lg text-[10px] uppercase tracking-widest font-bold text-muted-foreground hover:bg-muted transition-all flex items-center gap-2"

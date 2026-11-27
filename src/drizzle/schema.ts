@@ -249,6 +249,32 @@ export const candidates = mysqlTable('candidate', {
 export const candidates_relations = relations(candidates, ({ many }) => ({
     applications: many(applications),
     attachments: many(attachments),
+    portal_tokens: many(candidate_portal_tokens),
+}));
+
+// ── Candidate portal tokens ─────────────────────────────────────────────
+// Magic-link tokens for the candidate portal (src/server/portal/).
+// Unlike interview hold tokens (stored PLAINTEXT in interviews.hold_token),
+// portal tokens are stored ONLY as a sha256 hex hash — the raw token is
+// shown to the candidate once (in the emailed link) and never persisted
+// or logged. One live token per candidate: creating a token revokes all
+// prior non-expired, non-revoked tokens for that candidate.
+export const candidate_portal_tokens = mysqlTable('candidate_portal_tokens', {
+    id: int('id').primaryKey().autoincrement(),
+    candidate_id: int('candidate_id').notNull().references(() => candidates.id, { onDelete: 'cascade' }),
+    token_hash: varchar('token_hash', { length: 64 }).notNull().unique(),
+    expires_at: timestamp('expires_at').notNull(),
+    revoked_at: timestamp('revoked_at'),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+    candidate_idx: index('candidate_portal_tokens_candidate_idx').on(table.candidate_id),
+}));
+
+export const candidate_portal_tokens_relations = relations(candidate_portal_tokens, ({ one }) => ({
+    candidate: one(candidates, {
+        fields: [candidate_portal_tokens.candidate_id],
+        references: [candidates.id],
+    }),
 }));
 
 export const attachments = mysqlTable('attachments', {

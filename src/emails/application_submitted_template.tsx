@@ -23,6 +23,11 @@ interface ApplicationSubmittedProps {
     expectedResponseTime?: string;    // e.g. "within 7-10 business days"
     senderName?: string;
     senderTitle?: string;
+    // Personal portal link for this candidate (track status + interviews).
+    // Rendered only when present — the Resend plugin path has no token to
+    // pass today, so it omits this; the direct confirmation send in
+    // create_application_action supplies it.
+    portalUrl?: string;
 }
 
 export const ApplicationConfirmationTemplate = ({
@@ -34,6 +39,7 @@ export const ApplicationConfirmationTemplate = ({
     expectedResponseTime = "within 7-10 business days",
     senderName = "Sarah Chen",
     senderTitle = "Talent Acquisition Lead",
+    portalUrl,
 }: ApplicationSubmittedProps) => {
     return (
         <Html>
@@ -86,6 +92,20 @@ export const ApplicationConfirmationTemplate = ({
                             other open roles on our careers page.
                         </Text>
 
+                        {portalUrl && (
+                            <Section className="text-center my-8">
+                                <Button
+                                    href={portalUrl}
+                                    className="bg-zinc-800 hover:bg-black transition-colors text-white text-[17px] font-semibold px-8 py-4 rounded-lg inline-block"
+                                >
+                                    Track your application
+                                </Button>
+                                <Text className="text-zinc-500 text-sm mt-3">
+                                    This link is personal to you — please don&apos;t share it.
+                                </Text>
+                            </Section>
+                        )}
+
                         <Section className="text-center my-8">
                             <Button
                                 href="https://careers.example.com"
@@ -96,7 +116,7 @@ export const ApplicationConfirmationTemplate = ({
                         </Section>
 
                         <Text className="text-zinc-700 text-[17px] leading-relaxed">
-                            If you have any questions, don't hesitate to reply to this email.
+                            If you have any questions, don&apos;t hesitate to reply to this email.
                         </Text>
 
                         <Text className="text-zinc-800 font-semibold mt-8 mb-1">

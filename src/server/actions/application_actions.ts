@@ -15,6 +15,7 @@ import { z } from "zod";
 import { applicationFormSchema, filterApplicationsSchema, moveAndReorderApplicationSchema, screeningAnswerInputSchema, updateApplicationSchema, updateApplicationStageSchema } from "@/zod";
 import { db } from "@/drizzle/db";
 import { applications, candidates, stages } from "@/drizzle/schema";
+import { send_application_confirmation_with_portal_link } from "@/server/portal/portal-service";
 import { and, eq } from "drizzle-orm";
 
 /** Candidate + target-stage display names for a stage-move log entry. */
@@ -76,7 +77,38 @@ export const create_application_action = async (
         validatedAnswers = parsedAnswers.data;
     }
 
-    return await create_application(data, validatedAnswers);
+    const result = await create_application(data, validatedAnswers);
+
+    // Confirmation email with the candidate portal link (path (b) — see
+    // send_application_confirmation_with_portal_link for why the direct
+    // send_org_email path is used instead of the Resend plugin trigger:
+    // create_application does not dispatch `candidate_applied`, and the
+    // plugin path the apply form fires cannot send today — its context
+    // carries no candidate email. Best-effort: a mail failure must never
+    // fail the application, so the result is logged, never thrown, and
+    // never changes what the form receives.
+    if (
+        result.success &&
+        result.candidate_id !== undefined &&
+        result.job_name !== undefined &&
+        result.application_id !== undefined
+    ) {
+        try {
+            const sent = await send_application_confirmation_with_portal_link({
+                candidateId: result.candidate_id,
+                subdomain: data.subdomain,
+                jobTitle: result.job_name,
+                applicationId: result.application_id,
+            });
+            if (!sent.success) {
+                console.warn("[application] Confirmation email not sent:", sent.error);
+            }
+        } catch (err) {
+            console.warn("[application] Confirmation email failed:", (err as Error).message);
+        }
+    }
+
+    return result;
 };
 
 // Dashboard-only quick-add: application for an existing candidate.

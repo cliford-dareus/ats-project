@@ -85,6 +85,13 @@
       "when": 1795819122156,
       "tag": "0011_screening_questions",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1795820219248,
+      "tag": "0012_candidate_portal_tokens",
+      "breakpoints": true
     }
   ]
 }
