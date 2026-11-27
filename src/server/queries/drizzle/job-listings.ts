@@ -6,11 +6,14 @@ import {
     job_listings,
     job_technologies,
     organization,
+    score_cards,
     stages,
     technologies,
 } from "@/drizzle/schema";
 import { db } from "@/drizzle/db";
-import { and, eq, inArray, sql, SQL } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, sql, SQL } from "drizzle-orm";
+import mongodb from "@/lib/mongodb";
+import Note from "@/models/notes";
 import {
     CACHE_TAGS,
     dbCache,
@@ -121,6 +124,7 @@ const assertDraftRow = async (trx: DbTx, jobId: number, orgId: string) => {
             eq(job_listings.id, jobId),
             eq(job_listings.organization, orgId),
             eq(job_listings.status, "DRAFT"),
+            isNull(job_listings.deleted_at),
         ))
         .limit(1);
     if (!row) {
@@ -294,6 +298,7 @@ export const get_job_draft_for_wizard = async (jobId: number, orgId: string): Pr
             eq(job_listings.id, jobId),
             eq(job_listings.organization, orgId),
             eq(job_listings.status, "DRAFT"),
+            isNull(job_listings.deleted_at),
         ))
         .limit(1);
     if (!job) return null;
@@ -364,7 +369,8 @@ export const update_job_listing = async (data: z.infer<typeof updateJobListingSc
             ...(data.salary_from !== undefined && { salary_from: data.salary_from || null }),
             ...(data.type && { type: data.type }),
         })
-        .where(eq(job_listings.id, data.jobId));
+        // A trashed job is never edited — restore it first.
+        .where(and(eq(job_listings.id, data.jobId), isNull(job_listings.deleted_at)));
 
     revalidateDbCache({
         tag: CACHE_TAGS.jobs,
@@ -373,12 +379,120 @@ export const update_job_listing = async (data: z.infer<typeof updateJobListingSc
     });
 };
 
+// ── Soft-delete (Trash) ─────────────────────────────────────────────────────
+// Sets deleted_at (now) on the job and, in the same instant, on its live
+// applications — one shared timestamp so a later restore can tell which
+// applications were trashed by this cascade apart from ones the user
+// trashed individually first. Stages, job_technologies and automation
+// rules have no deleted_at column: they stay in place and are invisible
+// while the job is trashed (every read goes through the job), so a restore
+// brings them back intact. The applications' interviews/scorecards likewise
+// stay in place. The candidates behind the applications are untouched.
+// Returns how many applications were cascaded. The old hard delete lives
+// on as permanent_delete_job_listing_db below, reachable only from Trash.
 export const delete_job_listing = async (jobId: number, orgId: string) => {
-    await db
-        .delete(job_listings)
-        .where(eq(job_listings.id, jobId));
+    const now = new Date();
+    const cascaded = await db.transaction(async (tx) => {
+        const [job] = await tx
+            .select({ id: job_listings.id })
+            .from(job_listings)
+            .where(and(eq(job_listings.id, jobId), eq(job_listings.organization, orgId), isNull(job_listings.deleted_at)))
+            .limit(1);
+        if (!job) return 0;
+
+        await tx
+            .update(job_listings)
+            .set({ deleted_at: now })
+            .where(and(eq(job_listings.id, jobId), eq(job_listings.organization, orgId)));
+
+        const [apps] = await tx
+            .update(applications)
+            .set({ deleted_at: now })
+            .where(and(
+                eq(applications.job_id, jobId),
+                eq(applications.organization, orgId),
+                isNull(applications.deleted_at),
+            ));
+        return apps.affectedRows ?? 0;
+    });
 
     revalidateDbCache({ tag: CACHE_TAGS.jobs, id: String(jobId), orgId: orgId });
+    revalidateDbCache({ tag: CACHE_TAGS.applications, orgId: orgId });
+    return { cascadedApplications: cascaded };
+};
+
+// Permanent delete (Trash → Delete forever): the old hard-delete behaviour,
+// extended so it actually works for jobs that have applications.
+// applications.job_id has NO onDelete cascade in the schema, so a bare row
+// delete would fail with a foreign-key error on any job with applications —
+// the job's applications are therefore removed first (with their
+// interviews, scorecards and Mongo application notes), then the job row,
+// whose stages, job_technologies and automation rules DO cascade via FK.
+// Candidates are untouched — they may have applications to other jobs.
+export const permanent_delete_job_listing_db = async (jobId: number, orgId: string) => {
+    const [job] = await db
+        .select({ id: job_listings.id, name: job_listings.name })
+        .from(job_listings)
+        .where(and(eq(job_listings.id, jobId), eq(job_listings.organization, orgId), isNotNull(job_listings.deleted_at)))
+        .limit(1);
+    if (!job) {
+        return { success: false as const, message: "Job not found" };
+    }
+
+    try {
+        const applicationIds = await db.transaction(async (tx) => {
+            const appRows = await tx
+                .select({ id: applications.id })
+                .from(applications)
+                .where(and(eq(applications.job_id, jobId), eq(applications.organization, orgId)));
+            const ids = appRows.map((row) => row.id);
+
+            if (ids.length > 0) {
+                const interviewRows = await tx
+                    .select({ id: interviews.id })
+                    .from(interviews)
+                    .where(inArray(interviews.applications_id, ids));
+                const interviewIds = interviewRows.map((row) => row.id);
+
+                if (interviewIds.length > 0) {
+                    await tx
+                        .delete(score_cards)
+                        .where(inArray(score_cards.interviews_id, interviewIds));
+                    await tx
+                        .delete(interviews)
+                        .where(inArray(interviews.applications_id, ids));
+                }
+
+                await tx
+                    .delete(applications)
+                    .where(and(eq(applications.job_id, jobId), eq(applications.organization, orgId)));
+            }
+
+            // Row delete cascades to stages, job_technologies and
+            // automation_rules via the schema's onDelete: 'cascade'.
+            await tx
+                .delete(job_listings)
+                .where(and(eq(job_listings.id, jobId), eq(job_listings.organization, orgId)));
+
+            return ids;
+        });
+
+        // The removed applications' directly-owned Mongo notes live outside
+        // the SQL transaction.
+        if (applicationIds.length > 0) {
+            await mongodb();
+            await Note.deleteMany({
+                note_id: { $in: applicationIds.map((id) => `application_${id}`) },
+            });
+        }
+
+        revalidateDbCache({ tag: CACHE_TAGS.jobs, id: String(jobId), orgId: orgId });
+        revalidateDbCache({ tag: CACHE_TAGS.applications, orgId: orgId });
+        return { success: true as const, job, deletedApplications: applicationIds.length };
+    } catch (err) {
+        console.error("Permanent delete job failed:", err);
+        return { success: false as const, message: "Failed to permanently delete job" };
+    }
 };
 
 export const get_job_listings_stages = (jobId: number) => {
@@ -423,7 +537,10 @@ export const get_job_by_id_db = async (jobId: number, org_id: string): Promise<J
             stage: stages,
         })
         .from(job_listings)
-        .leftJoin(applications, eq(applications.job_id, job_listings.id))
+        // Trashed applications join as NULL (filter in the join, not the
+        // WHERE — a job whose only applications are trashed must still
+        // load, with an empty applications list).
+        .leftJoin(applications, and(eq(applications.job_id, job_listings.id), isNull(applications.deleted_at)))
         .leftJoin(candidates, eq(candidates.id, applications.candidate))
         .leftJoin(departments, eq(departments.id, job_listings.department))
         .leftJoin(job_technologies, eq(job_listings.id, job_technologies.job_id))
@@ -433,7 +550,8 @@ export const get_job_by_id_db = async (jobId: number, org_id: string): Promise<J
         .leftJoin(stages, eq(applications.current_stage_id, stages.id))
         .where(and(
             eq(job_listings.id, jobId),
-            eq(job_listings.organization, org_id)
+            eq(job_listings.organization, org_id),
+            isNull(job_listings.deleted_at),
         ));
 
     if (rows.length === 0) return [];
@@ -583,7 +701,7 @@ export const get_all_job_listings_db = async (filter: FilterInterface) => {
     const [{ count }] = await db
         .select({ count: sql<number>`count(*)` })
         .from(job_listings)
-        .where(and(...filters, eq(job_listings.organization, filter.organization)));
+        .where(and(...filters, eq(job_listings.organization, filter.organization), isNull(job_listings.deleted_at)));
 
     const jobListings = await db
         .select({
@@ -602,12 +720,12 @@ export const get_all_job_listings_db = async (filter: FilterInterface) => {
             createdBy: job_listings.created_by,
             application_count: db.$count(
                 applications,
-                eq(applications.job_id, job_listings.id),
+                and(eq(applications.job_id, job_listings.id), isNull(applications.deleted_at)),
             ),
         })
         .from(job_listings)
         .leftJoin(departments, eq(job_listings.department, departments.id))
-        .where(and(...filters, eq(job_listings.organization, filter.organization)))
+        .where(and(...filters, eq(job_listings.organization, filter.organization), isNull(job_listings.deleted_at)))
         .limit(filter.limit!)
         .offset(filter.offset!);
 

@@ -7,6 +7,7 @@ import { update_job_draft_info, update_job_draft_stages, update_job_draft_techno
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { auth } from "@clerk/nextjs/server";
 import { canCreateJob } from "@/server/permissions";
+import { record_activity } from "@/server/activity/record-activity";
 
 const parseDraftId = (formData: FormData): number | null => {
     const raw = formData.get("draftId");
@@ -137,11 +138,19 @@ export const saveDraftAction = async (prevState: FormErrors | undefined, formDat
         };
 
         // When the wizard is carrying a draft row, update that row in
-        // place instead of creating a second draft.
+        // place instead of creating a second draft. (The create-a-new-draft
+        // path below goes through create_job_action with status DRAFT,
+        // which records job.draft_saved itself.)
         if (draftId !== null) {
             await update_job_draft_info(draftId, orgId, normalizedJobInfo);
             await update_job_draft_technologies(draftId, orgId, jobTechnology);
             await update_job_draft_stages(draftId, orgId, String(userId), jobStages);
+            await record_activity({
+                action: "job.draft_saved",
+                entity_type: "job",
+                entity_id: draftId,
+                summary: `Saved draft for job "${normalizedJobInfo.job_name}"`,
+            });
             redirect('/jobs?tab=drafts');
         }
 

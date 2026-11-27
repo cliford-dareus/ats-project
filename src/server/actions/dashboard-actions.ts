@@ -16,7 +16,8 @@ import {
     lte,
     desc,
     sql,
-    and
+    and,
+    isNull
 } from "drizzle-orm";
 import { subDays, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { JOB_STAGES } from "@/zod";
@@ -41,18 +42,19 @@ export async function getDashboardMetrics() {
         hiredThisMonthResult
     ] = await Promise.all([
         db.select({ count: count() }).from(applications)
-            .where(eq(applications.organization, orgId)),
+            .where(and(eq(applications.organization, orgId), isNull(applications.deleted_at))),
         db.select({ count: count() }).from(candidates)
-            .where(eq(candidates.organization, orgId)),
+            .where(and(eq(candidates.organization, orgId), isNull(candidates.deleted_at))),
         db.select({ count: count() })
             .from(job_listings)
-            .where(and(eq(job_listings.status, 'OPEN'), eq(job_listings.organization, orgId))),
+            .where(and(eq(job_listings.status, 'OPEN'), eq(job_listings.organization, orgId), isNull(job_listings.deleted_at))),
         db.select({ count: count() })
             .from(candidates)
             .where(
                 and(
                     eq(candidates.status, 'HIRED'),
                     eq(candidates.organization, orgId),
+                    isNull(candidates.deleted_at),
                     gte(candidates.updated_at, startOfThisMonth)
                 )
             )
@@ -69,6 +71,7 @@ export async function getDashboardMetrics() {
             .where(
                 and(
                     eq(applications.organization, orgId),
+                    isNull(applications.deleted_at),
                     gte(applications.created_at, startOfLastMonth),
                     lte(applications.created_at, endOfLastMonth)
                 )
@@ -78,6 +81,7 @@ export async function getDashboardMetrics() {
             .where(
                 and(
                     eq(candidates.organization, orgId),
+                    isNull(candidates.deleted_at),
                     gte(candidates.created_at, startOfLastMonth),
                     lte(candidates.created_at, endOfLastMonth)
                 )
@@ -88,6 +92,7 @@ export async function getDashboardMetrics() {
                 and(
                     eq(candidates.status, 'HIRED'),
                     eq(candidates.organization, orgId),
+                    isNull(candidates.deleted_at),
                     gte(candidates.updated_at, startOfLastMonth),
                     lte(candidates.updated_at, endOfLastMonth)
                 )
@@ -146,6 +151,9 @@ export async function getRecentActivity() {
         .innerJoin(job_listings, eq(applications.job_id, job_listings.id))
         .where(and(
             eq(applications.organization, orgId),
+            isNull(applications.deleted_at),
+            isNull(candidates.deleted_at),
+            isNull(job_listings.deleted_at),
             gte(applications.created_at, sevenDaysAgo)
         ))
         .orderBy(desc(applications.created_at))
@@ -164,6 +172,7 @@ export async function getRecentActivity() {
             and(
                 eq(candidates.status, 'HIRED'),
                 eq(candidates.organization, orgId),
+                isNull(candidates.deleted_at),
                 gte(candidates.updated_at, sevenDaysAgo)
             )
         )
@@ -181,6 +190,7 @@ export async function getRecentActivity() {
         .from(job_listings)
         .where(and(
             eq(job_listings.organization, orgId),
+            isNull(job_listings.deleted_at),
             gte(job_listings.created_at, sevenDaysAgo)
         ))
         .orderBy(desc(job_listings.created_at))
@@ -236,6 +246,9 @@ export async function getUpcomingInterviews() {
         .where(
             and(
                 eq(interviews.organization, orgId),
+                isNull(applications.deleted_at),
+                isNull(candidates.deleted_at),
+                isNull(job_listings.deleted_at),
                 gte(interviews.start_at, now),
                 lte(interviews.start_at, sevenDaysFromNow)
             )
@@ -271,8 +284,8 @@ export async function getJobPipelineData() {
         })
         .from(job_listings)
         .leftJoin(stages, eq(job_listings.id, stages.job_id))
-        .leftJoin(applications, eq(stages.id, applications.current_stage_id))
-        .where(and(eq(job_listings.status, 'PENDING'), eq(job_listings.organization, orgId)))
+        .leftJoin(applications, and(eq(stages.id, applications.current_stage_id), isNull(applications.deleted_at)))
+        .where(and(eq(job_listings.status, 'PENDING'), eq(job_listings.organization, orgId), isNull(job_listings.deleted_at)))
         .groupBy(job_listings.id, job_listings.name, stages.stage_name, stages.color, stages.stage_order_id)
         .orderBy(job_listings.id, stages.stage_order_id);
 
@@ -316,6 +329,7 @@ export async function getApplicationTrends() {
         .from(applications)
         .where(and(
             eq(applications.organization, orgId),
+            isNull(applications.deleted_at),
             gte(applications.created_at, thirtyDaysAgo)
         ))
         .groupBy(sql`DATE(${applications.created_at})`)
@@ -343,6 +357,7 @@ export async function getHiringTrends() {
             and(
                 eq(candidates.status, 'HIRED'),
                 eq(candidates.organization, orgId),
+                isNull(candidates.deleted_at),
                 gte(candidates.updated_at, thirtyDaysAgo)
             )
         )
@@ -368,9 +383,9 @@ export async function getTopPerformingJobs() {
             conversionRate: sql<number>`ROUND((COUNT(CASE WHEN ${candidates.status} = 'HIRED' THEN 1 END) * 100.0 / COUNT(${applications.id})), 2)`
         })
         .from(job_listings)
-        .leftJoin(applications, eq(job_listings.id, applications.job_id))
-        .leftJoin(candidates, eq(applications.candidate, candidates.id))
-        .where(and(eq(job_listings.status, 'OPEN'), eq(job_listings.organization, orgId)))
+        .leftJoin(applications, and(eq(job_listings.id, applications.job_id), isNull(applications.deleted_at)))
+        .leftJoin(candidates, and(eq(applications.candidate, candidates.id), isNull(candidates.deleted_at)))
+        .where(and(eq(job_listings.status, 'OPEN'), eq(job_listings.organization, orgId), isNull(job_listings.deleted_at)))
         .groupBy(job_listings.id, job_listings.name)
         .orderBy(desc(count(applications.id)))
         .limit(10);
@@ -399,9 +414,11 @@ export async function getInterviewScheduleData() {
             location: interviews.locations
         })
         .from(interviews)
+        .leftJoin(applications, eq(applications.id, interviews.applications_id))
         .where(
             and(
                 eq(interviews.organization, orgId),
+                isNull(applications.deleted_at),
                 gte(interviews.start_at, now),
                 lte(interviews.start_at, thirtyDaysFromNow)
             )
@@ -429,7 +446,7 @@ export async function getCandidateStatusDistribution() {
             count: count(candidates.id)
         })
         .from(candidates)
-        .where(eq(candidates.organization, orgId))
+        .where(and(eq(candidates.organization, orgId), isNull(candidates.deleted_at)))
         .groupBy(candidates.status)
         .orderBy(desc(count(candidates.id)));
 
@@ -454,8 +471,8 @@ export async function getRecruitmentFunnel() {
         })
         .from(stages)
         .innerJoin(job_listings, eq(stages.job_id, job_listings.id))
-        .leftJoin(applications, eq(stages.id, applications.current_stage_id))
-        .where(eq(job_listings.organization, orgId))
+        .leftJoin(applications, and(eq(stages.id, applications.current_stage_id), isNull(applications.deleted_at)))
+        .where(and(eq(job_listings.organization, orgId), isNull(job_listings.deleted_at)))
         .groupBy(stages.stage_name, stages.stage_order_id, stages.color)
         .orderBy(stages.stage_order_id);
 
@@ -518,7 +535,9 @@ async function get_hire_durations_days(orgId: string): Promise<number[]> {
             and(
                 eq(candidates.status, "HIRED"),
                 eq(candidates.organization, orgId),
-                eq(applications.organization, orgId)
+                isNull(candidates.deleted_at),
+                eq(applications.organization, orgId),
+                isNull(applications.deleted_at)
             )
         )
         .groupBy(candidates.id, candidates.updated_at);
@@ -624,13 +643,16 @@ export async function getPerformanceMetrics() {
             .from(applications)
             .where(and(
                 eq(applications.organization, orgId),
+                isNull(applications.deleted_at),
                 gte(applications.created_at, thirtyDaysAgo)
             )),
 
         db.select({ count: count() })
             .from(interviews)
+            .leftJoin(applications, eq(applications.id, interviews.applications_id))
             .where(and(
                 eq(interviews.organization, orgId),
+                isNull(applications.deleted_at),
                 gte(interviews.created_at, thirtyDaysAgo)
             )),
 
@@ -640,6 +662,7 @@ export async function getPerformanceMetrics() {
                 and(
                     eq(candidates.status, 'HIRED'),
                     eq(candidates.organization, orgId),
+                    isNull(candidates.deleted_at),
                     gte(candidates.updated_at, thirtyDaysAgo)
                 )
             ),
@@ -705,6 +728,7 @@ export async function getQuickStats() {
             .where(
                 and(
                     eq(applications.organization, orgId),
+                    isNull(applications.deleted_at),
                     gte(applications.created_at, new Date(today.getFullYear(), today.getMonth(), today.getDate())),
                     lte(applications.created_at, today)
                 )
@@ -715,6 +739,7 @@ export async function getQuickStats() {
             .where(
                 and(
                     eq(applications.organization, orgId),
+                    isNull(applications.deleted_at),
                     gte(applications.created_at, new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate())),
                     lte(applications.created_at, yesterday)
                 )
@@ -724,14 +749,17 @@ export async function getQuickStats() {
             .from(applications)
             .where(and(
                 eq(applications.organization, orgId),
+                isNull(applications.deleted_at),
                 gte(applications.created_at, thisWeek)
             )),
 
         db.select({ count: count() })
             .from(interviews)
+            .leftJoin(applications, eq(applications.id, interviews.applications_id))
             .where(
                 and(
                     eq(interviews.organization, orgId),
+                    isNull(applications.deleted_at),
                     gte(interviews.start_at, new Date(today.getFullYear(), today.getMonth(), today.getDate())),
                     lte(interviews.start_at, today)
                 )
@@ -776,6 +804,9 @@ export async function getAlerts() {
         .where(
             and(
                 eq(interviews.organization, orgId),
+                isNull(applications.deleted_at),
+                isNull(candidates.deleted_at),
+                isNull(job_listings.deleted_at),
                 gte(interviews.start_at, now),
                 lte(interviews.start_at, tomorrow),
                 eq(interviews.status, 'SCHEDULE')

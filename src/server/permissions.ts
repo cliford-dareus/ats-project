@@ -3,7 +3,7 @@ import "server-only";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/drizzle/db";
 import { applications, candidates, interviews, job_listings } from "@/drizzle/schema";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { Permission, role_has_permission } from "@/lib/permissions";
 
 export class AuthzError extends Error {
@@ -84,7 +84,9 @@ export const assertJobBelongsToOrg = async (jobId: number, orgId: string) => {
     const [job] = await db
         .select({ id: job_listings.id, name: job_listings.name, subdomain: job_listings.subdomain })
         .from(job_listings)
-        .where(and(eq(job_listings.id, jobId), eq(job_listings.organization, orgId)))
+        // A trashed job reads as not found — no action (edit, delete,
+        // automation, scheduling) can target it until it is restored.
+        .where(and(eq(job_listings.id, jobId), eq(job_listings.organization, orgId), isNull(job_listings.deleted_at)))
         .limit(1);
 
     if (!job) throw new AuthzError("Job not found", 404);
@@ -95,7 +97,8 @@ export const assertCandidateBelongsToOrg = async (candidateId: number, orgId: st
     const [candidate] = await db
         .select({ id: candidates.id, name: candidates.name, email: candidates.email })
         .from(candidates)
-        .where(and(eq(candidates.id, candidateId), eq(candidates.organization, orgId)))
+        // A trashed candidate reads as not found until restored.
+        .where(and(eq(candidates.id, candidateId), eq(candidates.organization, orgId), isNull(candidates.deleted_at)))
         .limit(1);
 
     if (!candidate) throw new AuthzError("Candidate not found", 404);
@@ -111,7 +114,9 @@ export const assertApplicationBelongsToOrg = async (applicationId: number, orgId
             current_stage_id: applications.current_stage_id,
         })
         .from(applications)
-        .where(and(eq(applications.id, applicationId), eq(applications.organization, orgId)))
+        // A trashed application reads as not found until restored — so
+        // automations, moves and interview scheduling never run on one.
+        .where(and(eq(applications.id, applicationId), eq(applications.organization, orgId), isNull(applications.deleted_at)))
         .limit(1);
 
     if (!application) throw new AuthzError("Application not found", 404);

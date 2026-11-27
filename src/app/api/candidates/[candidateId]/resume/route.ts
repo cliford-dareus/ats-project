@@ -1,5 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db } from "@/drizzle/db";
 import { candidates } from "@/drizzle/schema";
@@ -32,7 +32,7 @@ export async function GET(
     const [candidate] = await db
         .select({ cv_path: candidates.cv_path, name: candidates.name })
         .from(candidates)
-        .where(and(eq(candidates.id, id), eq(candidates.organization, orgId)))
+        .where(and(eq(candidates.id, id), eq(candidates.organization, orgId), isNull(candidates.deleted_at)))
         .limit(1);
 
     if (!candidate || !candidate.cv_path || candidate.cv_path.startsWith("no-resume-")) {

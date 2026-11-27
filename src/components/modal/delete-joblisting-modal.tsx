@@ -30,7 +30,7 @@ const DeleteJobListingModal = ({
           <div className="">
             <DialogTitle className="text-2xl uppercase">Delete Job</DialogTitle>
             <DialogDescription>
-              Complete each step to create a candidate!
+              This moves the job to Trash. You can restore it from Trash, or delete it forever there.
             </DialogDescription>
           </div>
         </DialogHeader>
@@ -39,11 +39,12 @@ const DeleteJobListingModal = ({
           <div className="space-y-3">
             <p className="text-zinc-600 leading-relaxed">
               Are you sure you want to delete the job opening for{" "}
-              <span className="font-bold text-zinc-900">"{data.name}"</span>?
+              <span className="font-bold text-zinc-900">&quot;{data.name}&quot;</span>?
             </p>
             <p className="text-sm text-zinc-500 bg-zinc-50 p-4 rounded-xl border border-zinc-100">
-              This action cannot be undone. All applicant data associated with
-              this job will be archived.
+              The job and its applications will be moved to Trash. Restoring
+              the job brings them back; deleting forever from Trash removes
+              them permanently.
             </p>
           </div>
 

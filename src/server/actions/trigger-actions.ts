@@ -23,7 +23,7 @@
 
 import { z } from "zod";
 import { db } from "@/drizzle/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { applications, candidates, job_listings, organization } from "@/drizzle/schema";
 import { enqueueTrigger } from "@/lib/enqueue-trigger";
 import { ATSContext } from "@/types";
@@ -105,7 +105,7 @@ export async function fire_public_trigger_action(
                 job_subdomain: job_listings.subdomain,
             })
             .from(job_listings)
-            .where(and(eq(job_listings.id, context.jobId), eq(job_listings.organization, org.orgId)))
+            .where(and(eq(job_listings.id, context.jobId), eq(job_listings.organization, org.orgId), isNull(job_listings.deleted_at)))
             .limit(1);
 
         if (!job) {
@@ -118,7 +118,7 @@ export async function fire_public_trigger_action(
             const [candidate] = await db
                 .select({ id: candidates.id })
                 .from(candidates)
-                .where(and(eq(candidates.id, context.candidate.id), eq(candidates.organization, org.orgId)))
+                .where(and(eq(candidates.id, context.candidate.id), eq(candidates.organization, org.orgId), isNull(candidates.deleted_at)))
                 .limit(1);
 
             if (!candidate) {
@@ -136,6 +136,7 @@ export async function fire_public_trigger_action(
                     eq(applications.id, event.applicationId),
                     eq(applications.job_id, context.jobId),
                     eq(applications.organization, org.orgId),
+                    isNull(applications.deleted_at),
                 ))
                 .limit(1);
 

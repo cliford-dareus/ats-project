@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/drizzle/db";
 import { candidates, organization } from "@/drizzle/schema";
 import { canCreateCandidate } from "@/server/permissions";
@@ -181,6 +181,7 @@ export async function POST(request: NextRequest) {
         .where(
           and(
             eq(candidates.organization, orgId),
+            isNull(candidates.deleted_at),
             inArray(candidates.email, emails)
           )
         );

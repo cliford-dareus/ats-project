@@ -1,9 +1,8 @@
 "use client";
 
-import React, {useState} from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
     Trash2,
-    RotateCcw,
     AlertTriangle,
     Calendar,
     Users,
@@ -13,106 +12,104 @@ import {
     Search,
     Clock
 } from "lucide-react";
-import {Button} from "@/components/ui/button";
-import {Badge} from "@/components/ui/badge";
-import {Separator} from "@/components/ui/separator";
-import {Input} from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { get_trash_summary_action } from "@/server/actions/trash-actions";
+import { EmptyTrashButton } from "./trash-item-actions";
+import type { TrashCounts, TrashItem, TrashItemType } from "@/server/queries/drizzle/trash";
 
+const TYPE_ICONS: Record<TrashItemType, typeof Users> = {
+    job: BriefcaseBusiness,
+    candidate: Users,
+    application: FileText,
+};
+
+const TYPE_LABELS: Record<TrashItemType, string> = {
+    job: "Job Listing",
+    candidate: "Candidate",
+    application: "Application",
+};
+
+const relativeTime = (date: Date) => {
+    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+    if (seconds < 60) return "just now";
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} min ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 30) return `${days} day${days === 1 ? "" : "s"} ago`;
+    return date.toLocaleDateString();
+};
+
+type TrashSummary = {
+    counts: TrashCounts;
+    recent: TrashItem[];
+};
+
+/**
+ * Contextual sidebar for the Trash page. Counts and recently-deleted items
+ * are real (loaded from get_trash_summary_action) — nothing here is
+ * hardcoded. The type filter navigates the trash page (?type=...); the
+ * search box filters the recently-deleted list. Refetches on navigation
+ * and whenever a trash action on the page dispatches "trash:changed".
+ * There is no automatic deletion — the old auto-cleanup / storage
+ * sections were fake and are gone.
+ */
 const TrashSidebar = () => {
-    const [selectedFilter, setSelectedFilter] = useState<string>("all");
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const activeFilter = searchParams.get("type") ?? "all";
     const [searchTerm, setSearchTerm] = useState("");
+    const [summary, setSummary] = useState<TrashSummary | null>(null);
+
+    const load = useCallback(async () => {
+        const result = await get_trash_summary_action();
+        if (result && !("error" in result)) setSummary(result);
+    }, []);
+
+    useEffect(() => {
+        load();
+    }, [load, pathname]);
+
+    useEffect(() => {
+        window.addEventListener("trash:changed", load);
+        return () => window.removeEventListener("trash:changed", load);
+    }, [load]);
+
+    const counts = summary?.counts ?? { jobs: 0, candidates: 0, applications: 0 };
+    const total = counts.jobs + counts.candidates + counts.applications;
+    const recent = (summary?.recent ?? []).filter((item) => {
+        if (!searchTerm.trim()) return true;
+        const needle = searchTerm.toLowerCase();
+        return item.title.toLowerCase().includes(needle) || item.subtitle.toLowerCase().includes(needle);
+    });
 
     const itemTypes = [
-        {id: "all", name: "All Items", icon: Filter, count: 47},
-        {id: "candidates", name: "Candidates", icon: Users, count: 23},
-        {id: "jobs", name: "Job Listings", icon: BriefcaseBusiness, count: 12},
-        {id: "applications", name: "Applications", icon: FileText, count: 8},
-        {id: "interviews", name: "Interviews", icon: Calendar, count: 4}
+        { id: "all", name: "All Items", icon: Filter, count: total },
+        { id: "candidates", name: "Candidates", icon: Users, count: counts.candidates },
+        { id: "jobs", name: "Job Listings", icon: BriefcaseBusiness, count: counts.jobs },
+        { id: "applications", name: "Applications", icon: FileText, count: counts.applications },
     ];
 
-    const timeFilters = [
-        {id: "today", name: "Today", count: 5},
-        {id: "week", name: "This Week", count: 18},
-        {id: "month", name: "This Month", count: 24},
-        {id: "older", name: "Older", count: 0}
-    ];
-
-    const quickActions = [
-        {
-            id: "restore-selected",
-            name: "Restore Selected",
-            icon: RotateCcw,
-            color: "bg-green-500",
-            description: "Restore selected items"
-        },
-        {
-            id: "delete-permanently",
-            name: "Delete Forever",
-            icon: Trash2,
-            color: "bg-red-500",
-            description: "Permanently delete items"
-        },
-        {
-            id: "empty-trash",
-            name: "Empty Trash",
-            icon: AlertTriangle,
-            color: "bg-orange-500",
-            description: "Delete all items"
-        },
-        {
-            id: "auto-cleanup",
-            name: "Auto Cleanup",
-            icon: Clock,
-            color: "bg-blue-500",
-            description: "Configure auto-deletion"
-        }
-    ];
-
-    const recentlyDeleted = [
-        {
-            name: "John Smith - Software Engineer",
-            type: "Candidate",
-            deletedBy: "Sarah Johnson",
-            deletedAt: "2 hours ago",
-            icon: Users
-        },
-        {
-            name: "Senior React Developer",
-            type: "Job Listing",
-            deletedBy: "Mike Chen",
-            deletedAt: "1 day ago",
-            icon: BriefcaseBusiness
-        },
-        {
-            name: "Application #1234",
-            type: "Application",
-            deletedBy: "Lisa Wang",
-            deletedAt: "2 days ago",
-            icon: FileText
-        },
-        {
-            name: "Interview with Alex Brown",
-            type: "Interview",
-            deletedBy: "Tom Wilson",
-            deletedAt: "3 days ago",
-            icon: Calendar
-        }
-    ];
-
-    const storageInfo = {
-        used: 2.3,
-        total: 10,
-        unit: "GB"
+    const goToFilter = (id: string) => {
+        router.push(id === "all" ? "/trash" : `/trash?type=${id}`);
     };
 
-    const usagePercentage = (storageInfo.used / storageInfo.total) * 100;
+    const goToItemType = (item: TrashItem) => {
+        const filter = item.type === "job" ? "jobs" : item.type === "candidate" ? "candidates" : "applications";
+        router.push(`/trash?type=${filter}`);
+    };
 
     return (
         <div className="p-4 flex flex-col h-full space-y-6 overflow-y-auto">
             {/* Search */}
             <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                    <Search size={20}/>
+                    <Search size={20} />
                     <span className="font-medium text-base">Search Trash</span>
                 </div>
                 <Input
@@ -123,63 +120,46 @@ const TrashSidebar = () => {
                 />
             </div>
 
-            <Separator/>
+            <Separator />
 
-            {/* Quick Actions */}
+            {/* Empty Trash */}
             <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                    <Trash2 size={20}/>
+                    <Trash2 size={20} />
                     <span className="font-medium text-base">Quick Actions</span>
                 </div>
-                <div className="grid grid-cols-1 gap-2">
-                    {quickActions.map((action) => {
-                        const Icon = action.icon;
-                        return (
-                            <Button
-                                key={action.id}
-                                variant="outline"
-                                size="sm"
-                                className="flex items-center justify-start gap-2 h-auto py-3"
-                            >
-                                <div className={`p-1.5 rounded ${action.color} text-white`}>
-                                    <Icon size={14}/>
-                                </div>
-                                <div className="flex flex-col items-start">
-                                    <span className="text-sm font-medium">{action.name}</span>
-                                    <span className="text-xs text-muted-foreground">{action.description}</span>
-                                </div>
-                            </Button>
-                        );
-                    })}
-                </div>
+                <EmptyTrashButton disabled={total === 0} />
+                <p className="text-xs text-muted-foreground">
+                    Permanently deletes everything in Trash you have permission to delete.
+                </p>
             </div>
 
-            <Separator/>
+            <Separator />
 
             {/* Item Type Filters */}
             <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                    <Filter size={20}/>
+                    <Filter size={20} />
                     <span className="font-medium text-base">Item Types</span>
                 </div>
                 <div className="space-y-1">
                     {itemTypes.map((type) => {
                         const Icon = type.icon;
-                        const isSelected = selectedFilter === type.id;
+                        const isSelected = activeFilter === type.id;
                         return (
                             <div
                                 key={type.id}
                                 className={`flex items-center justify-between px-3 py-2 rounded cursor-pointer transition-colors ${
                                     isSelected ? "bg-primary/10 text-primary" : "hover:bg-muted"
                                 }`}
-                                onClick={() => setSelectedFilter(type.id)}
+                                onClick={() => goToFilter(type.id)}
                             >
                                 <div className="flex items-center gap-2">
-                                    <Icon size={16}/>
+                                    <Icon size={16} />
                                     <span className="text-sm">{type.name}</span>
                                 </div>
                                 <Badge variant={isSelected ? "default" : "secondary"} className="text-xs">
-                                    {type.count}
+                                    {summary ? type.count : "…"}
                                 </Badge>
                             </div>
                         );
@@ -187,95 +167,59 @@ const TrashSidebar = () => {
                 </div>
             </div>
 
-            <Separator/>
-
-            {/* Time Filters */}
-            <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                    <Calendar size={20}/>
-                    <span className="font-medium text-base">Deleted</span>
-                </div>
-                <div className="space-y-1">
-                    {timeFilters.map((filter) => (
-                        <div
-                            key={filter.id}
-                            className="flex items-center justify-between px-3 py-2 rounded hover:bg-muted cursor-pointer transition-colors"
-                        >
-                            <span className="text-sm">{filter.name}</span>
-                            <Badge variant="secondary" className="text-xs">
-                                {filter.count}
-                            </Badge>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            <Separator/>
+            <Separator />
 
             {/* Recently Deleted */}
             <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                    <Clock size={20}/>
+                    <Clock size={20} />
                     <span className="font-medium text-base">Recently Deleted</span>
                 </div>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {recentlyDeleted.map((item, index) => {
-                        const Icon = item.icon;
-                        return (
-                            <div
-                                key={index}
-                                className="p-3 rounded border hover:bg-muted cursor-pointer transition-colors"
-                            >
-                                <div className="flex items-start gap-2">
-                                    <Icon size={16} className="mt-0.5 text-muted-foreground"/>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="text-sm font-medium truncate">{item.name}</div>
-                                        <div className="text-xs text-muted-foreground">
-                                            {item.type} • Deleted by {item.deletedBy}
+                {recent.length === 0 ? (
+                    <p className="text-sm text-muted-foreground px-1">
+                        {summary === null ? "Loading…" : "Nothing in Trash yet."}
+                    </p>
+                ) : (
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {recent.map((item) => {
+                            const Icon = TYPE_ICONS[item.type];
+                            return (
+                                <div
+                                    key={`${item.type}-${item.id}`}
+                                    className="p-3 rounded border hover:bg-muted cursor-pointer transition-colors"
+                                    onClick={() => goToItemType(item)}
+                                >
+                                    <div className="flex items-start gap-2">
+                                        <Icon size={16} className="mt-0.5 text-muted-foreground" />
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-sm font-medium truncate">{item.title}</div>
+                                            <div className="text-xs text-muted-foreground">
+                                                {TYPE_LABELS[item.type]}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">
+                                                {relativeTime(new Date(item.deletedAt))}
+                                            </div>
                                         </div>
-                                        <div className="text-xs text-muted-foreground">{item.deletedAt}</div>
                                     </div>
                                 </div>
-                            </div>
-                        );
-                    })}
-                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
 
-            <Separator/>
-
-            {/* Storage Info */}
-            <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                    <AlertTriangle size={20}/>
-                    <span className="font-medium text-base">Storage</span>
-                </div>
-                <div className="p-3 rounded border bg-muted/50">
-                    <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm">Trash Storage</span>
-                        <span className="text-sm font-medium">
-              {storageInfo.used} / {storageInfo.total} {storageInfo.unit}
-            </span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                        <div
-                            className="bg-primary h-2 rounded-full transition-all duration-300"
-                            style={{width: `${usagePercentage}%`}}
-                        ></div>
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-2">
-                        Items are automatically deleted after 30 days
-                    </div>
-                </div>
-            </div>
+            <Separator />
 
             {/* Warning */}
             <div className="mt-auto p-3 rounded border border-orange-200 bg-orange-50 dark:bg-orange-950/20">
                 <div className="flex items-start gap-2">
-                    <AlertTriangle size={16} className="text-orange-500 mt-0.5"/>
+                    <AlertTriangle size={16} className="text-orange-500 mt-0.5" />
                     <div className="text-xs text-orange-700 dark:text-orange-300">
-                        <div className="font-medium">Auto-deletion enabled</div>
-                        <div>Items older than 30 days are permanently deleted</div>
+                        <div className="font-medium">No auto-deletion</div>
+                        <div className="flex items-center gap-1">
+                            <Calendar size={12} />
+                            Items stay in Trash until you restore or delete them
+                        </div>
                     </div>
                 </div>
             </div>

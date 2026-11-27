@@ -1,6 +1,6 @@
 import { db } from "@/drizzle/db";
 import { applications, attachments, candidates, interviews } from "@/drizzle/schema";
-import { and, asc, desc, eq, inArray, sql, SQL } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, sql, SQL } from "drizzle-orm";
 import { CACHE_TAGS, dbCache, getGlobalTag, getIdTag, getOrgTag, revalidateDbCache } from "@/lib/cache";
 import { filterCandidateSchema, newCandidateFormSchema, updateCandidateSchema } from "@/zod";
 import { z } from "zod";
@@ -51,7 +51,8 @@ export const update_candidate = async (data: z.infer<typeof updateCandidateSchem
             ...(data.subdomain && { subdomain: data.subdomain }),
         })
         // Org-scoped: a candidate from another org is never updated.
-        .where(and(eq(candidates.id, data.id), eq(candidates.organization, orgId)))
+        // A trashed candidate is never updated either — restore it first.
+        .where(and(eq(candidates.id, data.id), eq(candidates.organization, orgId), isNull(candidates.deleted_at)))
 
     revalidateDbCache({
         tag: CACHE_TAGS.candidates,
@@ -60,24 +61,76 @@ export const update_candidate = async (data: z.infer<typeof updateCandidateSchem
     });
 };
 
+// ── Soft-delete (Trash) ─────────────────────────────────────────────────────
+// Sets deleted_at (now) on the candidate and, in the same instant, on its
+// live applications — one shared timestamp so a later restore can tell
+// which applications were trashed by this cascade apart from ones the
+// user trashed individually first (those keep their own earlier timestamp).
+// NOT deleted here, so a restore brings everything back: the candidate's
+// Mongo details/notes/attachment docs, its Drizzle attachment rows, and
+// the applications' interviews/scorecards (they stay in place, invisible
+// while their application is trashed). R2 blobs are never deleted (same
+// known gap as org deletion). Returns how many applications were cascaded.
+// The old hard delete lives on as permanent_delete_candidate below and is
+// only reachable from Trash.
 export const delete_candidate = async (id: number, orgId: string) => {
-    // The row delete is the whole cascade: the schema declares
-    // onDelete: 'cascade' on attachments.candidate_id and
-    // applications.candidate, and on through interviews.applications_id
-    // and score_cards.interviews_id — so deleting the candidate also
-    // deletes its applications, their interviews and scorecards, and its
-    // Drizzle attachment rows. Mongo documents (candidate details, notes,
-    // Mongo attachment docs) have no FKs and are removed explicitly by
-    // delete_candidate_action before/after this call. R2 blobs referenced
-    // by file_url are NOT deleted (same known gap as org deletion).
-    await db.delete(candidates)
-        .where(and(eq(candidates.id, id), eq(candidates.organization, orgId)))
+    const now = new Date();
+    const cascaded = await db.transaction(async (tx) => {
+        const [candidate] = await tx
+            .select({ id: candidates.id })
+            .from(candidates)
+            .where(and(eq(candidates.id, id), eq(candidates.organization, orgId), isNull(candidates.deleted_at)))
+            .limit(1);
+        if (!candidate) return 0;
+
+        await tx
+            .update(candidates)
+            .set({ deleted_at: now })
+            .where(and(eq(candidates.id, id), eq(candidates.organization, orgId)));
+
+        const [apps] = await tx
+            .update(applications)
+            .set({ deleted_at: now })
+            .where(and(
+                eq(applications.candidate, id),
+                eq(applications.organization, orgId),
+                isNull(applications.deleted_at),
+            ));
+        return apps.affectedRows ?? 0;
+    });
 
     revalidateDbCache({
         tag: CACHE_TAGS.candidates,
         id: String(id),
         orgId: orgId,
     });
+    revalidateDbCache({
+        tag: CACHE_TAGS.applications,
+        orgId: orgId,
+    });
+    return { cascadedApplications: cascaded };
+};
+
+// Permanent delete (Trash → Delete forever): the old hard-delete behaviour.
+// MySQL row delete cascades to applications, interviews, scorecards and
+// Drizzle attachment rows via the schema's onDelete: 'cascade'. Mongo
+// documents (candidate details, notes, Mongo attachment docs) have no FKs
+// and are removed explicitly by the caller before this runs. R2 blobs
+// referenced by file_url are NOT deleted (same known gap as org deletion).
+export const permanent_delete_candidate = async (id: number, orgId: string) => {
+    const [result] = await db.delete(candidates)
+        .where(and(eq(candidates.id, id), eq(candidates.organization, orgId), isNotNull(candidates.deleted_at)))
+
+    revalidateDbCache({
+        tag: CACHE_TAGS.candidates,
+        id: String(id),
+        orgId: orgId,
+    });
+    revalidateDbCache({
+        tag: CACHE_TAGS.applications,
+        orgId: orgId,
+    });
+    return { deleted: (result.affectedRows ?? 0) > 0 };
 };
 
 // Sort for the candidates list (?sort= URL param). Kept out of
@@ -118,8 +171,8 @@ export const get_candidate_by_id_db = async (unsafedata: number, orgId: string) 
         interview,
         scoreCards,
     ] = await Promise.all([
-        db.select().from(candidates).where(and(eq(candidates.id, unsafedata), eq(candidates.organization, orgId))),
-        db.select().from(applications).where(and(eq(applications.candidate, unsafedata), eq(applications.organization, orgId))),
+        db.select().from(candidates).where(and(eq(candidates.id, unsafedata), eq(candidates.organization, orgId), isNull(candidates.deleted_at))),
+        db.select().from(applications).where(and(eq(applications.candidate, unsafedata), eq(applications.organization, orgId), isNull(applications.deleted_at))),
         // Attachments carry no org column — scope them through their candidate.
         // Columns are selected explicitly so the join keeps the row shape.
         db.select({
@@ -131,7 +184,7 @@ export const get_candidate_by_id_db = async (unsafedata: number, orgId: string) 
         })
             .from(attachments)
             .innerJoin(candidates, eq(candidates.id, attachments.candidate_id))
-            .where(and(eq(attachments.candidate_id, unsafedata), eq(candidates.organization, orgId))),
+            .where(and(eq(attachments.candidate_id, unsafedata), eq(candidates.organization, orgId), isNull(candidates.deleted_at))),
         // Interviews belong to applications, not candidates — join through the
         // candidate's applications so the review page shows this candidate's
         // interviews (matching applications_id against the candidate id
@@ -154,7 +207,7 @@ export const get_candidate_by_id_db = async (unsafedata: number, orgId: string) 
         })
             .from(interviews)
             .innerJoin(applications, eq(applications.id, interviews.applications_id))
-            .where(and(eq(applications.candidate, unsafedata), eq(applications.organization, orgId))),
+            .where(and(eq(applications.candidate, unsafedata), eq(applications.organization, orgId), isNull(applications.deleted_at))),
         // Scorecards for this candidate's interviews (org-scoped through
         // the interview's application — see score-cards.ts).
         get_score_cards_for_candidate_db(unsafedata, orgId),
@@ -207,7 +260,7 @@ const get_all_candidates_db = async (filter: z.infer<typeof filterCandidateSchem
     const [{ count }] = await db
         .select({ count: sql<number>`count(*)` })
         .from(candidates)
-        .where(and(...filters, eq(candidates.organization, filter.organization)));
+        .where(and(...filters, eq(candidates.organization, filter.organization), isNull(candidates.deleted_at)));
 
     const candidate = await db.select({
         id: candidates.id,
@@ -222,7 +275,7 @@ const get_all_candidates_db = async (filter: z.infer<typeof filterCandidateSchem
 
         applicationsCount: db.$count(
             applications,
-            eq(applications.candidate, candidates.id),
+            and(eq(applications.candidate, candidates.id), isNull(applications.deleted_at)),
         ),
         attachmentsCount: db.$count(
             attachments,
@@ -230,7 +283,7 @@ const get_all_candidates_db = async (filter: z.infer<typeof filterCandidateSchem
         ),
     })
         .from(candidates)
-        .where(and(...filters, eq(candidates.organization, filter.organization)))
+        .where(and(...filters, eq(candidates.organization, filter.organization), isNull(candidates.deleted_at)))
         .orderBy(orderBy)
         .limit(filter.limit)
         .offset(filter.offset);

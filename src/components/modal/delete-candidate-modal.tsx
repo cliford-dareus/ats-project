@@ -19,11 +19,13 @@ type DeleteCandidateModalProps = {
 };
 
 /**
- * Confirm deleting one or more candidates. The copy states the cascade
- * explicitly: deleting a candidate also deletes their applications (and
- * the interviews/scorecards under them), their attachments, their
- * internal notes and their stored candidate details. R2 files behind
- * attachments are not removed.
+ * Confirm moving one or more candidates to Trash (soft-delete). The copy
+ * states the cascade explicitly: moving a candidate to Trash also moves
+ * their applications (and the interviews/scorecards under them) to Trash,
+ * while their attachments, internal notes and stored candidate details
+ * stay in place until a permanent delete from Trash. Restoring the
+ * candidate brings it all back. R2 files behind attachments are not
+ * removed.
  */
 const DeleteCandidateModal = ({
     isOpen,
@@ -49,7 +51,7 @@ const DeleteCandidateModal = ({
                             Delete {isBulk ? `${candidates.length} Candidates` : "Candidate"}
                         </DialogTitle>
                         <DialogDescription>
-                            This action cannot be undone.
+                            This moves the candidate to Trash. You can restore it from Trash, or delete it forever there.
                         </DialogDescription>
                     </div>
                 </DialogHeader>
@@ -64,11 +66,12 @@ const DeleteCandidateModal = ({
                             ?
                         </p>
                         <p className="text-sm text-zinc-500 bg-zinc-50 p-4 rounded-xl border border-zinc-100">
-                            This also permanently deletes{" "}
+                            This also moves to Trash{" "}
                             {totalApplications} application{totalApplications === 1 ? "" : "s"}
-                            {" "}(including their interviews and scorecards),{" "}
+                            {" "}(including their interviews and scorecards).{" "}
                             {totalAttachments} attachment{totalAttachments === 1 ? "" : "s"}, and
-                            the candidate&apos;s internal notes and stored details.
+                            the candidate&apos;s internal notes and stored details stay in
+                            place until a permanent delete from Trash.
                             Files already uploaded to storage are not removed.
                         </p>
                     </div>

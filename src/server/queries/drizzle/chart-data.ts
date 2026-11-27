@@ -1,5 +1,5 @@
 import {db} from "@/drizzle/db";
-import {and, eq, gte, lte, SQL, sql} from "drizzle-orm";
+import {and, eq, gte, isNull, lte, SQL, sql} from "drizzle-orm";
 import {applications, candidates, interviews, job_listings} from "@/drizzle/schema";
 import { CACHE_TAGS, dbCache, getIdTag, getOrgTag } from "@/lib/cache";
 
@@ -74,7 +74,7 @@ export const getHiredCandidateChartData = async (orgId: string, createdAfter: Da
 };
 
 export const get_job_chart_data_db = async (orgId: string, createdAfter: Date | null, createdBefore: Date | null) => {
-    const createdAtQuery: SQL[] = [eq(job_listings.organization, orgId)]
+    const createdAtQuery: SQL[] = [eq(job_listings.organization, orgId), isNull(job_listings.deleted_at)]
     if (createdAfter) createdAtQuery.push(gte(job_listings.created_at, createdAfter))
     if (createdBefore) createdAtQuery.push(lte(job_listings.created_at, createdBefore))
 
@@ -88,7 +88,7 @@ export const get_job_chart_data_db = async (orgId: string, createdAfter: Date | 
 };
 
 export const get_open_job_chart_data_db = async (orgId: string, createdAfter: Date | null, createdBefore: Date | null) => {
-    const createdAtQuery: SQL[] = [eq(job_listings.organization, orgId)]
+    const createdAtQuery: SQL[] = [eq(job_listings.organization, orgId), isNull(job_listings.deleted_at)]
     if (createdAfter) createdAtQuery.push(gte(job_listings.created_at, createdAfter))
     if (createdBefore) createdAtQuery.push(lte(job_listings.created_at, createdBefore))
 
@@ -102,7 +102,7 @@ export const get_open_job_chart_data_db = async (orgId: string, createdAfter: Da
 };
 
 export const get_application_chart_data_db = async (orgId: string, createdAfter: Date | null, createdBefore: Date | null) => {
-    const createdAtQuery: SQL[] = [eq(applications.organization, orgId)]
+    const createdAtQuery: SQL[] = [eq(applications.organization, orgId), isNull(applications.deleted_at)]
     if (createdAfter) createdAtQuery.push(gte(applications.created_at, createdAfter))
     if (createdBefore) createdAtQuery.push(lte(applications.created_at, createdBefore))
 
@@ -126,13 +126,14 @@ export const get_interview_chart_data_db = async (orgId: string, createdAfter: D
         date: sql`DATE_FORMAT(${interviews.created_at},'%Y-%m-%d')`.as('date'),
         count: sql`COUNT(*)`.as('count'),})
             .from(interviews)
-            .where(and(...createdAtQuery, eq(interviews.status, 'SCHEDULE')))
+            .leftJoin(applications, eq(applications.id, interviews.applications_id))
+            .where(and(...createdAtQuery, eq(interviews.status, 'SCHEDULE'), isNull(applications.deleted_at)))
             .groupBy(sql`DATE_FORMAT(${interviews.created_at},'%Y-%m-%d')`)
             .orderBy(sql`DATE_FORMAT(${interviews.created_at},'%Y-%m-%d')ASC`);
 };
 
 export const get_candidate_chart_data_db = async (orgId: string, createdAfter: Date | null, createdBefore: Date | null) => {
-    const createdAtQuery: SQL[] = [eq(candidates.organization, orgId)]
+    const createdAtQuery: SQL[] = [eq(candidates.organization, orgId), isNull(candidates.deleted_at)]
     if (createdAfter) createdAtQuery.push(gte(candidates.created_at, createdAfter))
     if (createdBefore) createdAtQuery.push(lte(candidates.created_at, createdBefore))
 
@@ -146,7 +147,7 @@ export const get_candidate_chart_data_db = async (orgId: string, createdAfter: D
 };
 
 export const get_hired_candidate_chart_data_db = async (orgId: string, createdAfter: Date | null, createdBefore: Date | null) => {
-    const createdAtQuery: SQL[] = [eq(candidates.organization, orgId)]
+    const createdAtQuery: SQL[] = [eq(candidates.organization, orgId), isNull(candidates.deleted_at)]
     if (createdAfter) createdAtQuery.push(gte(candidates.created_at, createdAfter))
     if (createdBefore) createdAtQuery.push(lte(candidates.created_at, createdBefore))
 

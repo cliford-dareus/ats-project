@@ -39,6 +39,7 @@ import {
     canScheduleInterview,
     hasPermission,
 } from "../permissions";
+import { record_activity } from "@/server/activity/record-activity";
 
 const holdSchema = z.object({
     applicationId: z.number(),
@@ -409,6 +410,23 @@ export const create_interview_action = async (
     if (!allowed) throw new Error("Missing permission: interview:schedule");
 
     const result = await create_interview_db(data, orgId);
+
+    // The interview row now exists — resolve candidate/job names for the
+    // log entry (the same lookup the invite email below uses).
+    if (typeof result === "number") {
+        const details = await get_interview_details_for_application_db(
+            data.applicationId,
+            orgId
+        ).catch(() => null);
+        await record_activity({
+            action: "interview.scheduled",
+            entity_type: "interview",
+            entity_id: result,
+            summary: details?.candidate_name
+                ? `Scheduled interview with ${details.candidate_name} for ${details.job_name ?? "a role"}`
+                : "Scheduled interview",
+        });
+    }
 
     // D7-server: the direct path used to send the candidate nothing (only
     // the hold path emailed). Best-effort invite — creation already
@@ -922,6 +940,15 @@ export const reschedule_interview_action = async (
         link: meet_link ?? null,
     });
 
+    await record_activity({
+        action: "interview.rescheduled",
+        entity_type: "interview",
+        entity_id: interviewId,
+        summary: row.candidate_name
+            ? `Rescheduled interview with ${row.candidate_name} for ${row.job_name ?? "a role"} to ${format_interview_time(start_at, end_at)}`
+            : "Rescheduled interview",
+    });
+
     // Email the candidate the new time. Best-effort — the move already
     // happened, so a mail failure is reported, not thrown.
     let email_sent = false;
@@ -1000,6 +1027,15 @@ export const cancel_interview_action = async (
                 ? "RELEASED"
                 : "NONE",
         reason,
+    });
+
+    await record_activity({
+        action: "interview.cancelled",
+        entity_type: "interview",
+        entity_id: interviewId,
+        summary: row.candidate_name
+            ? `Cancelled interview with ${row.candidate_name} for ${row.job_name ?? "a role"}${reason ? ` — ${reason}` : ""}`
+            : "Cancelled interview",
     });
 
     let email_sent = false;

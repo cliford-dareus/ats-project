@@ -10,8 +10,41 @@ import {
 } from "@/server/queries";
 import { auth } from "@clerk/nextjs/server";
 import { canDeleteApplication, canEditApplication, canMoveApplication, canViewApplication, requirePermission } from "@/server/permissions";
+import { record_activity } from "@/server/activity/record-activity";
 import { z } from "zod";
 import { applicationFormSchema, filterApplicationsSchema, moveAndReorderApplicationSchema, updateApplicationSchema, updateApplicationStageSchema } from "@/zod";
+import { db } from "@/drizzle/db";
+import { applications, candidates, stages } from "@/drizzle/schema";
+import { and, eq } from "drizzle-orm";
+
+/** Candidate + target-stage display names for a stage-move log entry. */
+const get_stage_move_context = async (applicationId: number, stageId: number, orgId: string) => {
+    const [application] = await db
+        .select({ candidateName: candidates.name })
+        .from(applications)
+        .innerJoin(candidates, eq(candidates.id, applications.candidate))
+        .where(and(eq(applications.id, applicationId), eq(applications.organization, orgId)))
+        .limit(1);
+    const [stage] = await db
+        .select({ stageName: stages.stage_name })
+        .from(stages)
+        .where(eq(stages.id, stageId))
+        .limit(1);
+    if (!application || !stage) return null;
+    return { candidateName: application.candidateName, stageName: stage.stageName };
+};
+
+const record_stage_move = async (applicationId: number, stageId: number, orgId: string) => {
+    const ctx = await get_stage_move_context(applicationId, stageId, orgId);
+    await record_activity({
+        action: "application.stage_moved",
+        entity_type: "application",
+        entity_id: applicationId,
+        summary: ctx
+            ? `Moved ${ctx.candidateName}'s application to ${ctx.stageName}`
+            : "Moved application to a new stage",
+    });
+};
 
 // NOTE: intentionally NOT permission-gated — this is the public apply
 // path (src/app/(public)/[domain]/_components/apply-form.tsx), called by
@@ -67,7 +100,11 @@ export const update_application_stage_action = async (unsafeData: z.infer<typeof
         return { error: true, message: "There was an error updating application stage" }
     }
 
-    return await update_application_stage(data, orgId);
+    const result = await update_application_stage(data, orgId);
+    if (result && "success" in result && result.success) {
+        await record_stage_move(data.applicationId, data.new_stage_id, orgId);
+    }
+    return result;
 };
 
 export const get_all_applications_action = async (unsafeData: z.infer<typeof filterApplicationsSchema>) => {
@@ -131,14 +168,21 @@ export const moveApplicationAndReorder = async (unsafeData: z.infer<typeof moveA
 
     // S-3: the session org is asserted against the application inside the
     // transaction — a cross-org application id is rejected there.
-    return await move_application_and_reorder_db(unsafeData, orgId)
+    const result = await move_application_and_reorder_db(unsafeData, orgId);
+    // A kanban drag within the same stage is a reorder, not a stage move —
+    // only record when the stage actually changed.
+    if (result.success && unsafeData.sourceStageId && unsafeData.sourceStageId !== unsafeData.newStageId) {
+        await record_stage_move(unsafeData.applicationId, unsafeData.newStageId, orgId);
+    }
+    return result;
 };
 
-// Delete one application (B21). Permission-gated (application:delete) and
-// org-scoped in the query. Cascade: deletes the application row, its
-// interviews + their scorecards, and its Mongo application notes; KEEPS the
-// candidate row, the candidate's attachments and candidate-details record
-// (they belong to the candidate, who may have other applications).
+// Move one application to Trash (soft-delete, B21). Permission-gated
+// (application:delete) and org-scoped in the query. Only the application
+// row gets deleted_at — the candidate row, the candidate's attachments
+// and candidate-details record are untouched, and the application's
+// interviews/scorecards/notes stay in place until a permanent delete
+// from Trash, so Restore brings everything back.
 export const delete_application_action = async (applicationId: number) => {
     const { userId, orgId } = await auth();
     const parsed = await z.number().int().positive().spa(applicationId);
@@ -148,5 +192,15 @@ export const delete_application_action = async (applicationId: number) => {
         return { error: true, message: "There was an error deleting the application" }
     }
 
-    return await delete_application_db(parsed.data, orgId);
+    const result = await delete_application_db(parsed.data, orgId);
+    if (result.success) {
+        await record_activity({
+            action: "application.deleted",
+            entity_type: "application",
+            entity_id: parsed.data,
+            summary: "Application moved to Trash",
+        });
+        return { success: true as const, message: "Application moved to Trash" };
+    }
+    return result;
 };

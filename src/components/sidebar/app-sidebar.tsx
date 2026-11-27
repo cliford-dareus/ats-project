@@ -16,6 +16,7 @@ import {
     BriefcaseBusiness,
     Users, Settings,
     FileText,
+    History,
     Mail
 } from "lucide-react";
 import React from "react";
@@ -67,6 +68,12 @@ const data = {
             title: "Reports",
             url: "/reports",
             icon: FileText,
+            isActive: false,
+        },
+        {
+            title: "Activity",
+            url: "/activity",
+            icon: History,
             isActive: false,
         },
         {

@@ -2,7 +2,7 @@ import React from "react";
 import CommunicationPageClient from "./_components/communication-page-client";
 import { fetchCommunicationPageData } from "@/server/actions/communication-actions";
 import { ShieldCheck } from "lucide-react";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { candidates } from "@/drizzle/schema";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/drizzle/db";
@@ -15,7 +15,7 @@ const CommunicationPage = async () => {
     const { orgId } = await auth();
     // No session org (e.g. signed-out render) — no candidates to list.
     const all_candidates = orgId
-        ? await db.select().from(candidates).where(eq(candidates.organization, orgId))
+        ? await db.select().from(candidates).where(and(eq(candidates.organization, orgId), isNull(candidates.deleted_at)))
         : [];
     // Real org members for the @mention picker (replaces the hardcoded demo users).
     const users = await get_org_members_action();

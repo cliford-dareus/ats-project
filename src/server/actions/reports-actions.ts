@@ -16,6 +16,7 @@ import {
     desc,
     sql,
     and,
+    isNull,
 } from "drizzle-orm";
 import { subDays, subMonths } from "date-fns";
 import { requirePermission } from "@/server/permissions";
@@ -39,19 +40,20 @@ export async function getReportData() {
     ] = await Promise.all([
         db.select({ count: count() })
             .from(applications)
-            .where(eq(applications.organization, orgId)),
+            .where(and(eq(applications.organization, orgId), isNull(applications.deleted_at))),
         db.select({ count: count() })
             .from(candidates)
-            .where(eq(candidates.organization, orgId)),
+            .where(and(eq(candidates.organization, orgId), isNull(candidates.deleted_at))),
         db.select({ count: count() })
             .from(job_listings)
-            .where(eq(job_listings.organization, orgId)),
+            .where(and(eq(job_listings.organization, orgId), isNull(job_listings.deleted_at))),
         db.select({ count: count() })
             .from(interviews)
-            .where(eq(interviews.organization, orgId)),
+            .leftJoin(applications, eq(applications.id, interviews.applications_id))
+            .where(and(eq(interviews.organization, orgId), isNull(applications.deleted_at))),
         db.select({ count: count() })
             .from(candidates)
-            .where(and(eq(candidates.organization, orgId), eq(candidates.status, 'HIRED'))),
+            .where(and(eq(candidates.organization, orgId), eq(candidates.status, 'HIRED'), isNull(candidates.deleted_at))),
     ]);
 
     // Get applications by date for trend analysis
@@ -63,6 +65,7 @@ export async function getReportData() {
         .from(applications)
         .where(and(
             eq(applications.organization, orgId),
+            isNull(applications.deleted_at),
             gte(applications.created_at, last30Days)
         ))
         .groupBy(sql`DATE(${applications.created_at})`)
@@ -81,7 +84,7 @@ export async function getReportData() {
         })
         .from(applications)
         .innerJoin(job_listings, eq(applications.job_id, job_listings.id))
-        .where(eq(applications.organization, orgId))
+        .where(and(eq(applications.organization, orgId), isNull(applications.deleted_at), isNull(job_listings.deleted_at)))
         .groupBy(job_listings.id, job_listings.name)
         .orderBy(desc(count(applications.id)))
         .limit(10);
@@ -99,9 +102,10 @@ export async function getReportData() {
         .innerJoin(job_listings, eq(stages.job_id, job_listings.id))
         .leftJoin(applications, and(
             eq(applications.current_stage_id, stages.id),
-            eq(applications.organization, orgId)
+            eq(applications.organization, orgId),
+            isNull(applications.deleted_at)
         ))
-        .where(eq(job_listings.organization, orgId))
+        .where(and(eq(job_listings.organization, orgId), isNull(job_listings.deleted_at)))
         .groupBy(stages.id, stages.stage_name, stages.stage_order_id, stages.color)
         .orderBy(stages.stage_order_id, stages.id);
 
@@ -114,6 +118,7 @@ export async function getReportData() {
         .from(applications)
         .where(and(
             eq(applications.organization, orgId),
+            isNull(applications.deleted_at),
             gte(applications.created_at, last12Months)
         ))
         .groupBy(sql`DATE_FORMAT(${applications.created_at}, '%Y-%m')`);
@@ -124,8 +129,10 @@ export async function getReportData() {
             count: count(interviews.id),
         })
         .from(interviews)
+        .leftJoin(applications, eq(applications.id, interviews.applications_id))
         .where(and(
             eq(interviews.organization, orgId),
+            isNull(applications.deleted_at),
             gte(interviews.created_at, last12Months)
         ))
         .groupBy(sql`DATE_FORMAT(${interviews.created_at}, '%Y-%m')`);
@@ -144,6 +151,7 @@ export async function getReportData() {
         .where(and(
             eq(candidates.organization, orgId),
             eq(candidates.status, 'HIRED'),
+            isNull(candidates.deleted_at),
             gte(candidates.updated_at, last12Months)
         ))
         .groupBy(sql`DATE_FORMAT(${candidates.updated_at}, '%Y-%m')`);

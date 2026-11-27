@@ -3,9 +3,10 @@
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/drizzle/db";
-import { usersTable } from "@/drizzle/schema";
+import { applications, candidates, interviews, usersTable } from "@/drizzle/schema";
 import { assertInterviewBelongsToOrg, requirePermission } from "@/server/permissions";
 import { submit_interview_feedback_db } from "@/server/queries/drizzle/score-cards";
+import { record_activity } from "@/server/activity/record-activity";
 
 export const interviewFeedbackSchema = z.object({
     interviewId: z.number().int().positive(),
@@ -54,6 +55,23 @@ export const submit_interview_feedback_action = async (
         },
         orgId,
     );
+
+    // Candidate name for the log entry, resolved org-scoped after success.
+    const [candidate] = await db
+        .select({ name: candidates.name })
+        .from(interviews)
+        .innerJoin(applications, eq(applications.id, interviews.applications_id))
+        .innerJoin(candidates, eq(candidates.id, applications.candidate))
+        .where(eq(interviews.id, parsed.data.interviewId))
+        .limit(1);
+    await record_activity({
+        action: "interview.feedback_submitted",
+        entity_type: "interview",
+        entity_id: parsed.data.interviewId,
+        summary: candidate
+            ? `Submitted interview feedback for ${candidate.name}`
+            : "Submitted interview feedback",
+    });
 
     return { success: true as const, scoreCard };
 };

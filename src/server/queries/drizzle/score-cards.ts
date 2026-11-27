@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { db } from "@/drizzle/db";
 import { applications, interviews, score_cards } from "@/drizzle/schema";
 import { CACHE_TAGS, revalidateDbCache } from "@/lib/cache";
@@ -47,6 +47,7 @@ export const get_score_cards_for_candidate_db = async (
             and(
                 eq(applications.candidate, candidateId),
                 eq(applications.organization, orgId),
+                isNull(applications.deleted_at),
             ),
         )
         .orderBy(desc(score_cards.created_at));
@@ -61,10 +62,12 @@ export const get_score_card_by_interview_db = async (
         .select(scoreCardSelect)
         .from(score_cards)
         .innerJoin(interviews, eq(interviews.id, score_cards.interviews_id))
+        .leftJoin(applications, eq(applications.id, interviews.applications_id))
         .where(
             and(
                 eq(score_cards.interviews_id, interviewId),
                 eq(interviews.organization, orgId),
+                isNull(applications.deleted_at),
             ),
         )
         .limit(1);
@@ -93,10 +96,12 @@ export const submit_interview_feedback_db = async (
     const [interview] = await db
         .select({ id: interviews.id, applications_id: interviews.applications_id })
         .from(interviews)
+        .leftJoin(applications, eq(applications.id, interviews.applications_id))
         .where(
             and(
                 eq(interviews.id, input.interviewId),
                 eq(interviews.organization, orgId),
+                isNull(applications.deleted_at),
             ),
         )
         .limit(1);

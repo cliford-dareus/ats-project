@@ -13,6 +13,7 @@ import Provider from "@/providers/providers";
 import { ensure_organization_row } from "@/server/queries/drizzle/organization";
 import { ThemeToggle } from "@/components/theme-toggle";
 import NotificationDropdown from "@/components/notification-dropdown";
+import GlobalSearch from "@/components/global-search";
 
 type Props = {
     children: React.ReactNode;
@@ -64,6 +65,7 @@ const Layout = async ({ children }: Props) => {
                         <OrganizationSwitcher />
                         <Separator orientation="vertical" className="mr-2 h-4" />
                         <div className="ml-auto flex items-center gap-2">
+                            <GlobalSearch />
                             <ThemeToggle />
                             <NotificationDropdown />
                             <Button className="!p-0 border rounded-lg text-[10px] uppercase tracking-widest font-bold transition-all flex items-center gap-2">

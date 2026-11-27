@@ -78,8 +78,8 @@ const RowAction = ({ row, table }) => {
                         <DialogTitle>Delete application?</DialogTitle>
                         <DialogDescription>
                             {candidateName
-                                ? `This deletes ${candidateName}'s application for this job, along with its interviews, scorecards and application notes.`
-                                : "This deletes the application, along with its interviews, scorecards and application notes."}{" "}
+                                ? `This moves ${candidateName}'s application for this job to Trash, along with its interviews, scorecards and application notes. You can restore it from Trash, or delete it forever there.`
+                                : "This moves the application to Trash, along with its interviews, scorecards and application notes. You can restore it from Trash, or delete it forever there."}{" "}
                             The candidate and their attachments are kept.
                         </DialogDescription>
                     </DialogHeader>

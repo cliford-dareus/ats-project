@@ -2,7 +2,7 @@
 
 import { auth } from '@clerk/nextjs/server';
 import { candidates } from '@/drizzle/schema';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { db } from '@/drizzle/db';
 import { create_candidate_details, get_candidate_details, update_candidate_details } from '../queries/mongo/candidate-details';
 import { CACHE_TAGS, revalidateDbCache } from '@/lib/cache';
@@ -37,7 +37,8 @@ export const create_application_summary = async (candidate_id: number) => {
         .from(candidates)
         .where(and(
             eq(candidates.id, candidate_id),
-            eq(candidates.organization, orgId)
+            eq(candidates.organization, orgId),
+            isNull(candidates.deleted_at)
         ));
 
     if (!candidate) {
@@ -121,7 +122,8 @@ export const generate_missing_fields = async (candidate_id: number, missing_fiel
         .from(candidates)
         .where(and(
             eq(candidates.id, candidate_id),
-            eq(candidates.organization, orgId)
+            eq(candidates.organization, orgId),
+            isNull(candidates.deleted_at)
         ));
 
     if (!candidate) {

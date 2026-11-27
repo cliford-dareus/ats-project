@@ -1,6 +1,6 @@
 import { db } from "@/drizzle/db";
 import { departments, job_listings } from "@/drizzle/schema";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { get_organization_by_subdomain_action } from "@/server/actions/organization_actions";
 import {
     resolveCompanyName,
@@ -41,7 +41,7 @@ const CareerPage = async ({ params }: { params: Promise<{ domain: string }> }) =
         department: departments.name,
     })
         .from(job_listings)
-        .where(and(eq(job_listings.subdomain, domain), eq(job_listings.status, 'OPEN')))
+        .where(and(eq(job_listings.subdomain, domain), eq(job_listings.status, 'OPEN'), isNull(job_listings.deleted_at)))
         .leftJoin(departments, eq(job_listings.department, departments.id));
 
     return (

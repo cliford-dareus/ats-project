@@ -4,11 +4,16 @@ import { auth } from "@clerk/nextjs/server";
 import { canCreateCandidate, canDeleteCandidate, canEditCandidate, canViewCandidate, assertCandidateBelongsToOrg } from "@/server/permissions";
 import { create_candidate, delete_candidate, get_all_candidates, get_candidate_by_id, get_organization_by_id, update_candidate } from "@/server/queries";
 import { CANDIDATE_LIST_SORTS, CandidateListSort } from "@/server/queries/drizzle/candidates";
-import { delete_candidate_details } from "@/server/queries/mongo/candidate-details";
-import { delete_candidate_notes } from "@/server/queries/mongo/note";
-import { delete_candidate_attachments } from "@/server/queries/mongo/attachment";
+import { record_activity } from "@/server/activity/record-activity";
 import { z } from "zod";
 import { CANDIDATE_STATUS, filterCandidateSchema, newCandidateFormSchema, updateCandidateSchema } from "@/zod";
+import { db } from "@/drizzle/db";
+import { candidates } from "@/drizzle/schema";
+import { and, eq, inArray } from "drizzle-orm";
+
+// Audit-log label for a candidate status enum value.
+const status_label = (status: z.infer<typeof CANDIDATE_STATUS>) =>
+    status === "ACTIVE" ? "Active" : status === "REJECTED" ? "Rejected" : "Hired";
 
 export const create_candidate_action = async (unsafeData: z.infer<typeof newCandidateFormSchema>) => {
     const { userId, orgId } = await auth();
@@ -44,7 +49,29 @@ export const update_candidate_action = async (unsafeData: z.infer<typeof updateC
 
     // The query scopes the update to the session org — a candidate from
     // another org is a no-op, never a cross-tenant write.
-    return await update_candidate(data, orgId);
+    // Record a status change only when the status actually changes: this
+    // action also saves name/email/phone edits, which are not audited.
+    let before: { name: string; status: "ACTIVE" | "REJECTED" | "HIRED" | null } | null = null;
+    if (data.status) {
+        const [row] = await db
+            .select({ name: candidates.name, status: candidates.status })
+            .from(candidates)
+            .where(and(eq(candidates.id, data.id), eq(candidates.organization, orgId)))
+            .limit(1);
+        before = row ?? null;
+    }
+
+    const result = await update_candidate(data, orgId);
+
+    if (before && data.status && before.status !== data.status) {
+        await record_activity({
+            action: "candidate.status_changed",
+            entity_type: "candidate",
+            entity_id: data.id,
+            summary: `Changed ${before.name}'s status to ${status_label(data.status)}`,
+        });
+    }
+    return result;
 };
 
 export const get_all_candidates_action = async (unsafeData: z.infer<typeof filterCandidateSchema> & { sort?: string }) => {
@@ -65,13 +92,15 @@ export const get_all_candidates_action = async (unsafeData: z.infer<typeof filte
 };
 
 /**
- * Delete a candidate and everything linked to them — explicit cascade,
- * nothing silently orphaned:
- * - MySQL (declared onDelete: 'cascade' in the schema): the candidate's
- *   applications, their interviews and scorecards, and Drizzle attachment rows.
- * - Mongo (no FKs): candidate details, internal notes
- *   (note_id "candidate_<id>" / legacy "canditates_<id>"), and Mongo
- *   attachment docs written by the upload route.
+ * Move a candidate to Trash (soft-delete) — the candidate and its live
+ * applications get deleted_at set, nothing is removed, so Restore brings
+ * everything back:
+ * - MySQL: the candidate row + its live applications (same timestamp).
+ *   Interviews, scorecards and Drizzle attachment rows stay in place,
+ *   invisible while their application is trashed.
+ * - Mongo: candidate details, internal notes and Mongo attachment docs
+ *   are KEPT until a permanent delete from Trash (they are what a restore
+ *   needs); only the permanent-delete path removes them.
  * NOT deleted: the R2 blobs behind attachment file_urls (same known gap as
  * org deletion — the blobs become unreachable but remain in the bucket).
  * Org-scoped (session org only) and gated on candidate:delete (org:admin).
@@ -85,22 +114,26 @@ export const delete_candidate_action = async (unsafeId: number) => {
     }
 
     // 404 when the candidate does not exist in the session org — a
-    // cross-tenant id is indistinguishable from a missing one.
+    // cross-tenant id is indistinguishable from a missing one. (Trashed
+    // candidates read as not found, so this is a no-op for them.)
     const candidate = await assertCandidateBelongsToOrg(unsafeId, orgId).catch(() => null);
     if (!candidate) {
         return { error: true, message: "Candidate not found" }
     }
 
-    // Mongo documents first (they have no FK cascade to the MySQL row).
-    await delete_candidate_details(unsafeId);
-    await delete_candidate_notes(unsafeId);
-    await delete_candidate_attachments(unsafeId);
+    const { cascadedApplications } = await delete_candidate(unsafeId, orgId);
 
-    // MySQL row delete cascades to applications, interviews, scorecards
-    // and Drizzle attachment rows via the schema's onDelete: 'cascade'.
-    await delete_candidate(unsafeId, orgId);
+    await record_activity({
+        action: "candidate.deleted",
+        entity_type: "candidate",
+        entity_id: unsafeId,
+        summary: `Candidate ${candidate.name} moved to Trash` +
+            (cascadedApplications > 0
+                ? ` (${cascadedApplications} application${cascadedApplications === 1 ? "" : "s"} also moved to Trash)`
+                : ""),
+    });
 
-    return { success: true, message: `Candidate ${candidate.name} deleted` };
+    return { success: true, message: `Candidate ${candidate.name} moved to Trash` };
 };
 
 /**
@@ -125,7 +158,24 @@ export const bulk_update_candidate_status_action = async (
         return { error: true, message: "There was an error updating candidates" }
     }
 
+    // Before-state, so the log only records candidates whose status
+    // actually changed (the bulk bar can re-apply the current status).
+    const before = await db
+        .select({ id: candidates.id, name: candidates.name, status: candidates.status })
+        .from(candidates)
+        .where(and(inArray(candidates.id, ids), eq(candidates.organization, orgId)));
+
     await Promise.all(ids.map((id) => update_candidate({ id, status }, orgId)));
+
+    const changed = before.filter((row) => row.status !== status);
+    await Promise.all(changed.map((row) =>
+        record_activity({
+            action: "candidate.status_changed",
+            entity_type: "candidate",
+            entity_id: row.id,
+            summary: `Changed ${row.name}'s status to ${status_label(status)}`,
+        })
+    ));
 
     return { success: true, message: `${ids.length} candidate${ids.length === 1 ? "" : "s"} updated` };
 };

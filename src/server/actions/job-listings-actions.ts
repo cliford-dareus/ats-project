@@ -15,6 +15,7 @@ import {auth} from "@clerk/nextjs/server";
 import {redirect} from "next/navigation";
 import {jobFormSchema, filterJobSchema, updateJobListingSchema} from "@/zod";
 import {assertJobBelongsToOrg, canViewJob, getAuthOrThrow, requirePermission} from "@/server/permissions";
+import { record_activity } from "@/server/activity/record-activity";
 
 const jobIdSchema = z.number();
 
@@ -34,6 +35,27 @@ export const create_job_action = async (
     const { userId } = await requirePermission("job:create");
 
     const { id } = await create_job_listing({ ...data, userId: String(userId), ...opts });
+    // The wizard reuses this action for all three outcomes — the requested
+    // status is what distinguishes them (OPEN = publish flow, DRAFT =
+    // draft save, no status = plain create).
+    const action =
+        opts?.status === "OPEN"
+            ? "job.published"
+            : opts?.status === "DRAFT"
+                ? "job.draft_saved"
+                : "job.created";
+    const verb =
+        action === "job.published"
+            ? "Published"
+            : action === "job.draft_saved"
+                ? "Saved draft for"
+                : "Created";
+    await record_activity({
+        action,
+        entity_type: "job",
+        entity_id: id,
+        summary: `${verb} job "${data.jobInfo.job_name}"`,
+    });
     redirect(`/jobs/${id}`);
 };
 
@@ -65,6 +87,12 @@ export const publish_job_draft_action = async (
 
     const { userId, orgId } = await requirePermission("job:create");
     await publish_job_draft(draftId, orgId, { ...data, userId: String(userId) });
+    await record_activity({
+        action: "job.published",
+        entity_type: "job",
+        entity_id: draftId,
+        summary: `Published job "${data.jobInfo.job_name}"`,
+    });
     redirect(`/jobs/${draftId}?published=1`);
 };
 
@@ -82,6 +110,10 @@ export const update_job_action = async (unsafeData: z.infer<typeof updateJobList
     return {success: true};
 };
 
+// Move a job to Trash (soft-delete). The job and its live applications
+// get deleted_at set; stages, technologies, automation rules and the
+// applications' interviews/scorecards stay in place, invisible while the
+// job is trashed, so Restore brings them back. Candidates are untouched.
 export const delete_job_action = async (unsafeData: z.infer<typeof jobIdSchema>) => {
     await requirePermission("job:delete");
     const {success, data} = await jobIdSchema.spa(unsafeData);
@@ -90,10 +122,21 @@ export const delete_job_action = async (unsafeData: z.infer<typeof jobIdSchema>)
     }
 
     const {orgId} = await getAuthOrThrow();
-    await assertJobBelongsToOrg(data, orgId);
+    const job = await assertJobBelongsToOrg(data, orgId);
 
-    await delete_job_listing(data, orgId);
-    return {success: true};
+    const { cascadedApplications } = await delete_job_listing(data, orgId);
+
+    await record_activity({
+        action: "job.deleted",
+        entity_type: "job",
+        entity_id: data,
+        summary: `Job "${job.name}" moved to Trash` +
+            (cascadedApplications > 0
+                ? ` (${cascadedApplications} application${cascadedApplications === 1 ? "" : "s"} also moved to Trash)`
+                : ""),
+    });
+
+    return {success: true, message: "Job moved to Trash"};
 };
 
 export const get_all_job_listings_action = async (unsafeData: z.infer<typeof filterJobSchema>) => {

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { uploadResumeToR2 } from "@/lib/upload-file-to-r2";
 import { ALLOWED_RESUME_MIME, MAX_RESUME_BYTES } from "@/lib/resume-validation";
 import { db } from "@/drizzle/db";
@@ -82,7 +82,8 @@ export async function POST(req: Request) {
       .where(
         and(
           eq(candidates.id, candidateId),
-          eq(candidates.organization, orgId)
+          eq(candidates.organization, orgId),
+          isNull(candidates.deleted_at)
         )
       )
       .limit(1);

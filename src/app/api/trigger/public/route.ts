@@ -17,7 +17,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 // ── DB import — replace with your actual query ────────────────────────────────
 import { db } from "@/drizzle/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { job_listings, organization, applications } from "@/drizzle/schema";
 import { ATSContext } from "@/types";
 
@@ -142,7 +142,7 @@ async function verifyJobBelongsToOrg(jobId: string, orgId: string): Promise<[boo
             job_subdomain: job_listings.subdomain
         })
         .from(job_listings)
-        .where(and(eq(job_listings.id, Number(jobId)), eq(job_listings.organization, orgId)))
+        .where(and(eq(job_listings.id, Number(jobId)), eq(job_listings.organization, orgId), isNull(job_listings.deleted_at)))
         .limit(1);
     return [!!job, job];
 }
@@ -246,6 +246,7 @@ export async function POST(req: NextRequest) {
                 eq(applications.id, event.applicationId),
                 eq(applications.job_id, context.jobId),
                 eq(applications.organization, org.orgId),
+                isNull(applications.deleted_at),
             ))
             .limit(1);
 

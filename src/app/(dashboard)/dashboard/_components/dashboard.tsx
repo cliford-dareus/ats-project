@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -347,8 +348,9 @@ const Dashboard = ({
                         ))}
                         <Button
                             variant="ghost"
+                            asChild
                             className="w-full text-[10px] font-bold text-foreground/40 uppercase tracking-widest hover:text-primary hover:bg-transparent transition-colors border-t border-foreground/5 pt-6">
-                            View all activity
+                            <Link href="/activity">View all activity</Link>
                         </Button>
                     </CardContent>
                 </Card>

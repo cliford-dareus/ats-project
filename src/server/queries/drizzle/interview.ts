@@ -7,6 +7,18 @@ import { applications, candidates, interviews, job_listings } from "@/drizzle/sc
 import { CACHE_TAGS, revalidateDbCache } from "@/lib/cache";
 
 export const create_interview_db = async (data: z.infer<typeof newInterviewSchema>,orgId: string) => {
+    // Refuse to schedule on a trashed (or cross-org) application — the
+    // schedule modal only ever offers live applications, but the id here
+    // comes from the client.
+    const [application] = await db
+        .select({ id: applications.id })
+        .from(applications)
+        .where(and(eq(applications.id, data.applicationId), eq(applications.organization, orgId), isNull(applications.deleted_at)))
+        .limit(1);
+    if (!application) {
+        throw new Error("Application not found");
+    }
+
     const existingInterview = await db
         .select()
         .from(interviews)
@@ -15,7 +27,8 @@ export const create_interview_db = async (data: z.infer<typeof newInterviewSchem
         throw new Error("Application already has an interview");
     }
 
-    await db.insert(interviews).values({
+    // Return the new interview id so callers (activity log) can reference it.
+    const [inserted] = await db.insert(interviews).values({
         applications_id: data.applicationId,
         locations: data.location,
         start_at: data.start_at,
@@ -28,7 +41,7 @@ export const create_interview_db = async (data: z.infer<typeof newInterviewSchem
         interviewer_ids: data.interviewer_ids ?? [],
         calendar_event_id: data.calendar_event_id,
         calendar_owner_id: data.calendar_owner_id,
-    });
+    }).$returningId();
 
     revalidateDbCache({
         tag: CACHE_TAGS.applications,
@@ -41,6 +54,8 @@ export const create_interview_db = async (data: z.infer<typeof newInterviewSchem
         id: String(data.job_id),
         orgId: orgId,
     });
+
+    return inserted?.id ?? null;
 };
 
 export type CreateHoldInput = {
@@ -58,6 +73,16 @@ export type CreateHoldInput = {
 };
 
 export const create_interview_hold_db = async (data: CreateHoldInput, orgId: string) => {
+    // Same guard as create_interview_db: no hold on a trashed application.
+    const [application] = await db
+        .select({ id: applications.id })
+        .from(applications)
+        .where(and(eq(applications.id, data.applicationId), eq(applications.organization, orgId), isNull(applications.deleted_at)))
+        .limit(1);
+    if (!application) {
+        throw new Error("Application not found");
+    }
+
     const existing = await db
         .select({ id: interviews.id })
         .from(interviews)
@@ -130,7 +155,7 @@ export const get_interview_by_hold_token = async (token: string) => {
         )
         .leftJoin(candidates, eq(candidates.id, applications.candidate))
         .leftJoin(job_listings, eq(job_listings.id, applications.job_id))
-        .where(eq(interviews.hold_token, token))
+        .where(and(eq(interviews.hold_token, token), isNull(applications.deleted_at)))
         .limit(1);
 
     return rows[0] ?? null;
@@ -195,7 +220,8 @@ export const get_interview_by_id_db = async (
         .where(
             and(
                 eq(interviews.id, interviewId),
-                eq(interviews.organization, orgId)
+                eq(interviews.organization, orgId),
+                isNull(applications.deleted_at)
             )
         )
         .limit(1);
@@ -220,7 +246,8 @@ export const get_interview_details_for_application_db = async (
         .where(
             and(
                 eq(interviews.applications_id, applicationId),
-                eq(interviews.organization, orgId)
+                eq(interviews.organization, orgId),
+                isNull(applications.deleted_at)
             )
         )
         .limit(1);
@@ -330,7 +357,8 @@ export const get_due_interview_reminders_db = async () => {
                 inArray(interviews.hold_status, ["CONFIRMED", "NONE"]),
                 gt(interviews.start_at, now),
                 lte(interviews.start_at, horizon),
-                isNull(interviews.reminder_sent_at)
+                isNull(interviews.reminder_sent_at),
+                isNull(applications.deleted_at)
             )
         )
         .limit(100);
@@ -419,7 +447,8 @@ export const get_stale_holds_db = async () => {
         .where(
             and(
                 eq(interviews.hold_status, "TENTATIVE"),
-                lt(interviews.hold_expires_at, now)
+                lt(interviews.hold_expires_at, now),
+                isNull(applications.deleted_at)
             )
         )
         .limit(100);

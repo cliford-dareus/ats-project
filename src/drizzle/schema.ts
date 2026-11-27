@@ -20,6 +20,7 @@ export const organization_relations = relations(organization, ({ many }) => ({
     members: many(organization_member),
     job_listings: many(job_listings),
     automation_rules: many(automation_rules),
+    activity_logs: many(activity_log),
 }));
 
 export const departments = mysqlTable('departments', {
@@ -119,6 +120,9 @@ export const job_listings = mysqlTable('job_listing', {
     created_by: varchar('created_by', { length: 255 }).notNull(),
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+    // Soft-delete (Trash): NULL while live; set to the delete time when the
+    // job is moved to Trash. Restoring clears it. Existing rows get NULL.
+    deleted_at: timestamp('deleted_at'),
 });
 
 export const job_listings_relations = relations(job_listings, ({ many, one }) => ({
@@ -235,6 +239,8 @@ export const candidates = mysqlTable('candidate', {
     status: mysqlEnum('status', ['ACTIVE', 'REJECTED', 'HIRED']).default('ACTIVE'),
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+    // Soft-delete (Trash): NULL while live; set when moved to Trash.
+    deleted_at: timestamp('deleted_at'),
 });
 
 export const candidates_relations = relations(candidates, ({ many }) => ({
@@ -281,6 +287,8 @@ export const applications = mysqlTable('applications', {
 
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+    // Soft-delete (Trash): NULL while live; set when moved to Trash.
+    deleted_at: timestamp('deleted_at'),
 }, (table) => ({
     stage_position_idx: index("stage_position_idx").on(
         table.current_stage_id,
@@ -383,3 +391,34 @@ export const score_cards_relations = relations(score_cards, ({ one }) => ({
 
 export const scoresCards = score_cards;
 export const scoresCards_relation = score_cards_relations;
+
+// ── Activity / audit log ──────────────────────────────────────────────────
+// Append-only record of who did what, for the org's Activity feed. The
+// actor name is denormalized at write time (users_table rows may not exist
+// for every Clerk user, and the entry must stay readable if the user is
+// later removed). entity_id deliberately has NO foreign key: the log must
+// survive the entity being deleted — the feed checks at read time whether
+// the entity still exists before linking to it.
+export const activity_log = mysqlTable('activity_log', {
+    id: int('id').primaryKey().autoincrement(),
+    organization_id: varchar('organization_id', { length: 255 })
+        .notNull()
+        .references(() => organization.clerk_id, { onDelete: 'cascade' }),
+    actor_id: varchar('actor_id', { length: 255 }).notNull(),
+    actor_name: varchar('actor_name', { length: 255 }).notNull(),
+    action: varchar('action', { length: 64 }).notNull(),
+    entity_type: mysqlEnum('entity_type', ['job', 'candidate', 'application', 'interview']).notNull(),
+    entity_id: int('entity_id').notNull(),
+    summary: varchar('summary', { length: 512 }).notNull(),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+    // The feed reads one org's entries newest first.
+    org_created_idx: index('activity_log_org_created_idx').on(table.organization_id, table.created_at),
+}));
+
+export const activity_log_relations = relations(activity_log, ({ one }) => ({
+    organization: one(organization, {
+        fields: [activity_log.organization_id],
+        references: [organization.clerk_id],
+    }),
+}));

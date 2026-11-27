@@ -9,7 +9,7 @@ import {
     stages,
 } from "@/drizzle/schema";
 import { db } from "@/drizzle/db";
-import { and, asc, desc, eq, SQL, sql, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, isNotNull, isNull, SQL, sql, inArray } from "drizzle-orm";
 import mongodb from "@/lib/mongodb";
 import Note from "@/models/notes";
 import {
@@ -44,10 +44,56 @@ export const get_public_job_for_apply = async (jobId: number, subdomain: string)
             status: job_listings.status,
         })
         .from(job_listings)
-        .where(and(eq(job_listings.id, jobId), eq(job_listings.subdomain, subdomain)))
+        .where(and(eq(job_listings.id, jobId), eq(job_listings.subdomain, subdomain), isNull(job_listings.deleted_at)))
         .limit(1);
 
     return job ?? null;
+};
+
+// A soft-deleted application still occupies its (job_id, candidate) slot
+// in the unique index, so ignoring trashed rows in the duplicate check
+// alone would let the fresh insert die with ER_DUP_ENTRY. When the only
+// existing application for (job, candidate) is trashed, remove that trashed
+// row — its interviews/scorecards (FK cascade) and its Mongo notes — so a
+// re-application proceeds as a new application. The unique index itself
+// is unchanged. No activity is recorded here: the public apply flow has
+// no session for record_activity to read an actor from.
+const remove_trashed_application = async (jobId: number, candidateId: number, orgId: string) => {
+    const [trashed] = await db
+        .select({ id: applications.id })
+        .from(applications)
+        .where(
+            and(
+                eq(applications.job_id, jobId),
+                eq(applications.candidate, candidateId),
+                eq(applications.organization, orgId),
+                isNotNull(applications.deleted_at),
+            ),
+        )
+        .limit(1);
+    if (!trashed) return;
+
+    await db.transaction(async (tx) => {
+        const interviewRows = await tx
+            .select({ id: interviews.id })
+            .from(interviews)
+            .where(eq(interviews.applications_id, trashed.id));
+        const interviewIds = interviewRows.map((row) => row.id);
+
+        if (interviewIds.length > 0) {
+            await tx
+                .delete(score_cards)
+                .where(inArray(score_cards.interviews_id, interviewIds));
+            await tx
+                .delete(interviews)
+                .where(eq(interviews.applications_id, trashed.id));
+        }
+
+        await tx.delete(applications).where(eq(applications.id, trashed.id));
+    });
+
+    await mongodb();
+    await Note.deleteMany({ note_id: `application_${trashed.id}` });
 };
 
 export const create_application = async (data: z.infer<typeof applicationFormSchema>) => {
@@ -63,7 +109,7 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
             status: job_listings.status,
         })
         .from(job_listings)
-        .where(and(eq(job_listings.id, jobId), eq(job_listings.subdomain, subdomain)));
+        .where(and(eq(job_listings.id, jobId), eq(job_listings.subdomain, subdomain), isNull(job_listings.deleted_at)));
 
     if (!job) {
         return { success: false, message: "Job not found" };
@@ -143,6 +189,7 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
                     and(
                         eq(candidates.id, Number(data.candidate)),
                         eq(candidates.organization, orgId),
+                        isNull(candidates.deleted_at),
                     ),
                 )
                 .limit(1);
@@ -156,6 +203,7 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
                     and(
                         eq(candidates.email, info.email),
                         eq(candidates.organization, orgId),
+                        isNull(candidates.deleted_at),
                     ),
                 )
                 .limit(1);
@@ -164,9 +212,12 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
 
         const candidateFullName = `${info.firstName} ${info.lastName}`;
 
-        // 4. Duplicate check: one application per (job, candidate), however
-        // the candidate was resolved. The unique index on
-        // (job_id, candidate) is the race-safe backstop — see the catch below.
+        // 4. Duplicate check: one LIVE application per (job, candidate),
+        // however the candidate was resolved. A soft-deleted (trashed)
+        // application does not block re-application — it is ignored here
+        // and cleared by remove_trashed_application below, since it still
+        // holds the unique (job_id, candidate) slot. The unique index is
+        // the race-safe backstop — see the catch below.
         if (candidate_id) {
             const existingApp = await db
                 .select({ id: applications.id })
@@ -175,6 +226,7 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
                     and(
                         eq(applications.job_id, jobId),
                         eq(applications.candidate, candidate_id),
+                        isNull(applications.deleted_at),
                     ),
                 )
                 .limit(1);
@@ -194,6 +246,10 @@ export const create_application = async (data: z.infer<typeof applicationFormSch
                     message: "You've already applied for this role. Our team will be in touch soon.",
                 };
             }
+
+            // No live application — clear a trashed one, if any, so the
+            // fresh insert below is not rejected by the unique index.
+            await remove_trashed_application(jobId, candidate_id, orgId);
         }
 
         if (!candidate_id) {
@@ -373,7 +429,8 @@ export const update_application = async (data: z.infer<typeof updateApplicationS
             ...(data.subdomain !== undefined && { subdomain: data.subdomain }),
         })
         // Org-scoped: an application from another org is never updated.
-        .where(and(eq(applications.id, data.applicationId), eq(applications.organization, orgId)));
+        // A trashed application is never updated either — restore it first.
+        .where(and(eq(applications.id, data.applicationId), eq(applications.organization, orgId), isNull(applications.deleted_at)));
 
     revalidateDbCache({
         tag: CACHE_TAGS.candidates,
@@ -394,7 +451,7 @@ export const update_application_stage = async (data: z.infer<typeof updateApplic
     const [application] = await db
         .select({ id: applications.id, job_id: applications.job_id })
         .from(applications)
-        .where(and(eq(applications.id, data.applicationId), eq(applications.organization, orgId)))
+        .where(and(eq(applications.id, data.applicationId), eq(applications.organization, orgId), isNull(applications.deleted_at)))
         .limit(1);
     if (!application) {
         return { error: true, message: "Application not found" };
@@ -413,7 +470,8 @@ export const update_application_stage = async (data: z.infer<typeof updateApplic
         .update(applications)
         .set({ current_stage_id: data.new_stage_id })
         // Org-scoped: an application from another org is never moved.
-        .where(and(eq(applications.id, data.applicationId), eq(applications.organization, orgId)));
+        // A trashed application is never moved either — restore it first.
+        .where(and(eq(applications.id, data.applicationId), eq(applications.organization, orgId), isNull(applications.deleted_at)));
 
     revalidateDbCache({
         tag: CACHE_TAGS.applications,
@@ -433,7 +491,7 @@ export const create_application_for_candidate_db = async (jobId: number, candida
     const [job] = await db
         .select({ id: job_listings.id, subdomain: job_listings.subdomain })
         .from(job_listings)
-        .where(and(eq(job_listings.id, jobId), eq(job_listings.organization, orgId)))
+        .where(and(eq(job_listings.id, jobId), eq(job_listings.organization, orgId), isNull(job_listings.deleted_at)))
         .limit(1);
     if (!job) {
         return { success: false as const, message: "Job not found" };
@@ -442,7 +500,7 @@ export const create_application_for_candidate_db = async (jobId: number, candida
     const [candidate] = await db
         .select({ id: candidates.id })
         .from(candidates)
-        .where(and(eq(candidates.id, candidateId), eq(candidates.organization, orgId)))
+        .where(and(eq(candidates.id, candidateId), eq(candidates.organization, orgId), isNull(candidates.deleted_at)))
         .limit(1);
     if (!candidate) {
         return { success: false as const, message: "Candidate not found" };
@@ -451,11 +509,15 @@ export const create_application_for_candidate_db = async (jobId: number, candida
     const existing = await db
         .select({ id: applications.id })
         .from(applications)
-        .where(and(eq(applications.job_id, jobId), eq(applications.candidate, candidateId)))
+        .where(and(eq(applications.job_id, jobId), eq(applications.candidate, candidateId), isNull(applications.deleted_at)))
         .limit(1);
     if (existing.length > 0) {
         return { success: false as const, message: "Candidate already has an application for this job" };
     }
+
+    // No live application — clear a trashed one, if any, so the fresh
+    // insert below is not rejected by the unique (job_id, candidate) index.
+    await remove_trashed_application(jobId, candidateId, orgId);
 
     const [appliedStage] = await db
         .select()
@@ -553,15 +615,16 @@ export const get_applications_stages_db = async (orgId: string) => {
             stages: stages.stage_name,
             count: db.$count(
                 applications,
-                eq(applications.current_stage_id, stages.id),
+                and(eq(applications.current_stage_id, stages.id), isNull(applications.deleted_at)),
             ),
         })
         .from(stages)
         // stages carry no org column — scope via their job. The count is a
         // correlated subquery, so no join to applications is needed; the old
         // leftJoin multiplied rows (one per application in the stage).
+        // A trashed job's stages (and its trashed applications) are excluded.
         .innerJoin(job_listings, eq(stages.job_id, job_listings.id))
-        .where(eq(job_listings.organization, orgId));
+        .where(and(eq(job_listings.organization, orgId), isNull(job_listings.deleted_at)));
 };
 
 export const get_application_by_id_db = async (applicationId: number, orgId: string) => {
@@ -601,7 +664,7 @@ export const get_application_by_id_db = async (applicationId: number, orgId: str
         .leftJoin(candidates, eq(candidates.id, applications.candidate))
         .leftJoin(interviews, eq(interviews.applications_id, applications.id))
         .leftJoin(stages, eq(applications.current_stage_id, stages.id))
-        .where(and(eq(applications.id, applicationId), eq(applications.organization, orgId)));
+        .where(and(eq(applications.id, applicationId), eq(applications.organization, orgId), isNull(applications.deleted_at)));
 };
 
 export const get_all_applications_db = async (filter: z.infer<typeof filterApplicationsSchema>) => {
@@ -636,7 +699,7 @@ export const get_all_applications_db = async (filter: z.infer<typeof filterAppli
         .leftJoin(job_listings, eq(applications.job_id, job_listings.id))
         .leftJoin(departments, eq(job_listings.department, departments.id))
         .leftJoin(stages, eq(applications.current_stage_id, stages.id))
-        .where(and(...filters, eq(applications.organization, filter.organization)));
+        .where(and(...filters, eq(applications.organization, filter.organization), isNull(applications.deleted_at)));
 
     const application = await db
         .select({
@@ -664,7 +727,7 @@ export const get_all_applications_db = async (filter: z.infer<typeof filterAppli
         .leftJoin(departments, eq(job_listings.department, departments.id))
         .leftJoin(candidates, eq(applications.candidate, candidates.id))
         .leftJoin(stages, eq(applications.current_stage_id, stages.id))
-        .where(and(...filters, eq(job_listings.organization, filter.organization)))
+        .where(and(...filters, eq(job_listings.organization, filter.organization), isNull(applications.deleted_at)))
         .limit(filter.limit!)
         .offset(filter.offset!);
 
@@ -687,7 +750,7 @@ export const get_job_all_applications_db = async (jobId: number, orgId: string) 
         .leftJoin(stages, eq(applications.current_stage_id, stages.id))
         // Org-scoped (B20): a job id alone must never leak another org's
         // applications — the caller passes the session org.
-        .where(and(eq(applications.job_id, jobId), eq(applications.organization, orgId)))
+        .where(and(eq(applications.job_id, jobId), eq(applications.organization, orgId), isNull(applications.deleted_at)))
         .orderBy(
             applications.current_stage_id,
             asc(applications.position_in_stage),
@@ -765,10 +828,11 @@ export async function move_application_and_reorder_db({
         await db.transaction(async (tx) => {
             // S-3: resolve the application's org first and assert it matches
             // the session org — the old code updated by applicationId alone.
+            // A trashed application cannot be moved — restore it first.
             const [application] = await tx
                 .select({ id: applications.id, organization: applications.organization, job_id: applications.job_id })
                 .from(applications)
-                .where(eq(applications.id, applicationId))
+                .where(and(eq(applications.id, applicationId), isNull(applications.deleted_at)))
                 .limit(1);
             if (!application || application.organization !== orgId) {
                 throw new Error("Application not found");
@@ -789,7 +853,7 @@ export async function move_application_and_reorder_db({
                 await tx
                     .update(applications)
                     .set({ current_stage_id: newStageId })
-                    .where(and(eq(applications.id, applicationId), eq(applications.organization, orgId)));
+                    .where(and(eq(applications.id, applicationId), eq(applications.organization, orgId), isNull(applications.deleted_at)));
             }
 
             // 2. Update target stage orders
@@ -815,6 +879,7 @@ export async function move_application_and_reorder_db({
                             eq(applications.current_stage_id, newStageId),
                             inArray(applications.id, targetIds),
                             eq(applications.organization, orgId),
+                            isNull(applications.deleted_at),
                         ),
                     );
             }
@@ -842,6 +907,7 @@ export async function move_application_and_reorder_db({
                             eq(applications.current_stage_id, sourceStageId),
                             inArray(applications.id, sourceIds),
                             eq(applications.organization, orgId),
+                            isNull(applications.deleted_at),
                         ),
                     );
             }
@@ -858,7 +924,43 @@ export async function move_application_and_reorder_db({
     }
 }
 
-// ── Delete application (B21) ──────────────────────────────────────────────────
+// ── Delete application (B21) — soft-delete (Trash) ─────────────────────────
+// Sets deleted_at (now) on the application row only — the candidate is
+// untouched (they may have other applications). The application's
+// interviews and scorecards stay in place, invisible while the application
+// is trashed, so a restore brings them back; its Mongo application notes
+// likewise stay until a permanent delete. The old hard delete lives on as
+// permanent_delete_application_db below and is only reachable from Trash.
+export const delete_application_db = async (applicationId: number, orgId: string) => {
+    const [application] = await db
+        .select({ id: applications.id, job_id: applications.job_id, candidate: applications.candidate })
+        .from(applications)
+        .where(and(eq(applications.id, applicationId), eq(applications.organization, orgId), isNull(applications.deleted_at)))
+        .limit(1);
+    if (!application) {
+        return { success: false as const, message: "Application not found" };
+    }
+
+    await db
+        .update(applications)
+        .set({ deleted_at: new Date() })
+        .where(and(eq(applications.id, applicationId), eq(applications.organization, orgId)));
+
+    revalidateDbCache({
+        tag: CACHE_TAGS.applications,
+        id: String(applicationId),
+        orgId,
+    });
+    revalidateDbCache({
+        tag: CACHE_TAGS.jobs,
+        id: String(application.job_id),
+        orgId,
+    });
+
+    return { success: true as const, application };
+};
+
+// Permanent delete (Trash → Delete forever): the old hard-delete behaviour.
 // Cascade (verified against src/drizzle/schema.ts):
 //   • interviews.applications_id FK is onDelete: 'cascade' and
 //     score_cards.interviews_id FK is onDelete: 'cascade', so deleting the
@@ -872,11 +974,11 @@ export async function move_application_and_reorder_db({
 //   • applications.candidate FK is onDelete: 'cascade' in the other
 //     direction (deleting a candidate deletes its applications) — deleting
 //     an application never touches the candidate.
-export const delete_application_db = async (applicationId: number, orgId: string) => {
+export const permanent_delete_application_db = async (applicationId: number, orgId: string) => {
     const [application] = await db
         .select({ id: applications.id, job_id: applications.job_id, candidate: applications.candidate })
         .from(applications)
-        .where(and(eq(applications.id, applicationId), eq(applications.organization, orgId)))
+        .where(and(eq(applications.id, applicationId), eq(applications.organization, orgId), isNotNull(applications.deleted_at)))
         .limit(1);
     if (!application) {
         return { success: false as const, message: "Application not found" };
@@ -919,7 +1021,7 @@ export const delete_application_db = async (applicationId: number, orgId: string
             orgId,
         });
 
-        return { success: true as const };
+        return { success: true as const, application };
     } catch (err) {
         console.error("Delete application failed:", err);
         return { success: false as const, message: "Failed to delete application" };

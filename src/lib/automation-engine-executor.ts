@@ -118,12 +118,12 @@ async function resolveAutomationTarget(
 
     const { db } = await import("@/drizzle/db");
     const { candidates, departments, job_listings } = await import("@/drizzle/schema");
-    const { eq } = await import("drizzle-orm");
+    const { and, eq, isNull } = await import("drizzle-orm");
 
     const [candidate] = await db
         .select({ id: candidates.id, name: candidates.name, email: candidates.email })
         .from(candidates)
-        .where(eq(candidates.id, application.candidate_id))
+        .where(and(eq(candidates.id, application.candidate_id), isNull(candidates.deleted_at)))
         .limit(1);
     if (!candidate) {
         throw new Error("Cannot run automation action: candidate not found");
@@ -136,7 +136,7 @@ async function resolveAutomationTarget(
             department_id: job_listings.department,
         })
         .from(job_listings)
-        .where(eq(job_listings.id, application.job_id))
+        .where(and(eq(job_listings.id, application.job_id), isNull(job_listings.deleted_at)))
         .limit(1);
     if (!job) {
         throw new Error("Cannot run automation action: job not found");
@@ -374,7 +374,7 @@ export async function executeActionInternal(
             // application's current_stage_id directly in PostgreSQL.
             const { db } = await import("@/drizzle/db");
             const { applications, stages } = await import("@/drizzle/schema");
-            const { eq, and } = await import("drizzle-orm");
+            const { eq, and, isNull } = await import("drizzle-orm");
 
             const jobId = target.job.job_id;
 
@@ -405,6 +405,7 @@ export async function executeActionInternal(
                         eq(applications.id, target.applicationId),
                         eq(applications.job_id, jobId),
                         eq(applications.organization, orgId),
+                        isNull(applications.deleted_at),
                     ),
                 );
 
@@ -412,7 +413,7 @@ export async function executeActionInternal(
             const [moved] = await db
                 .select({ current_stage_id: applications.current_stage_id })
                 .from(applications)
-                .where(eq(applications.id, target.applicationId))
+                .where(and(eq(applications.id, target.applicationId), isNull(applications.deleted_at)))
                 .limit(1);
             if (!moved || moved.current_stage_id !== targetStage.id) {
                 throw new Error(`Failed to move application ${target.applicationId} to stage "${action.toStage}"`);
