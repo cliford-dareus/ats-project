@@ -1,102 +1,28 @@
 "use client";
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
-    // TrendingUp,
     Users,
     Briefcase,
     Target,
     Clock,
-    ArrowUpRight,
-    ArrowDownRight,
     CheckCircle2,
-    Sparkles,
-    Loader2,
-    Award,
 } from "lucide-react";
-import { Area, AreaChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Area, AreaChart, Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { cn } from '@/lib/utils';
-// import { ExportUtils } from "@/lib/export-utils";
-import { ReportData } from './reports-component';
 import { format } from 'date-fns';
+import type { ReportDataset, ReportRange } from '@/server/actions/reports-actions';
+import { REPORT_RANGE_LABELS } from '@/server/actions/reports-actions';
 
 interface Props {
-    reportData: ReportData;
+    reportData: ReportDataset;
+    range: ReportRange;
 };
 
-const ReportOverview = ({ reportData }: Props) => {
+const FALLBACK_STAGE_COLOR = '#a1a1aa';
+
+const ReportOverview = ({ reportData, range }: Props) => {
     const { summary, breakdown, analysis, trends } = reportData;
-    const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
-
-    // AI Health Check state
-    const [isGeneratingAiReport, setIsGeneratingAiReport] = useState(false);
-    const [aiHealthReport, setAiHealthReport] = useState<string | null>(null);
-    
-    const handleGenerateAiReport = () => {
-        setIsGeneratingAiReport(true);
-        setAiHealthReport(null);
-        setTimeRange('30d');
-    };
-
-    // const handleExportData = (dataType: string) => {
-    //     try {
-    //         const exportData = ExportUtils.exportReportData(dataType, reportData);
-    //         ExportUtils.exportToCSV(exportData);
-    //     } catch (error) {
-    //         console.error('Export failed:', error);
-    //         alert('Failed to export data. Please try again.');
-    //     }
-    // };
-
-    // const keyMetrics = [
-    //     {
-    //         title: 'Average Time to Hire',
-    //         value: `${analysis.performanceMetrics.averageTimeToHire} days`,
-    //         icon: Clock,
-    //         trend: -12,
-    //         description: 'Faster than last month'
-    //     },
-    //     {
-    //         title: 'Application to Interview Rate',
-    //         value: `${analysis.performanceMetrics.applicationToInterviewRate}%`,
-    //         icon: Target,
-    //         trend: 8,
-    //         description: 'Improvement in screening'
-    //     },
-    //     {
-    //         title: 'Offer Acceptance Rate',
-    //         value: `${analysis.performanceMetrics.offerAcceptanceRate}%`,
-    //         icon: TrendingUp,
-    //         trend: 3,
-    //         description: 'Strong candidate interest'
-    //     },
-    //     {
-    //         title: 'Cost Per Hire',
-    //         value: `$${analysis.performanceMetrics.costPerHire.toLocaleString()}`,
-    //         icon: DollarSign,
-    //         trend: -5,
-    //         description: 'Cost optimization'
-    //     },
-    //     {
-    //         title: 'Quality of Hire',
-    //         value: `${analysis.performanceMetrics.qualityOfHire}/5.0`,
-    //         icon: Star,
-    //         trend: 15,
-    //         description: 'Excellent performance'
-    //     }
-    // ];
-
-    // const getTrendIcon = (trend: number) => {
-    //     return trend > 0 ? (
-    //         <TrendingUp className="h-4 w-4 text-green-600" />
-    //     ) : (
-    //         <TrendingDown className="h-4 w-4 text-red-600" />
-    //     );
-    // };
-
-    // const getTrendColor = (trend: number) => {
-    //     return trend > 0 ? 'text-green-600' : 'text-red-600';
-    // };
 
     return (
         <div className="space-y-6">
@@ -114,11 +40,8 @@ const ReportOverview = ({ reportData }: Props) => {
                         <div>
                             <div className="flex items-baseline gap-2">
                                 <span className="text-3xl font-extrabold text-foreground tracking-tight">{summary.totalApplications}</span>
-                                <span className="text-xs font-bold text-emerald-600 flex items-center gap-0.5">
-                                    <ArrowUpRight className="w-3.5 h-3.5" /> +14.2%
-                                </span>
                             </div>
-                            <p className="text-[11px] text-muted-foreground font-medium mt-1">In selected timeframe ({timeRange})</p>
+                            <p className="text-[11px] text-muted-foreground font-medium mt-1">{REPORT_RANGE_LABELS[range]}</p>
                         </div>
                     </div>
 
@@ -132,99 +55,51 @@ const ReportOverview = ({ reportData }: Props) => {
                         </div>
                         <div>
                             <div className="flex items-baseline gap-2">
-                                <span className="text-3xl font-extrabold text-foreground tracking-tight">{analysis.performanceMetrics.averageTimeToHire} <span className="text-lg font-bold text-muted-foreground">days</span></span>
-                                <span className="text-xs font-bold text-emerald-600 flex items-center gap-0.5">
-                                    <ArrowDownRight className="w-3.5 h-3.5" /> -3 days
-                                </span>
+                                {analysis.performanceMetrics.averageTimeToHire === null ? (
+                                    <span className="text-3xl font-extrabold text-foreground tracking-tight">No hires yet</span>
+                                ) : (
+                                    <span className="text-3xl font-extrabold text-foreground tracking-tight">{analysis.performanceMetrics.averageTimeToHire} <span className="text-lg font-bold text-muted-foreground">days</span></span>
+                                )}
                             </div>
-                            <p className="text-[11px] text-muted-foreground font-medium mt-1">Faster than industry benchmark (28d)</p>
+                            <p className="text-[11px] text-muted-foreground font-medium mt-1">Average days from application to hire</p>
                         </div>
                     </div>
 
                     {/* KPI 3 */}
                     <div className="bg-card rounded-2xl border border-border p-6 shadow-sm space-y-3 relative overflow-hidden">
                         <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Offer Acceptance Rate</span>
+                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Application to Interview Rate</span>
                             <div className="w-9 h-9 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center font-bold">
                                 <CheckCircle2 className="w-4 h-4" />
                             </div>
                         </div>
                         <div>
                             <div className="flex items-baseline gap-2">
-                                <span className="text-3xl font-extrabold text-foreground tracking-tight">{analysis.performanceMetrics.offerAcceptanceRate}%</span>
-                                <span className="text-xs font-bold text-emerald-600 flex items-center gap-0.5">
-                                    <ArrowUpRight className="w-3.5 h-3.5" /> +5.8%
-                                </span>
+                                {analysis.performanceMetrics.applicationToInterviewRate === null ? (
+                                    <span className="text-3xl font-extrabold text-foreground tracking-tight">—</span>
+                                ) : (
+                                    <span className="text-3xl font-extrabold text-foreground tracking-tight">{analysis.performanceMetrics.applicationToInterviewRate}%</span>
+                                )}
                             </div>
-                            <p className="text-[11px] text-muted-foreground font-medium mt-1">{summary.hiredCandidates} hires from 2 offers</p>
+                            <p className="text-[11px] text-muted-foreground font-medium mt-1">Share of applications reaching interview</p>
                         </div>
                     </div>
 
                     {/* KPI 4 */}
                     <div className="bg-card rounded-2xl border border-border p-6 shadow-sm space-y-3 relative overflow-hidden">
                         <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Avg Cost per Hire</span>
+                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Successful Hires</span>
                             <div className="w-9 h-9 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center font-bold">
                                 <Target className="w-4 h-4" />
                             </div>
                         </div>
                         <div>
                             <div className="flex items-baseline gap-2">
-                                <span className="text-3xl font-extrabold text-foreground tracking-tight">${analysis.performanceMetrics.costPerHire.toLocaleString()}</span>
-                                <span className="text-xs font-bold text-emerald-600 flex items-center gap-0.5">
-                                    <ArrowDownRight className="w-3.5 h-3.5" /> -12.4%
-                                </span>
+                                <span className="text-3xl font-extrabold text-foreground tracking-tight">{summary.hiredCandidates}</span>
                             </div>
-                            <p className="text-[11px] text-muted-foreground font-medium mt-1">Includes job board fees & referrals</p>
+                            <p className="text-[11px] text-muted-foreground font-medium mt-1">{REPORT_RANGE_LABELS[range]}</p>
                         </div>
                     </div>
-                </div>
-
-                {/* AI Intelligence Synthesis Section */}
-                <div className="bg-card rounded-2xl border border-border p-8 shadow-sm space-y-6 relative overflow-hidden">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-border">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-brand-600 text-white rounded-2xl flex items-center justify-center shadow-md shadow-brand-500/20">
-                                <Sparkles className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <h2 className="font-black tracking-tight uppercase">AI Executive Recruitment Digest</h2>
-                                <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">Instant AI data synthesis of bottlenecks and channel ROI</p>
-                            </div>
-                        </div>
-
-                        <button
-                            onClick={handleGenerateAiReport}
-                            disabled={isGeneratingAiReport}
-                            className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-2xl text-xs font-bold transition-all shadow-md shadow-brand-500/20 flex items-center gap-2 disabled:opacity-50"
-                        >
-                            {isGeneratingAiReport ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    Synthesizing Data...
-                                </>
-                            ) : (
-                                <>
-                                    <Sparkles className="w-4 h-4" />
-                                    {aiHealthReport ? 'Regenerate AI Analysis' : 'Generate Executive Report'}
-                                </>
-                            )}
-                        </button>
-                    </div>
-
-                    {aiHealthReport ? (
-                        <div className="p-6 bg-muted/80 rounded-2xl border border-border/80 prose prose max-w-none text-xs font-medium text-foreground leading-relaxed">
-                            {/*<ReactMarkdown>{aiHealthReport}</ReactMarkdown>*/}
-                        </div>
-                    ) : (
-                        <div className="p-8 bg-muted/60 rounded-2xl border border-dashed border-border text-center space-y-2">
-                            <Sparkles className="w-8 h-8 text-brand-600 mx-auto" />
-                            <h3 className="text-sm font-bold text-foreground">Generate AI Automated Recruitment Diagnostics</h3>
-                            <p className="text-xs text-muted-foreground max-w-lg mx-auto">
-                                Click the button above to analyze hiring velocities, detect stage bottlenecks, and receive AI-backed recommendations tailored to your active open roles.
-                            </p>
-                        </div>
-                    )}
                 </div>
 
                 {/* Visual Charts Grid */}
@@ -284,43 +159,49 @@ const ReportOverview = ({ reportData }: Props) => {
                             <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">Breakdown of candidates across pipeline stages</p>
                         </div>
 
-                        <div className="h-56 w-full flex items-center justify-center">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={reportData.breakdown.applicationsByStage}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={85}
-                                        paddingAngle={4}
-                                        dataKey="count"
-                                    >
-                                        {reportData.breakdown.applicationsByStage.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.stageColor!} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip
-                                        contentStyle={{ backgroundColor: '#18181b', borderRadius: '16px', border: 'none', color: '#fff', fontSize: '12px' }}
-                                    />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2 text-xs font-bold pt-2">
-                            {reportData.breakdown.applicationsByStage.map((item) => (
-                                <div
-                                    key={item.stageName as string}
-                                    className="flex items-center justify-between p-2 rounded-xl bg-muted border border-border"
-                                >
-                                    <span className="flex items-center gap-1.5 text-muted-foreground">
-                                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.stageColor! }} />
-                                        {item.stageName}
-                                    </span>
-                                    <span className="text-foreground font-extrabold">{item.count}</span>
+                        {reportData.breakdown.applicationsByStage.length === 0 ? (
+                            <p className="text-xs text-muted-foreground font-medium text-center py-8">No pipeline data in this range.</p>
+                        ) : (
+                            <>
+                                <div className="h-56 w-full flex items-center justify-center">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={reportData.breakdown.applicationsByStage}
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius={60}
+                                                outerRadius={85}
+                                                paddingAngle={4}
+                                                dataKey="count"
+                                            >
+                                                {reportData.breakdown.applicationsByStage.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={entry.stageColor ?? FALLBACK_STAGE_COLOR} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip
+                                                contentStyle={{ backgroundColor: '#18181b', borderRadius: '16px', border: 'none', color: '#fff', fontSize: '12px' }}
+                                            />
+                                        </PieChart>
+                                    </ResponsiveContainer>
                                 </div>
-                            ))}
-                        </div>
+
+                                <div className="grid grid-cols-2 gap-2 text-xs font-bold pt-2">
+                                    {reportData.breakdown.applicationsByStage.map((item) => (
+                                        <div
+                                            key={item.stageName as string}
+                                            className="flex items-center justify-between p-2 rounded-xl bg-muted border border-border"
+                                        >
+                                            <span className="flex items-center gap-1.5 text-muted-foreground">
+                                                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.stageColor ?? FALLBACK_STAGE_COLOR }} />
+                                                {item.stageName}
+                                            </span>
+                                            <span className="text-foreground font-extrabold">{item.count}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
 
@@ -333,21 +214,31 @@ const ReportOverview = ({ reportData }: Props) => {
                                 <h3 className="text-base font-bold text-foreground tracking-tight">Sourcing Channel Performance</h3>
                                 <p className="text-xs text-muted-foreground font-medium">Total volume vs candidate conversion rate (%)</p>
                             </div>
-                            <Award className="w-5 h-5 text-brand-600" />
                         </div>
 
-                        {/*<div className="h-64 w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={sourcingChannelData} layout="vertical" margin={{ top: 0, right: 20, left: 20, bottom: 0 }}>
-                                    <XAxis type="number" stroke="#a1a1aa" fontSize={11} tickLine={false} />
-                                    <YAxis dataKey="channel" type="category" stroke="#a1a1aa" fontSize={11} tickLine={false} width={110} />
-                                    <Tooltip
-                                        contentStyle={{ backgroundColor: '#18181b', borderRadius: '16px', border: 'none', color: '#fff', fontSize: '12px' }}
-                                    />
-                                    <Bar dataKey="applicants" fill="#4f46e5" radius={[0, 8, 8, 0]} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>*/}
+                        {analysis.sourceAnalysis.length === 0 ? (
+                            <p className="text-xs text-muted-foreground font-medium text-center py-8">No applications in this range yet.</p>
+                        ) : (
+                            <div className="h-64 w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={analysis.sourceAnalysis} layout="vertical" margin={{ top: 0, right: 20, left: 20, bottom: 0 }}>
+                                        <XAxis type="number" stroke="#a1a1aa" fontSize={11} tickLine={false} />
+                                        <YAxis dataKey="source" type="category" stroke="#a1a1aa" fontSize={11} tickLine={false} width={110} />
+                                        <Tooltip
+                                            contentStyle={{ backgroundColor: '#18181b', borderRadius: '16px', border: 'none', color: '#fff', fontSize: '12px' }}
+                                            formatter={(value, name, props) => {
+                                                if (name === 'applications') {
+                                                    const datum = props.payload as { hires: number; conversionRate: number };
+                                                    return [`${value} applications, ${datum.hires} hires (${datum.conversionRate}% converted)`, 'Applications'];
+                                                }
+                                                return [value, name];
+                                            }}
+                                        />
+                                        <Bar dataKey="applications" fill="#4f46e5" radius={[0, 8, 8, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        )}
                     </div>
 
                     {/* Department Open Requisitions List */}
@@ -360,60 +251,33 @@ const ReportOverview = ({ reportData }: Props) => {
                             <Briefcase className="w-5 h-5 text-brand-600" />
                         </div>
 
-                        <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
-                            {breakdown.applicationsByJob.map((job, index) => (
-                                <div key={index} className="p-4 bg-muted/80 rounded-2xl border border-border/60 flex items-center justify-between gap-4">
-                                    <div>
-                                        <h4 className="text-xs font-bold text-foreground">{job.jobTitle}</h4>
-                                        <p className="text-[11px] text-muted-foreground font-medium">{job.job_department} • {job.job_location}</p>
-                                    </div>
-
-                                    <div className="flex items-center gap-3">
-                                        <div className="text-right">
-                                            <p className="text-xs font-extrabold text-brand-700">{job.count} Applicants</p>
-                                            <p className="text-[10px] text-muted-foreground font-medium">Posted {format(job.job_created_at, 'MMM d, yyyy')}</p>
+                        {breakdown.applicationsByJob.length === 0 ? (
+                            <p className="text-xs text-muted-foreground font-medium text-center py-8">No applications in this range yet.</p>
+                        ) : (
+                            <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+                                {breakdown.applicationsByJob.map((job, index) => (
+                                    <div key={index} className="p-4 bg-muted/80 rounded-2xl border border-border/60 flex items-center justify-between gap-4">
+                                        <div>
+                                            <h4 className="text-xs font-bold text-foreground">{job.jobTitle}</h4>
+                                            <p className="text-[11px] text-muted-foreground font-medium">{job.job_department} • {job.job_location}</p>
                                         </div>
-                                        <span className={cn(
-                                            "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase",
-                                            job.job_status === 'OPEN' ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-muted text-muted-foreground"
-                                        )}>
-                                            {job.job_status}
-                                        </span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
 
-                    {/* Department Open Requisitions List */}
-                    <div className="bg-card rounded-2xl border border-border p-8 shadow-sm space-y-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h3 className="text-base font-bold text-foreground tracking-tight">Job Requisition Health</h3>
-                                <p className="text-xs text-muted-foreground font-medium">Status and applicant numbers for open positions</p>
-                            </div>
-                            <Briefcase className="w-5 h-5 text-brand-600" />
-                        </div>
-
-                        <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
-
-                            {/*{breakdown.applicationsByJob.slice(0, 5).map((job, index) => (
-                                            <div key={index} className="flex items-center justify-between">
-                                                <div className="flex-1">
-                                                    <p className="font-medium text-sm truncate">{job.jobTitle}</p>
-                                                    <div className="flex items-center space-x-2 mt-1">
-                                                        <Progress
-                                                            value={(job.count / breakdown.applicationsByJob[0].count) * 100}
-                                                            className="flex-1 h-2"
-                                                        />
-                                                        <span className="text-xs text-gray-500 min-w-[3rem]">
-                                                            {job.count} apps
-                                                        </span>
-                                                    </div>
-                                                </div>
+                                        <div className="flex items-center gap-3">
+                                            <div className="text-right">
+                                                <p className="text-xs font-extrabold text-brand-700">{job.count} Applicants</p>
+                                                <p className="text-[10px] text-muted-foreground font-medium">Posted {format(job.job_created_at, 'MMM d, yyyy')}</p>
                                             </div>
-                                        ))}*/}
-                        </div>
+                                            <span className={cn(
+                                                "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase",
+                                                job.job_status === 'OPEN' ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-muted text-muted-foreground"
+                                            )}>
+                                                {job.job_status}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

@@ -424,3 +424,33 @@ export const activity_log_relations = relations(activity_log, ({ one }) => ({
         references: [organization.clerk_id],
     }),
 }));
+
+// Generated reports, one row per generation. The file itself is NOT stored:
+// downloads recompute the report from the stored type + date range, so a
+// history row can never go stale and there is no blob to orphan. No
+// retention/archival policy yet — rows are small (no payload, just params).
+export const report_history = mysqlTable('report_history', {
+    id: int('id').primaryKey().autoincrement(),
+    organization: varchar('organization', { length: 255 })
+        .notNull()
+        .references(() => organization.clerk_id, { onDelete: 'cascade' }),
+    report_type: varchar('report_type', { length: 100 }).notNull(),
+    date_from: timestamp('date_from').notNull(),
+    date_to: timestamp('date_to').notNull(),
+    // JSON array of the metric ids the user selected in the generator, or
+    // NULL when the user left every metric selected (full report).
+    metrics: text('metrics'),
+    generated_by: varchar('generated_by', { length: 255 }).notNull(),
+    generated_by_name: varchar('generated_by_name', { length: 255 }),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+    // History reads one org's entries newest first.
+    org_created_idx: index('report_history_org_created_idx').on(table.organization, table.created_at),
+}));
+
+export const report_history_relations = relations(report_history, ({ one }) => ({
+    organization: one(organization, {
+        fields: [report_history.organization],
+        references: [organization.clerk_id],
+    }),
+}));

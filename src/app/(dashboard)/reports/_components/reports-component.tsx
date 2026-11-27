@@ -3,107 +3,30 @@
 import React, { useCallback, useEffect } from 'react';
 import { CustomTabsTrigger, Tabs, TabsContent, TabsList } from "@/components/ui/tabs";
 import {
+    FilePlus2,
     FileText,
     User
 } from "lucide-react";
 import ReportHistory from './report-history';
+import ReportGenerator from './report-generator';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import ReportOverview from './report-overview';
-import { JOB_STAGES, JOB_STATUS } from '@/zod';
-
-
-export interface ReportData {
-    summary: {
-        totalApplications: number;
-        totalCandidates: number;
-        totalJobs: number;
-        totalInterviews: number;
-        hiredCandidates: number;
-    };
-    trends: {
-        applicationsByDate: Array<{ date: string; count: number }>;
-        monthlyTrends: Array<{ month: string; applications: number }>;
-    };
-    breakdown: {
-        applicationsByJob: Array<{
-            jobTitle: string;
-            jobId: number;
-            count: number;
-            job_status: typeof JOB_STATUS._type | null;
-            job_created_at: Date;
-            job_location: string;
-            job_department: number;
-        }>;
-        applicationsByStage: Array<{ stageName: typeof JOB_STAGES._type | null; stageOrder: number; count: number; stageColor: string | null }>;
-    };
-    analysis: {
-        sourceAnalysis: Array<{ source: string; applications: number; hires: number; conversionRate: number }>;
-        timeToHireData: Array<{ range: string; count: number }>;
-        diversityMetrics: {
-            gender: Array<{ category: string; count: number; percentage: number }>;
-            experience: Array<{ category: string; count: number; percentage: number }>;
-        };
-        performanceMetrics: {
-            averageTimeToHire: number;
-            applicationToInterviewRate: number;
-            interviewToOfferRate: number;
-            offerAcceptanceRate: number;
-            costPerHire: number;
-            qualityOfHire: number;
-        };
-    };
-};
+import type { ReportDataset, ReportRange } from '@/server/actions/reports-actions';
 
 interface Props {
-    reportData: ReportData;
+    reportData: ReportDataset;
+    range: ReportRange;
 };
 
-type TabValue = "overview" | "history";
+type TabValue = "overview" | "generate" | "history";
 const DEFAULT_TAB: TabValue = "overview";
+const TABS: TabValue[] = ["overview", "generate", "history"];
 
-const ReportsComponent = ({ reportData }: Props) => {
+const ReportsComponent = ({ reportData, range }: Props) => {
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
     const [activeTab, setActiveTab] = React.useState<TabValue>(DEFAULT_TAB);
-
-    // const quickStats = [
-    //     {
-    //         title: 'Total Applications',
-    //         value: reportData.summary.totalApplications,
-    //         icon: Users,
-    //         color: 'text-blue-600',
-    //         bgColor: 'bg-blue-100'
-    //     },
-    //     {
-    //         title: 'Active Candidates',
-    //         value: reportData.summary.totalCandidates,
-    //         icon: Target,
-    //         color: 'text-green-600',
-    //         bgColor: 'bg-green-100'
-    //     },
-    //     {
-    //         title: 'Open Positions',
-    //         value: reportData.summary.totalJobs,
-    //         icon: Briefcase,
-    //         color: 'text-purple-600',
-    //         bgColor: 'bg-purple-100'
-    //     },
-    //     {
-    //         title: 'Interviews Scheduled',
-    //         value: reportData.summary.totalInterviews,
-    //         icon: Calendar,
-    //         color: 'text-orange-600',
-    //         bgColor: 'bg-orange-100'
-    //     },
-    //     {
-    //         title: 'Successful Hires',
-    //         value: reportData.summary.hiredCandidates,
-    //         icon: TrendingUp,
-    //         color: 'text-emerald-600',
-    //         bgColor: 'bg-emerald-100'
-    //     }
-    // ];
 
     const handleTabChange = useCallback((value: string) => {
         const newPath = value === DEFAULT_TAB
@@ -114,7 +37,7 @@ const ReportsComponent = ({ reportData }: Props) => {
 
     useEffect(() => {
         const tabParam = searchParams.get('tab') as TabValue;
-        setActiveTab(tabParam || DEFAULT_TAB);
+        setActiveTab(TABS.includes(tabParam) ? tabParam : DEFAULT_TAB);
     }, [searchParams]);
 
     return (
@@ -126,6 +49,7 @@ const ReportsComponent = ({ reportData }: Props) => {
                         <TabsList className="bg-transparent rounded-none p-0 border-b w-full justify-start">
                             {[
                                 { id: 'overview', label: 'Overview', icon: User },
+                                { id: 'generate', label: 'Generate', icon: FilePlus2 },
                                 { id: 'history', label: 'History', icon: FileText },
                             ].map((tab) => (
                                 <CustomTabsTrigger
@@ -141,7 +65,11 @@ const ReportsComponent = ({ reportData }: Props) => {
                     </div>
 
                     <TabsContent value="overview">
-                        <ReportOverview reportData={reportData} />
+                        <ReportOverview reportData={reportData} range={range} />
+                    </TabsContent>
+
+                    <TabsContent value="generate">
+                        <ReportGenerator />
                     </TabsContent>
 
                     <TabsContent value="history">

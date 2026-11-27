@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { generateReport } from '@/server/actions/reports-actions';
+import { generateReport, getReportHistory } from '@/server/actions/reports-actions';
 import { canGenerateReport, canViewReport } from '@/server/permissions';
 
 // Report types the UI can request (see report-generator.tsx). Anything else
@@ -57,8 +57,8 @@ export async function POST(request: NextRequest) {
             }, { status: 400 });
         }
 
-        // Generate the report
-        const result = await generateReport(reportType, { from: fromDate, to: toDate });
+        // Generate the report (validates the type, records a history row)
+        const result = await generateReport(reportType, { from: fromDate, to: toDate }, metrics);
 
         return NextResponse.json({
             success: true,
@@ -88,21 +88,12 @@ export async function GET() {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        // Get report history (mock data for now)
-        const reportHistory = [
-            {
-                id: 'report_1',
-                name: 'Executive Summary',
-                type: 'executive-summary',
-                generatedAt: new Date().toISOString(),
-                status: 'ready',
-                downloadUrl: '/api/reports/download/executive-summary.pdf'
-            }
-        ];
+        // Real history: only reports this org actually generated.
+        const reports = await getReportHistory();
 
         return NextResponse.json({
             success: true,
-            reports: reportHistory
+            reports
         });
 
     } catch (error) {

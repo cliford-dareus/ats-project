@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { canViewReport } from '@/server/permissions';
+import { getGeneratedReportCsv } from '@/server/actions/reports-actions';
 
 export async function GET(
   request: NextRequest,
@@ -19,25 +20,26 @@ export async function GET(
 
     const { reportId } = await params;
 
-    // Report ids are generated server-side (<type>_<timestamp>.pdf); reject
-    // anything else so the id can't smuggle path traversal or odd input
-    // into a future file lookup.
-    if (!reportId || !/^[A-Za-z0-9._-]+$/.test(reportId) || reportId.includes('..')) {
-      return NextResponse.json({
-        error: 'Invalid report ID'
-      }, { status: 400 });
+    // History ids are numeric row ids. Anything else is rejected — the id
+    // is never interpolated into a path or file lookup.
+    const id = Number(reportId);
+    if (!reportId || !Number.isInteger(id) || id <= 0) {
+      return NextResponse.json({ error: 'Invalid report ID' }, { status: 400 });
     }
 
-    // In a real implementation, you would:
-    // 1. Fetch the report data from database
-    // 2. Generate the PDF using the PDFGenerator
-    // 3. Return the PDF as a response
+    // Recompute the stored report (org-scoped inside) and stream it as CSV.
+    // A row from another org, or a missing row, is a 404.
+    const file = await getGeneratedReportCsv(id);
+    if (!file) {
+      return NextResponse.json({ error: 'Report not found' }, { status: 404 });
+    }
 
-    // For now, return a success response with download URL
-    return NextResponse.json({
-      success: true,
-      downloadUrl: `/api/reports/download/${reportId}`,
-      message: 'Report ready for download'
+    return new NextResponse(file.csv, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': `attachment; filename="${file.filename}"`,
+      },
     });
 
   } catch (error) {

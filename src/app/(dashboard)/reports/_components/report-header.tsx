@@ -1,11 +1,83 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Building2, Download } from "lucide-react";
+import { Download } from "lucide-react";
 import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { format } from "date-fns";
+import { ExportUtils } from "@/lib/export-utils";
+import type { ReportDataset, ReportRange } from "@/server/actions/reports-actions";
+import { REPORT_RANGES } from "@/server/actions/reports-actions";
 
-const ReportHeader = () => {
-    const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
+interface Props {
+    reportData: ReportDataset;
+    range: ReportRange;
+}
+
+const ReportHeader = ({ reportData, range }: Props) => {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const [exportError, setExportError] = useState<string | null>(null);
+
+    const handleRangeChange = (nextRange: ReportRange) => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("range", nextRange);
+        router.push(`/reports?${params.toString()}`);
+    };
+
+    const handleExportCSV = () => {
+        setExportError(null);
+        try {
+            const { summary, breakdown, analysis, trends } = reportData;
+            const headers = ["Section", "Metric", "Value"];
+            const data: Record<string, string | number>[] = [
+                { Section: "Summary", Metric: "Total Applications", Value: summary.totalApplications },
+                { Section: "Summary", Metric: "Total Candidates", Value: summary.totalCandidates },
+                { Section: "Summary", Metric: "Total Jobs", Value: summary.totalJobs },
+                { Section: "Summary", Metric: "Total Interviews", Value: summary.totalInterviews },
+                { Section: "Summary", Metric: "Successful Hires", Value: summary.hiredCandidates },
+                {
+                    Section: "Summary",
+                    Metric: "Average Time to Hire (days)",
+                    Value: analysis.performanceMetrics.averageTimeToHire === null
+                        ? "No hires yet"
+                        : analysis.performanceMetrics.averageTimeToHire,
+                },
+                {
+                    Section: "Summary",
+                    Metric: "Application to Interview Rate (%)",
+                    Value: analysis.performanceMetrics.applicationToInterviewRate === null
+                        ? "—"
+                        : analysis.performanceMetrics.applicationToInterviewRate,
+                },
+                ...breakdown.applicationsByJob.map((job) => ({
+                    Section: "Applications by Job",
+                    Metric: job.jobTitle,
+                    Value: job.count,
+                })),
+                ...breakdown.applicationsByStage.map((stage) => ({
+                    Section: "Applications by Stage",
+                    Metric: stage.stageName ?? "Unnamed stage",
+                    Value: stage.count,
+                })),
+                ...trends.monthlyTrends.map((trend) => ({
+                    Section: "Monthly Trends",
+                    Metric: trend.month,
+                    Value: `Applications: ${trend.applications}; Interviews: ${trend.interviews}; Hires: ${trend.hires}`,
+                })),
+            ];
+
+            ExportUtils.exportToCSV({
+                title: "Reports Overview",
+                data,
+                headers,
+                filename: `Reports_${range}_${format(new Date(), "yyyy-MM-dd")}.csv`,
+            });
+        } catch (error) {
+            console.error("Export failed:", error);
+            setExportError("Export failed. Please try again.");
+        }
+    };
 
     return (
         <div className="flex items-center gap-3 justify-between">
@@ -17,52 +89,43 @@ const ReportHeader = () => {
                     </span>
                 </div>
                 <p className="text-xs text-muted-foreground font-medium mt-1">
-                    Track hiring velocity, pipeline conversion rates, sourcing performance, and recruitment ROI.
+                    Track hiring velocity, pipeline conversion rates, and sourcing performance.
                 </p>
             </div>
 
             {/* Global Controls & Filters */}
             <div className="flex flex-wrap items-center gap-3">
-                {/* Department Dropdown */}
-                <div className="flex items-center gap-1.5 bg-card border border-border rounded-2xl px-3 py-1.5 shadow-sm">
-                    <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
-                    {/*<select
-                        value={departmentFilter}
-                        onChange={(e) => setDepartmentFilter(e.target.value)}
-                        className="bg-transparent text-xs font-bold text-foreground focus:outline-none cursor-pointer"
-                    >
-                        {departments.map((dept) => (
-                            <option key={dept} value={dept}>{dept} Department</option>
-                        ))}
-                    </select>*/}
-                </div>
-
                 {/* Time Range Filter Buttons */}
                 <div className="bg-card border border-border p-1 rounded-2xl flex items-center gap-1 shadow-sm">
-                    {(['7d', '30d', '90d', '1y'] as const).map((range) => (
+                    {REPORT_RANGES.map((rangeOption) => (
                         <button
-                            key={range}
-                            onClick={() => setTimeRange(range)}
+                            key={rangeOption}
+                            onClick={() => handleRangeChange(rangeOption)}
                             className={cn(
                                 "px-3 py-1 rounded-xl text-xs font-bold transition-all uppercase",
-                                timeRange === range
+                                range === rangeOption
                                     ? "bg-foreground text-background shadow-sm"
                                     : "text-muted-foreground hover:text-foreground"
                             )}
                         >
-                            {range}
+                            {rangeOption}
                         </button>
                     ))}
                 </div>
 
                 {/* Export Report Action */}
-                <button
-                    // onClick={handleExportCSV}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-foreground text-background rounded-2xl text-xs font-bold transition-all shadow-sm"
-                >
-                    <Download className="w-3.5 h-3.5" />
-                    Export CSV Report
-                </button>
+                <div className="flex flex-col items-end gap-1">
+                    <button
+                        onClick={handleExportCSV}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-foreground text-background rounded-2xl text-xs font-bold transition-all shadow-sm"
+                    >
+                        <Download className="w-3.5 h-3.5" />
+                        Export CSV Report
+                    </button>
+                    {exportError && (
+                        <p className="text-xs font-medium text-red-600">{exportError}</p>
+                    )}
+                </div>
             </div>
         </div>
     );

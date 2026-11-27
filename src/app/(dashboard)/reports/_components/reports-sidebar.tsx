@@ -1,80 +1,57 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import {
     BarChart3,
-    TrendingUp,
-    Users,
-    Calendar,
     FileText,
-    Download,
     Clock,
-    Target,
     PieChart,
     Activity
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { REPORT_TYPES } from "@/lib/report-csv";
+import { format } from "date-fns";
+
+interface RecentReport {
+    id: number;
+    typeName: string;
+    dateFrom: string;
+    dateTo: string;
+    generatedByName: string | null;
+    generatedAt: string;
+}
 
 const ReportsSidebar = () => {
     const [selectedReport, setSelectedReport] = useState<string | null>(null);
+    const [recentReports, setRecentReports] = useState<RecentReport[]>([]);
+    const [loadingRecent, setLoadingRecent] = useState(true);
+    const [recentError, setRecentError] = useState<string | null>(null);
 
-    const reportCategories = [
-        {
-            title: "Recruitment Analytics",
-            icon: BarChart3,
-            reports: [
-                { id: "hiring-funnel", name: "Hiring Funnel", description: "Track candidates through stages" },
-                { id: "time-to-hire", name: "Time to Hire", description: "Average hiring duration" },
-                { id: "source-effectiveness", name: "Source Effectiveness", description: "Best recruitment channels" },
-                { id: "conversion-rates", name: "Conversion Rates", description: "Stage-to-stage conversion" }
-            ]
-        },
-        {
-            title: "Performance Metrics",
-            icon: TrendingUp,
-            reports: [
-                { id: "recruiter-performance", name: "Recruiter Performance", description: "Individual recruiter stats" },
-                { id: "job-performance", name: "Job Performance", description: "Job posting effectiveness" },
-                { id: "interview-feedback", name: "Interview Feedback", description: "Interview quality metrics" },
-                { id: "offer-acceptance", name: "Offer Acceptance", description: "Offer acceptance rates" }
-            ]
-        },
-        {
-            title: "Candidate Insights",
-            icon: Users,
-            reports: [
-                { id: "candidate-demographics", name: "Demographics", description: "Candidate diversity data" },
-                { id: "skill-analysis", name: "Skill Analysis", description: "In-demand skills trends" },
-                { id: "candidate-experience", name: "Candidate CandidateDetails", description: "Application experience metrics" },
-                { id: "rejection-analysis", name: "Rejection Analysis", description: "Common rejection reasons" }
-            ]
-        },
-        {
-            title: "Time-based Reports",
-            icon: Calendar,
-            reports: [
-                { id: "monthly-summary", name: "Monthly Summary", description: "Month-over-month trends" },
-                { id: "quarterly-review", name: "Quarterly Review", description: "Quarterly performance" },
-                { id: "yearly-overview", name: "Yearly Overview", description: "Annual hiring statistics" },
-                { id: "seasonal-trends", name: "Seasonal Trends", description: "Hiring pattern analysis" }
-            ]
-        }
-    ];
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await fetch("/api/reports/generate");
+                if (!res.ok) throw new Error("Failed to load recent reports");
+                const json = (await res.json()) as { reports?: RecentReport[] };
+                if (!cancelled) setRecentReports((json.reports ?? []).slice(0, 5));
+            } catch (error) {
+                console.error("Failed to load recent reports:", error);
+                if (!cancelled) setRecentError("Could not load recent reports.");
+            } finally {
+                if (!cancelled) setLoadingRecent(false);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     const quickActions = [
-        { id: "generate-custom", name: "Custom Report", icon: FileText, color: "bg-blue-500" },
-        { id: "schedule-report", name: "Schedule Report", icon: Clock, color: "bg-green-500" },
-        { id: "export-data", name: "Export Data", icon: Download, color: "bg-purple-500" },
-        { id: "dashboard-view", name: "Dashboard View", icon: PieChart, color: "bg-orange-500" }
-    ];
-
-    const recentReports = [
-        { name: "Weekly Hiring Report", date: "2 hours ago", type: "Automated" },
-        { name: "Q4 Performance Review", date: "1 day ago", type: "Custom" },
-        { name: "Candidate Source Analysis", date: "3 days ago", type: "Scheduled" },
-        { name: "Interview Feedback Summary", date: "1 week ago", type: "Manual" }
+        { id: "generate-custom", name: "Custom Report", icon: FileText, color: "bg-blue-500", href: "/reports?tab=generate" },
+        { id: "dashboard-view", name: "Dashboard View", icon: PieChart, color: "bg-orange-500", href: "/dashboard" },
     ];
 
     return (
@@ -89,17 +66,16 @@ const ReportsSidebar = () => {
                     {quickActions.map((action) => {
                         const Icon = action.icon;
                         return (
-                            <Button
+                            <Link
                                 key={action.id}
-                                variant="outline"
-                                size="sm"
-                                className="flex flex-col items-center gap-1 h-auto py-3"
+                                href={action.href}
+                                className="flex flex-col items-center gap-1 h-auto py-3 px-2 rounded-md border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground text-sm font-medium"
                             >
                                 <div className={`p-2 rounded ${action.color} text-white`}>
                                     <Icon size={16} />
                                 </div>
                                 <span className="text-xs text-center">{action.name}</span>
-                            </Button>
+                            </Link>
                         );
                     })}
                 </div>
@@ -107,39 +83,29 @@ const ReportsSidebar = () => {
 
             <Separator />
 
-            {/* Report Categories */}
+            {/* Report Types */}
             <div className="space-y-4">
                 <div className="flex items-center gap-2">
                     <BarChart3 size={20} />
-                    <span className="font-medium text-base">Report Categories</span>
+                    <span className="font-medium text-base">Report Types</span>
                 </div>
 
-                {reportCategories.map((category) => {
-                    const Icon = category.icon;
-                    return (
-                        <div key={category.title} className="space-y-2">
-                            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                                <Icon size={16} />
-                                <span>{category.title}</span>
-                            </div>
-                            <div className="space-y-1 ml-6">
-                                {category.reports.map((report) => (
-                                    <div
-                                        key={report.id}
-                                        className={`p-2 rounded cursor-pointer transition-colors ${selectedReport === report.id
-                                            ? "bg-primary/10 text-primary border border-primary/20"
-                                            : "hover:bg-muted"
-                                            }`}
-                                        onClick={() => setSelectedReport(report.id)}
-                                    >
-                                        <div className="text-sm font-medium">{report.name}</div>
-                                        <div className="text-xs text-muted-foreground">{report.description}</div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    );
-                })}
+                <div className="space-y-1">
+                    {REPORT_TYPES.map((report) => (
+                        <Link
+                            key={report.id}
+                            href={`/reports?tab=generate&type=${report.id}`}
+                            onClick={() => setSelectedReport(report.id)}
+                            className={`block p-2 rounded cursor-pointer transition-colors ${selectedReport === report.id
+                                ? "bg-primary/10 text-primary border border-primary/20"
+                                : "hover:bg-muted"
+                                }`}
+                        >
+                            <div className="text-sm font-medium">{report.name}</div>
+                            <div className="text-xs text-muted-foreground">{report.description}</div>
+                        </Link>
+                    ))}
+                </div>
             </div>
 
             <Separator />
@@ -151,55 +117,38 @@ const ReportsSidebar = () => {
                     <span className="font-medium text-base">Recent Reports</span>
                 </div>
                 <div className="space-y-2">
-                    {recentReports.map((report, index) => (
-                        <div
-                            key={index}
-                            className="p-3 rounded border hover:bg-muted cursor-pointer transition-colors"
-                        >
-                            <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                    <div className="text-sm font-medium">{report.name}</div>
-                                    <div className="text-xs text-muted-foreground">{report.date}</div>
+                    {loadingRecent ? (
+                        <p className="text-xs text-muted-foreground">Loading recent reports…</p>
+                    ) : recentError ? (
+                        <p className="text-xs text-red-600">{recentError}</p>
+                    ) : recentReports.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">No reports generated yet.</p>
+                    ) : (
+                        recentReports.map((report) => (
+                            <Link
+                                key={report.id}
+                                href="/reports?tab=history"
+                                className="block p-3 rounded border hover:bg-muted cursor-pointer transition-colors"
+                            >
+                                <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                        <div className="text-sm font-medium">{report.typeName}</div>
+                                        <div className="text-xs text-muted-foreground">
+                                            {format(new Date(report.generatedAt), "MMM d, yyyy")}
+                                            {report.generatedByName ? ` • ${report.generatedByName}` : ""}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                            {format(new Date(report.dateFrom), "MMM d, yyyy")} – {format(new Date(report.dateTo), "MMM d, yyyy")}
+                                        </div>
+                                    </div>
+                                    <Badge variant="secondary" className="text-xs">
+                                        Report
+                                    </Badge>
                                 </div>
-                                <Badge variant="secondary" className="text-xs">
-                                    {report.type}
-                                </Badge>
-                            </div>
-                        </div>
-                    ))}
+                            </Link>
+                        ))
+                    )}
                 </div>
-            </div>
-
-            <Separator />
-
-            {/* Report Templates */}
-            <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                    <Target size={20} />
-                    <span className="font-medium text-base">Templates</span>
-                </div>
-                <div className="space-y-2">
-                    <Button variant="outline" size="sm" className="w-full justify-start">
-                        <FileText size={16} className="mr-2" />
-                        Executive Summary
-                    </Button>
-                    <Button variant="outline" size="sm" className="w-full justify-start">
-                        <BarChart3 size={16} className="mr-2" />
-                        Department Report
-                    </Button>
-                    <Button variant="outline" size="sm" className="w-full justify-start">
-                        <TrendingUp size={16} className="mr-2" />
-                        Performance Review
-                    </Button>
-                </div>
-            </div>
-
-            {/* Generate Report Button */}
-            <div className="mt-auto">
-                <Button className="w-full" disabled={!selectedReport}>
-                    <BarChart3 size={16} className="mr-2" />
-                    Generate Report
-                </Button>
             </div>
         </div>
     );
