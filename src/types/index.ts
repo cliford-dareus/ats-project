@@ -26,11 +26,13 @@ export type CandidatesResponseType = {
     email: string;
     phone: string;
     cv_path: string;
+    location: string;
     status: typeof CANDIDATE_STATUS._type | null;
     created_at: Date;
     updated_at: Date;
     applicationsCount: number;
     attachmentsCount: number;
+    attachments: { id: number; file_name: string; file_url: string; attachment_type: "RESUME" | "COVER_LETTER" | "OFFER_LETTER" | "OTHER" | null }[];
 };
 
 export type ApplicationResponseType = {

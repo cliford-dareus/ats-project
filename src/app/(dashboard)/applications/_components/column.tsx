@@ -3,37 +3,14 @@
 import {ColumnDef} from "@tanstack/react-table";
 import {ApplicationResponseType} from "@/types";
 import React from "react";
-import IndeterminateCheckbox from "@/components/indeterminate-checkbox";
 import RowAction from "./row-action";
 
 
+// NOTE (L-13): the select column was removed — row checkboxes kept local
+// TanStack rowSelection with no consumer. Bulk actions for this list are a
+// follow-up once the shared DataTable onRowSelectionChange callback lands.
+
 export const columns: ColumnDef<ApplicationResponseType>[] = [
-    {
-        id: 'select',
-        header: ({table}) => (
-            <div className="px-4">
-                <IndeterminateCheckbox
-                    {...{
-                        checked: table.getIsAllRowsSelected(),
-                        indeterminate: table.getIsSomeRowsSelected(),
-                        onChange: table.getToggleAllRowsSelectedHandler(),
-                    }}
-                />
-            </div>
-        ),
-        cell: ({row}) => (
-            <div className="px-4">
-                <IndeterminateCheckbox
-                    {...{
-                        checked: row.getIsSelected(),
-                        disabled: !row.getCanSelect(),
-                        indeterminate: row.getIsSomeSelected(),
-                        onChange: row.getToggleSelectedHandler(),
-                    }}
-                />
-            </div>
-        ),
-    },
     {
         accessorKey: "Name",
         header: 'Name',

@@ -1,5 +1,5 @@
 import { ApplicationResponseType } from "@/types";
-import { AlertCircle, Calendar, ExternalLink, History, Mail, Phone, Star } from "lucide-react";
+import { AlertCircle, Calendar, ExternalLink, History, Mail, Phone } from "lucide-react";
 
 type Props = {
     applicationResult: ApplicationResponseType;
@@ -28,20 +28,8 @@ const ApplicationDetails = ({ applicationResult }: Props) => {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <div
-                        className="w-8 h-8 bg-muted rounded-lg flex items-center justify-center">
-                        <Star className="w-4 h-4 text-muted-foreground" />
-                    </div>
-                    <div>
-                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Internal
-                            Rating</p>
-                        <div className="flex items-center gap-1">
-                            <p className="text-sm font-semibold text-foreground">4.5</p>
-                            <Star className="w-3 h-3 text-amber-500 fill-current" />
-                        </div>
-                    </div>
-                </div>
+                {/* B22-5: the hardcoded "Internal Rating 4.5" row was removed —
+                    no rating column exists, so nothing real can be shown here. */}
 
                 <div className="flex items-center gap-3">
                     <div

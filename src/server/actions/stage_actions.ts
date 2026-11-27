@@ -2,7 +2,7 @@
 
 import { auth } from "@clerk/nextjs/server";
 import { canEditJob, canMoveApplication, canViewJob, hasPermission } from "@/server/permissions";
-import { get_stage_by_name } from "@/server/queries/drizzle/stages";
+import { get_stage_by_name, get_stage_by_name_for_job } from "@/server/queries/drizzle/stages";
 import { JOB_STAGES } from "@/zod";
 
 export const get_stage_by_name_action = async (stageName: string) => {
@@ -21,6 +21,28 @@ export const get_stage_by_name_action = async (stageName: string) => {
     }
 
     return await get_stage_by_name(parsed.data);
+};
+
+// Job-scoped variant (S-1): resolves the stage by name within one job, so a
+// stage-move can never pick up a same-named stage from another job/org.
+// Same permission/validation as get_stage_by_name_action.
+export const get_stage_by_name_for_job_action = async (stageName: string, jobId: number) => {
+    const { userId } = await auth();
+    const allowed = await canViewJob();
+    if (!userId || !allowed) {
+        return { error: true, message: "There was an error retrieving the stage" }
+    }
+
+    const parsed = JOB_STAGES.safeParse(stageName);
+    if (!parsed.success || !Number.isInteger(jobId) || jobId <= 0) {
+        return { error: true, message: "Stage not found" }
+    }
+
+    const stage = await get_stage_by_name_for_job(parsed.data, jobId);
+    if (!stage) {
+        return { error: true, message: "Stage not found" }
+    }
+    return stage;
 };
 
 export const add_trigger_to_stage_action = async () => {

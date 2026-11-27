@@ -23,6 +23,9 @@ interface Props<T extends object> {
     data: T[];
     status: string;
     onRowClick?: (data: T) => void;
+    // Optional: report the currently selected rows to the parent (e.g. a
+    // bulk-action bar). When omitted, selection stays internal as before.
+    onRowSelectionChange?: (rows: T[]) => void;
 }
 
 const DataTable = <T extends object>({
@@ -30,6 +33,7 @@ const DataTable = <T extends object>({
                                          data,
                                          onRowClick,
                                          status,
+                                         onRowSelectionChange,
                                      }: Props<T>) => {
     const [rowSelection, setRowSelection] = React.useState({});
     const [validRows, setValidRows] = React.useState({});
@@ -51,6 +55,15 @@ const DataTable = <T extends object>({
         },
         // debugTable: true,
     });
+
+    // Lift selection to the parent without changing the default behavior:
+    // with no callback the table works exactly as before.
+    const selectedRows = table.getSelectedRowModel().rows.map((row) => row.original);
+    const selectedKey = selectedRows.map((row) => (row as { id?: unknown }).id).join(",");
+    React.useEffect(() => {
+        onRowSelectionChange?.(selectedRows);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedKey]);
 
     return (
         <Table id={`table-${status}`}>

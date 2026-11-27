@@ -21,18 +21,8 @@ const CandidatesSidebar = () => {
                 {value: "HIRED", label: "Hired", icon: UserCheck, color: "bg-blue-500"},
             ],
         },
-        {
-            id: "experience",
-            title: "Experience",
-            icon: Zap,
-            items: [
-                {value: "ENTRY", label: "Entry (0-2 years)", icon: UserCheck, color: "bg-green-500"},
-                {value: "MID", label: "Mid (3-5 years)", icon: UserX, color: "bg-red-500"},
-                {value: "SENIOR", label: "Senior (6-10 years)", icon: UserCheck, color: "bg-blue-500"},
-                {value: "LEAD", label: "Lead (10+ years)", icon: UserCheck, color: "bg-yellow-500"},
-            ],
-        },
-
+        // No Experience group: the candidates table has no `experience`
+        // column, so the filter was a silent no-op.
     ]
 
     return (

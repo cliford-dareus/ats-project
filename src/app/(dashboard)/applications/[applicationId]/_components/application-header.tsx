@@ -1,6 +1,6 @@
 "use client";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
     DropdownMenu,
     DropdownMenuContent, DropdownMenuItem,
@@ -13,32 +13,126 @@ import {
 import { cn } from "@/lib/utils";
 import { ApplicationResponseType, StageResponseType } from "@/types";
 import { AlertCircle, CheckCircle, ChevronDown, Clock, MessageSquare, UserCheck, UserX, XCircle } from "lucide-react";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { update_application_stage_action } from "@/server/actions/application_actions";
+import { update_candidate_action } from "@/server/actions/candidates-actions";
+import { create_note } from "@/server/queries/mongo/note";
+import { useHasPermission } from "@/lib/use-permission";
 
 type Props = {
     applicationResult: ApplicationResponseType;
     stages: StageResponseType[];
 }
 
-const AppicationHeader = ({ applicationResult, stages }: Props) => {
-    const [, startTransition] = useTransition();
+/** Initials derived from the candidate's real name (B22-4). */
+const getInitials = (name: string) =>
+    name
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0]!.toUpperCase())
+        .join("") || "?";
 
-    const moveToStage = async (stage: string) => {
+const REJECTION_REASONS = [
+    "Not qualified",
+    "Position filled",
+    "No response",
+    "Other",
+] as const;
+
+const REJECTION_ICONS = [AlertCircle, CheckCircle, Clock, XCircle];
+
+const AppicationHeader = ({ applicationResult, stages }: Props) => {
+    const router = useRouter();
+    const hasPermission = useHasPermission();
+    const canMove = hasPermission("application:move");
+    const canEditCandidate = hasPermission("candidate:edit");
+    const [, startTransition] = useTransition();
+    const [error, setError] = useState<string | null>(null);
+    const [confirmation, setConfirmation] = useState<string | null>(null);
+
+    // B22-1: Advance was an empty stub. The `stages` prop is already the
+    // job-scoped stage list for this application (loaded by job id on the
+    // detail page), so resolve the target stage from it — never by name
+    // alone across jobs (S-1) — then call the stage action, which verifies
+    // server-side that the stage belongs to the application's job (S-2).
+    const moveToStage = async (stageName: string) => {
+        const targetStage = stages.find((stage) => stage.stage_name === stageName);
+        if (!targetStage) {
+            setError("Stage not found for this job");
+            return;
+        }
         startTransition(async () => {
             try {
-
-            } catch (error) {
-
+                setError(null);
+                setConfirmation(null);
+                const result = await update_application_stage_action({
+                    applicationId: applicationResult.id,
+                    new_stage_id: targetStage.id,
+                });
+                if (result && typeof result === "object" && "error" in result && result.error) {
+                    setError(
+                        (result as { message?: string }).message ??
+                            "Failed to move the application",
+                    );
+                    return;
+                }
+                setConfirmation(`Moved to ${stageName}`);
+                router.refresh();
+            } catch (err) {
+                setError((err as Error).message || "Failed to move the application");
             }
         });
     };
+
+    // B22-3: Reject reuses the established review-page pattern — candidate
+    // status REJECTED plus a NEGATIVE "Rejected: <reason>" note.
+    const handleReject = async (reason: string) => {
+        setError(null);
+        setConfirmation(null);
+        try {
+            const result = await update_candidate_action({
+                id: applicationResult.candidate_id,
+                status: "REJECTED",
+            });
+            if (result && typeof result === "object" && "error" in result && result.error) {
+                setError(
+                    (result as { message?: string }).message ??
+                        "Failed to reject the candidate",
+                );
+                return;
+            }
+            const noteResult = await create_note({
+                text: `Rejected: ${reason}`,
+                note_id: `candidate_${applicationResult.candidate_id}`,
+                note_type: "candidate",
+                candidate_id: applicationResult.candidate_id,
+                type: "NEGATIVE",
+                mentions: [],
+            });
+            if (
+                (noteResult && typeof noteResult === "object" && "error" in noteResult && noteResult.error) ||
+                (typeof noteResult === "string" && noteResult.startsWith("Failed"))
+            ) {
+                setError("Candidate rejected, but the rejection note could not be saved");
+                router.refresh();
+                return;
+            }
+            setConfirmation(`Candidate rejected: ${reason}`);
+            router.refresh();
+        } catch (err) {
+            setError((err as Error).message || "Failed to reject the candidate");
+        }
+    };
+
     return (
+        <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
                 <div className="flex items-center gap-4">
                     <Avatar className="w-12 h-12">
-                        <AvatarImage src="https://github.com/shadcn.png" />
-                        <AvatarFallback>CN</AvatarFallback>
+                        <AvatarFallback>{getInitials(applicationResult.candidate_name)}</AvatarFallback>
                     </Avatar>
                     <div>
                         <h2 className="text-2xl font-bold text-foreground leading-tight uppercase">{applicationResult.candidate_name}</h2>
@@ -51,11 +145,13 @@ const AppicationHeader = ({ applicationResult, stages }: Props) => {
             </div>
 
             <div className="flex items-center gap-3">
-                <button
-                    className="px-4 !py-2 border border-border rounded-lg text-[10px] uppercase tracking-widest font-bold text-muted-foreground hover:bg-muted transition-all flex items-center gap-2">
+                <a
+                    href={`mailto:${applicationResult.candidate_email}`}
+                    className="px-4 !py-2 border border-border rounded-lg text-[10px] uppercase tracking-widest font-bold text-muted-foreground hover:bg-muted transition-all flex items-center gap-2"
+                >
                     <MessageSquare size={14} />
                     Message
-                </button>
+                </a>
 
                 <div className="flex">
                     <DropdownMenu>
@@ -77,6 +173,7 @@ const AppicationHeader = ({ applicationResult, stages }: Props) => {
                                     <DropdownMenuRadioItem
                                         value={stage.stage_name as string}
                                         key={stage.id}
+                                        disabled={!canMove}
                                         className={cn(
                                             "cursor-pointer",
                                             applicationResult.current_stage === stage.stage_name
@@ -102,26 +199,36 @@ const AppicationHeader = ({ applicationResult, stages }: Props) => {
                         <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Rejection Reasons</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem>
-                                <AlertCircle size={16} className="mr-2" />
-                                Not qualified
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                                <CheckCircle size={16} className="mr-2" />
-                                Position filled
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                                <Clock size={16} className="mr-2" />
-                                No response
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                                <XCircle size={16} className="mr-2" />
-                                Other
-                            </DropdownMenuItem>
+                            {REJECTION_REASONS.map((reason, index) => {
+                                const Icon = REJECTION_ICONS[index];
+                                return (
+                                    <DropdownMenuItem
+                                        key={reason}
+                                        disabled={!canEditCandidate}
+                                        onClick={() => handleReject(reason)}
+                                    >
+                                        <Icon size={16} className="mr-2" />
+                                        {reason}
+                                    </DropdownMenuItem>
+                                );
+                            })}
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
             </div>
+        </div>
+            {error && (
+                <p className="flex items-start gap-1 text-xs text-red-600 max-w-sm self-end">
+                    <AlertCircle size={14} className="mt-0.5 shrink-0" />
+                    {error}
+                </p>
+            )}
+            {confirmation && !error && (
+                <p className="flex items-start gap-1 text-xs text-green-600 max-w-sm self-end">
+                    <CheckCircle size={14} className="mt-0.5 shrink-0" />
+                    {confirmation}
+                </p>
+            )}
         </div>
     );
 };

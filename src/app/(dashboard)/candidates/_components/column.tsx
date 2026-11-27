@@ -9,6 +9,15 @@ import { cn, getCandidateStatusColor } from "@/lib/utils";
 
 const columnHelper = createColumnHelper<CandidatesResponseType>();
 
+// Initials for the avatar circle (no avatar image is stored anywhere).
+const getInitials = (name: string) => {
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    return parts
+        .slice(0, 2)
+        .map((part) => part[0]!.toUpperCase())
+        .join("") || "?";
+};
+
 export const columns: ColumnDef<CandidatesResponseType>[] = [
   {
     id: "select",
@@ -41,8 +50,10 @@ export const columns: ColumnDef<CandidatesResponseType>[] = [
     header: "Name",
     cell: ({ row }) => (
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-full bg-background overflow-hidden border-2 border-white shadow-lg">
-            {/*<img src={app.avatar} alt={app.name} />*/}
+        <div className="w-10 h-10 rounded-full bg-primary/10 overflow-hidden border-2 border-white shadow-lg flex items-center justify-center">
+            <span className="text-sm font-bold text-primary">
+                {getInitials(row.original.name)}
+            </span>
         </div>
         <div>
             <h4 className="text-sm text-foreground font-bold group-hover:text-primary transition-colors">

@@ -18,15 +18,9 @@ import {
     ChevronLeft,
     ChevronRight,
     Clock,
-    Edit3,
     Expand,
     Mail,
-    Maximize2,
-    Paperclip,
     Phone,
-    Share,
-    Share2,
-    Star,
     Tally1,
     UserCheck,
     Users,
@@ -51,8 +45,19 @@ import { JOB_STAGES } from "@/zod";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { update_application_stage_action } from "@/server/actions/application_actions";
-import { get_stage_by_name_action } from "@/server/actions/stage_actions";
+import { get_stage_by_name_for_job_action } from "@/server/actions/stage_actions";
+import { update_candidate_action } from "@/server/actions/candidates-actions";
+import { create_note } from "@/server/queries/mongo/note";
 import { useHasPermission } from "@/lib/use-permission";
+
+const REJECTION_REASONS = [
+    "Not qualified",
+    "Position filled",
+    "No response",
+    "Other",
+] as const;
+
+const REJECTION_ICONS = [AlertCircle, CheckCircle, Clock, XCircle];
 
 type Props = {
     data: ApplicationResponseType;
@@ -62,6 +67,7 @@ type Props = {
 const ApplicationPreview = ({ data, applications }: Props) => {
     const hasPermission = useHasPermission();
     const canMove = hasPermission("application:move");
+    const canEditCandidate = hasPermission("candidate:edit");
     const [currentApplication, setCurrentApplication] =
         React.useState<ApplicationResponseType | null>(null);
     const router = useRouter();
@@ -90,19 +96,57 @@ const ApplicationPreview = ({ data, applications }: Props) => {
         }
     };
 
+    // S-1: the stage is resolved job-scoped (by name within this
+    // application's job) — the old code took stage[0] from the unscoped
+    // name-only lookup, an arbitrary stage from any job/org.
     const moveToStage = async (stage_name: string) => {
         try {
             if (!currentApplication || !stage_name) return;
 
-            const stage = await get_stage_by_name_action(stage_name);
-            if (!stage || !Array.isArray(stage) || stage.length === 0) {
+            const stage = await get_stage_by_name_for_job_action(
+                stage_name,
+                currentApplication.job_id,
+            );
+            if (!stage || typeof stage !== "object" || "error" in stage || !("id" in stage)) {
                 alert("Stage not found");
                 return;
             }
-            await update_application_stage_action({
+            const result = await update_application_stage_action({
                 applicationId: currentApplication?.id,
-                new_stage_id: stage[0].id as number,
+                new_stage_id: stage.id as number,
             });
+            if (result && typeof result === "object" && "error" in result && result.error) {
+                alert((result as { message?: string }).message ?? "Failed to move the application");
+                return;
+            }
+            router.refresh();
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    // B22-3: same reject path as the review page — candidate REJECTED plus
+    // a NEGATIVE "Rejected: <reason>" note.
+    const handleReject = async (reason: string) => {
+        try {
+            if (!currentApplication) return;
+            const result = await update_candidate_action({
+                id: currentApplication.candidate_id,
+                status: "REJECTED",
+            });
+            if (result && typeof result === "object" && "error" in result && result.error) {
+                alert((result as { message?: string }).message ?? "Failed to reject the candidate");
+                return;
+            }
+            await create_note({
+                text: `Rejected: ${reason}`,
+                note_id: `candidate_${currentApplication.candidate_id}`,
+                note_type: "candidate",
+                candidate_id: currentApplication.candidate_id,
+                type: "NEGATIVE",
+                mentions: [],
+            });
+            router.refresh();
         } catch (error) {
             console.error(error);
         }
@@ -150,9 +194,6 @@ const ApplicationPreview = ({ data, applications }: Props) => {
                         <ChevronRight />
                     </Button>
                 </div>
-                <span className="flex items-center justify-center text-sm text-muted-foreground sm:gap-2.5 ml-4">
-                    <Share size={16} />
-                </span>
             </div>
 
             <div className="px-4">
@@ -167,16 +208,6 @@ const ApplicationPreview = ({ data, applications }: Props) => {
                                 <div className="flex flex-col items-end gap-2">
                                     <div className="bg-accent text-foreground text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">
                                         {currentApplication?.status}
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <Edit3
-                                            size={16}
-                                            className="text-background/40 cursor-pointer hover:text-background transition-colors"
-                                        />
-                                        <Share2
-                                            size={16}
-                                            className="text-background/40 cursor-pointer hover:text-background transition-colors"
-                                        />
                                     </div>
                                 </div>
                             </div>
@@ -194,16 +225,9 @@ const ApplicationPreview = ({ data, applications }: Props) => {
                             </div>
 
                             <div className="grid grid-cols-2 gap-y-4 pt-4 border-t border-background/10">
+                                {/* L-4: the hardcoded rating {4.6} was removed —
+                                    no rating exists for this application. */}
                                 <div>
-                                    <p className="text-[10px] font-bold text-background/40 uppercase tracking-widest">
-                                        Rating
-                                    </p>
-                                    <div className="font-mono flex items-center gap-1">
-                                        <p className="text-sm font-semibold">{4.6}</p>
-                                        <Star className="w-3 h-3 text-amber-500 fill-current" />
-                                    </div>
-                                </div>
-                                <div className="text-right">
                                     <p className="text-[10px] font-bold text-background/40 uppercase tracking-widest">
                                         Location
                                     </p>
@@ -215,7 +239,7 @@ const ApplicationPreview = ({ data, applications }: Props) => {
                                     <p className="text-[10px] font-bold text-background/40 uppercase tracking-widest">
                                         Type
                                     </p>
-                                    <p className="text-sm font-bold">{data?.type}</p>
+                                    <p className="text-sm font-bold">{currentApplication?.type}</p>
                                 </div>
                             </div>
                         </div>
@@ -230,9 +254,8 @@ const ApplicationPreview = ({ data, applications }: Props) => {
                             QUICK ACTIONS
                         </h4>
                         <div className="flex gap-2">
-                            <button className="px-4 py-2 bg-brand-light text-brand-dark text-[10px] font-bold rounded-lg uppercase tracking-widest hover:bg-brand-dark/5 transition-colors">
-                                Advance Stage
-                            </button>
+                            {/* L-3: the dead "Advance Stage" button was removed —
+                                the Advance dropdown next to it is the working one. */}
                             <div className="flex">
                                 {canMove && (
                                 <DropdownMenu>
@@ -280,22 +303,19 @@ const ApplicationPreview = ({ data, applications }: Props) => {
                                     <DropdownMenuContent align="end">
                                         <DropdownMenuLabel>Rejection Reasons</DropdownMenuLabel>
                                         <DropdownMenuSeparator />
-                                        <DropdownMenuItem>
-                                            <AlertCircle size={16} className="mr-2" />
-                                            Not qualified
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem>
-                                            <CheckCircle size={16} className="mr-2" />
-                                            Position filled
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem>
-                                            <Clock size={16} className="mr-2" />
-                                            No response
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem>
-                                            <XCircle size={16} className="mr-2" />
-                                            Other
-                                        </DropdownMenuItem>
+                                        {REJECTION_REASONS.map((reason, index) => {
+                                            const Icon = REJECTION_ICONS[index];
+                                            return (
+                                                <DropdownMenuItem
+                                                    key={reason}
+                                                    disabled={!canEditCandidate}
+                                                    onClick={() => handleReject(reason)}
+                                                >
+                                                    <Icon size={16} className="mr-2" />
+                                                    {reason}
+                                                </DropdownMenuItem>
+                                            );
+                                        })}
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </div>
@@ -360,40 +380,42 @@ const ApplicationPreview = ({ data, applications }: Props) => {
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-4 group">
-                            <div className="w-8 h-8 rounded-lg bg-background/5 flex items-center justify-center text-foreground/30 group-hover:text-primary transition-colors">
-                                <Paperclip size={16} />
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest">
-                                    ATTACHMENT
-                                </p>
-                                <p className="text-xs font-bold text-primary hover:underline cursor-pointer">
-                                    attachment.pdf
-                                </p>
-                            </div>
-                            <div className="flex gap-2">
-                                <button className="p-2 hover:bg-primary/5 rounded-lg transition-colors text-foreground/30">
-                                    <Maximize2 size={16} />
-                                </button>
-                            </div>
-                        </div>
+                        {/* L-5: the fake "ATTACHMENT / attachment.pdf" row was
+                            removed — the preview payload (ApplicationResponseType)
+                            carries no attachments, so no real link can be shown
+                            here. The resume is reachable from the detail page
+                            via /api/candidates/[id]/resume. */}
 
+                        {/* L-6: renders the real can_contact value instead of
+                            an unconditional checkmark; the Mail icon is a
+                            real mailto: to the candidate's email. */}
                         <div className="flex items-center gap-4 group">
                             <div className="w-8 h-8 rounded-lg bg-background/5 flex items-center justify-center text-foreground/30 group-hover:text-primary transition-colors">
-                                <Star size={16} />
+                                {currentApplication?.can_contact ? (
+                                    <CheckCircle2 size={16} />
+                                ) : (
+                                    <XCircle size={16} />
+                                )}
                             </div>
                             <div className="flex-1">
                                 <p className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest">
                                     CAN CONTACT
                                 </p>
-                                <CheckCircle2 size={16} className="text-foreground/60 mt-1" />
+                                <p className="text-xs font-bold mt-1">
+                                    {currentApplication?.can_contact ? "Yes" : "No"}
+                                </p>
                             </div>
-                            <div className="flex gap-2">
-                                <button className="p-2 hover:bg-primary/5 rounded-lg transition-colors text-foreground/30">
-                                    <Mail size={16} />
-                                </button>
-                            </div>
+                            {currentApplication?.candidate_email && (
+                                <div className="flex gap-2">
+                                    <a
+                                        href={`mailto:${currentApplication.candidate_email}`}
+                                        aria-label={`Email ${currentApplication.candidate_name}`}
+                                        className="p-2 hover:bg-primary/5 rounded-lg transition-colors text-foreground/30"
+                                    >
+                                        <Mail size={16} />
+                                    </a>
+                                </div>
+                            )}
                         </div>
                     </div>
 

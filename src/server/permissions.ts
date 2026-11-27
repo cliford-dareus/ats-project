@@ -58,12 +58,14 @@ export const canViewJob = () => hasPermission("job:view");
 
 export const canCreateCandidate = () => hasPermission("candidate:create");
 export const canEditCandidate = () => hasPermission("candidate:edit");
+export const canDeleteCandidate = () => hasPermission("candidate:delete");
 export const canEvaluateCandidate = () => hasPermission("candidate:evaluate");
 export const canViewCandidate = () => hasPermission("candidate:view");
 
 export const canViewApplication = () => hasPermission("application:view");
 export const canEditApplication = () => hasPermission("application:edit");
 export const canMoveApplication = () => hasPermission("application:move");
+export const canDeleteApplication = () => hasPermission("application:delete");
 
 export const canScheduleInterview = () => hasPermission("interview:schedule");
 // export const canManageInterviews = () => hasPermission("interview:manage");

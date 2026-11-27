@@ -2,7 +2,7 @@ import React from 'react';
 import { get_application_by_id_action } from "@/server/actions/application_actions";
 import { ApplicationResponseType, JobExperienceType } from "@/types";
 import InternalNoteSection from "@/components/internal-note-section";
-import { get_job_listings_stages } from "@/server/queries";
+import { get_job_listings_stages_action } from "@/server/actions/job-listings-actions";
 import { get_candidate_details } from '@/server/queries/mongo/candidate-details';
 import { ApplicationSummary, ApplicationExperienceMatch, EmptyApplicationSummary, ApplicationExperience, ApplicationSoftSkills } from './_components/application-summary';
 import { get_job_by_id_action } from '@/server/actions/job-listings-actions';
@@ -23,7 +23,8 @@ const Page = async ({ params }: Props) => {
     const response = await get_application_by_id_action(Number(applicationId));
     const applicationResult = (response as unknown as ApplicationResponseType[])[0];
 
-    const stages = await get_job_listings_stages(applicationResult.job_id);
+    const stagesResponse = await get_job_listings_stages_action(applicationResult.job_id);
+    const stages = Array.isArray(stagesResponse) ? stagesResponse : [];
 
     const jobResponse = await get_job_by_id_action(applicationResult.job_id);
     const job = (Array.isArray(jobResponse) ? jobResponse : [])[0];

@@ -205,3 +205,21 @@ export const delete_note = async (note_id: string) => {
         return null;
     }
 };
+
+/**
+ * Delete every note attached to a candidate (candidate delete cascade).
+ * Notes store note_id as "candidate_<id>" (plus the legacy typo
+ * "canditates_<id>"). Callers must already have verified the candidate
+ * belongs to the session org — this helper does no auth check of its own.
+ */
+export const delete_candidate_notes = async (candidateId: number) => {
+    try {
+        await mongodb();
+        return await Note.deleteMany({
+            note_id: { $in: [`candidate_${candidateId}`, `canditates_${candidateId}`] },
+        });
+    } catch (error) {
+        console.log(error);
+        return null;
+    }
+};

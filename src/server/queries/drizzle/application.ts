@@ -5,10 +5,13 @@ import {
     departments,
     interviews,
     job_listings,
+    score_cards,
     stages,
 } from "@/drizzle/schema";
 import { db } from "@/drizzle/db";
 import { and, asc, desc, eq, SQL, sql, inArray } from "drizzle-orm";
+import mongodb from "@/lib/mongodb";
+import Note from "@/models/notes";
 import {
     CACHE_TAGS,
     dbCache,
@@ -385,6 +388,27 @@ export const update_application = async (data: z.infer<typeof updateApplicationS
 };
 
 export const update_application_stage = async (data: z.infer<typeof updateApplicationStageSchema>, orgId: string) => {
+    // S-2: org-scoping alone is not enough — the target stage must belong to
+    // the application's own job. Otherwise a caller could move an
+    // application into a same-named (or any) stage of another job.
+    const [application] = await db
+        .select({ id: applications.id, job_id: applications.job_id })
+        .from(applications)
+        .where(and(eq(applications.id, data.applicationId), eq(applications.organization, orgId)))
+        .limit(1);
+    if (!application) {
+        return { error: true, message: "Application not found" };
+    }
+
+    const [targetStage] = await db
+        .select({ id: stages.id, job_id: stages.job_id })
+        .from(stages)
+        .where(eq(stages.id, data.new_stage_id))
+        .limit(1);
+    if (!targetStage || targetStage.job_id !== application.job_id) {
+        return { error: true, message: "Stage does not belong to this application's job" };
+    }
+
     await db
         .update(applications)
         .set({ current_stage_id: data.new_stage_id })
@@ -396,6 +420,8 @@ export const update_application_stage = async (data: z.infer<typeof updateApplic
         id: String(data.applicationId),
         orgId,
     });
+
+    return { success: true };
 };
 
 // ── Dashboard quick-add ───────────────────────────────────────────────────────
@@ -494,17 +520,17 @@ export const get_all_applications = async (filter: z.infer<typeof filterApplicat
     return cacheFn(filter);
 };
 
-export const get_job_all_applications = async (jobId: number, orgId?: string) => {
+export const get_job_all_applications = async (jobId: number, orgId: string) => {
     const cacheFn = dbCache(get_job_all_applications_db, {
-        keyParts: ["job-applications", String(jobId), orgId ?? ""],
+        keyParts: ["job-applications", String(jobId), orgId],
         tags: [
             getIdTag(String(jobId), CACHE_TAGS.applications),
             getGlobalTag(CACHE_TAGS.applications),
-            ...(orgId ? [getOrgTag(orgId, CACHE_TAGS.applications)] : []),
+            getOrgTag(orgId, CACHE_TAGS.applications),
         ],
     });
 
-    return cacheFn(jobId);
+    return cacheFn(jobId, orgId);
 };
 
 export const get_application_stage = async (orgId: string) => {
@@ -531,9 +557,10 @@ export const get_applications_stages_db = async (orgId: string) => {
             ),
         })
         .from(stages)
-        // stages carry no org column — scope via their job.
+        // stages carry no org column — scope via their job. The count is a
+        // correlated subquery, so no join to applications is needed; the old
+        // leftJoin multiplied rows (one per application in the stage).
         .innerJoin(job_listings, eq(stages.job_id, job_listings.id))
-        .leftJoin(applications, eq(applications.current_stage_id, stages.id))
         .where(eq(job_listings.organization, orgId));
 };
 
@@ -598,14 +625,10 @@ export const get_all_applications_db = async (filter: z.infer<typeof filterAppli
         filters.push(inArray(departments.name, filter.department));
     }
 
-    if (filter.stages) {
-        filters.push(eq(stages.stage_name, filter.stages));
+    if (filter.stages && filter.stages.length > 0) {
+        // filter.stages is always an array (multi-select) — match any of them.
+        filters.push(inArray(stages.stage_name, filter.stages));
     }
-
-    // if (filter.status) {
-    //     const statuses = Array.isArray(filter.status) ? filter.status: [filter.status];
-    //     filters.push(inArray(applications.status, statuses));
-    // }
 
     const [{ count }] = await db
         .select({ count: sql<number>`count(*)` })
@@ -648,7 +671,7 @@ export const get_all_applications_db = async (filter: z.infer<typeof filterAppli
     return [count, application];
 };
 
-export const get_job_all_applications_db = async (jobId: number) => {
+export const get_job_all_applications_db = async (jobId: number, orgId: string) => {
     const rows = await db
         .select({
             application: applications,
@@ -662,7 +685,9 @@ export const get_job_all_applications_db = async (jobId: number) => {
         .leftJoin(attachments, eq(candidates.id, attachments.candidate_id))
         .leftJoin(interviews, eq(applications.id, interviews.applications_id))
         .leftJoin(stages, eq(applications.current_stage_id, stages.id))
-        .where(eq(applications.job_id, jobId))
+        // Org-scoped (B20): a job id alone must never leak another org's
+        // applications — the caller passes the session org.
+        .where(and(eq(applications.job_id, jobId), eq(applications.organization, orgId)))
         .orderBy(
             applications.current_stage_id,
             asc(applications.position_in_stage),
@@ -735,15 +760,36 @@ export async function move_application_and_reorder_db({
     sourceStageId,
     targetOrders,
     sourceOrders,
-}: z.infer<typeof moveAndReorderApplicationSchema>) {
+}: z.infer<typeof moveAndReorderApplicationSchema>, orgId: string) {
     try {
         await db.transaction(async (tx) => {
+            // S-3: resolve the application's org first and assert it matches
+            // the session org — the old code updated by applicationId alone.
+            const [application] = await tx
+                .select({ id: applications.id, organization: applications.organization, job_id: applications.job_id })
+                .from(applications)
+                .where(eq(applications.id, applicationId))
+                .limit(1);
+            if (!application || application.organization !== orgId) {
+                throw new Error("Application not found");
+            }
+
+            // The target stage must belong to the application's own job (S-2).
+            const [targetStage] = await tx
+                .select({ id: stages.id, job_id: stages.job_id })
+                .from(stages)
+                .where(eq(stages.id, newStageId))
+                .limit(1);
+            if (!targetStage || targetStage.job_id !== application.job_id) {
+                throw new Error("Stage does not belong to this application's job");
+            }
+
             // 1. Update stage (only if moving)
             if (sourceStageId && sourceStageId !== newStageId) {
                 await tx
                     .update(applications)
                     .set({ current_stage_id: newStageId })
-                    .where(eq(applications.id, applicationId));
+                    .where(and(eq(applications.id, applicationId), eq(applications.organization, orgId)));
             }
 
             // 2. Update target stage orders
@@ -768,6 +814,7 @@ export async function move_application_and_reorder_db({
                         and(
                             eq(applications.current_stage_id, newStageId),
                             inArray(applications.id, targetIds),
+                            eq(applications.organization, orgId),
                         ),
                     );
             }
@@ -794,6 +841,7 @@ export async function move_application_and_reorder_db({
                         and(
                             eq(applications.current_stage_id, sourceStageId),
                             inArray(applications.id, sourceIds),
+                            eq(applications.organization, orgId),
                         ),
                     );
             }
@@ -809,3 +857,71 @@ export async function move_application_and_reorder_db({
         };
     }
 }
+
+// ── Delete application (B21) ──────────────────────────────────────────────────
+// Cascade (verified against src/drizzle/schema.ts):
+//   • interviews.applications_id FK is onDelete: 'cascade' and
+//     score_cards.interviews_id FK is onDelete: 'cascade', so deleting the
+//     application row would cascade — but the deletes below are explicit so
+//     the outcome does not depend on FK enforcement.
+//   • DELETED: the application row, its interviews, their scorecards, and
+//     its Mongo application notes (note_id `application_<id>`).
+//   • KEPT: the candidate row and the candidate's attachments (both belong
+//     to the candidate, who may have other applications). The candidate's
+//     Mongo candidate-details record is likewise kept.
+//   • applications.candidate FK is onDelete: 'cascade' in the other
+//     direction (deleting a candidate deletes its applications) — deleting
+//     an application never touches the candidate.
+export const delete_application_db = async (applicationId: number, orgId: string) => {
+    const [application] = await db
+        .select({ id: applications.id, job_id: applications.job_id, candidate: applications.candidate })
+        .from(applications)
+        .where(and(eq(applications.id, applicationId), eq(applications.organization, orgId)))
+        .limit(1);
+    if (!application) {
+        return { success: false as const, message: "Application not found" };
+    }
+
+    try {
+        await db.transaction(async (tx) => {
+            const interviewRows = await tx
+                .select({ id: interviews.id })
+                .from(interviews)
+                .where(eq(interviews.applications_id, applicationId));
+            const interviewIds = interviewRows.map((row) => row.id);
+
+            if (interviewIds.length > 0) {
+                await tx
+                    .delete(score_cards)
+                    .where(inArray(score_cards.interviews_id, interviewIds));
+                await tx
+                    .delete(interviews)
+                    .where(eq(interviews.applications_id, applicationId));
+            }
+
+            await tx
+                .delete(applications)
+                .where(and(eq(applications.id, applicationId), eq(applications.organization, orgId)));
+        });
+
+        // Its directly-owned Mongo notes live outside the SQL transaction.
+        await mongodb();
+        await Note.deleteMany({ note_id: `application_${applicationId}` });
+
+        revalidateDbCache({
+            tag: CACHE_TAGS.applications,
+            id: String(applicationId),
+            orgId,
+        });
+        revalidateDbCache({
+            tag: CACHE_TAGS.jobs,
+            id: String(application.job_id),
+            orgId,
+        });
+
+        return { success: true as const };
+    } catch (err) {
+        console.error("Delete application failed:", err);
+        return { success: false as const, message: "Failed to delete application" };
+    }
+};

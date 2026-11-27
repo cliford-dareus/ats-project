@@ -1,5 +1,4 @@
 import React from "react";
-import { get_job_listings_stages } from "@/server/queries/drizzle/job-listings";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { auth } from "@clerk/nextjs/server";
@@ -8,6 +7,7 @@ import CreateApplicationModal from "@/components/modal/create-application-modal"
 import {
     get_all_job_listings_action,
     get_job_by_id_action,
+    get_job_listings_stages_action,
 } from "@/server/actions/job-listings-actions";
 import {
     ApplicationType,
@@ -53,7 +53,9 @@ const Page = async ({ params, searchParams }: Props) => {
         get_job_by_id_action(Number(jobListingId)),
         get_job_all_applications_action(Number(jobListingId)),
         get_all_candidates_action({ limit: 1000, offset: 0, organization: orgId }),
-        get_job_listings_stages(Number(jobListingId)),
+        // Permission-checked action (B20) — the page used to call the raw
+        // stages query directly, bypassing the job:view check.
+        get_job_listings_stages_action(Number(jobListingId)),
     ]);
 
     const jobs = Array.isArray(jobsResponse) ? jobsResponse[1] : [];

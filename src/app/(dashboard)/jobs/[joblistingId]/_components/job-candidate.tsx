@@ -1,6 +1,6 @@
 "use client";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -12,20 +12,23 @@ import {
 import {
     AlertCircle,
     Calendar,
+    CheckCircle,
     ChevronDown,
     Clock,
+    ExternalLink,
     Linkedin,
-    LucideEllipsis,
     LucideMail,
     Mail,
     MessageSquare,
-    Star,
     UserCheck,
+    UserX,
+    XCircle,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
     ApplicationType,
+    CandidateType,
     JobExperienceType,
     JobListingType,
     StageResponseType,
@@ -48,21 +51,51 @@ import {
 } from "@/app/(dashboard)/applications/[applicationId]/_components/application-summary";
 import JobQuickViewCard from "@/components/job-quick-view-card";
 import { update_application_stage_action } from "@/server/actions/application_actions";
-import { Button } from "@/components/ui/button";
+import { update_candidate_action } from "@/server/actions/candidates-actions";
+import { create_note } from "@/server/queries/mongo/note";
 import { useHasPermission } from "@/lib/use-permission";
 import { get_candidate_details } from "@/server/queries/mongo/candidate-details";
+import { useRouter } from "next/navigation";
 
 type Props = {
     job: JobListingType;
     stages: StageResponseType[];
 };
 
+// The Drizzle candidate row carries linkedin_url, but CandidateType does not
+// declare it — narrow the access to this file instead of widening the
+// shared type.
+type CandidateWithLinks = CandidateType & {
+    linkedin_url?: string | null;
+};
+
+/** Initials derived from the candidate's real name (B20-7, B22-4). */
+const getInitials = (name: string) =>
+    name
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0]!.toUpperCase())
+        .join("") || "?";
+
+const REJECTION_REASONS = [
+    "Not qualified",
+    "Position filled",
+    "No response",
+    "Other",
+] as const;
+
+const REJECTION_ICONS = [AlertCircle, CheckCircle, Clock, XCircle];
+
 const JobCandidate = ({ job, stages }: Props) => {
+    const router = useRouter();
     const hasPermission = useHasPermission();
     const canMove = hasPermission("application:move");
+    const canEditCandidate = hasPermission("candidate:edit");
     const applications = job.applications as unknown as ApplicationType[];
     const [selectedCandidates, setSelectedCandidates] = useState<number[]>([]);
     const [selectedApplications, setSelectedApplications] = useState<ApplicationType>();
+    const [isBulkBusy, setIsBulkBusy] = useState(false);
     const [applicationSummary, setApplicationSummary] =
         useState<ApplicationSummaryType>({
             candidate_id: 0,
@@ -115,6 +148,58 @@ const JobCandidate = ({ job, stages }: Props) => {
         }
     };
 
+    // B20-1: the selection finally has consumers — bulk stage-move and bulk
+    // reject (same reject path as the review page: candidate REJECTED +
+    // NEGATIVE "Rejected: <reason>" note).
+    const bulkMoveToStage = async (newStageName: string) => {
+        const targetStage = stages.find((stage) => stage.stage_name === newStageName);
+        if (!targetStage || selectedCandidates.length === 0) return;
+        setIsBulkBusy(true);
+        try {
+            for (const applicationId of selectedCandidates) {
+                await update_application_stage_action({
+                    applicationId,
+                    new_stage_id: targetStage.id,
+                });
+            }
+            setSelectedCandidates([]);
+            router.refresh();
+        } catch (error) {
+            console.error("Failed to bulk-move applications:", error);
+        } finally {
+            setIsBulkBusy(false);
+        }
+    };
+
+    const bulkReject = async (reason: string) => {
+        if (selectedCandidates.length === 0) return;
+        setIsBulkBusy(true);
+        try {
+            for (const applicationId of selectedCandidates) {
+                const application = applications.find((app) => app.id === applicationId);
+                if (!application) continue;
+                await update_candidate_action({
+                    id: application.candidate.id,
+                    status: "REJECTED",
+                });
+                await create_note({
+                    text: `Rejected: ${reason}`,
+                    note_id: `candidate_${application.candidate.id}`,
+                    note_type: "candidate",
+                    candidate_id: application.candidate.id,
+                    type: "NEGATIVE",
+                    mentions: [],
+                });
+            }
+            setSelectedCandidates([]);
+            router.refresh();
+        } catch (error) {
+            console.error("Failed to bulk-reject applications:", error);
+        } finally {
+            setIsBulkBusy(false);
+        }
+    };
+
     useEffect(() => {
         const detailsFn = async () => {
             if (!selectedApplications?.candidate?.id) return;
@@ -132,6 +217,128 @@ const JobCandidate = ({ job, stages }: Props) => {
         setSelectedApplications(applications[0]);
     }, [applications]);
 
+    const renderApplicationRow = (application: ApplicationType) => (
+        <div
+            key={application.id}
+            onClick={() => setSelectedApplications(application)}
+            className={cn(
+                "p-4 flex items-center gap-3 cursor-pointer transition-all group border-b border-foreground/5 last:border-0",
+                selectedApplications?.id === application.id
+                    ? "bg-primary/5"
+                    : "hover:bg-background/50",
+            )}
+        >
+            <Checkbox
+                className="text-muted-foreground"
+                checked={selectedCandidates.includes(application.id)}
+                onCheckedChange={() =>
+                    handleSelectCandidate(application.id)
+                }
+                id={String(application.id)}
+            />
+            <Avatar className="w-8 h-8 rounded-full overflow-hidden border-2 border-white shadow-sm">
+                <AvatarFallback>{getInitials(application.candidate.name)}</AvatarFallback>
+            </Avatar>
+            <span
+                className={cn(
+                    "text-xs font-bold transition-colors flex-1 truncate",
+                    selectedApplications?.id === application.id
+                        ? "text-primary"
+                        : "text-foreground/60 group-hover:text-primary",
+                )}
+            >
+                {application.candidate.name}
+            </span>
+
+            <span className="ml-4">
+                <a
+                    href={`mailto:${application.candidate.email}`}
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label={`Email ${application.candidate.name}`}
+                >
+                    <LucideMail
+                        size={16}
+                        className="text-foreground/20 group-hover:text-primary transition-colors"
+                    />
+                </a>
+            </span>
+        </div>
+    );
+
+    // B20-1: bulk-action bar for the selection.
+    const bulkBar = selectedCandidates.length > 0 && (
+        <div className="p-3 mb-3 bg-card rounded-2xl border border-foreground/5 shadow-sm flex items-center gap-3">
+            <span className="text-xs font-bold text-muted-foreground">
+                {selectedCandidates.length} selected
+            </span>
+            {canMove && (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <button
+                            disabled={isBulkBusy}
+                            className="px-3 py-2 bg-primary text-primary-foreground text-[10px] font-bold rounded-lg uppercase tracking-widest flex items-center gap-2 hover:bg-brand-primary/90 transition-colors disabled:opacity-50"
+                        >
+                            <UserCheck size={14} />
+                            Move to stage
+                            <ChevronDown size={14} />
+                        </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                        <DropdownMenuRadioGroup onValueChange={bulkMoveToStage}>
+                            {stages.map((stage) => (
+                                <DropdownMenuRadioItem
+                                    value={stage.stage_name!}
+                                    key={stage.id}
+                                    className="cursor-pointer"
+                                >
+                                    {stage.stage_name}
+                                </DropdownMenuRadioItem>
+                            ))}
+                        </DropdownMenuRadioGroup>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            )}
+            {canEditCandidate && (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <button
+                            disabled={isBulkBusy}
+                            className="px-3 py-2 bg-red-500 text-white text-[10px] font-bold rounded-lg uppercase tracking-widest flex items-center gap-2 hover:bg-red-600 transition-colors disabled:opacity-50"
+                        >
+                            <UserX size={14} />
+                            Reject
+                            <ChevronDown size={14} />
+                        </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                        {REJECTION_REASONS.map((reason, index) => {
+                            const Icon = REJECTION_ICONS[index];
+                            return (
+                                <DropdownMenuItem key={reason} onClick={() => bulkReject(reason)}>
+                                    <Icon size={16} className="mr-2" />
+                                    {reason}
+                                </DropdownMenuItem>
+                            );
+                        })}
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            )}
+            <button
+                onClick={() => setSelectedCandidates([])}
+                className="ml-auto text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-foreground"
+            >
+                Clear
+            </button>
+        </div>
+    );
+
+    // B20-2 / B20-5: tabs are "All Applications" (every application for this
+    // job — the old "All Applied" label implied a stage filter that did not
+    // exist) and "Drafted" (only stage "Drafted" applications).
+    const draftedApplications = applications.filter(
+        (application) => application.stage === "Drafted",
+    );
+
     return (
         <>
             <div className="flex gap-4 h-full">
@@ -145,7 +352,7 @@ const JobCandidate = ({ job, stages }: Props) => {
                                 <SelectContent className="outline-none border-none bg-transparent">
                                     <SelectGroup>
                                         <SelectItem value="all">
-                                            <TabsTrigger value="all">All Applied</TabsTrigger>
+                                            <TabsTrigger value="all">All Applications</TabsTrigger>
                                         </SelectItem>
                                         <SelectItem value="drafted">
                                             <TabsTrigger value="drafted">All Drafted</TabsTrigger>
@@ -156,8 +363,9 @@ const JobCandidate = ({ job, stages }: Props) => {
                         </TabsList>
                     </div>
 
-                    {/* All Applied */}
+                    {/* All Applications */}
                     <TabsContent value="all">
+                        {bulkBar}
                         <div className="bg-card rounded-2xl border border-foreground/5 shadow-sm overflow-hidden flex flex-col">
                             <div className="p-4 border-b border-foreground/5 flex items-center gap-3">
                                 <Checkbox
@@ -169,70 +377,31 @@ const JobCandidate = ({ job, stages }: Props) => {
                             </div>
 
                             <div className="flex-1 overflow-y-auto">
-                                {applications.map((application) => (
-                                    <div
-                                        key={application.id}
-                                        onClick={() => setSelectedApplications(application)}
-                                        className={cn(
-                                            "p-4 flex items-center gap-3 cursor-pointer transition-all group border-b border-foreground/5 last:border-0",
-                                            selectedApplications?.id === application.id
-                                                ? "bg-primary/5"
-                                                : "hover:bg-background/50",
-                                        )}
-                                    >
-                                        <Checkbox
-                                            className="text-muted-foreground"
-                                            checked={selectedCandidates.includes(application.id)}
-                                            onCheckedChange={() =>
-                                                handleSelectCandidate(application.id)
-                                            }
-                                            id={String(application.id)}
-                                        />
-                                        <Avatar className="w-8 h-8 rounded-full overflow-hidden border-2 border-white shadow-sm">
-                                            <AvatarImage src="https://github.com/shadcn.png" />
-                                            <AvatarFallback>CN</AvatarFallback>
-                                        </Avatar>
-                                        <span
-                                            className={cn(
-                                                "text-xs font-bold transition-colors flex-1 truncate",
-                                                selectedApplications?.id === application.id
-                                                    ? "text-primary"
-                                                    : "text-foreground/60 group-hover:text-primary",
-                                            )}
-                                        >
-                                            {application.candidate.name}
-                                        </span>
-
-                                        <span className="ml-4">
-                                            <LucideMail
-                                                size={16}
-                                                className="text-foreground/20 group-hover:text-primary transition-colors"
-                                            />
-                                        </span>
-                                    </div>
-                                ))}
+                                {applications.map((application) => renderApplicationRow(application))}
                             </div>
                         </div>
                     </TabsContent>
 
                     <TabsContent value="drafted">
-                        <div className="rounded h-full">
-                            <div className="flex items-center justify-between py-4">
-                                <div>
-                                    <h2 className="text-lg">All Drafted</h2>
-                                    <p className="text-sm text-muted-foreground">
-                                        All Drafted candidates are listed here.
+                        {bulkBar}
+                        <div className="bg-card rounded-2xl border border-foreground/5 shadow-sm overflow-hidden flex flex-col">
+                            <div className="p-4 border-b border-foreground/5">
+                                <h2 className="text-lg">All Drafted</h2>
+                                <p className="text-sm text-muted-foreground">
+                                    All Drafted candidates are listed here.
+                                </p>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto">
+                                {draftedApplications.length > 0 ? (
+                                    draftedApplications.map((application) =>
+                                        renderApplicationRow(application),
+                                    )
+                                ) : (
+                                    <p className="p-4 text-sm text-muted-foreground">
+                                        No drafted applications for this job yet.
                                     </p>
-                                </div>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger>
-                                        <LucideEllipsis />
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent>
-                                        <DropdownMenuItem>Option 1</DropdownMenuItem>
-                                        <DropdownMenuItem>Option 2</DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                                )}
                             </div>
                         </div>
                     </TabsContent>
@@ -248,8 +417,9 @@ const JobCandidate = ({ job, stages }: Props) => {
                                     <div className="flex items-center gap-4">
                                         <div className="flex items-center gap-4">
                                             <Avatar className="w-12 h-12">
-                                                <AvatarImage src="https://github.com/shadcn.png" />
-                                                <AvatarFallback>CN</AvatarFallback>
+                                                <AvatarFallback>
+                                                    {getInitials(selectedApplications.candidate.name)}
+                                                </AvatarFallback>
                                             </Avatar>
                                             <div>
                                                 <h2 className="text-2xl font-bold text-foreground">
@@ -265,13 +435,14 @@ const JobCandidate = ({ job, stages }: Props) => {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="px-4 !py-0 border border-border rounded-lg text-[10px] uppercase tracking-widest font-bold text-muted-foreground hover:bg-muted transition-all flex items-center gap-2">
+                                        <a
+                                            href={`mailto:${selectedApplications.candidate.email}`}
+                                            aria-label={`Message ${selectedApplications.candidate.name}`}
+                                            className="px-4 !py-2 border border-border rounded-lg text-[10px] uppercase tracking-widest font-bold text-muted-foreground hover:bg-muted transition-all flex items-center gap-2"
+                                        >
                                             <MessageSquare size={14} />
-                                        </Button>
-                                        
+                                        </a>
+
                                         {canMove && (
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
@@ -361,24 +532,6 @@ const JobCandidate = ({ job, stages }: Props) => {
 
                                         <div className="flex items-center gap-4">
                                             <div className="w-8 h-8 rounded-lg bg-background/5 flex items-center justify-center text-foreground/30 group-hover:text-primary transition-colors">
-                                                <Star size={16} />
-                                            </div>
-                                            <div>
-                                                <p className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest">
-                                                    Internal Rating
-                                                </p>
-                                                <div className="flex items-center gap-1">
-                                                    <p className="text-xs font-bold">4.5</p>
-                                                    <Star
-                                                        size={10}
-                                                        className="text-orange-400 fill-orange-400"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-8 h-8 rounded-lg bg-background/5 flex items-center justify-center text-foreground/30 group-hover:text-primary transition-colors">
                                                 <Clock size={16} />
                                             </div>
                                             <div>
@@ -408,13 +561,21 @@ const JobCandidate = ({ job, stages }: Props) => {
                                                 />
                                                 {selectedApplications.candidate.email}
                                             </div>
-                                            <div className="flex items-center gap-2 text-xs font-bold text-brand-dark/60 cursor-pointer hover:text-brand-primary transition-colors">
-                                                <Linkedin
-                                                    size={14}
-                                                    className="text-foreground/30 group-hover:text-primary transition-colors"
-                                                />
-                                                LinkedIn Profile
-                                            </div>
+                                            {(selectedApplications.candidate as CandidateWithLinks).linkedin_url && (
+                                                <a
+                                                    href={(selectedApplications.candidate as CandidateWithLinks).linkedin_url!}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="flex items-center gap-2 text-xs font-bold text-brand-dark/60 cursor-pointer hover:text-brand-primary transition-colors"
+                                                >
+                                                    <Linkedin
+                                                        size={14}
+                                                        className="text-foreground/30 group-hover:text-primary transition-colors"
+                                                    />
+                                                    LinkedIn Profile
+                                                    <ExternalLink size={12} className="text-foreground/30" />
+                                                </a>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

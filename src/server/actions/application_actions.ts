@@ -2,13 +2,14 @@
 
 import {
     create_application, create_application_for_candidate_db, get_all_applications,
-    get_application_by_id, get_job_all_applications,
+    get_application_by_id, get_application_stage, get_job_all_applications,
+    delete_application_db,
     move_application_and_reorder_db,
     update_application,
     update_application_stage
 } from "@/server/queries";
 import { auth } from "@clerk/nextjs/server";
-import { canEditApplication, canMoveApplication, canViewApplication, requirePermission } from "@/server/permissions";
+import { canDeleteApplication, canEditApplication, canMoveApplication, canViewApplication, requirePermission } from "@/server/permissions";
 import { z } from "zod";
 import { applicationFormSchema, filterApplicationsSchema, moveAndReorderApplicationSchema, updateApplicationSchema, updateApplicationStageSchema } from "@/zod";
 
@@ -94,19 +95,32 @@ export const get_application_by_id_action = async (applicationId: number) => {
 };
 
 export const get_job_all_applications_action = async (jobId: number) => {
-    const { userId } = await auth();
+    const { userId, orgId } = await auth();
     const allowed = await canViewApplication();
 
-    if (!userId || !allowed) {
+    if (!userId || !orgId || !allowed) {
         return { error: true, message: "There was an error retrieving job applications" }
     }
 
-    return await get_job_all_applications(jobId);
+    // Org-scoped (B20): the session org is passed down — a job id alone
+    // must never return another org's applications.
+    return await get_job_all_applications(jobId, orgId);
+};
+
+export const get_application_stage_counts_action = async () => {
+    const { userId, orgId } = await auth();
+    const allowed = await canViewApplication();
+
+    if (!userId || !orgId || !allowed) {
+        return { error: true, message: "There was an error retrieving application stage counts" }
+    }
+
+    return await get_application_stage(orgId);
 };
 
 export const moveApplicationAndReorder = async (unsafeData: z.infer<typeof moveAndReorderApplicationSchema>) => {
-    const { userId } = await auth();
-    if (!userId) {
+    const { userId, orgId } = await auth();
+    if (!userId || !orgId) {
         return { success: false, error: "Unauthorized" };
     }
 
@@ -115,8 +129,24 @@ export const moveApplicationAndReorder = async (unsafeData: z.infer<typeof moveA
         return { success: false, error: "Missing permission: application:move" };
     }
 
-    return await move_application_and_reorder_db(unsafeData)
+    // S-3: the session org is asserted against the application inside the
+    // transaction — a cross-org application id is rejected there.
+    return await move_application_and_reorder_db(unsafeData, orgId)
 };
 
-// export const delete_application_action = async (data: { candidateId: number }) => {
-// };
+// Delete one application (B21). Permission-gated (application:delete) and
+// org-scoped in the query. Cascade: deletes the application row, its
+// interviews + their scorecards, and its Mongo application notes; KEEPS the
+// candidate row, the candidate's attachments and candidate-details record
+// (they belong to the candidate, who may have other applications).
+export const delete_application_action = async (applicationId: number) => {
+    const { userId, orgId } = await auth();
+    const parsed = await z.number().int().positive().spa(applicationId);
+    const allowed = await canDeleteApplication();
+
+    if (!userId || !orgId || !allowed || !parsed.success) {
+        return { error: true, message: "There was an error deleting the application" }
+    }
+
+    return await delete_application_db(parsed.data, orgId);
+};

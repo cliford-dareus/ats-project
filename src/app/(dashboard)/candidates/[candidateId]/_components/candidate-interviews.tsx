@@ -1,30 +1,52 @@
 import React from 'react';
 import {
     Calendar,
+    MessageSquare,
     Video,
 } from "lucide-react";
 import { CandidateWithDetails } from "@/types";
+import type { ScoreCardRow } from "@/server/queries/drizzle/score-cards";
 import { format} from "date-fns";
 
 type Props = {
-    data: CandidateWithDetails;
+    // get_candidate_by_id_db returns `scoreCards` (ScoreCardRow[]) alongside
+    // the interviews, but CandidateWithDetails predates it (it still
+    // declares the stale `scoreCard: string[]` key) — typed locally here
+    // instead of editing the shared type (see report).
+    data: CandidateWithDetails & { scoreCards?: ScoreCardRow[] };
 };
 
-const CandidateInterviews = ({ data }: Props) => {
-    console.log(data);
-    const interview = data.interview || [];
+const RECOMMENDATION_LABELS: Record<string, string> = {
+    DEFINITELY_NO: "Definitely no",
+    NO: "No",
+    YES: "Yes",
+    STRONG_YES: "Strong yes",
+    NO_DECISION: "No decision",
+};
 
-    if (interview.length === 0) {
+const DECISION_LABELS: Record<string, string> = {
+    "ADVANCE IMMEDIATELY": "Advance immediately",
+    "REJECT IMMEDIATELY": "Reject immediately",
+    NO_DECISION: "No decision yet",
+};
+
+function format_date(value: Date | string | null | undefined): string {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toLocaleDateString();
+}
+
+const CandidateInterviews = ({ data }: Props) => {
+    const interview = data.interview ?? [];
+    const scoreCards = data.scoreCards ?? [];
+
+    if (interview.length === 0 && scoreCards.length === 0) {
         return (
             <div className="bg-card rounded-2xl border border-border p-8 shadow-sm space-y-6">
                 <div className="text-center py-12 bg-muted/80 rounded-xl border border-dashed border-border space-y-3">
                     <Calendar className="w-10 h-10 text-muted-foreground mx-auto" />
                     <p className="text-sm font-bold text-foreground">No interviews currently scheduled</p>
-                    <button
-                        className="px-4 py-2 bg-foreground text-background rounded-xl text-xs font-bold hover:bg-foreground/90 transition-all"
-                    >
-                        Book Evaluation Session
-                    </button>
                 </div>
             </div>
         )
@@ -39,13 +61,6 @@ const CandidateInterviews = ({ data }: Props) => {
                             <h3 className="font-bold text-foreground text-brand-dark uppercase tracking-widest">Interview Management</h3>
                             <p className="text-xs text-muted-foreground">Track and schedule evaluation calls with candidate</p>
                         </div>
-
-                        <button
-                            className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-2xl text-xs font-bold transition-all flex items-center gap-2 shadow-md shadow-brand-500/20"
-                        >
-                            <Calendar className="w-4 h-4" />
-                            Schedule New Interview
-                        </button>
                     </div>
 
 
@@ -79,6 +94,53 @@ const CandidateInterviews = ({ data }: Props) => {
 
                 </div>
             ))}
+
+            {scoreCards.length > 0 && (
+                <div className="bg-card rounded-2xl border border-border p-8 shadow-sm space-y-6">
+                    <h3 className="font-bold text-foreground flex items-center gap-2 text-brand-dark uppercase tracking-widest">
+                        <MessageSquare className="w-5 h-5 text-brand-600" />
+                        Interview Feedback
+                    </h3>
+                    <div className="space-y-4">
+                        {scoreCards.map((scoreCard) => (
+                            <div key={scoreCard.id} className="border-l-4 border-blue-500 pl-4 py-2 space-y-1">
+                                <div className="flex justify-between items-start gap-2">
+                                    <p className="font-medium text-sm text-foreground">
+                                        Interview feedback · {scoreCard.interviewer}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground shrink-0">
+                                        {format_date(scoreCard.created_at)}
+                                    </p>
+                                </div>
+                                <p className="text-sm text-foreground">
+                                    Recommendation:{" "}
+                                    {scoreCard.overall_recommendations
+                                        ? RECOMMENDATION_LABELS[scoreCard.overall_recommendations] ?? scoreCard.overall_recommendations
+                                        : "Not scored"}
+                                </p>
+                                {scoreCard.decision && (
+                                    <p className="text-sm text-muted-foreground">
+                                        Decision: {DECISION_LABELS[scoreCard.decision] ?? scoreCard.decision}
+                                    </p>
+                                )}
+                                {(scoreCard.interview_start_at || scoreCard.interview_type) && (
+                                    <p className="text-xs text-muted-foreground">
+                                        {[
+                                            format_date(scoreCard.interview_start_at),
+                                            scoreCard.interview_type,
+                                        ]
+                                            .filter(Boolean)
+                                            .join(" · ")}
+                                    </p>
+                                )}
+                                {scoreCard.feedback && (
+                                    <p className="text-sm text-muted-foreground">{scoreCard.feedback}</p>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
 
     );

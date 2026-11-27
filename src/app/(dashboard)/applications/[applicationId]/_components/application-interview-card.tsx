@@ -2,7 +2,7 @@
 
 import ScheduleInterviewModal from "@/components/modal/schedule-interview-modal";
 import { ApplicationResponseType, InterviewType } from "@/types";
-import { Calendar, Clock, MapPin, Video } from "lucide-react";
+import { Calendar, Clock, MapPin, Phone, Video } from "lucide-react";
 import { useState } from "react";
 import { useHasPermission } from "@/lib/use-permission";
 
@@ -83,6 +83,22 @@ function format_date_time(value: Date | string | null | undefined): string {
     })}`;
 }
 
+/** B22-8: the real interview type/location — the old line hardcoded the
+ * word `onsite` even for video interviews, and picked the icon from the
+ * job's location instead of the interview. */
+function interview_type_label(interview: InterviewType): string {
+    switch (interview.type) {
+        case "VIDEO":
+            return interview.link ? "Video via link" : "Video";
+        case "PHONE":
+            return "Phone";
+        case "ONSITE":
+            return interview.locations ? `Onsite at ${interview.locations}` : "Onsite";
+        default:
+            return interview.locations ? `Onsite at ${interview.locations}` : "—";
+    }
+}
+
 const ApplicationInterviewCard = ({ applicationResult }: Props) => {
     const hasPermission = useHasPermission();
     const canSchedule = hasPermission("interview:schedule");
@@ -143,8 +159,10 @@ const ApplicationInterviewCard = ({ applicationResult }: Props) => {
 
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 bg-card rounded-lg flex items-center justify-center shadow-sm">
-                                    {applicationResult.location === "Video" ? (
+                                    {applicationResult.interview.type === "VIDEO" ? (
                                         <Video className="w-4 h-4 text-brand-600" />
+                                    ) : applicationResult.interview.type === "PHONE" ? (
+                                        <Phone className="w-4 h-4 text-brand-600" />
                                     ) : (
                                         <MapPin className="w-4 h-4 text-brand-600" />
                                     )}
@@ -154,10 +172,7 @@ const ApplicationInterviewCard = ({ applicationResult }: Props) => {
                                         Type & Location
                                     </p>
                                     <p className="text-sm font-semibold text-foreground">
-                                        onsite{" "}
-                                        {applicationResult.interview.link
-                                            ? "via Link"
-                                            : `at ${applicationResult.interview.locations}`}
+                                        {interview_type_label(applicationResult.interview)}
                                     </p>
                                 </div>
                             </div>

@@ -12,6 +12,7 @@ export type Permission =
     | "application:edit"
     | "application:view"
     | "application:move"
+    | "application:delete"
     | "interview:schedule"
     | "interview:view"
     | "interview:cancel"
@@ -32,7 +33,7 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     "org:admin": [
         "job:create", "job:edit", "job:delete", "job:view",
         "candidate:create", "candidate:edit", "candidate:evaluate", "candidate:view", "candidate:delete",
-        "application:create", "application:edit", "application:view", "application:move",
+        "application:create", "application:edit", "application:view", "application:move", "application:delete",
         "interview:schedule", "interview:view", "interview:cancel",
         "communication:view", "communication:send", "communication:manage",
         "report:view", "report:generate",
@@ -42,7 +43,7 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     "org:recruiter": [
         "job:create", "job:edit", "job:view",
         "candidate:create", "candidate:edit", "candidate:evaluate", "candidate:view",
-        "application:create", "application:edit", "application:view", "application:move",
+        "application:create", "application:edit", "application:view", "application:move", "application:delete",
         "interview:schedule", "interview:view", "interview:cancel",
         "communication:view", "communication:send", "communication:manage",
         "report:view", "report:generate",

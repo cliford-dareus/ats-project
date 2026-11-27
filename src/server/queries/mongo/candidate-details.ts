@@ -1,5 +1,6 @@
 "use server";
 
+import { auth } from "@clerk/nextjs/server";
 import { db } from "@/drizzle/db";
 import { candidates } from "@/drizzle/schema";
 import mongodb from "@/lib/mongodb";
@@ -22,8 +23,15 @@ export const get_candidate_details = async (candidate_id: number) => {
     try {
         await mongodb();
 
-        const candidate = await db.select().from(candidates).where(eq(candidates.id, candidate_id))
-        if (!candidate) throw new Error("Candidate not found");
+        // Tenant isolation (B20): the candidate must belong to the session
+        // org — verified via Drizzle BEFORE any Mongo details are returned.
+        // (The old code selected the row but never checked it — `candidate`
+        // is an array, so `if (!candidate)` could never fire.)
+        const { orgId } = await auth();
+        if (!orgId) return JSON.stringify([]);
+
+        const [candidate] = await db.select().from(candidates).where(eq(candidates.id, candidate_id)).limit(1);
+        if (!candidate || candidate.organization !== orgId) return JSON.stringify([]);
 
         const details = await CandidateDetails.find({ candidate_id: candidate_id });
         return JSON.stringify({

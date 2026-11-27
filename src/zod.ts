@@ -215,8 +215,8 @@ export const filterJobSchema = z.object({
 
 export const filterApplicationsSchema = z.object({
     keywords: z.array(z.string()).optional(),
-    stages: z.any(),
-    // status: APPLICATION_STATUS.or(z.array(APPLICATION_STATUS)).optional(),
+    // Stage names (JOB_STAGES), multi-select — filtered with inArray.
+    stages: z.array(JOB_STAGES).optional(),
     location: z.string().or(z.array(z.string())).optional(),
     department: z.array(z.string()).optional(),
     limit: z.number().optional(),
@@ -229,7 +229,6 @@ export const filterCandidateSchema = z.object({
     keywords: z.array(z.string()).optional(),
     status: CANDIDATE_STATUS.or(z.array(CANDIDATE_STATUS)).optional(),
     location: z.string().or(z.array(z.string())).optional(),
-    experience: z.string().or(z.array(z.string())).optional(),
     organization: z.string(),
     limit: z.number(),
     offset: z.number(),

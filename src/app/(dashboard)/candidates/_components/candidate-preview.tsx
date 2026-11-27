@@ -7,17 +7,11 @@ import { CandidatesResponseType } from "@/types";
 import {
     Briefcase,
     Calendar,
-    CheckCircle2,
     ChevronLeft,
     ChevronRight,
-    Edit3,
     Expand,
     Mail,
-    Maximize2,
     Paperclip,
-    Share,
-    Share2,
-    Star,
     Tally1,
     Users,
     X,
@@ -109,9 +103,6 @@ const CandidatePreview = ({ data, candidates }: Props) => {
                         <ChevronRight />
                     </Button>
                 </div>
-                <span className="flex items-center justify-center text-sm text-muted-foreground sm:gap-2.5 ml-4">
-                    <Share size={16} />
-                </span>
             </div>
 
             <div className="px-4">
@@ -123,16 +114,6 @@ const CandidatePreview = ({ data, candidates }: Props) => {
                                 <div className="w-12 h-12 bg-card/10 backdrop-blur-md rounded-xl flex items-center justify-center">
                                     <Briefcase size={24} />
                                 </div>
-                                <div className="flex gap-2">
-                                    <Edit3
-                                        size={16}
-                                        className="text-background/40 cursor-pointer hover:text-background transition-colors"
-                                    />
-                                    <Share2
-                                        size={16}
-                                        className="text-background/40 cursor-pointer hover:text-background transition-colors"
-                                    />
-                                </div>
                             </div>
                         </div>
 
@@ -141,43 +122,34 @@ const CandidatePreview = ({ data, candidates }: Props) => {
                             <h3 className="text-2xl font-bold font-mono uppercase tracking-tight">
                                 {currentCandidate?.name}
                             </h3>
-                            <p className="text-xs font-bold text-background/40 uppercase tracking-widest mt-1">
-                                <span className="uppercase text-primary">
-                                    Software Engineer
-                                </span>
-                            </p>
+                            {/* No job title line: the list payload carries no
+                                job title for the candidate, and the old
+                                hardcoded "Software Engineer" was wrong for
+                                every candidate. */}
                         </div>
 
                         <div className="grid grid-cols-2 gap-y-4 pt-4 border-t border-background/10">
                             <div>
                                 <p className="text-[10px] font-bold text-background/40 uppercase tracking-widest">
-                                    Rating
-                                </p>
-                                <div className="font-mono flex items-center gap-1">
-                                    <p className="text-sm font-semibold">{4.6}</p>
-                                    <Star className="w-3 h-3 text-amber-500 fill-current" />
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-[10px] font-bold text-background/40 uppercase tracking-widest">
                                     Location
                                 </p>
                                 <p className="text-sm font-bold">
-                                    {currentCandidate?.attachmentsCount}
+                                    {currentCandidate?.location || "—"}
                                 </p>
                             </div>
-                            <div>
+                            <div className="text-right">
                                 <p className="text-[10px] font-bold text-background/40 uppercase tracking-widest">
                                     Email
                                 </p>
                                 <p className="text-sm font-bold">{currentCandidate?.email}</p>
                             </div>
-                            <div className="text-right">
+                            <div>
                                 <p className="text-[10px] font-bold text-background/40 uppercase tracking-widest">
                                     Phone
                                 </p>
                                 <p className="text-sm font-bold">{currentCandidate?.phone}</p>
                             </div>
+                            {/* No Rating block: no rating column exists anywhere. */}
                         </div>
 
                         {/* Decorative background element */}
@@ -214,75 +186,51 @@ const CandidatePreview = ({ data, candidates }: Props) => {
 
                     {/*Details List*/}
                     <div className="space-y-6 mb-6">
-                        <div className="flex items-center gap-4 group">
+                        <div className="flex items-start gap-4 group">
                             <div className="w-8 h-8 rounded-lg bg-background/5 flex items-center justify-center text-foreground/30 group-hover:text-primary transition-colors">
                                 <Paperclip size={16} />
                             </div>
                             <div className="flex-1">
                                 <p className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest">
-                                    ATTACHMENT
+                                    Attachments
                                 </p>
-                                <p className="text-xs font-bold text-primary hover:underline cursor-pointer">
-                                    attachment.pdf
-                                </p>
+                                {currentCandidate?.attachments?.length ? (
+                                    <ul className="space-y-1 mt-1">
+                                        {currentCandidate.attachments.map((attachment) => (
+                                            <li key={attachment.id}>
+                                                <a
+                                                    href={`/api/attachments/${attachment.id}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-xs font-bold text-primary hover:underline cursor-pointer"
+                                                >
+                                                    {attachment.file_name}
+                                                </a>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : (
+                                    <p className="text-xs font-bold text-foreground/30 mt-1">
+                                        No attachments
+                                    </p>
+                                )}
                             </div>
                             <div className="flex gap-2">
-                                <button className="p-2 hover:bg-primary/5 rounded-lg transition-colors text-foreground/30">
-                                    <Maximize2 size={16} />
-                                </button>
+                                {currentCandidate?.email && (
+                                    <a
+                                        href={`mailto:${currentCandidate.email}`}
+                                        className="p-2 hover:bg-primary/5 rounded-lg transition-colors text-foreground/30"
+                                        aria-label={`Email ${currentCandidate.name}`}
+                                    >
+                                        <Mail size={16} />
+                                    </a>
+                                )}
                             </div>
                         </div>
-
-                        <div className="flex items-center gap-4 group">
-                            <div className="w-8 h-8 rounded-lg bg-background/5 flex items-center justify-center text-foreground/30 group-hover:text-primary transition-colors">
-                                <Star size={16} />
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest">
-                                    CAN CONTACT
-                                </p>
-                                <CheckCircle2 size={16} className="text-foreground/60 mt-1" />
-                            </div>
-                            <div className="flex gap-2">
-                                <button className="p-2 hover:bg-primary/5 rounded-lg transition-colors text-foreground/30">
-                                    <Mail size={16} />
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-4 group">
-                            <div className="w-8 h-8 rounded-lg bg-background/5 flex items-center justify-center text-foreground/30 group-hover:text-primary transition-colors">
-                                <Star size={16} />
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest">
-                                    CAN CONTACT
-                                </p>
-                                <CheckCircle2 size={16} className="text-foreground/60 mt-1" />
-                            </div>
-                            <div className="flex gap-2">
-                                <button className="p-2 hover:bg-primary/5 rounded-lg transition-colors text-foreground/30">
-                                    <Mail size={16} />
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-4 group">
-                            <div className="w-8 h-8 rounded-lg bg-background/5 flex items-center justify-center text-foreground/30 group-hover:text-primary transition-colors">
-                                <Star size={16} />
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest">
-                                    CAN CONTACT
-                                </p>
-                                <CheckCircle2 size={16} className="text-foreground/60 mt-1" />
-                            </div>
-                            <div className="flex gap-2">
-                                <button className="p-2 hover:bg-primary/5 rounded-lg transition-colors text-foreground/30">
-                                    <Mail size={16} />
-                                </button>
-                            </div>
-                        </div>
+                        {/* No CAN CONTACT rows: can_contact lives on
+                            applications, not on the candidate list payload,
+                            so the old triplicated always-checked rows were
+                            invented data. */}
                     </div>
 
                     {/* Internal Notes & Comments */}
@@ -291,6 +239,7 @@ const CandidatePreview = ({ data, candidates }: Props) => {
                         parent_id={currentCandidate?.id}
                         selectedId={currentCandidate?.id}
                         candidate_id={currentCandidate?.id}
+                        entityType="candidate"
                     />
                 </div>
             </div>

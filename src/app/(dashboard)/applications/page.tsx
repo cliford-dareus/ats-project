@@ -4,7 +4,7 @@ import { ApplicationResponseType } from "@/types";
 import { auth } from "@clerk/nextjs/server";
 import { get_all_applications_action } from "@/server/actions/application_actions";
 import ListPageTop from "@/components/list-page-top";
-import { JOB_STATUS } from "@/zod";
+import { JOB_STAGES } from "@/zod";
 
 type Props = {
     searchParams: {
@@ -18,7 +18,9 @@ const Page = async ({ searchParams }: Props) => {
 
     const limit = typeof per_page === "string" ? parseInt(per_page) : 8;
     const offset = typeof page === "string" ? (parseInt(page) - 1) * limit : 0;
-    const statuses = status ? (status as string).split(",") as (typeof JOB_STATUS._type)[] : undefined;
+    // `status` is a comma-separated list of stage names (JOB_STAGES), not
+    // job statuses — typed honestly instead of cast to JOB_STATUS.
+    const statuses = status ? (status as string).split(",") as (typeof JOB_STAGES._type)[] : undefined;
     const locations = location ? (location as string).split(",") : undefined;
     const departments = department ? (department as string).split(",") : undefined;
 

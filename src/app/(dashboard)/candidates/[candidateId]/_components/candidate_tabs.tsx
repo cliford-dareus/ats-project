@@ -14,15 +14,37 @@ import CandidateInterviews from "@/app/(dashboard)/candidates/[candidateId]/_com
 import AddCandidateAttachmentModal from "@/components/modal/upload_candidate_attachment_modal";
 import CandidateExperienceAndEducation from "./candidate-experience-education";
 import CandidateDocuments from "@/app/(dashboard)/candidates/[candidateId]/_components/candidate-documents";
+import type { NoteType } from "@/types";
 
 type Props = {
+    // The detail query returns drizzle rows + scoreCards/attachment, which
+    // match no single shared interface (CandidateWithDetails predates
+    // those fields) — kept loose like the original, like review pages do.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     candidate_details: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     candidate_notes: any;
 };
 
 type TabValue = "overview" | "experience" | "documents" | "interview";
 const DEFAULT_TAB: TabValue = "overview";
+
+/**
+ * get_candidate_notes returns a JSON string of the note array (or
+ * undefined on error). Parse it once here so the overview tab renders
+ * the already-fetched candidate notes instead of re-fetching the wrong
+ * (application_) key.
+ */
+function parseCandidateNotes(value: unknown): NoteType[] {
+    try {
+        const parsed = typeof value === "string" ? JSON.parse(value) : value;
+        return Array.isArray(parsed) ? (parsed as NoteType[]) : [];
+    } catch {
+        return [];
+    }
+}
 
 const CandidateTabs = ({ data, candidate_details, candidate_notes }: Props) => {
     const pathname = usePathname();
@@ -41,6 +63,14 @@ const CandidateTabs = ({ data, candidate_details, candidate_notes }: Props) => {
         const tabParam = searchParams.get('tab') as TabValue;
         setActiveTab(tabParam || DEFAULT_TAB);
     }, [searchParams]);
+
+    // The Mongo details doc carries a single `skills` array (camelCase
+    // `resumeSummary` too) — it is the technical-skills list. There is
+    // no separate soft-skills source, so softSkills stays empty and the
+    // summary renders only non-empty skill blocks.
+    const skills: string[] = candidate_details?.skills ?? [];
+    const experience = candidate_details?.experience ?? [];
+    const education = candidate_details?.education ?? [];
 
     return (
         <div>
@@ -71,20 +101,21 @@ const CandidateTabs = ({ data, candidate_details, candidate_notes }: Props) => {
                     <TabsContent value="overview">
                         <CandidateSummary
                             data={data}
-                            technicalSkills={[]}
-                            softSkills={candidate_details?.skills}
-                            resumeSummary={candidate_details?.resume_summary}
+                            technicalSkills={skills}
+                            softSkills={[]}
+                            resumeSummary={candidate_details?.resumeSummary}
+                            candidateNotes={parseCandidateNotes(candidate_notes)}
                         />
                     </TabsContent>
                     <TabsContent value="experience">
                         <CandidateExperienceAndEducation
                             data={data}
-                            experience={candidate_details?.experience}
-                            education={candidate_details?.education}
+                            experience={experience}
+                            education={education}
                         />
                     </TabsContent>
                     <TabsContent value="documents">
-                        <CandidateDocuments data={data} resumeSummary={candidate_details?.resume_summary} />
+                        <CandidateDocuments data={data} resumeSummary={candidate_details?.resumeSummary} />
                     </TabsContent>
                     <TabsContent value="interview">
                         <CandidateInterviews data={data} />

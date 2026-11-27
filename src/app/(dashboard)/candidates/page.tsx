@@ -16,17 +16,17 @@ type Props = {
 
 const Page = async ({ searchParams }: Props) => {
     const { orgId } = await auth();
-    const { page, per_page, status, experience, location, keyword } =
+    const { page, per_page, status, location, keyword, search, sort } =
         (await searchParams) ?? {};
 
     const limit = typeof per_page === "string" ? parseInt(per_page) : 8;
     const offset = typeof page === "string" ? (parseInt(page) - 1) * limit : 0;
-    const keywords = keyword ? (keyword as string).split(",") : undefined;
+    // The sidebar search writes ?search=… — read it as the keyword filter
+    // (nothing ever sets ?keyword=, so the LIKE branch was unreachable).
+    const searchTerm = typeof search === "string" ? search : typeof keyword === "string" ? keyword : undefined;
+    const keywords = searchTerm ? searchTerm.split(",") : undefined;
     const statuses = status
         ? ((status as string).split(",") as (typeof CANDIDATE_STATUS._type)[])
-        : undefined;
-    const experiences = experience
-        ? (experience as string).split(",")
         : undefined;
     const locations = location ? (location as string).split(",") : undefined;
 
@@ -35,8 +35,8 @@ const Page = async ({ searchParams }: Props) => {
         offset,
         keywords,
         status: statuses,
-        experience: experiences,
         location: locations,
+        sort: typeof sort === "string" ? sort : undefined,
         organization: orgId as string,
     });
 

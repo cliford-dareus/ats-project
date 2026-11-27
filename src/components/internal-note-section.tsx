@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import CreateNoteModal from "@/components/modal/create-note-modal";
 import { MentionUser } from "@/components/mentions-text-area";
 import { NoteType } from "@/types";
-import { get_application_notes } from "@/server/queries/mongo/note";
+import { get_application_notes, get_candidate_notes } from "@/server/queries/mongo/note";
 import { get_org_members_action } from "@/server/actions/organization_actions";
 
 type Props = {
@@ -14,25 +14,50 @@ type Props = {
     parent_id: number | undefined;
     selectedId: number | undefined;
     candidate_id?: number;
+    /**
+     * Which entity's notes to read. Defaults to 'application' so existing
+     * application call sites keep working. Pass 'candidate' on candidate
+     * pages: candidate notes are saved under `candidate_<id>`, while
+     * get_application_notes builds `application_<id>` — reading with the
+     * wrong key returns another entity's notes (normally empty, wrong on
+     * an id collision).
+     */
+    entityType?: "application" | "candidate";
+    /** Notes already fetched server-side; shown immediately, then refreshed. */
+    initialNotes?: NoteType[];
+    /** Bump to re-fetch (e.g. after a reject records a note server-side). */
+    refreshSignal?: number;
 }
 
-const InternalNoteSection = ({ parent_type, parent_id, selectedId, candidate_id }: Props) => {
-    const [internalNotes, setInternalNotes] = useState<{ notes: NoteType[] }>({ notes: [] });
+const InternalNoteSection = ({ parent_type, parent_id, selectedId, candidate_id, entityType = "application", initialNotes, refreshSignal }: Props) => {
+    const [internalNotes, setInternalNotes] = useState<{ notes: NoteType[] }>({ notes: initialNotes ?? [] });
     const [isOpen, setIsOpen] = useState(false);
     const [users, setUsers] = useState<MentionUser[]>([]);
 
 
     useEffect(() => {
         const fetchInternalNotes = async () => {
-            if (selectedId) {
-                const response = await get_application_notes({ id: selectedId, limit: 10, offset: 0 })
-                const parsed = JSON.parse(response)
-                // get_application_notes returns { error: boolean, notes: NoteType[] }
-                setInternalNotes({ notes: parsed.notes || [] })
+            if (!selectedId) return;
+            if (entityType === "candidate") {
+                const response = await get_candidate_notes(String(selectedId));
+                try {
+                    const parsed = response ? JSON.parse(response) : [];
+                    // get_candidate_notes returns the note array as JSON.
+                    setInternalNotes({ notes: Array.isArray(parsed) ? parsed : [] });
+                } catch {
+                    setInternalNotes({ notes: [] });
+                }
+                return;
             }
+            const response = await get_application_notes({ id: selectedId, limit: 10, offset: 0 })
+            const parsed = JSON.parse(response)
+            // get_application_notes returns { error: boolean, notes: NoteType[] }
+            setInternalNotes({ notes: parsed.notes || [] })
         }
         fetchInternalNotes();
-    }, [parent_id, selectedId]);
+        // Re-fetch when the note modal closes so a just-added note shows
+        // up, and when the parent asks for a refresh (e.g. after reject).
+    }, [parent_id, selectedId, entityType, isOpen, refreshSignal]);
 
     // Org members for the @mention picker (session org only, server-side).
     useEffect(() => {
@@ -46,7 +71,7 @@ const InternalNoteSection = ({ parent_type, parent_id, selectedId, candidate_id 
             <div className="flex items-center gap-4">
                 <h3 className="font-bold flex items-center gap-2 text-foreground uppercase tracking-widest">
                     <MessageSquare className="w-4 h-4 text-foreground/30" />
-                    Job Notes
+                    {entityType === "candidate" ? "Candidate Notes" : "Job Notes"}
                 </h3>
                 <span
                     className="bg-foreground/5 text-foreground/40 px-1.5 py-0.5 rounded text-[10px] font-bold"

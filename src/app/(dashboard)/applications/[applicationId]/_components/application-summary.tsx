@@ -45,10 +45,14 @@ export const ApplicationSummary = ({ candidate_id, resumeSummary, key_accomplish
                         Resume Summary
                     </h3>
                 </div>
-                <button className="text-[10px] font-bold text-primary uppercase tracking-widest flex items-center gap-1 hover:underline">
+                {/* B22-6: wired to the authenticated R2 resume route. */}
+                <a
+                    href={`/api/candidates/${candidate_id}/resume`}
+                    className="text-[10px] font-bold text-primary uppercase tracking-widest flex items-center gap-1 hover:underline"
+                >
                     <Download className="w-3.5 h-3.5" />
                     Download PDF
-                </button>
+                </a>
             </div>
             <div className="p-4">
                 <div className="prose prose-sm max-w-none text-muted-foreground leading-relaxed">
@@ -225,10 +229,10 @@ export const EmptyApplicationSummary = ({ candidate_id }: { candidate_id: number
                             Experience Match Analysis
                         </h3>
                     </div>
-                    <div className="bg-accent/10 text-accent px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-1">
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span className="text-xs font-bold">0% Match</span>
-                    </div>
+                    {/* B22-7: the hardcoded "0% Match" badge was removed —
+                        this empty state has no job skills or experience to
+                        compute a match from, so no badge renders until an
+                        analysis exists. */}
                 </div>
                 <div className="p-4 space-y-4">
                     <div className="grid grid-cols-2 gap-6">

@@ -1,6 +1,6 @@
 import { db } from "@/drizzle/db";
 import { applications, attachments, candidates, interviews } from "@/drizzle/schema";
-import { and, eq, inArray, sql, SQL } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql, SQL } from "drizzle-orm";
 import { CACHE_TAGS, dbCache, getGlobalTag, getIdTag, getOrgTag, revalidateDbCache } from "@/lib/cache";
 import { filterCandidateSchema, newCandidateFormSchema, updateCandidateSchema } from "@/zod";
 import { z } from "zod";
@@ -61,6 +61,15 @@ export const update_candidate = async (data: z.infer<typeof updateCandidateSchem
 };
 
 export const delete_candidate = async (id: number, orgId: string) => {
+    // The row delete is the whole cascade: the schema declares
+    // onDelete: 'cascade' on attachments.candidate_id and
+    // applications.candidate, and on through interviews.applications_id
+    // and score_cards.interviews_id — so deleting the candidate also
+    // deletes its applications, their interviews and scorecards, and its
+    // Drizzle attachment rows. Mongo documents (candidate details, notes,
+    // Mongo attachment docs) have no FKs and are removed explicitly by
+    // delete_candidate_action before/after this call. R2 blobs referenced
+    // by file_url are NOT deleted (same known gap as org deletion).
     await db.delete(candidates)
         .where(and(eq(candidates.id, id), eq(candidates.organization, orgId)))
 
@@ -71,7 +80,14 @@ export const delete_candidate = async (id: number, orgId: string) => {
     });
 };
 
-export const get_all_candidates = async (filter: z.infer<typeof filterCandidateSchema>) => {
+// Sort for the candidates list (?sort= URL param). Kept out of
+// filterCandidateSchema (src/zod.ts) — the action validates the raw param
+// against this allowlist and passes it through alongside the zod filter.
+export type CandidateListSort = "newest" | "oldest" | "name-asc";
+
+export const CANDIDATE_LIST_SORTS: CandidateListSort[] = ["newest", "oldest", "name-asc"];
+
+export const get_all_candidates = async (filter: z.infer<typeof filterCandidateSchema> & { sort?: CandidateListSort }) => {
     const cacheFn = dbCache(get_all_candidates_db, {
         keyParts: ["candidates", filter.organization, JSON.stringify(filter)],
         tags: [
@@ -153,7 +169,7 @@ export const get_candidate_by_id_db = async (unsafedata: number, orgId: string) 
     };
 };
 
-const get_all_candidates_db = async (filter: z.infer<typeof filterCandidateSchema>) => {
+const get_all_candidates_db = async (filter: z.infer<typeof filterCandidateSchema> & { sort?: CandidateListSort }) => {
     const filters: SQL[] = []
 
     if (filter.keywords && filter.keywords.length > 0) {
@@ -168,6 +184,9 @@ const get_all_candidates_db = async (filter: z.infer<typeof filterCandidateSchem
         filters.push(inArray(candidates.location, locations));
     }
 
+    // No experience filter: the candidates table has no `experience`
+    // column, so the sidebar group was removed rather than filtering on a
+    // column that does not exist.
     // if (filter.experience) {
     //     filters.push(inArray(candidates.experience, filter.experience));
     // }
@@ -176,6 +195,14 @@ const get_all_candidates_db = async (filter: z.infer<typeof filterCandidateSchem
         const statuses = Array.isArray(filter.status) ? filter.status : [filter.status];
         filters.push(inArray(candidates.status, statuses));
     }
+
+    // ?sort=: newest (default) / oldest / name A–Z.
+    const orderBy =
+        filter.sort === "oldest"
+            ? asc(candidates.created_at)
+            : filter.sort === "name-asc"
+                ? asc(candidates.name)
+                : desc(candidates.created_at);
 
     const [{ count }] = await db
         .select({ count: sql<number>`count(*)` })
@@ -188,6 +215,7 @@ const get_all_candidates_db = async (filter: z.infer<typeof filterCandidateSchem
         email: candidates.email,
         phone: candidates.phone,
         cv_path: candidates.cv_path,
+        location: candidates.location,
         status: candidates.status,
         created_at: candidates.created_at,
         updated_at: candidates.updated_at,
@@ -203,8 +231,38 @@ const get_all_candidates_db = async (filter: z.infer<typeof filterCandidateSchem
     })
         .from(candidates)
         .where(and(...filters, eq(candidates.organization, filter.organization)))
+        .orderBy(orderBy)
         .limit(filter.limit)
         .offset(filter.offset);
 
-    return [count, candidate];
+    // Attachments for the preview pane (linked via /api/attachments/[id]).
+    // Fetched in one query for the page's candidates, not per row.
+    const candidateIds = candidate.map((c) => c.id);
+    const attachmentRows = candidateIds.length > 0
+        ? await db.select({
+            id: attachments.id,
+            file_name: attachments.file_name,
+            file_url: attachments.file_url,
+            candidate_id: attachments.candidate_id,
+            attachment_type: attachments.attachment_type,
+        })
+            .from(attachments)
+            .where(inArray(attachments.candidate_id, candidateIds))
+        : [];
+    const attachmentsByCandidate = new Map<number, typeof attachmentRows>();
+    for (const row of attachmentRows) {
+        const list = attachmentsByCandidate.get(row.candidate_id) ?? [];
+        list.push(row);
+        attachmentsByCandidate.set(row.candidate_id, list);
+    }
+
+    return [count, candidate.map((c) => ({
+        ...c,
+        attachments: (attachmentsByCandidate.get(c.id) ?? []).map((a) => ({
+            id: a.id,
+            file_name: a.file_name,
+            file_url: a.file_url,
+            attachment_type: a.attachment_type,
+        })),
+    }))];
 };
