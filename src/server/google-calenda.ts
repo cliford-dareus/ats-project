@@ -7,7 +7,7 @@ import { endOfDay, startOfDay } from "date-fns";
 export async function getCalendarEventTimes(
   userId: string,
   { start, end }: { start: Date; end: Date }
-): Promise<{ start: Date; end: Date }[]> {
+): Promise<{ id?: string; summary?: string; start: Date; end: Date }[]> {
   const client = await getOAuthClient(userId);
   if (!client) return [];
 
@@ -25,6 +25,8 @@ export async function getCalendarEventTimes(
     ?.map((event) => {
       if (event.start?.date != null && event.end?.date != null) {
         return {
+          id: event.id ?? undefined,
+          summary: event.summary ?? undefined,
           start: startOfDay(new Date(event.start.date)),
           end: endOfDay(new Date(event.end.date)),
         };
@@ -32,12 +34,14 @@ export async function getCalendarEventTimes(
 
       if (event.start?.dateTime != null && event.end?.dateTime != null) {
         return {
+          id: event.id ?? undefined,
+          summary: event.summary ?? undefined,
           start: new Date(event.start.dateTime),
           end: new Date(event.end.dateTime),
         };
       }
     })
-    .filter((event) => event != null) as { start: Date; end: Date }[];
+    .filter((event) => event != null) as { id?: string; summary?: string; start: Date; end: Date }[];
 }
 
 export async function createCalendarEvent({
@@ -51,6 +55,7 @@ export async function createCalendarEvent({
     startDateTime: string;
     endDateTime: string;
     attendeeEmail: string;
+    interviewerEmails?: string[];
   };
 }) {
   const oAuthClient = await getOAuthClient(clerkUserId);
@@ -79,7 +84,10 @@ export async function createCalendarEvent({
       dateTime: endDateTime,
       timeZone: "UTC",
     },
-    attendees: [{ email: attendeeEmail }],
+    attendees: [
+      { email: attendeeEmail },
+      ...(payload.interviewerEmails ?? []).map((email) => ({ email })),
+    ],
     status: "confirmed" as const,
   };
 
@@ -282,6 +290,97 @@ export async function confirmCalendarHold({
       };
     }
     return { success: false as const, error: "Failed to confirm calendar hold" };
+  }
+}
+
+/**
+ * Move an existing confirmed interview event to a new time, keeping its
+ * attendees (interviewers + candidate) — the event is read first, exactly
+ * like confirmCalendarHold, so patching never drops anyone.
+ * Returns `notFound` when the event was deleted, so the caller can
+ * recreate it as a fresh event instead.
+ */
+export async function updateCalendarEvent({
+  clerkUserId,
+  eventId,
+  payload,
+}: {
+  clerkUserId: string;
+  eventId: string;
+  payload: {
+    startDateTime: string;
+    endDateTime: string;
+    summary?: string;
+    description?: string;
+  };
+}): Promise<
+  | { success: true; eventId: string; meetLink?: string }
+  | { success: false; error: string; notFound?: boolean }
+> {
+  const oAuthClient = await getOAuthClient(clerkUserId);
+  if (!oAuthClient) {
+    return { success: false as const, error: "Google Calendar not connected" };
+  }
+
+  const calendar = google.calendar("v3");
+
+  // Read the event first: keep its attendees (candidate + interviewers).
+  let existing: calendar_v3.Schema$Event | null = null;
+  try {
+    const res = await calendar.events.get({
+      calendarId: "primary",
+      eventId,
+      auth: oAuthClient,
+    });
+    existing = res.data;
+  } catch (error) {
+    if (is_not_found_error(error)) {
+      return {
+        success: false as const,
+        error: "Calendar event no longer exists",
+        notFound: true,
+      };
+    }
+    console.error("[updateCalendarEvent] failed to read event", error);
+    return { success: false as const, error: "Failed to read calendar event" };
+  }
+
+  try {
+    const calendarEvent = await calendar.events.patch({
+      calendarId: "primary",
+      eventId,
+      auth: oAuthClient,
+      sendUpdates: "all",
+      requestBody: {
+        ...(payload.summary ? { summary: payload.summary } : {}),
+        ...(payload.description ? { description: payload.description } : {}),
+        start: {
+          dateTime: payload.startDateTime,
+          timeZone: "UTC",
+        },
+        end: {
+          dateTime: payload.endDateTime,
+          timeZone: "UTC",
+        },
+        attendees: existing.attendees ?? undefined,
+      },
+    });
+
+    return {
+      success: true as const,
+      eventId: calendarEvent.data.id ?? eventId,
+      meetLink: calendarEvent.data.hangoutLink ?? undefined,
+    };
+  } catch (error) {
+    console.error("[updateCalendarEvent]", error);
+    if (is_not_found_error(error)) {
+      return {
+        success: false as const,
+        error: "Calendar event no longer exists",
+        notFound: true,
+      };
+    }
+    return { success: false as const, error: "Failed to update calendar event" };
   }
 }
 

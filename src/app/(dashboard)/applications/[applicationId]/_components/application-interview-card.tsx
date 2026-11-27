@@ -1,10 +1,26 @@
 "use client";
 
 import ScheduleInterviewModal from "@/components/modal/schedule-interview-modal";
+import RescheduleInterviewModal from "@/components/modal/reschedule-interview-modal";
 import { ApplicationResponseType, InterviewType } from "@/types";
-import { Calendar, Clock, MapPin, Phone, Video } from "lucide-react";
-import { useState } from "react";
+import { Calendar, Clock, MapPin, Phone, Users, Video } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useHasPermission } from "@/lib/use-permission";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+    cancel_interview_action,
+    get_interview_interviewers_action,
+} from "@/server/actions/interview-actions";
 
 type Props = {
     applicationResult: ApplicationResponseType;
@@ -19,6 +35,14 @@ function hold_badge(interview: InterviewType | null | undefined): {
         return {
             label: "Not Booked",
             className: "bg-muted text-muted-foreground border-border",
+        };
+    }
+    // InterviewType.status predates CANCELLED in the shared type, so the
+    // cancelled check goes through a string comparison.
+    if ((interview.status as string | null) === "CANCELLED") {
+        return {
+            label: "Cancelled",
+            className: "bg-red-50 text-red-700 border-red-100",
         };
     }
     const hold_status = interview.hold_status ?? "NONE";
@@ -99,12 +123,83 @@ function interview_type_label(interview: InterviewType): string {
     }
 }
 
+/** D1: only a live interview can be rescheduled or cancelled — a cancelled
+ * interview or a dead hold (declined/expired/released) offers Schedule-new
+ * instead, via the empty state below. */
+function interview_is_live(interview: InterviewType | null | undefined): boolean {
+    if (!interview) return false;
+    if ((interview.status as string | null) === "CANCELLED") return false;
+    if (interview.status === "SCHEDULE") return true;
+    if (
+        interview.status === "HOLD_PENDING" &&
+        (interview.hold_status === "TENTATIVE" ||
+            interview.hold_status === "CONFIRMED")
+    ) {
+        return true;
+    }
+    return false;
+}
+
 const ApplicationInterviewCard = ({ applicationResult }: Props) => {
+    const router = useRouter();
     const hasPermission = useHasPermission();
     const canSchedule = hasPermission("interview:schedule");
+    const canCancel = hasPermission("interview:cancel");
     const [isOpen, setIsOpen] = useState(false);
+    const [isRescheduleOpen, setIsRescheduleOpen] = useState(false);
+    const [isCancelOpen, setIsCancelOpen] = useState(false);
+    const [cancelReason, setCancelReason] = useState("");
+    const [isCancelling, setIsCancelling] = useState(false);
+    const [cancelError, setCancelError] = useState<string | null>(null);
+    const [interviewers, setInterviewers] = useState<
+        { id: string | number; name: string | null; email: string | null }[]
+    >([]);
     const interview = applicationResult.interview;
     const badge = hold_badge(interview);
+    const isLive = interview_is_live(interview);
+
+    // Interviewer names for the card (resolved server-side from interviewer_ids).
+    useEffect(() => {
+        if (!interview?.id) {
+            setInterviewers([]);
+            return;
+        }
+        let cancelled = false;
+        get_interview_interviewers_action(interview.id)
+            .then((members) => {
+                if (!cancelled) setInterviewers(members);
+            })
+            .catch(() => {
+                // Names are nice-to-have; a failed lookup leaves the row hidden.
+                if (!cancelled) setInterviewers([]);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [interview?.id]);
+
+    const handleCancel = async () => {
+        if (!interview) return;
+        setIsCancelling(true);
+        setCancelError(null);
+        try {
+            await cancel_interview_action({
+                interviewId: interview.id,
+                reason: cancelReason.trim() || undefined,
+            });
+            setIsCancelOpen(false);
+            setCancelReason("");
+            router.refresh();
+        } catch (err) {
+            setCancelError(
+                err instanceof Error
+                    ? err.message
+                    : "Could not cancel the interview. Please try again."
+            );
+        } finally {
+            setIsCancelling(false);
+        }
+    };
     const hold_pending =
         interview?.hold_status === "TENTATIVE" &&
         interview.hold_expires_at != null &&
@@ -176,6 +271,24 @@ const ApplicationInterviewCard = ({ applicationResult }: Props) => {
                                     </p>
                                 </div>
                             </div>
+
+                            {interviewers.length > 0 && (
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-card rounded-lg flex items-center justify-center shadow-sm">
+                                        <Users className="w-4 h-4 text-brand-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
+                                            Interviewers
+                                        </p>
+                                        <p className="text-sm font-semibold text-foreground">
+                                            {interviewers
+                                                .map((m) => m.name ?? m.email ?? "Unknown")
+                                                .join(", ")}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {applicationResult.interview.link &&
@@ -192,6 +305,30 @@ const ApplicationInterviewCard = ({ applicationResult }: Props) => {
                                     Join Interview
                                 </a>
                             )}
+
+                        {isLive && (canSchedule || canCancel) && (
+                            <div className="flex gap-2">
+                                {canSchedule && (
+                                    <button
+                                        onClick={() => setIsRescheduleOpen(true)}
+                                        className="flex-1 py-2.5 bg-card border border-border rounded-xl text-xs font-bold text-foreground hover:bg-muted transition-all shadow-sm"
+                                    >
+                                        Reschedule
+                                    </button>
+                                )}
+                                {canCancel && (
+                                    <button
+                                        onClick={() => {
+                                            setCancelError(null);
+                                            setIsCancelOpen(true);
+                                        }}
+                                        className="flex-1 py-2.5 bg-card border border-red-200 rounded-xl text-xs font-bold text-red-600 hover:bg-red-50 transition-all shadow-sm"
+                                    >
+                                        Cancel
+                                    </button>
+                                )}
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <div className="text-center py-6 bg-muted rounded-xl border border-dashed border-border">
@@ -213,6 +350,74 @@ const ApplicationInterviewCard = ({ applicationResult }: Props) => {
                 application={applicationResult}
                 jobDetails={{ jobName: applicationResult.job_apply, department: applicationResult.department }}
             />
+
+            {applicationResult.interview && (
+                <RescheduleInterviewModal
+                    isOpen={isRescheduleOpen}
+                    setIsOpen={setIsRescheduleOpen}
+                    interview={applicationResult.interview}
+                />
+            )}
+
+            <Dialog
+                open={isCancelOpen}
+                onOpenChange={(open) => {
+                    setIsCancelOpen(open);
+                    if (!open) setCancelError(null);
+                }}
+            >
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl uppercase">
+                            Cancel Interview
+                        </DialogTitle>
+                        <DialogDescription>
+                            This releases the calendar event and emails the
+                            candidate that the interview is cancelled. This
+                            can&apos;t be undone — schedule a new interview
+                            afterwards if needed.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="cancel-reason">
+                                Reason (optional)
+                            </Label>
+                            <Textarea
+                                id="cancel-reason"
+                                placeholder="e.g. Role put on hold"
+                                value={cancelReason}
+                                onChange={(e) => setCancelReason(e.target.value)}
+                                maxLength={255}
+                            />
+                        </div>
+                        {cancelError && (
+                            <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
+                                {cancelError}
+                            </p>
+                        )}
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => setIsCancelOpen(false)}
+                                disabled={isCancelling}
+                            >
+                                Keep interview
+                            </Button>
+                            <Button
+                                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                                onClick={handleCancel}
+                                disabled={isCancelling}
+                            >
+                                {isCancelling
+                                    ? "Cancelling…"
+                                    : "Cancel interview"}
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </>
     );
 };

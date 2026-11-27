@@ -10,7 +10,7 @@ import {
     TabsList,
 } from "@/components/ui/tabs";
 import CandidateSummary from "@/app/(dashboard)/candidates/[candidateId]/_components/candidate-summary";
-import CandidateInterviews from "@/app/(dashboard)/candidates/[candidateId]/_components/candidate-interviews";
+import CandidateInterviews, { type CandidateScheduleOption } from "@/app/(dashboard)/candidates/[candidateId]/_components/candidate-interviews";
 import AddCandidateAttachmentModal from "@/components/modal/upload_candidate_attachment_modal";
 import CandidateExperienceAndEducation from "./candidate-experience-education";
 import CandidateDocuments from "@/app/(dashboard)/candidates/[candidateId]/_components/candidate-documents";
@@ -26,6 +26,10 @@ type Props = {
     candidate_details: any;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     candidate_notes: any;
+    /** Schedulable applications + interviewer names, resolved in the page
+     * loader and passed through untouched. */
+    scheduleOptions?: CandidateScheduleOption[];
+    interviewerNames?: Record<number, string[]>;
 };
 
 type TabValue = "overview" | "experience" | "documents" | "interview";
@@ -46,7 +50,7 @@ function parseCandidateNotes(value: unknown): NoteType[] {
     }
 }
 
-const CandidateTabs = ({ data, candidate_details, candidate_notes }: Props) => {
+const CandidateTabs = ({ data, candidate_details, candidate_notes, scheduleOptions, interviewerNames }: Props) => {
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -118,7 +122,11 @@ const CandidateTabs = ({ data, candidate_details, candidate_notes }: Props) => {
                         <CandidateDocuments data={data} resumeSummary={candidate_details?.resumeSummary} />
                     </TabsContent>
                     <TabsContent value="interview">
-                        <CandidateInterviews data={data} />
+                        <CandidateInterviews
+                            data={data}
+                            scheduleOptions={scheduleOptions}
+                            interviewerNames={interviewerNames}
+                        />
                     </TabsContent>
                 </Tabs>
             </div>

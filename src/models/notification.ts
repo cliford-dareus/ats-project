@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-export type NotificationKind = "mention" | "automation" | "interview_confirmed" | "interview_declined" | "system";
+export type NotificationKind = "mention" | "automation" | "interview_confirmed" | "interview_declined" | "interview_expired" | "system";
 
 interface NotificationInterface extends mongoose.Document {
     organization_id: string;

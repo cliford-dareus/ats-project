@@ -9,6 +9,8 @@ import {db_save_resume_score} from "@/server/queries";
 import {db_get_job_automation_rules} from "@/server/queries/drizzle/plugin-queries";
 import {get_stale_holds_db, mark_hold_expired_db} from "@/server/queries/drizzle/interview";
 import {releaseCalendarHold} from "@/server/google-calenda";
+import {notify_hold_expired} from "@/server/holds/hold-service";
+import {send_interview_reminders} from "@/server/interviews/reminder-service";
 
 interface ScorePayload {
     score: number;
@@ -148,8 +150,25 @@ async function expire_stale_holds_sweep() {
                         console.error(`[Worker] Hold ${row.id}: calendar release failed permanently (${released.error}); marking expired anyway.`);
                     }
                 }
-                await mark_hold_expired_db(row.id);
+                // Only notify when THIS sweep did the transition — the
+                // guarded mark returns false if another sweeper (or the
+                // cron route) already expired the hold, so a hold is
+                // notified exactly once.
+                const transitioned = await mark_hold_expired_db(row.id);
+                if (!transitioned) continue;
                 expired += 1;
+
+                if (row.calendar_owner_id) {
+                    await notify_hold_expired({
+                        orgId: row.organization,
+                        ownerId: row.calendar_owner_id,
+                        applicationId: row.applications_id,
+                        candidateName: row.candidate_name,
+                        jobName: row.job_name,
+                        start_at: row.start_at,
+                        end_at: row.end_at,
+                    });
+                }
             } catch (err) {
                 console.error(`[Worker] Hold ${row.id}: expiry sweep failed:`, err);
                 deferred += 1;
@@ -166,6 +185,30 @@ async function expire_stale_holds_sweep() {
 
 expire_stale_holds_sweep();
 setInterval(expire_stale_holds_sweep, HOLD_SWEEP_INTERVAL_MS);
+
+// ── Interview reminder sweep ──────────────────────────────────────────────────
+// Same 15-min cadence (plus once at startup) and running-guard pattern as
+// the hold sweep: sends the 24h reminder for confirmed/direct-scheduled
+// interviews starting in the next 24h. reminder_sent_at is stamped only
+// on successful send, so failures are retried next sweep.
+const REMINDER_SWEEP_INTERVAL_MS = 15 * 60 * 1000;
+let reminder_sweep_running = false;
+
+async function send_interview_reminders_sweep() {
+    if (reminder_sweep_running) return;
+    reminder_sweep_running = true;
+    try {
+        const result = await send_interview_reminders();
+        console.log(`[Worker] Interview reminder sweep: ${result.sent} sent, ${result.failed} failed.`);
+    } catch (err) {
+        console.error("[Worker] Interview reminder sweep failed:", err);
+    } finally {
+        reminder_sweep_running = false;
+    }
+}
+
+send_interview_reminders_sweep();
+setInterval(send_interview_reminders_sweep, REMINDER_SWEEP_INTERVAL_MS);
 
 // ── Lifecycle logging ─────────────────────────────────────────────────────────
 worker.on("completed", (job) => {

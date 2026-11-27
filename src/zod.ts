@@ -198,6 +198,12 @@ export const newInterviewSchema = z.object({
     location: z.string(),
     type: z.enum(["ONSITE", "VIDEO", "PHONE"]),
     status: z.enum(["SCHEDULE", "AWAITING_FEEDBACK", "COMPLETE"]),
+    interviewer_ids: z.array(z.string()).optional(),
+    // Direct-scheduled interviews store their Google event so reschedule
+    // can patch it (previously the event id was dropped, leaving the
+    // calendar event unmovable). Hold rows carry these via the hold path.
+    calendar_event_id: z.string().optional(),
+    calendar_owner_id: z.string().optional(),
 });
 
 // FILTER SCHEMA

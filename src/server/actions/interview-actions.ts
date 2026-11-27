@@ -3,7 +3,7 @@
 import React from "react";
 import { z } from "zod";
 import { render } from "@react-email/components";
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { newInterviewSchema } from "@/zod";
 import InterviewHoldTemplate from "@/emails/interview_hold_template";
 import { sendEmail } from "@/lib/resend";
@@ -13,17 +13,32 @@ import {
     create_interview_hold_db,
     get_interview_by_application_db,
     get_interview_by_hold_token,
+    get_interview_by_id_db,
+    get_interview_details_for_application_db,
+    cancel_interview_db,
     mark_hold_confirmed_db,
     mark_hold_released_db,
+    update_interview_schedule_db,
 } from "../queries/drizzle/interview";
+import { db_get_org_members_by_ids } from "../queries/drizzle/organization";
+import { create_notifications_db } from "../queries/mongo/notifications";
 import { db_get_org_plugin_state } from "../queries/drizzle/plugin-queries";
 import {
     confirmCalendarHold,
     createCalendarEvent,
     createTentativeHoldEvent,
     releaseCalendarHold,
+    updateCalendarEvent,
 } from "../google-calenda";
-import { canScheduleInterview } from "../permissions";
+import { check_calendar_conflicts } from "../calendar-availability";
+import { format_interview_time } from "../holds/hold-service";
+import { get_org_profile, render_org_template, send_org_email } from "../email/org-mailer";
+import {
+    assertInterviewBelongsToOrg,
+    canCancelInterview,
+    canScheduleInterview,
+    hasPermission,
+} from "../permissions";
 
 const holdSchema = z.object({
     applicationId: z.number(),
@@ -98,6 +113,162 @@ async function try_release_hold_calendar(row: HoldRow): Promise<boolean> {
         `[interview-hold] Failed to release calendar hold for interview ${row.interview_id}: ${released.error}`
     );
     return !released.retryable;
+}
+
+// ── D1 shared helpers ─────────────────────────────────────────────────────────
+
+/** Hold outcomes after which an interview is dead — reschedule/cancel must refuse. */
+const DEAD_HOLD_STATUSES = ["DECLINED", "EXPIRED", "RELEASED"] as const;
+
+function is_dead_interview(row: {
+    status: string | null;
+    hold_status: string | null;
+}): boolean {
+    if (row.status === "CANCELLED") return true;
+    return (
+        row.hold_status != null &&
+        (DEAD_HOLD_STATUSES as readonly string[]).includes(row.hold_status)
+    );
+}
+
+/** Interviewer Clerk ids → their emails (org members only; unresolvable ones skipped). */
+async function resolve_interviewer_emails(
+    orgId: string,
+    interviewer_ids: string[] | null
+): Promise<string[]> {
+    if (!interviewer_ids?.length) return [];
+    try {
+        const members = await db_get_org_members_by_ids(orgId, interviewer_ids);
+        return members
+            .map((m) => m.email)
+            .filter((email): email is string => !!email);
+    } catch (error) {
+        console.error("[interview] Failed to resolve interviewer emails:", error);
+        return [];
+    }
+}
+
+/**
+ * Candidate-facing interview email via the org mailer (system template +
+ * CommunicationLog). Best-effort: returns false instead of throwing, so a
+ * mail failure never fails the interview operation that already happened.
+ */
+async function send_candidate_interview_email(args: {
+    orgId: string;
+    templateId: "interview_invite" | "interview_rescheduled" | "interview_cancelled";
+    candidateEmail: string;
+    candidateName: string | null;
+    candidateId?: number | null;
+    jobName: string | null;
+    start_at: Date | null;
+    end_at: Date | null;
+    meetingLink?: string;
+    location?: string;
+    cancelReason?: string;
+    senderName?: string;
+    sentBy?: string;
+}): Promise<boolean> {
+    try {
+        const org = await get_org_profile(args.orgId);
+        const rendered = await render_org_template(args.orgId, args.templateId, {
+            candidateName: args.candidateName?.split(" ")[0] ?? "there",
+            jobTitle: args.jobName ?? "the role",
+            interviewDate: format_interview_time(args.start_at, args.end_at),
+            interviewLocation: args.location ?? "",
+            meetingLink: args.meetingLink ?? "",
+            cancelReason: args.cancelReason ?? "Not specified",
+            senderName: args.senderName ?? "",
+            companyName: org?.name ?? "Applico",
+        });
+        const result = await send_org_email({
+            orgId: args.orgId,
+            to: args.candidateEmail,
+            toName: args.candidateName ?? undefined,
+            subject: rendered.subject,
+            text: rendered.text,
+            type: args.templateId,
+            templateId: rendered.templateId,
+            candidateId: args.candidateId ?? undefined,
+            sentBy: args.sentBy,
+            authorName: args.senderName,
+        });
+        return result.success;
+    } catch (error) {
+        console.error(
+            `[interview] Failed to send ${args.templateId} email:`,
+            error
+        );
+        return false;
+    }
+}
+
+// ── D2: hold-owner notices ────────────────────────────────────────────────────
+
+/**
+ * Notify the recruiter who placed a hold that the candidate confirmed or
+ * declined it: in-app notification + email. Best-effort: never fails the
+ * confirm/decline itself — every failure is logged and swallowed.
+ */
+async function notify_hold_owner(args: {
+    orgId: string;
+    ownerId: string;
+    applicationId: number | null;
+    candidateName: string | null;
+    jobName: string | null;
+    start_at: Date | null;
+    end_at: Date | null;
+    kind: "interview_confirmed" | "interview_declined";
+    templateId: "interview_confirmed" | "interview_declined";
+    meetingLink?: string;
+}): Promise<void> {
+    const when = format_interview_time(args.start_at, args.end_at);
+    const who = args.candidateName ?? "The candidate";
+    const what = args.jobName ?? "the role";
+    const verb =
+        args.kind === "interview_confirmed" ? "confirmed" : "declined";
+
+    try {
+        await create_notifications_db(args.orgId, [args.ownerId], {
+            kind: args.kind,
+            title: `Interview ${verb}: ${who} — ${what}`,
+            body: `${who} ${verb} the interview for ${what} on ${when}.`,
+            link: args.applicationId
+                ? `/applications/${args.applicationId}`
+                : undefined,
+        });
+    } catch (error) {
+        console.error("[interview-hold] Failed to notify hold owner (in-app):", error);
+    }
+
+    try {
+        const clerk = await clerkClient();
+        const owner = await clerk.users.getUser(args.ownerId);
+        const email = owner.primaryEmailAddress?.emailAddress;
+        if (!email) return;
+        const org = await get_org_profile(args.orgId);
+        const rendered = await render_org_template(
+            args.orgId,
+            args.templateId,
+            {
+                candidateName: who,
+                jobTitle: what,
+                interviewDate: when,
+                meetingLink: args.meetingLink ?? "",
+                companyName: org?.name ?? "Applico",
+            }
+        );
+        await send_org_email({
+            orgId: args.orgId,
+            to: email,
+            toName: owner.firstName ?? undefined,
+            subject: rendered.subject,
+            text: rendered.text,
+            type: args.templateId,
+            templateId: rendered.templateId,
+        });
+    } catch (error) {
+        console.error("[interview-hold] Failed to notify hold owner (email):", error);
+    }
 }
 
 // ── Hold confirmation email (Resend) ──────────────────────────────────────────
@@ -237,7 +408,49 @@ export const create_interview_action = async (
     const allowed = await canScheduleInterview();
     if (!allowed) throw new Error("Missing permission: interview:schedule");
 
-    return await create_interview_db(data, orgId);
+    const result = await create_interview_db(data, orgId);
+
+    // D7-server: the direct path used to send the candidate nothing (only
+    // the hold path emailed). Best-effort invite — creation already
+    // succeeded, so a mail failure is logged, never thrown.
+    try {
+        const details = await get_interview_details_for_application_db(
+            data.applicationId,
+            orgId
+        );
+        if (details?.candidate_email) {
+            let senderName = "";
+            try {
+                const clerk = await clerkClient();
+                const me = await clerk.users.getUser(userId);
+                senderName = [me.firstName, me.lastName]
+                    .filter(Boolean)
+                    .join(" ");
+            } catch {
+                // Sender name is cosmetic; the invite goes out without it.
+            }
+            await send_candidate_interview_email({
+                orgId,
+                templateId: "interview_invite",
+                candidateEmail: details.candidate_email,
+                candidateName: details.candidate_name,
+                candidateId: details.candidate_id,
+                jobName: details.job_name,
+                start_at: data.start_at,
+                end_at: data.end_at,
+                location: data.location,
+                senderName,
+                sentBy: userId,
+            });
+        }
+    } catch (error) {
+        console.error(
+            "[interview] Failed to send direct-schedule invite email:",
+            error
+        );
+    }
+
+    return result;
 };
 
 export const create_interview_hold_action = async (
@@ -426,6 +639,23 @@ export const confirm_interview_hold_action = async (token: string) => {
         link: meet_link,
     });
 
+    // D2: notify the recruiter who placed the hold. Best-effort — the
+    // confirm already landed, so this never throws.
+    if (row.calendar_owner_id) {
+        await notify_hold_owner({
+            orgId: row.organization,
+            ownerId: row.calendar_owner_id,
+            applicationId: row.applications_id,
+            candidateName: row.candidate_name,
+            jobName: row.job_name,
+            start_at: row.start_at,
+            end_at: row.end_at,
+            kind: "interview_confirmed",
+            templateId: "interview_confirmed",
+            meetingLink: meet_link,
+        });
+    }
+
     return {
         success: true as const,
         already: false as const,
@@ -471,6 +701,22 @@ export const decline_interview_hold_action = async (token: string) => {
 
     await mark_hold_released_db(row.interview_id, row.organization, "DECLINED");
 
+    // D2: notify the recruiter who placed the hold. Best-effort — the
+    // decline already landed, so this never throws.
+    if (row.calendar_owner_id) {
+        await notify_hold_owner({
+            orgId: row.organization,
+            ownerId: row.calendar_owner_id,
+            applicationId: row.applications_id,
+            candidateName: row.candidate_name,
+            jobName: row.job_name,
+            start_at: row.start_at,
+            end_at: row.end_at,
+            kind: "interview_declined",
+            templateId: "interview_declined",
+        });
+    }
+
     return { success: true as const };
 };
 
@@ -501,4 +747,294 @@ export const get_hold_public_details_action = async (token: string) => {
         expired:
             !!row.hold_expires_at && new Date(row.hold_expires_at) < new Date(),
     };
+};
+
+// ── D1: reschedule + cancel ───────────────────────────────────────────────────
+
+const rescheduleInterviewSchema = z.object({
+    interviewId: z.number(),
+    start_at: z.coerce.date(),
+    end_at: z.coerce.date(),
+    type: z.enum(["VIDEO", "PHONE", "ONSITE"]).optional(),
+    location: z.string().min(1).optional(),
+});
+
+export const reschedule_interview_action = async (
+    unsafeData: z.infer<typeof rescheduleInterviewSchema>
+) => {
+    const { userId, orgId } = await auth();
+    const parsed = rescheduleInterviewSchema.safeParse(unsafeData);
+
+    if (!userId || !orgId || !parsed.success) {
+        throw new Error(
+            parsed.success ? "Unauthorized" : parsed.error.issues[0]?.message
+        );
+    }
+
+    const allowed = await canScheduleInterview();
+    if (!allowed) throw new Error("Missing permission: interview:schedule");
+
+    const { interviewId, start_at, end_at } = parsed.data;
+    if (end_at <= start_at) {
+        throw new Error("The interview must end after it starts.");
+    }
+
+    await assertInterviewBelongsToOrg(interviewId, orgId);
+    const row = await get_interview_by_id_db(interviewId, orgId);
+    if (!row) throw new Error("Interview not found");
+
+    if (is_dead_interview(row)) {
+        throw new Error(
+            "This interview can no longer be rescheduled. Schedule a new interview instead."
+        );
+    }
+
+    // Server-side availability re-check against the scheduler's own calendar,
+    // excluding this interview's own event.
+    const availability = await check_calendar_conflicts(
+        userId,
+        start_at,
+        end_at,
+        row.calendar_event_id ?? undefined
+    );
+    if (!availability.connected) {
+        throw new Error(
+            "Google Calendar not connected — reconnect to reschedule"
+        );
+    }
+    if (availability.conflicts.length > 0) {
+        const list = availability.conflicts
+            .map(
+                (c) =>
+                    `${format_interview_time(c.start, c.end)}${c.summary ? ` (${c.summary})` : ""}`
+            )
+            .join("; ");
+        throw new Error(`That time conflicts with your calendar: ${list}`);
+    }
+
+    const type = parsed.data.type ?? row.type ?? "VIDEO";
+    const location = parsed.data.location ?? row.locations;
+    const summary = `Interview: ${row.candidate_name ?? "Candidate"} — ${row.job_name ?? "Interview"}`;
+    let calendar_event_id = row.calendar_event_id ?? undefined;
+    let meet_link = row.link ?? undefined;
+
+    if (row.hold_status === "TENTATIVE") {
+        // Tentative hold: release the old event and place a new tentative
+        // one at the new time. The hold_token and hold_expires_at live in
+        // the DB row and are kept untouched.
+        if (row.calendar_event_id && row.calendar_owner_id) {
+            const released = await releaseCalendarHold({
+                clerkUserId: row.calendar_owner_id,
+                eventId: row.calendar_event_id,
+            });
+            if (!released.success && released.retryable) {
+                throw new Error(
+                    "We couldn't release the old calendar hold. Please try again."
+                );
+            }
+            // Permanent failure (owner disconnected Google): the event is
+            // gone or unreachable — proceed with the new hold.
+            if (!released.success) {
+                console.error(
+                    `[interview] Could not release old hold event for interview ${interviewId}: ${released.error}`
+                );
+            }
+        }
+
+        const created = await createTentativeHoldEvent({
+            clerkUserId: row.calendar_owner_id ?? userId,
+            payload: {
+                summary,
+                description: `Tentative interview hold for ${row.candidate_name ?? "the candidate"} (${row.candidate_email ?? ""}) applying to ${row.job_name ?? "the role"}.`,
+                startDateTime: start_at.toISOString(),
+                endDateTime: end_at.toISOString(),
+                interviewerEmails: await resolve_interviewer_emails(
+                    orgId,
+                    row.interviewer_ids
+                ),
+                candidateEmail: row.candidate_email ?? undefined,
+            },
+        });
+        if (!created.success) {
+            throw new Error(
+                created.error || "Could not place a calendar hold for the new time"
+            );
+        }
+        calendar_event_id = created.eventId;
+        meet_link = created.meetLink ?? meet_link;
+    } else if (row.calendar_event_id && row.calendar_owner_id) {
+        // Confirmed hold or direct-scheduled interview: patch the event.
+        const updated = await updateCalendarEvent({
+            clerkUserId: row.calendar_owner_id,
+            eventId: row.calendar_event_id,
+            payload: {
+                startDateTime: start_at.toISOString(),
+                endDateTime: end_at.toISOString(),
+                summary,
+            },
+        });
+
+        if (updated.success) {
+            calendar_event_id = updated.eventId;
+            meet_link = updated.meetLink ?? meet_link;
+        } else if (updated.notFound) {
+            // The event was deleted — recreate it as a fresh confirmed event.
+            if (!row.candidate_email) {
+                throw new Error(
+                    "The calendar event no longer exists and the candidate has no email on file, so it can't be recreated."
+                );
+            }
+            const recreated = await createCalendarEvent({
+                clerkUserId: row.calendar_owner_id,
+                payload: {
+                    summary,
+                    description: `Interview for ${row.candidate_name ?? "the candidate"} applying to ${row.job_name ?? "the role"}.`,
+                    startDateTime: start_at.toISOString(),
+                    endDateTime: end_at.toISOString(),
+                    attendeeEmail: row.candidate_email,
+                    interviewerEmails: await resolve_interviewer_emails(
+                        orgId,
+                        row.interviewer_ids
+                    ),
+                },
+            });
+            if (!recreated.success) {
+                throw new Error(
+                    recreated.error || "Could not recreate the calendar event"
+                );
+            }
+            calendar_event_id = recreated.eventId;
+            meet_link = recreated.meetLink ?? meet_link;
+        } else {
+            throw new Error(updated.error || "Could not move the calendar event");
+        }
+    }
+    // No calendar event on file (direct-scheduled interviews don't store
+    // one): the DB row is still moved. A stale Google event, if one exists,
+    // can't be located from here.
+
+    await update_interview_schedule_db(interviewId, orgId, {
+        start_at,
+        end_at,
+        type,
+        location,
+        calendar_event_id: calendar_event_id ?? null,
+        link: meet_link ?? null,
+    });
+
+    // Email the candidate the new time. Best-effort — the move already
+    // happened, so a mail failure is reported, not thrown.
+    let email_sent = false;
+    if (row.candidate_email) {
+        email_sent = await send_candidate_interview_email({
+            orgId,
+            templateId: "interview_rescheduled",
+            candidateEmail: row.candidate_email,
+            candidateName: row.candidate_name,
+            candidateId: row.candidate_id,
+            jobName: row.job_name,
+            start_at,
+            end_at,
+            meetingLink: meet_link,
+            location,
+            sentBy: userId,
+        });
+    }
+
+    return { success: true as const, email_sent };
+};
+
+const cancelInterviewSchema = z.object({
+    interviewId: z.number(),
+    reason: z.string().max(255).optional(),
+});
+
+export const cancel_interview_action = async (
+    unsafeData: z.infer<typeof cancelInterviewSchema>
+) => {
+    const { userId, orgId } = await auth();
+    const parsed = cancelInterviewSchema.safeParse(unsafeData);
+
+    if (!userId || !orgId || !parsed.success) {
+        throw new Error(
+            parsed.success ? "Unauthorized" : parsed.error.issues[0]?.message
+        );
+    }
+
+    const allowed = await canCancelInterview();
+    if (!allowed) throw new Error("Missing permission: interview:cancel");
+
+    const { interviewId, reason } = parsed.data;
+
+    await assertInterviewBelongsToOrg(interviewId, orgId);
+    const row = await get_interview_by_id_db(interviewId, orgId);
+    if (!row) throw new Error("Interview not found");
+
+    if (is_dead_interview(row)) {
+        throw new Error("This interview is already cancelled or its hold has ended.");
+    }
+
+    // Release the calendar event first. Transient failure → fail closed so
+    // the user can retry; permanent failure (owner disconnected Google) →
+    // proceed and record the cancel anyway.
+    if (row.calendar_event_id && row.calendar_owner_id) {
+        const released = await releaseCalendarHold({
+            clerkUserId: row.calendar_owner_id,
+            eventId: row.calendar_event_id,
+        });
+        if (!released.success && released.retryable) {
+            throw new Error(
+                "We couldn't release the calendar event. Please try again."
+            );
+        }
+        if (!released.success) {
+            console.error(
+                `[interview] Could not release calendar event for cancelled interview ${interviewId}: ${released.error}`
+            );
+        }
+    }
+
+    await cancel_interview_db(interviewId, orgId, {
+        hold_status:
+            row.hold_status === "TENTATIVE" || row.hold_status === "CONFIRMED"
+                ? "RELEASED"
+                : "NONE",
+        reason,
+    });
+
+    let email_sent = false;
+    if (row.candidate_email) {
+        email_sent = await send_candidate_interview_email({
+            orgId,
+            templateId: "interview_cancelled",
+            candidateEmail: row.candidate_email,
+            candidateName: row.candidate_name,
+            candidateId: row.candidate_id,
+            jobName: row.job_name,
+            start_at: row.start_at,
+            end_at: row.end_at,
+            cancelReason: reason,
+            sentBy: userId,
+        });
+    }
+
+    return { success: true as const, email_sent };
+};
+
+/** Resolve an interview's interviewer_ids to org members for the card. */
+export const get_interview_interviewers_action = async (
+    interviewId: number
+) => {
+    const { userId, orgId } = await auth();
+    if (!userId || !orgId) throw new Error("Unauthorized");
+    if (!(await hasPermission("interview:view"))) {
+        throw new Error("Missing permission: interview:view");
+    }
+
+    await assertInterviewBelongsToOrg(interviewId, orgId);
+    const row = await get_interview_by_id_db(interviewId, orgId);
+    if (!row || !row.interviewer_ids?.length) return [];
+
+    const members = await db_get_org_members_by_ids(orgId, row.interviewer_ids);
+    return members.map((m) => ({ id: m.id, name: m.name, email: m.email }));
 };

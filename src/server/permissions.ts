@@ -68,6 +68,7 @@ export const canMoveApplication = () => hasPermission("application:move");
 export const canDeleteApplication = () => hasPermission("application:delete");
 
 export const canScheduleInterview = () => hasPermission("interview:schedule");
+export const canCancelInterview = () => hasPermission("interview:cancel");
 // export const canManageInterviews = () => hasPermission("interview:manage");
 
 export const canGenerateReport = () => hasPermission("report:generate");

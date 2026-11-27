@@ -1,8 +1,12 @@
 import React from "react";
 import { Briefcase, Calendar, ExternalLink, Mail, MapPin, MessageSquare } from "lucide-react";
+import { auth } from "@clerk/nextjs/server";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { get_candidate_by_id_action } from "@/server/actions/candidates-actions";
+import { get_application_by_id_action } from "@/server/actions/application_actions";
+import { db_get_org_members_by_ids } from "@/server/queries/drizzle/organization";
 import CandidateTabs from "@/app/(dashboard)/candidates/[candidateId]/_components/candidate_tabs";
+import type { CandidateScheduleOption } from "@/app/(dashboard)/candidates/[candidateId]/_components/candidate-interviews";
 import { get_candidate_details } from "@/server/queries/mongo/candidate-details";
 import { get_candidate_notes } from "@/server/queries/mongo/note";
 import { cn } from "@/lib/utils";
@@ -71,6 +75,59 @@ const Page = async ({ params }: Props) => {
     const candidate_details_raw = await get_candidate_details(Number(candidateId));
     const candidate_details = JSON.parse(candidate_details_raw || "{}");
     const candidate_notes = await get_candidate_notes(candidateId);
+
+    // Schedule entry point (Interviews tab): resolve each application
+    // through get_application_by_id — the same row shape the review page
+    // hands ScheduleInterviewButton — and keep only applications on OPEN
+    // jobs. A failure for one application never takes the page down; that
+    // application is simply not offered, and with none open there is no
+    // button at all (honest empty state, not a dead one).
+    const scheduleOptions: CandidateScheduleOption[] = [];
+    for (const app of candidate.application ?? []) {
+        try {
+            const detail = await get_application_by_id_action(app.id);
+            if (!detail || "error" in detail) continue;
+            const row = detail[0];
+            if (!row || row.status !== "OPEN") continue;
+            scheduleOptions.push({
+                application: row,
+                jobName: row.job_apply ?? "Position",
+                department: row.department ?? "",
+            });
+        } catch {
+            continue;
+        }
+    }
+
+    // Interviewer names: interviewer_ids on the interview rows are Clerk
+    // user ids — resolve them to names via org membership, server-side.
+    // Ids with no org member get no name (never invented); interviews
+    // with no resolvable names show no Interviewer line.
+    const { orgId } = await auth();
+    const interviewerNames: Record<number, string[]> = {};
+    const interviewRows = candidate.interview ?? [];
+    const interviewerIds = [
+        ...new Set(
+            interviewRows.flatMap((item) =>
+                Array.isArray(item.interviewer_ids) ? item.interviewer_ids : [],
+            ),
+        ),
+    ];
+    if (orgId && interviewerIds.length > 0) {
+        const members = await db_get_org_members_by_ids(orgId, interviewerIds);
+        const nameById = new Map(
+            members.map((member) => [member.id, member.name ?? member.email]),
+        );
+        for (const item of interviewRows) {
+            const names = (Array.isArray(item.interviewer_ids)
+                ? item.interviewer_ids
+                : []
+            )
+                .map((id) => nameById.get(id))
+                .filter((name): name is string => !!name);
+            if (names.length > 0) interviewerNames[item.id] = names;
+        }
+    }
 
     // The candidate row has no role/rating columns, and the Mongo details
     // doc carries no current_role/title/rating either — so the headline
@@ -183,6 +240,8 @@ const Page = async ({ params }: Props) => {
                 data={candidate}
                 candidate_details={candidate_details}
                 candidate_notes={candidate_notes}
+                scheduleOptions={scheduleOptions}
+                interviewerNames={interviewerNames}
             />
         </>
     );

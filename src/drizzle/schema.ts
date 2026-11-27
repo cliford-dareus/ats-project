@@ -332,6 +332,10 @@ export const interviews = mysqlTable(
         ]).default('NONE'),
         hold_expires_at: timestamp('hold_expires_at'),
         hold_email_sent_at: timestamp('hold_email_sent_at'),
+        // D6: reminder emails — set when the 24h reminder sweep sends.
+        reminder_sent_at: timestamp('reminder_sent_at'),
+        // D1: reason recorded when a scheduled interview is cancelled.
+        cancel_reason: varchar('cancel_reason', { length: 255 }),
         calendar_event_id: varchar('calendar_event_id', { length: 255 }),
         calendar_owner_id: varchar('calendar_owner_id', { length: 255 }),
         interviewer_ids: json('interviewer_ids').$type<string[]>().default([]),
