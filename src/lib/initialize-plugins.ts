@@ -18,15 +18,15 @@ import type { InstalledPlugin } from "@/types";
 async function getFactory(pluginId: string) {
     switch (pluginId) {
         case "openai-scoring":
-        // return (await import("@/plugins/providers/openai-scoring")).createOpenAIScoringProvider;
-        case "anthropic-screening":
-        // return (await import("@/plugins/providers/anthropic-screening")).createAnthropicScreeningProvider;
+            return (await import("@/plugins/providers/openai")).createOpenAIProvider;
         case "calendly":
             return (await import("@/plugins/providers/calendly")).createCalendlyProvider;
+        case "anthropic-screening":
+            return (await import("@/plugins/providers/anthropic")).createAnthropicProvider;
         case "checkr":
-        // return (await import("@/plugins/providers/others")).createCheckrProvider;
+            return (await import("@/plugins/providers/checkr")).createCheckrProvider;
         case "slack-notify":
-        // return (await import("@/plugins/providers/others")).createSlackNotifyProvider;
+            return (await import("@/plugins/providers/slack")).createSlackProvider;
         case "resend":
             return (await import("@/plugins/providers/resend")).createResendProvider;
         case "google":

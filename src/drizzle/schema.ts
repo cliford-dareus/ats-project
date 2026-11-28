@@ -363,10 +363,72 @@ export const applications = mysqlTable('applications', {
     ),
 }));
 
+// ── Checkr background checks (migration 0016) ───────────────────────────
+// One row per application: the outcome of the single background check
+// ordered for that application. Statuses are stored EXACTLY as Checkr
+// reports them — invitation_status is Checkr's invitation status
+// (pending/completed/expired; 'canceled' is Applico-local, set when a
+// recruiter cancels a still-pending invitation), report_status /
+// report_result / adjudication are Checkr's report fields verbatim
+// (pending/complete/suspended/dispute/canceled; clear/consider;
+// engaged/pre_adverse_action/post_adverse_action). Nothing here is
+// polled live: refresh_checkr_check_action re-reads Checkr on demand.
+//
+// Consent: a check may only be initiated after a recruiter confirms the
+// candidate's FCRA disclosure + written authorization was obtained
+// (consent_confirmed_by/at). Applico does NOT store the signed form —
+// the org retains it, and Checkr's hosted apply flow collects the
+// candidate's consent again before any screening runs. Never set a
+// report status/result here except from a real Checkr API response.
+export const checkr_background_checks = mysqlTable('checkr_background_checks', {
+    id: int('id').primaryKey().autoincrement(),
+    application_id: int('application_id').notNull().references(() => applications.id, { onDelete: 'cascade' }),
+    // Denormalized Clerk org id (same pattern as interviews.organization)
+    // so a check row is provably org-scoped without joining applications.
+    organization: varchar('organization', { length: 255 }).notNull(),
+    // 'test' = api.checkr-staging.com (no real checks, no charges);
+    // 'live' = api.checkr.com (real checks, billable). Stored per check
+    // so a row can never be misread as live when it ran in staging.
+    environment: mysqlEnum('environment', ['test', 'live']).notNull().default('test'),
+    package_slug: varchar('package_slug', { length: 128 }).notNull(),
+    checkr_candidate_id: varchar('checkr_candidate_id', { length: 128 }),
+    checkr_invitation_id: varchar('checkr_invitation_id', { length: 128 }),
+    checkr_report_id: varchar('checkr_report_id', { length: 128 }),
+    invitation_status: mysqlEnum('invitation_status', ['pending', 'completed', 'expired', 'canceled']),
+    report_status: mysqlEnum('report_status', ['pending', 'complete', 'suspended', 'dispute', 'canceled']),
+    report_result: mysqlEnum('report_result', ['clear', 'consider']),
+    adjudication: mysqlEnum('adjudication', ['engaged', 'pre_adverse_action', 'post_adverse_action']),
+    invitation_url: varchar('invitation_url', { length: 500 }),
+    invitation_expires_at: timestamp('invitation_expires_at'),
+    report_completed_at: timestamp('report_completed_at'),
+    consent_confirmed_by: varchar('consent_confirmed_by', { length: 255 }),
+    consent_confirmed_at: timestamp('consent_confirmed_at'),
+    error_message: text('error_message'),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+    updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+    // One check per application: re-initiating (e.g. after expiry)
+    // updates this row instead of creating a second one.
+    application_unique: uniqueIndex('checkr_application_unique').on(table.application_id),
+    org_idx: index('checkr_org_idx').on(table.organization),
+}));
+
+export const checkr_background_checks_relations = relations(checkr_background_checks, ({ one }) => ({
+    application: one(applications, {
+        fields: [checkr_background_checks.application_id],
+        references: [applications.id],
+    }),
+}));
+
 export const applications_relations = relations(applications, ({ one, many }) => ({
     interviews: many(interviews),
     score: many(score_cards),
+    interview_prep: many(interview_prep),
     screening_answers: many(screening_answers),
+    checkr_check: one(checkr_background_checks, {
+        fields: [applications.id],
+        references: [checkr_background_checks.application_id],
+    }),
     candidates: one(candidates, { fields: [applications.candidate], references: [candidates.id] }),
     job: one(job_listings, { fields: [applications.job_id], references: [job_listings.id] }),
     stage: one(stages, {
@@ -523,6 +585,44 @@ export const score_cards_relations = relations(score_cards, ({ one }) => ({
 
 export const scoresCards = score_cards;
 export const scoresCards_relation = score_cards_relations;
+
+// ── Claude interview prep (anthropic-screening plugin) ────────────────────
+// One row per generation, not one per application: "Regenerate" appends a
+// new row and the application page renders the latest, so earlier output
+// is never silently overwritten. No existing table fits — `applications`
+// resume_score_* columns are scoring output (0–100 + summary), `score_cards`
+// is per-interview human feedback with a fixed schema, and internal notes
+// are free-text. Questions + insights are structured JSON with a stage
+// snapshot and the model that produced them, so they need their own table.
+// `stage_name` is a snapshot of the application's stage at generation
+// time: the card warns when the candidate has since moved stage, instead
+// of presenting stale prep as current.
+export const interview_prep = mysqlTable('interview_prep', {
+    id: int('id').primaryKey().autoincrement(),
+    application_id: int('application_id').notNull().references(() => applications.id, { onDelete: 'cascade' }),
+    organization: varchar({ length: 255 }).notNull(),
+    // Snapshot of the application's stage (JOB_STAGES name) when generated.
+    stage_name: varchar('stage_name', { length: 64 }),
+    // Model id actually called, e.g. claude-sonnet-4-5-20250929.
+    model: varchar({ length: 255 }).notNull(),
+    // [{ category, question, rationale }] — validated by zod at generation.
+    questions: json('questions').$type<{ category: string; question: string; rationale: string }[]>().notNull(),
+    // { summary, strengths, risks, focusAreas } — validated by zod.
+    insights: json('insights').$type<{ summary: string; strengths: string[]; risks: string[]; focusAreas: string[] }>().notNull(),
+    generated_at: timestamp('generated_at').defaultNow().notNull(),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+    updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+    application_idx: index('interview_prep_application_idx').on(table.application_id),
+    org_idx: index('interview_prep_org_idx').on(table.organization),
+}));
+
+export const interview_prep_relations = relations(interview_prep, ({ one }) => ({
+    application: one(applications, {
+        fields: [interview_prep.application_id],
+        references: [applications.id],
+    }),
+}));
 
 // ── Activity / audit log ──────────────────────────────────────────────────
 // Append-only record of who did what, for the org's Activity feed. The

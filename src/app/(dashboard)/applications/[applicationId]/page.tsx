@@ -10,6 +10,9 @@ import ApplicationDetails from './_components/application-details';
 import ScreeningAnswers from './_components/screening-answers';
 import AppicationHeader from './_components/application-header';
 import ApplicationInterviewCard from './_components/application-interview-card';
+import InterviewPrepCard from './_components/interview-prep-card';
+import CheckrBackgroundCheckCard from './_components/checkr-background-check-card';
+import { get_checkr_check_action } from "@/server/actions/checkr-actions";
 import JobQuickViewCard from '@/components/job-quick-view-card';
 
 type Props = {
@@ -31,6 +34,16 @@ const Page = async ({ params }: Props) => {
     const job = (Array.isArray(jobResponse) ? jobResponse : [])[0];
     const rawResponse = await get_candidate_details(applicationResult.candidate_id);
     const candidateDetails = JSON.parse(rawResponse);
+
+    // Checkr background-check state for the card. Guarded: if the
+    // checkr_background_checks table doesn't exist yet (migration 0016
+    // not run), the card is omitted instead of breaking the page.
+    let checkrState: Awaited<ReturnType<typeof get_checkr_check_action>> | null = null;
+    try {
+        checkrState = await get_checkr_check_action(applicationResult.id);
+    } catch (err) {
+        console.error("[application] Failed to load Checkr state:", err);
+    }
 
     return (
         <div className="p-4">
@@ -85,6 +98,25 @@ const Page = async ({ params }: Props) => {
 
                                 {/* Interview Status */}
                                 <ApplicationInterviewCard applicationResult={applicationResult} />
+
+                                {/* Claude Interview Prep (anthropic-screening plugin) */}
+                                <InterviewPrepCard
+                                    applicationId={applicationResult.id}
+                                    currentStage={applicationResult.current_stage ?? null}
+                                />
+
+                                {/* Checkr Background Check */}
+                                {checkrState && (
+                                    <CheckrBackgroundCheckCard
+                                        applicationId={applicationResult.id}
+                                        currentStage={applicationResult.current_stage}
+                                        candidateName={applicationResult.candidate_name}
+                                        initialCheck={checkrState.check}
+                                        pluginEnabled={checkrState.pluginEnabled}
+                                        environment={checkrState.environment}
+                                        defaultPackage={checkrState.defaultPackage}
+                                    />
+                                )}
 
                                 {/* Job Details Quick View */}
                                 <JobQuickViewCard

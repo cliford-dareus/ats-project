@@ -103,6 +103,37 @@ export type CandidateDetailsType = {
     references: CandidateReference[];
 };
 
+// ── Claude interview prep (anthropic-screening plugin, migration 0016) ──────
+// One row per generation; the application page renders the latest. The
+// shape is validated by zod at generation time
+// (src/server/ai/anthropic-screening.ts) — a malformed Claude reply is a
+// failed generation, never stored.
+export type InterviewPrepQuestion = {
+    category: string;
+    question: string;
+    rationale: string;
+};
+
+export type InterviewPrepInsights = {
+    summary: string;
+    strengths: string[];
+    risks: string[];
+    focusAreas: string[];
+};
+
+export type InterviewPrepDTO = {
+    id: number;
+    application_id: number;
+    // Snapshot of the application's stage when generated — the card warns
+    // when the candidate has since moved stage.
+    stage_name: string | null;
+    // Model id actually called for this generation.
+    model: string;
+    questions: InterviewPrepQuestion[];
+    insights: InterviewPrepInsights;
+    generated_at: string;
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared types
 // ─────────────────────────────────────────────────────────────────────────────
@@ -377,6 +408,35 @@ export interface SyndicationBoardState {
     enabled: boolean;
     status: SyndicationBoardStatus;
     externalUrl: string | null;
+    errorMessage: string | null;
+    updatedAt: string | null;
+}
+
+// ── Checkr background check state (one row per application) ─────────────
+// Statuses are Checkr's verbatim values — invitation: pending /
+// completed / expired (+ Applico-local 'canceled'); report: pending /
+// complete / suspended / dispute / canceled; result: clear / consider
+// (null while pending). `environment` is the Checkr environment the
+// check actually ran in ('test' = staging, no real checks; 'live' =
+// production, billable) and is always surfaced in the UI.
+export type CheckrEnvironment = "test" | "live";
+
+export interface CheckrCheckState {
+    applicationId: number;
+    environment: CheckrEnvironment;
+    packageSlug: string;
+    checkrCandidateId: string | null;
+    checkrInvitationId: string | null;
+    checkrReportId: string | null;
+    invitationStatus: "pending" | "completed" | "expired" | "canceled" | null;
+    reportStatus: "pending" | "complete" | "suspended" | "dispute" | "canceled" | null;
+    reportResult: "clear" | "consider" | null;
+    adjudication: "engaged" | "pre_adverse_action" | "post_adverse_action" | null;
+    invitationUrl: string | null;
+    invitationExpiresAt: string | null;
+    reportCompletedAt: string | null;
+    consentConfirmedBy: string | null;
+    consentConfirmedAt: string | null;
     errorMessage: string | null;
     updatedAt: string | null;
 }

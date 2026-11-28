@@ -5,6 +5,7 @@ import {AutomationRule, OrgPluginState} from "@/types";
 import {db_get_job_automation_rules, db_get_org_plugin_state_for_client, db_get_organization_plugins_raw, saveJobAutomationRule as db_save_job_automation_rule, deleteJobAutomationRule as db_delete_job_automation_rule} from "@/server/queries/drizzle/plugin-queries";
 import {automationRuleSchema} from "@/zod";
 import {decrypt_plugin_secret} from "@/lib/plugin-encryption";
+import {buildTestMessage, isSlackWebhookUrl, postSlackWebhook} from "@/lib/slack";
 import { getCalendlyCurrentUser } from "@/server/calendly";
 import {Resend} from "resend";
 import {assertJobBelongsToOrg, AuthzError, getAuthOrThrow, hasPermission, requirePermission} from "@/server/permissions";
@@ -167,6 +168,118 @@ export async function verifyGoogle(apiKey: string): Promise<{ success: boolean; 
 }
 
 /**
+ * Validate an OpenAI API key with a lightweight call — GET /v1/models
+ * returns 200 for a valid key, 401 for an invalid one. Called from the
+ * client-side OpenAI provider auth flow (mirrors verifyGoogle above).
+ * The key is sent only to OpenAI, over HTTPS, in the Authorization
+ * header — never logged, never stored here (saving is a separate,
+ * encrypting step). No org ID is needed: Chat Completions accepts a
+ * plain API key, so the plugin stores only the key.
+ */
+export async function verifyOpenAI(apiKey: string): Promise<{ success: boolean; message: string }> {
+    // Plugin credential setup is plugin management (admin-only).
+    const allowed = await hasPermission("plugin:manage");
+    if (!allowed) {
+        return { success: false, message: "Missing permission: plugin:manage" };
+    }
+
+    const key = apiKey?.trim();
+    if (!key) {
+        return { success: false, message: "API key is required" };
+    }
+
+    try {
+        const res = await fetch(
+            "https://api.openai.com/v1/models",
+            {
+                headers: { Authorization: `Bearer ${key}` },
+                signal: AbortSignal.timeout(10_000),
+            },
+        );
+
+        if (res.ok) {
+            return { success: true, message: "API Key is valid" };
+        }
+
+        // 401 = the key itself is rejected. Anything else (429, 5xx,
+        // network) is a verification failure, not proof the key is bad —
+        // say so instead of telling the user the key is invalid.
+        let detail = "";
+        try {
+            const body = await res.json() as { error?: { message?: string } };
+            detail = body?.error?.message ?? "";
+        } catch {
+            // Non-JSON error body — fall through to the generic message.
+        }
+
+        if (res.status === 401) {
+            return { success: false, message: detail || "Invalid API Key" };
+        }
+        return { success: false, message: `OpenAI verification failed (HTTP ${res.status})` };
+    } catch (err) {
+        console.error("OpenAI API Key Verification Error:", err);
+        return {
+            success: false,
+            message: (err as Error).message || "Failed to verify API key",
+        };
+    }
+}
+
+/**
+ * Validate an Anthropic API key with a lightweight call to the Anthropic
+ * API — GET /v1/models returns 200 for a valid key, 401 for an invalid
+ * one. Called from the client-side Anthropic provider auth flow
+ * (mirrors verifyGoogle above). The key is sent only to Anthropic, over
+ * HTTPS, in the x-api-key header — never logged, never stored here
+ * (saving is a separate, encrypting step).
+ */
+export async function verifyAnthropic(apiKey: string): Promise<{ success: boolean; message: string }> {
+    // Plugin credential setup is plugin management (admin-only).
+    const allowed = await hasPermission("plugin:manage");
+    if (!allowed) {
+        return { success: false, message: "Missing permission: plugin:manage" };
+    }
+
+    const key = apiKey?.trim();
+    if (!key) {
+        return { success: false, message: "API key is required" };
+    }
+
+    try {
+        const res = await fetch("https://api.anthropic.com/v1/models?limit=1", {
+            headers: {
+                "x-api-key": key,
+                "anthropic-version": "2023-06-01",
+            },
+            signal: AbortSignal.timeout(10_000),
+        });
+
+        if (res.ok) {
+            return { success: true, message: "API Key is valid" };
+        }
+
+        let detail = "";
+        try {
+            const body = await res.json() as { error?: { message?: string } };
+            detail = body?.error?.message ?? "";
+        } catch {
+            // Non-JSON error body — fall through to the generic message.
+        }
+
+        if (res.status === 401) {
+            return { success: false, message: detail || "Invalid API Key" };
+        }
+        return { success: false, message: `Anthropic verification failed (HTTP ${res.status})` };
+    } catch (err) {
+        console.error("Anthropic API Key Verification Error:", err);
+        return {
+            success: false,
+            message: (err as Error).message || "Failed to verify API key",
+        };
+    }
+}
+
+/**
  * Validate a Calendly Personal Access Token with a lightweight call —
  * GET /users/me returns 200 for a valid token (with scopes), 401 for an
  * invalid one. Called from the client-side Calendly provider auth flow
@@ -205,6 +318,84 @@ export async function verifyCalendly(apiKey: string): Promise<{
             message:
                 (err as Error).message ||
                 "Failed to verify Calendly token",
+        };
+    }
+}
+
+/**
+ * Verify a Slack incoming webhook URL by posting a REAL test message to
+ * it and reporting Slack's real answer. Called from the client-side Slack
+ * provider auth flow (mirrors verifyGoogle / verifyCalendly above). The
+ * URL is sent only to Slack, over HTTPS — never logged, never stored here
+ * (saving is a separate, encrypting step).
+ *
+ * Slack answers most webhook calls with HTTP 200 and a plain-text body,
+ * so the body is checked: only "ok" counts as delivered; anything else
+ * (e.g. "invalid_payload", "channel_not_found") is the failure message.
+ */
+export async function verifySlackWebhook(webhookUrl: string): Promise<{ success: boolean; message: string }> {
+    // Plugin credential setup is plugin management (admin-only).
+    const allowed = await hasPermission("plugin:manage");
+    if (!allowed) {
+        return { success: false, message: "Missing permission: plugin:manage" };
+    }
+
+    const url = webhookUrl?.trim();
+    if (!url) {
+        return { success: false, message: "Webhook URL is required" };
+    }
+    if (!isSlackWebhookUrl(url)) {
+        return { success: false, message: "Enter a Slack incoming webhook URL (https://hooks.slack.com/services/…)" };
+    }
+
+    try {
+        const result = await postSlackWebhook(url, buildTestMessage());
+        if (result.ok) {
+            return { success: true, message: "Test message posted to Slack" };
+        }
+        return { success: false, message: `Slack rejected the test message: ${result.error}` };
+    } catch (err) {
+        console.error("Slack webhook verification error:", err);
+        return {
+            success: false,
+            message: (err as Error).message || "Failed to verify Slack webhook",
+        };
+    }
+}
+
+/**
+ * Post a test message through the org's SAVED webhook (decrypted
+ * server-side) — the browser never sees the URL. Requires plugin:manage.
+ * Used by the settings "Send test message" button after connect.
+ */
+export async function testSlackWebhook(): Promise<{ success: boolean; message: string }> {
+    const { orgId } = await getAuthOrThrow();
+    await requirePermission("plugin:manage");
+
+    try {
+        // Decrypt ONLY Slack's webhook (not the whole org blob): another
+        // plugin's undecryptable key must not break this test.
+        const record = await db_get_organization_plugins_raw(orgId);
+        const stored = record.settings?.["slack-notify"]?.credentials?.webhookUrl;
+        if (!stored) {
+            return { success: false, message: "Connect a Slack webhook URL first" };
+        }
+        const webhookUrl = decrypt_plugin_secret(stored);
+        if (!isSlackWebhookUrl(webhookUrl)) {
+            return { success: false, message: "The saved Slack webhook URL is not a valid hooks.slack.com URL — re-enter it" };
+        }
+        const result = await postSlackWebhook(webhookUrl, buildTestMessage());
+        if (result.ok) {
+            return { success: true, message: "Test message posted to Slack" };
+        }
+        return { success: false, message: `Slack rejected the test message: ${result.error}` };
+    } catch (err) {
+        // Decryption failures (e.g. key rotated without a re-encryption
+        // pass) surface as a test failure, not a crash.
+        console.error("Failed to test Slack webhook:", err);
+        return {
+            success: false,
+            message: (err as Error).message || "Failed to test Slack webhook",
         };
     }
 }

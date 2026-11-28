@@ -25,8 +25,10 @@ const GENERIC_MASK = "••••••••";
  * permission", which is Resend-only and wrong for both. */
 const KEY_HINTS: Record<string, { url: string; note: string }> = {
     google: { url: "aistudio.google.com", note: "create a Gemini API key in Google AI Studio" },
+    "openai-scoring": { url: "platform.openai.com", note: "create an API key under API keys — the account needs billing enabled" },
     resend: { url: "resend.com", note: "'Sending access' permission is enough" },
     calendly: { url: "calendly.com", note: "Profile → Developer → Personal access tokens — select the scopes listed below" },
+    "anthropic-screening": { url: "console.anthropic.com", note: "create an API key in the Anthropic Console" },
 };
 
 type Props = {

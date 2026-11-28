@@ -492,6 +492,7 @@ const JobCandidate = ({ job, stages }: Props) => {
                                     <div className="col-span-2 space-y-4">
                                             <ApplicationExperienceMatch
                                                 resume_score_fit={selectedApplications.resume_score_fit}
+                                                resume_score_model={selectedApplications.resume_score_model}
                                                 candidate_id={selectedApplications.candidate.id}
                                                 experience={applicationSummary.experience}
                                                 jobSkills={

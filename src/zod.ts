@@ -449,6 +449,9 @@ export type GeneralSettingsInput = z.infer<typeof generalSettingsSchema>;
 export const KNOWN_INTEGRATION_IDS = [
     "resend-application-confirmation",
     "resume-score",
+    "resume-score-openai",
+    "slack-stage-changed",
+    "slack-candidate-applied",
 ] as const;
 const KNOWN_INTEGRATION_ID_SET: ReadonlySet<string> = new Set(KNOWN_INTEGRATION_IDS);
 
@@ -456,6 +459,9 @@ const KNOWN_INTEGRATION_ID_SET: ReadonlySet<string> = new Set(KNOWN_INTEGRATION_
 const FIRE_INTEGRATION_TARGETS: Record<string, string> = {
     "resend-application-confirmation": "resend",
     "resume-score": "google",
+    "resume-score-openai": "openai-scoring",
+    "slack-stage-changed": "slack-notify",
+    "slack-candidate-applied": "slack-notify",
 };
 
 /** pluginId must be one of the manifest ids in src/plugins/registry.ts. */
@@ -472,16 +478,23 @@ export const pluginIdSchema = z.string().superRefine((id, ctx) => {
 export const PLUGIN_CREDENTIAL_KEYS: Record<string, readonly string[]> = {
     resend: ["apiKey"],
     google: ["apiKey", "orgId"],
+    "openai-scoring": ["apiKey"],
+    "anthropic-screening": ["apiKey"],
     calendly: ["apiKey", "webhookSigningKey"],
+    checkr: ["apiKey"],
+    "slack-notify": ["webhookUrl"],
 };
 
 /** Known config keys per plugin, with per-field typing. */
 const PLUGIN_CONFIG_KEYS: Record<string, readonly string[]> = {
     resend: ["fromAddress", "companyName", "hiringManagerEmail", "recruiterEmail", "offerSigningUrl"],
     google: [],
+    "openai-scoring": [],
     indeed: ["indeedAccountEmail"],
     linkedin: ["pageUrl"],
     calendly: ["userName", "userEmail", "userUri", "webhookSubscriptionUri", "webhookEnabled"],
+    checkr: ["environment", "package"],
+    "slack-notify": ["channel"],
 };
 
 const emailFieldIssue = (
@@ -545,6 +558,21 @@ export const orgPluginSettingsSchema = (pluginId: string) =>
                 emailFieldIssue(ctx, cfg, "recruiterEmail", "Recruiter email");
                 emailFieldIssue(ctx, cfg, "indeedAccountEmail", "Indeed account email");
                 emailFieldIssue(ctx, cfg, "userEmail", "Calendly user email");
+                // Checkr environment is load-bearing (test vs live selects
+                // the Checkr host) — reject anything but the two values.
+                const checkrEnv = cfg["environment"];
+                if (
+                    checkrEnv !== undefined &&
+                    checkrEnv !== "" &&
+                    checkrEnv !== "test" &&
+                    checkrEnv !== "live"
+                ) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        path: ["environment"],
+                        message: `Checkr environment must be "test" or "live"`,
+                    });
+                }
                 const companyName = cfg["companyName"];
                 if (companyName !== undefined && companyName !== "" && typeof companyName !== "string") {
                     ctx.addIssue({

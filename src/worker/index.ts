@@ -229,10 +229,25 @@ const worker = new Worker<QueueJobData>(
         }
 
         // ── 4. Resume score (candidate_applied only) ──────────────────────────
-        // Guarded: when Google/resume-score isn't installed nothing fires,
-        // and the job must NOT crash — automation rules still run below.
+        // Guarded: when no resume scorer is installed nothing fires, and
+        // the job must NOT crash — automation rules still run below.
+        // Two scorers can provide a score — Google ("resume-score") and
+        // OpenAI ("resume-score-openai") — but the applications row holds
+        // ONE score, labelled by resume_score_model. When both fire,
+        // Google wins: it is the pre-existing scorer, so orgs that
+        // already had Google keep their behaviour; the OpenAI result is
+        // used only when Google didn't fire or failed. (A per-org
+        // preferred-scorer setting is the follow-up; until then,
+        // installing both means both APIs are called and only one score
+        // is saved.)
         if (event.type === "candidate_applied") {
-            const [fired_resume_score] = pluginResults.filter((result) => result.integrationId === "resume-score");
+            const fired_scores = pluginResults.filter((result) =>
+                result.integrationId === "resume-score" ||
+                result.integrationId === "resume-score-openai"
+            );
+            const fired_resume_score =
+                fired_scores.find((r) => r.integrationId === "resume-score" && r.result?.success) ??
+                fired_scores.find((r) => r.integrationId === "resume-score-openai" && r.result?.success);
 
             if (fired_resume_score?.result?.success) {
                 const payload = fired_resume_score.result.data as ScorePayload;

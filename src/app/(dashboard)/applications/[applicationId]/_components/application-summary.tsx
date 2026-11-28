@@ -147,9 +147,21 @@ type ApplicationExperienceMatchProps = {
     experience: CandidateExperience[];
     jobSkills: JobExperienceType[];
     resume_score_fit: number | null;
+    // Model that produced the LLM fit score (resume_score_model on the
+    // applications row, e.g. "gpt-4o" or "gemini-2.5-flash") — shown next
+    // to the badge so a GPT-4o score is never confused with a Gemini one.
+    // Omitted when the badge falls back to the locally computed match.
+    resume_score_model?: string | null;
 };
 
-export const ApplicationExperienceMatch = ({ candidate_id, experience, jobSkills, resume_score_fit }: ApplicationExperienceMatchProps) => {
+/** Friendly label for a stored scoring model ("gpt-4o" → "GPT-4o"). */
+const score_model_label = (model: string): string => {
+    if (model === "gpt-4o") return "GPT-4o";
+    if (model === "gemini-2.5-flash") return "Gemini 2.5 Flash";
+    return model;
+};
+
+export const ApplicationExperienceMatch = ({ candidate_id, experience, jobSkills, resume_score_fit, resume_score_model }: ApplicationExperienceMatchProps) => {
     const experienceMatch = getApplicationMatch(candidate_id, jobSkills, experience);
 
     return (
@@ -166,6 +178,14 @@ export const ApplicationExperienceMatch = ({ candidate_id, experience, jobSkills
                     <span className="text-xs font-bold">
                         {resume_score_fit ? `${resume_score_fit}% Match` : `${experienceMatch?.score}% Match`}
                     </span>
+                    {/* Source label — only when the badge shows an LLM
+                        score (resume_score_fit), never on the locally
+                        computed fallback. */}
+                    {resume_score_fit && resume_score_model && resume_score_model !== "unknown" && (
+                        <span className="text-[10px] font-semibold text-muted-foreground">
+                            · {score_model_label(resume_score_model)}
+                        </span>
+                    )}
                 </div>
             </div>
 

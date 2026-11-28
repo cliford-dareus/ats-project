@@ -6,18 +6,18 @@
 import type { PluginManifestEntry } from "@/lib/plugin-interfaces";
 
 export const AVAILABLE_PLUGINS: PluginManifestEntry[] = [
-    // NOTE: "resend", "google", "indeed", "linkedin" and "calendly" have a real provider
-    // (factory + config UI) — see hasProvider. The other five are "Coming
-    // soon": installable-looking but with no provider, they used to offer an
-    // Install button that silently did nothing useful. Do not set
-    // hasProvider here until the provider + config UI actually exist.
+    // NOTE: every plugin in this manifest now has a real provider
+    // (factory + config UI) — see hasProvider. No "Coming soon"
+    // entries remain. Do not set hasProvider here until the provider +
+    // config UI actually exist.
     {
         id: "openai-scoring",
         name: "OpenAI Resume Scoring",
         description: "Uses GPT-4o to score resumes 0–100 on fit, skills, and experience.",
         capabilities: ["llm_scoring", "analytics"],
         providerColor: "#10a37f",
-        icon: "Zap"
+        icon: "Zap",
+        hasProvider: true,
     },
     {
         id: "anthropic-screening",
@@ -25,7 +25,8 @@ export const AVAILABLE_PLUGINS: PluginManifestEntry[] = [
         description: "Uses Claude to generate structured interview questions and stage-aware insights.",
         capabilities: ["llm_scoring", "communication"],
         providerColor: "#c96442",
-        icon: "Zap"
+        icon: "Zap",
+        hasProvider: true,
     },
     {
         id: "calendly",
@@ -42,7 +43,8 @@ export const AVAILABLE_PLUGINS: PluginManifestEntry[] = [
         description: "Automatically initiate background checks when a candidate receives an offer.",
         capabilities: ["background_check", "compliance"],
         providerColor: "#7c3aed",
-        icon: "Zap"
+        icon: "Zap",
+        hasProvider: true,
     },
     {
         id: "slack-notify",
@@ -50,7 +52,8 @@ export const AVAILABLE_PLUGINS: PluginManifestEntry[] = [
         description: "Post to Slack channels when candidates move stages or key events fire.",
         capabilities: ["communication"],
         providerColor: "#4a154b",
-        icon: "Zap"
+        icon: "Zap",
+        hasProvider: true,
     },
     {
         id: "resend",
