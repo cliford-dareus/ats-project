@@ -14,16 +14,15 @@ type FilterProps = {
     setLocationFilter: React.Dispatch<React.SetStateAction<string>>;
     typeFilter: string;
     setTypeFilter: React.Dispatch<React.SetStateAction<string>>;
-    activeTheme: {primaryColor: string};
 };
 
-const Filter = ({ openJobs, searchQuery, setSearchQuery, departmentFilter, setDepartmentFilter, locationFilter, setLocationFilter, typeFilter, setTypeFilter, activeTheme }: FilterProps) => {
+const Filter = ({ openJobs, searchQuery, setSearchQuery, departmentFilter, setDepartmentFilter, locationFilter, setLocationFilter, typeFilter, setTypeFilter }: FilterProps) => {
     const departments = ['All', ...new Set(openJobs.map(j => j.department))];
     const locations = ['All', ...new Set(openJobs.map(j => j.location))];
     const types = ['All', ...new Set(openJobs.map(j => j.type))];
 
     return (
-        <div className="bg-white p-6 rounded-[32px] border border-zinc-200 shadow-sm space-y-4">
+        <div className="sticky top-16 z-30 bg-white/95 backdrop-blur-md p-4 sm:p-5 rounded-2xl border border-zinc-200 shadow-sm space-y-4">
             <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
                 <input
@@ -31,16 +30,14 @@ const Filter = ({ openJobs, searchQuery, setSearchQuery, departmentFilter, setDe
                     placeholder="Search for your next role..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-12 pr-4 py-4 bg-zinc-50 border border-zinc-200 rounded-2xl focus:outline-none focus:border-zinc-400 transition-all"
-                    style={{ '--tw-ring-color': `${activeTheme.primaryColor}33` } as React.CSSProperties}
+                    className="w-full pl-12 pr-4 py-3.5 bg-zinc-50 border border-zinc-200 rounded-xl focus:outline-none focus:border-[var(--primary-color)] transition-all"
                 />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <select
                     value={departmentFilter}
                     onChange={(e) => setDepartmentFilter(e.target.value)}
-                    className="px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-zinc-400 transition-all"
-                    style={{ '--tw-ring-color': `${activeTheme.primaryColor}33` } as React.CSSProperties}
+                    className="px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-[var(--primary-color)] transition-all"
                 >
                     <option value="All">All Departments</option>
                     {departments.filter(d => d !== 'All').map(d => <option key={d} value={String(d)}>{d}</option>)}
@@ -48,8 +45,7 @@ const Filter = ({ openJobs, searchQuery, setSearchQuery, departmentFilter, setDe
                 <select
                     value={locationFilter}
                     onChange={(e) => setLocationFilter(e.target.value)}
-                    className="px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-zinc-400 transition-all"
-                    style={{ '--tw-ring-color': `${activeTheme.primaryColor}33` } as React.CSSProperties}
+                    className="px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-[var(--primary-color)] transition-all"
                 >
                     <option value="All">All Locations</option>
                     {locations.filter(l => l !== 'All').map(l => <option key={l} value={l}>{l}</option>)}
@@ -57,8 +53,7 @@ const Filter = ({ openJobs, searchQuery, setSearchQuery, departmentFilter, setDe
                 <select
                     value={typeFilter}
                     onChange={(e) => setTypeFilter(e.target.value)}
-                    className="px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-zinc-400 transition-all"
-                    style={{ '--tw-ring-color': `${activeTheme.primaryColor}33` } as React.CSSProperties}
+                    className="px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-[var(--primary-color)] transition-all"
                 >
                     <option value="All">All Job Types</option>
                     {types.filter(t => t !== 'All').map(t => <option key={t} value={t!}>{t}</option>)}

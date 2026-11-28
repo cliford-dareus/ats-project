@@ -82,6 +82,7 @@ export type OpenJobResponseType = {
     location: string,
     description: string,
     salary_up_to: string,
+    salary_from: string | null,
     type: typeof JOB_TYPE._type | null,
     subdomain: string,
     organization: string,
