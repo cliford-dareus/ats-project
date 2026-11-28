@@ -156,8 +156,16 @@ export type InterviewType = {
     end_at: Date | null,
     locations: string;
     type: "VIDEO" | "PHONE" | "ONSITE" | null;
-    status: "SCHEDULE" | "COMPLETE" | "AWAITING_FEEDBACK" | "HOLD_PENDING" | null;
+    status: "SCHEDULE" | "COMPLETE" | "AWAITING_FEEDBACK" | "HOLD_PENDING" | "CANCELLED" | null;
     link?: string | null;
+    // Scheduling provider (migration 0015): 'google' is the default for
+    // every pre-Calendly row. Calendly rows carry their own identifiers
+    // below; calendar_event_id is Google-typed and never overloaded.
+    scheduling_provider?: "google" | "calendly" | null;
+    calendly_event_type_uri?: string | null;
+    calendly_event_type_name?: string | null;
+    calendly_event_uri?: string | null;
+    calendly_invitee_uri?: string | null;
     // Smart interview holds (nullable when the interview was scheduled directly)
     hold_status?: "NONE" | "TENTATIVE" | "CONFIRMED" | "DECLINED" | "EXPIRED" | "RELEASED" | null;
     hold_expires_at?: Date | string | null;

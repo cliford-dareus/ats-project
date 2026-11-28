@@ -466,6 +466,18 @@ export const interviews = mysqlTable(
         cancel_reason: varchar('cancel_reason', { length: 255 }),
         calendar_event_id: varchar('calendar_event_id', { length: 255 }),
         calendar_owner_id: varchar('calendar_owner_id', { length: 255 }),
+        // Calendly scheduling (migration 0015): which provider booked this
+        // interview. 'google' is the default for every pre-Calendly row.
+        // calendar_event_id / calendar_owner_id are Google-typed and are
+        // NOT overloaded for Calendly — Calendly identifiers live in
+        // their own columns below.
+        scheduling_provider: mysqlEnum('scheduling_provider', ['google', 'calendly']).notNull().default('google'),
+        calendly_event_type_uri: varchar('calendly_event_type_uri', { length: 255 }),
+        // Display name of the event type, stored at booking time so the
+        // card can show it without a live Calendly API call.
+        calendly_event_type_name: varchar('calendly_event_type_name', { length: 255 }),
+        calendly_event_uri: varchar('calendly_event_uri', { length: 255 }),
+        calendly_invitee_uri: varchar('calendly_invitee_uri', { length: 255 }),
         interviewer_ids: json('interviewer_ids').$type<string[]>().default([]),
         created_at: timestamp('created_at').defaultNow().notNull(),
         updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),

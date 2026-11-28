@@ -26,6 +26,7 @@ const GENERIC_MASK = "••••••••";
 const KEY_HINTS: Record<string, { url: string; note: string }> = {
     google: { url: "aistudio.google.com", note: "create a Gemini API key in Google AI Studio" },
     resend: { url: "resend.com", note: "'Sending access' permission is enough" },
+    calendly: { url: "calendly.com", note: "Profile → Developer → Personal access tokens — select the scopes listed below" },
 };
 
 type Props = {
@@ -109,7 +110,7 @@ const ApiKeySection = ({ apiKey, maskedKey, onApiKeyChange, auth, onConnect, onD
                             type={show ? "text" : "password"}
                             value={showingStoredKey ? (maskedKey ?? GENERIC_MASK) : localKey}
                             onChange={(v) => setLocalKey(v.target.value)}
-                            placeholder={pluginId === "google" ? "AIza••••••••••••••••••••••••••" : "re_live_••••••••••••••••••"}
+                            placeholder={pluginId === "google" ? "AIza••••••••••••••••••••••••••" : pluginId === "calendly" ? "eyJraWQ••••••••••••••••••••••••••" : "re_live_••••••••••••••••••"}
                             disabled={showingStoredKey}
                         />
                         {!showingStoredKey && (

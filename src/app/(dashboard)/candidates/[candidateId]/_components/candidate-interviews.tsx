@@ -156,6 +156,12 @@ const CandidateInterviews = ({ data, scheduleOptions = [], interviewerNames = {}
 
                         <div className="space-y-2">
                             <p className="text-sm font-bold text-foreground">Format: {item.type} Meeting</p>
+                            {item.scheduling_provider === "calendly" && (
+                                <p className="text-sm text-muted-foreground">
+                                    Booked via Calendly
+                                    {item.calendly_event_type_name ? ` · ${item.calendly_event_type_name}` : ""}
+                                </p>
+                            )}
                             {(interviewerNames[item.id] ?? []).length > 0 && (
                                 <p className="text-sm text-muted-foreground">
                                     Interviewer: {interviewerNames[item.id].join(", ")}
@@ -169,8 +175,15 @@ const CandidateInterviews = ({ data, scheduleOptions = [], interviewerNames = {}
                                     className="inline-flex items-center gap-2 px-4 py-2 bg-foreground text-background rounded-xl text-xs font-bold hover:bg-foreground/90 transition-all mt-2"
                                 >
                                     <Video className="w-4 h-4 text-emerald-400" />
-                                    Join Google Meet / Video Link
+                                    {item.scheduling_provider === "calendly"
+                                        ? "Join via Calendly"
+                                        : "Join Google Meet / Video Link"}
                                 </a>
+                            )}
+                            {!item.link && item.scheduling_provider === "calendly" && item.status !== "CANCELLED" && (
+                                <p className="text-sm text-muted-foreground">
+                                    No join link was returned — the candidate has the booking details by email.
+                                </p>
                             )}
                         </div>
                     </div>

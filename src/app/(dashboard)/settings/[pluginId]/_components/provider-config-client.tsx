@@ -5,6 +5,7 @@ import ResendConfig from './resend-config';
 import GoogleConfig from './google-config';
 import IndeedConfig from './indeed-config';
 import LinkedInConfig from './linkedin-config';
+import CalendlyConfig from './calendly-config';
 import { InstalledPlugin, OrgPluginSettings } from '@/types';
 import { update_organization_plugins_action } from "@/server/actions/organization_actions";
 
@@ -99,7 +100,15 @@ export default function PluginConfigClient({
                 />
             )}
 
-            {plugin.id !== 'resend' && plugin.id !== 'google' && plugin.id !== 'indeed' && plugin.id !== 'linkedin' && (
+            {plugin.id === 'calendly' && (
+                <CalendlyConfig
+                    pluginId={plugin.id}
+                    settings={settings}
+                    onSave={handleSave}
+                />
+            )}
+
+            {plugin.id !== 'resend' && plugin.id !== 'google' && plugin.id !== 'indeed' && plugin.id !== 'linkedin' && plugin.id !== 'calendly' && (
                 <div className="rounded-md border p-6">
                     <h2 className="text-lg font-semibold">{plugin.name} is coming soon</h2>
                     <p className="text-sm text-muted-foreground mt-1">

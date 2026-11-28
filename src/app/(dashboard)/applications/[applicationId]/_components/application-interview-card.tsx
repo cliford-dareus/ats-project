@@ -109,8 +109,15 @@ function format_date_time(value: Date | string | null | undefined): string {
 
 /** B22-8: the real interview type/location — the old line hardcoded the
  * word `onsite` even for video interviews, and picked the icon from the
- * job's location instead of the interview. */
+ * job's location instead of the interview. Calendly interviews name their
+ * provider (and event type when known) instead of pretending to be a
+ * Google Meet link. */
 function interview_type_label(interview: InterviewType): string {
+    if (interview.scheduling_provider === "calendly") {
+        return interview.calendly_event_type_name
+            ? `Calendly · ${interview.calendly_event_type_name}`
+            : "Calendly";
+    }
     switch (interview.type) {
         case "VIDEO":
             return interview.link ? "Video via link" : "Video";
@@ -302,8 +309,19 @@ const ApplicationInterviewCard = ({ applicationResult }: Props) => {
                                     className="w-full py-2.5 bg-brand-50 text-brand-700 rounded-xl text-xs font-bold hover:bg-brand-100 transition-all flex items-center justify-center gap-2 border border-brand-100"
                                 >
                                     <Video className="w-4 h-4" />
-                                    Join Interview
+                                    {applicationResult.interview.scheduling_provider === "calendly"
+                                        ? "Join via Calendly"
+                                        : "Join Interview"}
                                 </a>
+                            )}
+
+                        {!applicationResult.interview.link &&
+                            applicationResult.interview.scheduling_provider === "calendly" &&
+                            applicationResult.interview.status !== "CANCELLED" && (
+                                <p className="w-full py-2.5 bg-zinc-50 text-zinc-500 rounded-xl text-xs text-center border border-zinc-100">
+                                    Booked via Calendly — no join link was returned. The candidate has
+                                    the booking details by email.
+                                </p>
                             )}
 
                         {isLive && (canSchedule || canCancel) && (

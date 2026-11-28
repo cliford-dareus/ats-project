@@ -48,6 +48,12 @@ import {
     check_interview_availability_action,
     InterviewAvailabilityConflict,
 } from "@/server/actions/interview-availability-actions";
+import {
+    check_calendly_availability_action,
+    create_calendly_interview_action,
+    list_calendly_event_types_action,
+    type CalendlyEventTypeDTO,
+} from "@/server/actions/calendly-actions";
 import { newInterviewSchema } from "@/zod";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -114,6 +120,38 @@ const ScheduleInterviewModal = ({
     const [scheduleAnyway, setScheduleAnyway] = useState(false);
     const availabilityRequestId = useRef(0);
 
+    // Calendly — offered only when the org has Calendly connected. The
+    // booking lives in Calendly (no Google event, no hold); availability
+    // comes from Calendly's offered times, and there is no "schedule
+    // anyway" on this path — the API would fail.
+    const [provider, setProvider] = useState<"google" | "calendly">("google");
+    const [calendlyEventTypes, setCalendlyEventTypes] = useState<
+        CalendlyEventTypeDTO[]
+    >([]);
+    const [calendlyConnected, setCalendlyConnected] = useState(false);
+    const [calendlyLoadError, setCalendlyLoadError] = useState<string | null>(
+        null
+    );
+    const [selectedEventTypeUri, setSelectedEventTypeUri] = useState("");
+    const [calendlyAvailability, setCalendlyAvailability] = useState<
+        | { status: "idle" }
+        | { status: "checking" }
+        | { status: "free" }
+        | { status: "unavailable"; message: string }
+        | { status: "error"; error: string }
+    >({ status: "idle" });
+    // When a Calendly booking fails (e.g. the Free-plan 5/day cap), the
+    // modal offers the event type's real public booking link instead —
+    // no fake interview row is ever created for it.
+    const [fallbackBookingUrl, setFallbackBookingUrl] = useState<string | null>(
+        null
+    );
+    const [fallbackCopied, setFallbackCopied] = useState(false);
+
+    const selectedEventType = calendlyEventTypes.find(
+        (et) => et.uri === selectedEventTypeUri
+    );
+
     const selectedInterviewers = (members ?? []).filter((member) =>
         selectedInterviewerIds.includes(member.id)
     );
@@ -137,6 +175,11 @@ const ScheduleInterviewModal = ({
         setSelectedInterviewerIds([]);
         setAvailability({ status: "idle" });
         setScheduleAnyway(false);
+        setProvider("google");
+        setSelectedEventTypeUri("");
+        setCalendlyAvailability({ status: "idle" });
+        setFallbackBookingUrl(null);
+        setFallbackCopied(false);
     };
 
     useEffect(() => {
@@ -159,6 +202,32 @@ const ScheduleInterviewModal = ({
             })
             .finally(() => {
                 if (!cancelled) setMembersLoading(false);
+            });
+        // Calendly event types (live) — a load failure degrades to
+        // Google-only scheduling; the modal never claims Calendly is
+        // available when it couldn't be verified.
+        list_calendly_event_types_action()
+            .then((result) => {
+                if (cancelled) return;
+                if (result.success) {
+                    setCalendlyConnected(true);
+                    setCalendlyEventTypes(result.eventTypes);
+                    setCalendlyLoadError(null);
+                } else if (result.connected === false) {
+                    setCalendlyConnected(false);
+                    setCalendlyEventTypes([]);
+                } else {
+                    setCalendlyLoadError(result.message);
+                }
+            })
+            .catch((err) => {
+                if (!cancelled) {
+                    setCalendlyLoadError(
+                        err instanceof Error
+                            ? err.message
+                            : "Couldn't load Calendly event types"
+                    );
+                }
             });
         return () => {
             cancelled = true;
@@ -186,6 +255,11 @@ const ScheduleInterviewModal = ({
     // Never claims a check happened when it didn't: missing/invalid inputs
     // leave the status idle, and a failed check surfaces as "error".
     useEffect(() => {
+        if (provider === "calendly") {
+            // Calendly availability is checked by the effect below, not Google.
+            setAvailability({ status: "idle" });
+            return;
+        }
         if (!isOpen || holdLink) {
             setAvailability({ status: "idle" });
             return;
@@ -241,7 +315,60 @@ const ScheduleInterviewModal = ({
             }
         }, 600);
         return () => clearTimeout(timer);
-    }, [isOpen, holdLink, watchedDate, watchedTime, watchedDuration]);
+    }, [isOpen, holdLink, watchedDate, watchedTime, watchedDuration, provider]);
+
+    // Calendly — debounced offered-slot check as date/time/event type
+    // change. A slot Calendly doesn't offer BLOCKS booking (no "schedule
+    // anyway" — the API call would fail).
+    useEffect(() => {
+        if (provider !== "calendly" || !isOpen || holdLink) {
+            setCalendlyAvailability({ status: "idle" });
+            return;
+        }
+        if (!selectedEventTypeUri || !watchedDate || !watchedTime) {
+            setCalendlyAvailability({ status: "idle" });
+            return;
+        }
+        const start = new Date(`${watchedDate}T${watchedTime}:00Z`);
+        const end = new Date(
+            start.getTime() + parseInt(watchedDuration || "30", 10) * 60000
+        );
+        if (
+            Number.isNaN(start.getTime()) ||
+            Number.isNaN(end.getTime()) ||
+            end <= start
+        ) {
+            setCalendlyAvailability({ status: "idle" });
+            return;
+        }
+        setCalendlyAvailability({ status: "checking" });
+        const timer = setTimeout(async () => {
+            try {
+                const result = await check_calendly_availability_action({
+                    eventTypeUri: selectedEventTypeUri,
+                    start_at: start,
+                    end_at: end,
+                });
+                if (result.available) {
+                    setCalendlyAvailability({ status: "free" });
+                } else {
+                    setCalendlyAvailability({
+                        status: "unavailable",
+                        message: result.message,
+                    });
+                }
+            } catch (err) {
+                setCalendlyAvailability({
+                    status: "error",
+                    error:
+                        err instanceof Error
+                            ? err.message
+                            : "Availability check failed",
+                });
+            }
+        }, 600);
+        return () => clearTimeout(timer);
+    }, [isOpen, holdLink, provider, selectedEventTypeUri, watchedDate, watchedTime, watchedDuration]);
 
     const handleSchedule = async (
         data: z.infer<typeof interviewScheduleSchema>
@@ -267,10 +394,56 @@ const ScheduleInterviewModal = ({
                     ? application.candidate.email
                     : application.candidate_email;
 
-            // D8 — fresh pre-flight availability check. A failed or
-            // unconnected check never blocks submit: the hold/direct calls
-            // below fail honestly themselves when the calendar is needed.
-            // Only a confirmed conflict blocks, unless overridden.
+            // D4 — only pass interviewers when any are selected; the
+            // scheduler themself is never auto-added (they own the event).
+            const interviewerFields =
+                selectedInterviewerIds.length > 0
+                    ? {
+                          interviewer_ids: selectedInterviewerIds,
+                          interviewer_emails: selectedInterviewerEmails,
+                      }
+                    : {};
+
+            // Calendly path — server-side booking (the PAT never leaves
+            // the server). No hold, no Google event: the recruiter picks a
+            // real event type and the API books the candidate into it.
+            if (provider === "calendly") {
+                if (!selectedEventType) {
+                    setError("Pick a Calendly event type first.");
+                    return;
+                }
+                try {
+                    await create_calendly_interview_action({
+                        applicationId: application.id,
+                        job_id: application.job_id,
+                        job_name: jobDetails.jobName,
+                        candidate_name: candidateName,
+                        candidate_email: candidateEmail,
+                        start_at: startDateTime,
+                        end_at: endDateTime,
+                        type: data.type,
+                        location: data.type === "ONSITE" ? "Office" : data.type,
+                        interviewer_ids: selectedInterviewerIds,
+                        eventTypeUri: selectedEventType.uri,
+                        eventTypeName: selectedEventType.name,
+                        eventTypeSchedulingUrl: selectedEventType.schedulingUrl,
+                    });
+                    setIsOpen(false);
+                } catch (calErr) {
+                    // The real Calendly error is surfaced, nothing was
+                    // created — and the event type's public booking link
+                    // is offered as the fallback the recruiter can send.
+                    setError((calErr as Error).message);
+                    setFallbackBookingUrl(selectedEventType.schedulingUrl);
+                }
+                return;
+            }
+
+            // D8 — fresh pre-flight availability check (Google path only).
+            // A failed or unconnected check never blocks submit: the
+            // hold/direct calls below fail honestly themselves when the
+            // calendar is needed. Only a confirmed conflict blocks, unless
+            // overridden.
             try {
                 const check = await check_interview_availability_action({
                     start_at: startDateTime,
@@ -303,16 +476,6 @@ const ScheduleInterviewModal = ({
                             : "Availability check failed",
                 });
             }
-
-            // D4 — only pass interviewers when any are selected; the
-            // scheduler themself is never auto-added (they own the event).
-            const interviewerFields =
-                selectedInterviewerIds.length > 0
-                    ? {
-                          interviewer_ids: selectedInterviewerIds,
-                          interviewer_emails: selectedInterviewerEmails,
-                      }
-                    : {};
 
             if (data.use_hold) {
                 const res = await create_interview_hold_action({
@@ -462,7 +625,9 @@ const ScheduleInterviewModal = ({
                                         Smart hold (recommended)
                                     </Label>
                                     <p className="text-[11px] text-zinc-500">
-                                        Tentative calendar block until candidate confirms
+                                        {provider === "calendly"
+                                            ? "Holds use Google Calendar — Calendly bookings go straight to the candidate's chosen slot"
+                                            : "Tentative calendar block until candidate confirms"}
                                     </p>
                                 </div>
                                 <FormField
@@ -471,12 +636,81 @@ const ScheduleInterviewModal = ({
                                     render={({ field }) => (
                                         <Switch
                                             id="use_hold"
-                                            checked={field.value}
+                                            checked={provider === "calendly" ? false : field.value}
+                                            disabled={provider === "calendly"}
                                             onCheckedChange={field.onChange}
                                         />
                                     )}
                                 />
                             </div>
+
+                            {(calendlyConnected || calendlyLoadError) && (
+                                <div className="space-y-2">
+                                    <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5 ml-1">
+                                        Book with
+                                    </label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setProvider("google")}
+                                            className={`rounded-xl border px-3 py-2.5 text-sm font-semibold text-left ${provider === "google" ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-200 bg-zinc-50 text-zinc-700"}`}
+                                        >
+                                            Google Calendar
+                                            <span className="block text-[11px] font-normal opacity-70">
+                                                Meet link + optional hold
+                                            </span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setProvider("calendly");
+                                                form.setValue("use_hold", false);
+                                            }}
+                                            className={`rounded-xl border px-3 py-2.5 text-sm font-semibold text-left ${provider === "calendly" ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-200 bg-zinc-50 text-zinc-700"}`}
+                                        >
+                                            Calendly
+                                            <span className="block text-[11px] font-normal opacity-70">
+                                                Books straight into Calendly
+                                            </span>
+                                        </button>
+                                    </div>
+                                    {calendlyLoadError && (
+                                        <p className="text-[11px] text-amber-600">
+                                            Couldn&apos;t load Calendly event types ({calendlyLoadError}) — Google scheduling still works.
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
+                            {provider === "calendly" && (
+                                <div>
+                                    <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5 ml-1">
+                                        Calendly event type
+                                    </label>
+                                    <Select
+                                        value={selectedEventTypeUri}
+                                        onValueChange={setSelectedEventTypeUri}
+                                    >
+                                        <SelectTrigger className="rounded-xl bg-zinc-50">
+                                            {selectedEventType
+                                                ? `${selectedEventType.name} · ${selectedEventType.duration} min`
+                                                : "Pick an event type"}
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {calendlyEventTypes.map((et) => (
+                                                <SelectItem key={et.uri} value={et.uri}>
+                                                    {et.name} · {et.duration} min
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="mt-1 ml-1 text-[11px] text-zinc-500">
+                                        The booking is made under the connected Calendly account — selected
+                                        interviewers are recorded on the interview and emailed, but they
+                                        don&apos;t get their own Calendly event.
+                                    </p>
+                                </div>
+                            )}
 
                             <div className="space-y-4">
                                 <div>
@@ -670,25 +904,25 @@ const ScheduleInterviewModal = ({
                                 )}
                                 <p className="mt-1 ml-1 text-[11px] text-zinc-500 flex items-start gap-1">
                                     <Users className="w-3.5 h-3.5 shrink-0 mt-px" />
-                                    Selected interviewers are added as calendar
-                                    attendees. You already own the event, so you
-                                    don&apos;t need to add yourself.
+                                    {provider === "calendly"
+                                        ? "Selected interviewers are recorded on the interview and emailed. The booking itself is under the connected Calendly account."
+                                        : "Selected interviewers are added as calendar attendees. You already own the event, so you don't need to add yourself."}
                                 </p>
                             </div>
 
-                            {availability.status === "checking" && (
+                            {provider === "google" && availability.status === "checking" && (
                                 <p className="text-xs text-zinc-500 flex items-center gap-2">
                                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                     Checking your calendar…
                                 </p>
                             )}
-                            {availability.status === "free" && (
+                            {provider === "google" && availability.status === "free" && (
                                 <p className="text-xs text-emerald-600 flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 shrink-0" />
                                     No conflicts on your calendar
                                 </p>
                             )}
-                            {availability.status === "conflicts" && (
+                            {provider === "google" && availability.status === "conflicts" && (
                                 <div className="p-3 bg-red-50 border border-red-100 rounded-xl space-y-2">
                                     <p className="flex items-start gap-2 text-red-600 text-xs font-semibold">
                                         <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -728,14 +962,14 @@ const ScheduleInterviewModal = ({
                                     </label>
                                 </div>
                             )}
-                            {availability.status === "not-connected" && (
+                            {provider === "google" && availability.status === "not-connected" && (
                                 <p className="p-3 bg-amber-50 border border-amber-100 rounded-xl text-amber-700 text-xs leading-relaxed">
                                     Google Calendar isn&apos;t connected, so
                                     availability couldn&apos;t be checked —
                                     connect it in Settings.
                                 </p>
                             )}
-                            {availability.status === "error" && (
+                            {provider === "google" && availability.status === "error" && (
                                 <p className="p-3 bg-amber-50 border border-amber-100 rounded-xl text-amber-700 text-xs leading-relaxed">
                                     Couldn&apos;t check availability (
                                     {availability.error}). You can still schedule
@@ -744,10 +978,59 @@ const ScheduleInterviewModal = ({
                                 </p>
                             )}
 
+                            {provider === "calendly" && calendlyAvailability.status === "checking" && (
+                                <p className="text-xs text-zinc-500 flex items-center gap-2">
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    Checking Calendly availability…
+                                </p>
+                            )}
+                            {provider === "calendly" && calendlyAvailability.status === "free" && (
+                                <p className="text-xs text-emerald-600 flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4 shrink-0" />
+                                    That time is offered on Calendly
+                                </p>
+                            )}
+                            {provider === "calendly" && calendlyAvailability.status === "unavailable" && (
+                                <p className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-xs leading-relaxed">
+                                    {calendlyAvailability.message}
+                                </p>
+                            )}
+                            {provider === "calendly" && calendlyAvailability.status === "error" && (
+                                <p className="p-3 bg-amber-50 border border-amber-100 rounded-xl text-amber-700 text-xs leading-relaxed">
+                                    Couldn&apos;t check Calendly availability (
+                                    {calendlyAvailability.error}). You can still try to book — the
+                                    booking will fail honestly if the slot isn&apos;t offered.
+                                </p>
+                            )}
+
                             {error && (
                                 <div className="p-3 bg-red-50 border border-red-100 rounded-xl flex items-start gap-2 text-red-600 text-xs">
                                     <AlertCircle className="w-4 h-4 flex-shrink-0" />
                                     <p>{error}</p>
+                                </div>
+                            )}
+
+                            {provider === "calendly" && fallbackBookingUrl && (
+                                <div className="p-3 bg-amber-50 border border-amber-100 rounded-xl space-y-2">
+                                    <p className="text-xs text-amber-700 leading-relaxed">
+                                        No interview was created. Send the candidate the booking link
+                                        instead — they can pick a time themselves:
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <Input readOnly value={fallbackBookingUrl} className="text-xs rounded-xl" />
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={async () => {
+                                                await navigator.clipboard.writeText(fallbackBookingUrl);
+                                                setFallbackCopied(true);
+                                            }}
+                                            className="rounded-xl shrink-0"
+                                        >
+                                            <Copy className="size-4" />
+                                            {fallbackCopied ? "Copied" : "Copy"}
+                                        </Button>
+                                    </div>
                                 </div>
                             )}
 
@@ -763,15 +1046,28 @@ const ScheduleInterviewModal = ({
                                     type="submit"
                                     disabled={
                                         isScheduling ||
-                                        (availability.status === "conflicts" &&
-                                            !scheduleAnyway)
+                                        (provider === "google" &&
+                                            availability.status === "conflicts" &&
+                                            !scheduleAnyway) ||
+                                        (provider === "calendly" &&
+                                            (!selectedEventTypeUri ||
+                                                calendlyAvailability.status === "unavailable"))
                                     }
                                     className="flex-1 py-3 bg-black text-white rounded-xl font-bold hover:bg-zinc-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                                 >
                                     {isScheduling ? (
                                         <>
                                             <Loader2 className="w-4 h-4 animate-spin" />
-                                            {useHold ? "Holding…" : "Scheduling…"}
+                                            {provider === "calendly"
+                                                ? "Booking…"
+                                                : useHold
+                                                  ? "Holding…"
+                                                  : "Scheduling…"}
+                                        </>
+                                    ) : provider === "calendly" ? (
+                                        <>
+                                            <Send className="w-4 h-4" />
+                                            Book via Calendly
                                         </>
                                     ) : useHold ? (
                                         <>

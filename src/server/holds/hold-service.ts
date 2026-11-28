@@ -84,6 +84,12 @@ export async function send_hold_email(input: HoldEmailInput) {
  * Safe to run concurrently: only rows this call transitioned are released.
  * Each transitioned hold's owner is notified exactly once (the expiry
  * query only returns rows this call moved out of TENTATIVE).
+ *
+ * Calendly interviews never reach this function: get_stale_holds_db
+ * only returns TENTATIVE holds AND explicitly excludes
+ * scheduling_provider='calendly' — Calendly bookings have no tentative
+ * Google event to release, and their hold_status is never TENTATIVE.
+ * The worker sweep reads the same guarded query.
  */
 export async function expire_and_release_stale_holds() {
     const expired = await expire_stale_holds_db();

@@ -22,7 +22,7 @@ async function getFactory(pluginId: string) {
         case "anthropic-screening":
         // return (await import("@/plugins/providers/anthropic-screening")).createAnthropicScreeningProvider;
         case "calendly":
-        // return (await import("@/plugins/providers/others")).createCalendlyProvider;
+            return (await import("@/plugins/providers/calendly")).createCalendlyProvider;
         case "checkr":
         // return (await import("@/plugins/providers/others")).createCheckrProvider;
         case "slack-notify":

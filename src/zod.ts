@@ -260,6 +260,14 @@ export const newInterviewSchema = z.object({
     // calendar event unmovable). Hold rows carry these via the hold path.
     calendar_event_id: z.string().optional(),
     calendar_owner_id: z.string().optional(),
+    // Calendly bookings (migration 0015): the provider that booked this
+    // interview plus Calendly's own identifiers. calendar_event_id /
+    // calendar_owner_id stay Google-typed and are never overloaded.
+    scheduling_provider: z.enum(["google", "calendly"]).optional(),
+    calendly_event_type_uri: z.string().optional(),
+    calendly_event_type_name: z.string().optional(),
+    calendly_event_uri: z.string().optional(),
+    calendly_invitee_uri: z.string().optional(),
 });
 
 // FILTER SCHEMA
@@ -464,6 +472,7 @@ export const pluginIdSchema = z.string().superRefine((id, ctx) => {
 export const PLUGIN_CREDENTIAL_KEYS: Record<string, readonly string[]> = {
     resend: ["apiKey"],
     google: ["apiKey", "orgId"],
+    calendly: ["apiKey", "webhookSigningKey"],
 };
 
 /** Known config keys per plugin, with per-field typing. */
@@ -472,6 +481,7 @@ const PLUGIN_CONFIG_KEYS: Record<string, readonly string[]> = {
     google: [],
     indeed: ["indeedAccountEmail"],
     linkedin: ["pageUrl"],
+    calendly: ["userName", "userEmail", "userUri", "webhookSubscriptionUri", "webhookEnabled"],
 };
 
 const emailFieldIssue = (
@@ -534,6 +544,7 @@ export const orgPluginSettingsSchema = (pluginId: string) =>
                 emailFieldIssue(ctx, cfg, "hiringManagerEmail", "Hiring manager email");
                 emailFieldIssue(ctx, cfg, "recruiterEmail", "Recruiter email");
                 emailFieldIssue(ctx, cfg, "indeedAccountEmail", "Indeed account email");
+                emailFieldIssue(ctx, cfg, "userEmail", "Calendly user email");
                 const companyName = cfg["companyName"];
                 if (companyName !== undefined && companyName !== "" && typeof companyName !== "string") {
                     ctx.addIssue({

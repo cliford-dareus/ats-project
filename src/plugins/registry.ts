@@ -6,7 +6,7 @@
 import type { PluginManifestEntry } from "@/lib/plugin-interfaces";
 
 export const AVAILABLE_PLUGINS: PluginManifestEntry[] = [
-    // NOTE: "resend", "google", "indeed" and "linkedin" have a real provider
+    // NOTE: "resend", "google", "indeed", "linkedin" and "calendly" have a real provider
     // (factory + config UI) — see hasProvider. The other five are "Coming
     // soon": installable-looking but with no provider, they used to offer an
     // Install button that silently did nothing useful. Do not set
@@ -30,10 +30,11 @@ export const AVAILABLE_PLUGINS: PluginManifestEntry[] = [
     {
         id: "calendly",
         name: "Calendly",
-        description: "Auto-send scheduling links when a candidate enters phone screen or interview stages.",
+        description: "Book interviews through Calendly: pick one of your real event types in the schedule modal and Applico books the candidate into that slot via the Calendly API. No Google Calendar event is created on this path, and holds are not available — bookings go straight to the candidate's slot.",
         capabilities: ["calendar_integration"],
         providerColor: "#006bff",
-        icon: "Zap"
+        icon: "Zap",
+        hasProvider: true,
     },
     {
         id: "checkr",

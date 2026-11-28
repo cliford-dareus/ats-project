@@ -5,6 +5,7 @@ import {AutomationRule, OrgPluginState} from "@/types";
 import {db_get_job_automation_rules, db_get_org_plugin_state_for_client, db_get_organization_plugins_raw, saveJobAutomationRule as db_save_job_automation_rule, deleteJobAutomationRule as db_delete_job_automation_rule} from "@/server/queries/drizzle/plugin-queries";
 import {automationRuleSchema} from "@/zod";
 import {decrypt_plugin_secret} from "@/lib/plugin-encryption";
+import { getCalendlyCurrentUser } from "@/server/calendly";
 import {Resend} from "resend";
 import {assertJobBelongsToOrg, AuthzError, getAuthOrThrow, hasPermission, requirePermission} from "@/server/permissions";
 
@@ -161,6 +162,49 @@ export async function verifyGoogle(apiKey: string): Promise<{ success: boolean; 
         return {
             success: false,
             message: (err as Error).message || "Failed to verify API key",
+        };
+    }
+}
+
+/**
+ * Validate a Calendly Personal Access Token with a lightweight call —
+ * GET /users/me returns 200 for a valid token (with scopes), 401 for an
+ * invalid one. Called from the client-side Calendly provider auth flow
+ * (mirrors verifyGoogle above). The key is sent only to Calendly, over
+ * HTTPS, in the Authorization header — never logged, never stored here
+ * (saving is a separate, encrypting step). Returns the connected user's
+ * name/email/URI on success so the config UI can display them.
+ */
+export async function verifyCalendly(apiKey: string): Promise<{
+    success: boolean;
+    message: string;
+    user?: { name: string; email: string; uri: string };
+}> {
+    // Plugin credential setup is plugin management (admin-only).
+    const allowed = await hasPermission("plugin:manage");
+    if (!allowed) {
+        return { success: false, message: "Missing permission: plugin:manage" };
+    }
+
+    const key = apiKey?.trim();
+    if (!key) {
+        return { success: false, message: "Personal access token is required" };
+    }
+
+    try {
+        const user = await getCalendlyCurrentUser(key);
+        return {
+            success: true,
+            message: "Token is valid",
+            user: { name: user.name, email: user.email, uri: user.uri },
+        };
+    } catch (err) {
+        console.error("Calendly token verification error:", err);
+        return {
+            success: false,
+            message:
+                (err as Error).message ||
+                "Failed to verify Calendly token",
         };
     }
 }

@@ -1,6 +1,6 @@
 import { randomBytes } from "crypto";
 import { z } from "zod";
-import { and, eq, gt, inArray, isNull, lte, lt } from "drizzle-orm";
+import { and, eq, gt, inArray, isNull, lte, lt, ne } from "drizzle-orm";
 import { newInterviewSchema } from "@/zod";
 import { db } from "@/drizzle/db";
 import { applications, candidates, interviews, job_listings } from "@/drizzle/schema";
@@ -41,6 +41,11 @@ export const create_interview_db = async (data: z.infer<typeof newInterviewSchem
         interviewer_ids: data.interviewer_ids ?? [],
         calendar_event_id: data.calendar_event_id,
         calendar_owner_id: data.calendar_owner_id,
+        scheduling_provider: data.scheduling_provider ?? "google",
+        calendly_event_type_uri: data.calendly_event_type_uri,
+        calendly_event_type_name: data.calendly_event_type_name,
+        calendly_event_uri: data.calendly_event_uri,
+        calendly_invitee_uri: data.calendly_invitee_uri,
     }).$returningId();
 
     revalidateDbCache({
@@ -190,6 +195,11 @@ const interview_detail_select = {
     hold_expires_at: interviews.hold_expires_at,
     calendar_event_id: interviews.calendar_event_id,
     calendar_owner_id: interviews.calendar_owner_id,
+    scheduling_provider: interviews.scheduling_provider,
+    calendly_event_type_uri: interviews.calendly_event_type_uri,
+    calendly_event_type_name: interviews.calendly_event_type_name,
+    calendly_event_uri: interviews.calendly_event_uri,
+    calendly_invitee_uri: interviews.calendly_invitee_uri,
     interviewer_ids: interviews.interviewer_ids,
     reminder_sent_at: interviews.reminder_sent_at,
     cancel_reason: interviews.cancel_reason,
@@ -262,6 +272,10 @@ export type RescheduleInterviewInput = {
     location?: string;
     calendar_event_id?: string | null;
     link?: string | null;
+    calendly_event_uri?: string | null;
+    calendly_invitee_uri?: string | null;
+    calendly_event_type_uri?: string | null;
+    calendly_event_type_name?: string | null;
 };
 
 /**
@@ -286,6 +300,18 @@ export const update_interview_schedule_db = async (
                 ? { calendar_event_id: updates.calendar_event_id }
                 : {}),
             ...(updates.link !== undefined ? { link: updates.link } : {}),
+            ...(updates.calendly_event_uri !== undefined
+                ? { calendly_event_uri: updates.calendly_event_uri }
+                : {}),
+            ...(updates.calendly_invitee_uri !== undefined
+                ? { calendly_invitee_uri: updates.calendly_invitee_uri }
+                : {}),
+            ...(updates.calendly_event_type_uri !== undefined
+                ? { calendly_event_type_uri: updates.calendly_event_type_uri }
+                : {}),
+            ...(updates.calendly_event_type_name !== undefined
+                ? { calendly_event_type_name: updates.calendly_event_type_name }
+                : {}),
             reminder_sent_at: null,
         })
         .where(
@@ -421,7 +447,11 @@ export const mark_hold_released_db = async (
     revalidateDbCache({ tag: CACHE_TAGS.applications, orgId });
 };
 
-/** Tentative holds past their expiry. Worker-safe: plain select, no cache calls. */
+/** Tentative holds past their expiry. Worker-safe: plain select, no cache calls.
+ * Calendly interviews are excluded explicitly: they never have a tentative
+ * hold (no Google event exists to release), even though the TENTATIVE
+ * filter below would already skip them — belt and braces, so a future
+ * hold_status change can't sweep a Calendly row into the Google release path. */
 export const get_stale_holds_db = async () => {
     const now = new Date();
     return db
@@ -447,11 +477,50 @@ export const get_stale_holds_db = async () => {
         .where(
             and(
                 eq(interviews.hold_status, "TENTATIVE"),
+                ne(interviews.scheduling_provider, "calendly"),
                 lt(interviews.hold_expires_at, now),
                 isNull(applications.deleted_at)
             )
         )
         .limit(100);
+};
+
+/**
+ * Find a live Calendly interview by its Calendly scheduled-event URI —
+ * the webhook route's lookup. The org comes from the ROW, never from the
+ * request: the route trusts no client-supplied orgId.
+ */
+export const get_interview_by_calendly_event_uri = async (
+    eventUri: string
+) => {
+    const rows = await db
+        .select({
+            interview_id: interviews.id,
+            applications_id: interviews.applications_id,
+            organization: interviews.organization,
+            status: interviews.status,
+            hold_status: interviews.hold_status,
+            calendly_event_uri: interviews.calendly_event_uri,
+            candidate_name: candidates.name,
+            candidate_email: candidates.email,
+            job_name: job_listings.name,
+        })
+        .from(interviews)
+        .leftJoin(
+            applications,
+            eq(applications.id, interviews.applications_id)
+        )
+        .leftJoin(candidates, eq(candidates.id, applications.candidate))
+        .leftJoin(job_listings, eq(job_listings.id, applications.job_id))
+        .where(
+            and(
+                eq(interviews.calendly_event_uri, eventUri),
+                eq(interviews.scheduling_provider, "calendly"),
+                isNull(applications.deleted_at)
+            )
+        )
+        .limit(1);
+    return rows[0] ?? null;
 };
 
 /**

@@ -31,6 +31,14 @@ import {
     updateCalendarEvent,
 } from "../google-calenda";
 import { check_calendar_conflicts } from "../calendar-availability";
+import {
+    CalendlyApiError,
+    cancelCalendlyScheduledEvent,
+    createCalendlyInvitee,
+    getCalendlyEventTypeAvailableTimes,
+    getCalendlyPatForOrg,
+    getCalendlyScheduledEvent,
+} from "../calendly";
 import { format_interview_time } from "../holds/hold-service";
 import { get_org_profile, render_org_template, send_org_email } from "../email/org-mailer";
 import {
@@ -153,8 +161,13 @@ async function resolve_interviewer_emails(
  * Candidate-facing interview email via the org mailer (system template +
  * CommunicationLog). Best-effort: returns false instead of throwing, so a
  * mail failure never fails the interview operation that already happened.
+ *
+ * `extraText` is appended verbatim to the rendered body — the Calendly
+ * path uses it for the join / manage-booking links, because the system
+ * interview_invite template has no {{meetingLink}} placeholder (the
+ * Google path relies on the calendar invite carrying the Meet link).
  */
-async function send_candidate_interview_email(args: {
+export async function send_candidate_interview_email(args: {
     orgId: string;
     templateId: "interview_invite" | "interview_rescheduled" | "interview_cancelled";
     candidateEmail: string;
@@ -168,6 +181,7 @@ async function send_candidate_interview_email(args: {
     cancelReason?: string;
     senderName?: string;
     sentBy?: string;
+    extraText?: string;
 }): Promise<boolean> {
     try {
         const org = await get_org_profile(args.orgId);
@@ -181,12 +195,15 @@ async function send_candidate_interview_email(args: {
             senderName: args.senderName ?? "",
             companyName: org?.name ?? "Applico",
         });
+        const text = args.extraText
+            ? `${rendered.text}\n\n${args.extraText}`
+            : rendered.text;
         const result = await send_org_email({
             orgId: args.orgId,
             to: args.candidateEmail,
             toName: args.candidateName ?? undefined,
             subject: rendered.subject,
-            text: rendered.text,
+            text,
             type: args.templateId,
             templateId: rendered.templateId,
             candidateId: args.candidateId ?? undefined,
@@ -807,8 +824,117 @@ export const reschedule_interview_action = async (
         );
     }
 
+    const type = parsed.data.type ?? row.type ?? "VIDEO";
+    const location = parsed.data.location ?? row.locations;
+    const summary = `Interview: ${row.candidate_name ?? "Candidate"} — ${row.job_name ?? "Interview"}`;
+    let calendar_event_id = row.calendar_event_id ?? undefined;
+    let meet_link = row.link ?? undefined;
+    let calendly_event_uri = row.calendly_event_uri ?? undefined;
+    let calendly_invitee_uri = row.calendly_invitee_uri ?? undefined;
+    // Reschedule email: Calendly join/manage links ride in extraText —
+    // the system template has no {{meetingLink}} placeholder.
+    let reschedule_extra_text: string | undefined;
+
+    if (row.scheduling_provider === "calendly") {
+        // Calendly interviews NEVER hit the Google gate above: no Google
+        // Calendar is involved in them at all. The old booking is
+        // cancelled via the Calendly API, then a new invitee booking is
+        // created at the new time on the same event type. A failed cancel
+        // surfaces the real Calendly error and changes NOTHING.
+        if (!row.calendly_event_uri || !row.calendly_event_type_uri) {
+            throw new Error(
+                "This Calendly interview has no booking on file, so it can't be moved. Cancel it and schedule a new one instead."
+            );
+        }
+        if (!row.candidate_email || !row.candidate_name) {
+            throw new Error(
+                "The candidate has no name or email on file, so the Calendly booking can't be recreated."
+            );
+        }
+        const creds = await getCalendlyPatForOrg(orgId);
+        if (!creds) {
+            throw new Error(
+                "Calendly is not connected — reconnect it to reschedule this interview"
+            );
+        }
+
+        // Pre-flight: the new slot must be offered by the event type.
+        const windowEnd = new Date(start_at.getTime() + 24 * 60 * 60 * 1000);
+        const offered = await getCalendlyEventTypeAvailableTimes(
+            creds.pat,
+            row.calendly_event_type_uri,
+            start_at.toISOString(),
+            windowEnd.toISOString()
+        );
+        if (
+            !offered.some(
+                (slot) => new Date(slot.start_time).getTime() === start_at.getTime()
+            )
+        ) {
+            throw new Error(
+                "Calendly doesn't offer that exact time for this event type. Pick one of the offered times instead."
+            );
+        }
+
+        try {
+            await cancelCalendlyScheduledEvent(
+                creds.pat,
+                row.calendly_event_uri,
+                "Rescheduled in Applico"
+            );
+        } catch (err) {
+            // Fail closed: the old booking is still live, the DB row is
+            // untouched, and the recruiter sees Calendly's real error.
+            throw new Error(
+                err instanceof CalendlyApiError
+                    ? err.message
+                    : `Could not cancel the Calendly booking: ${(err as Error).message}`
+            );
+        }
+
+        let newInvitee;
+        try {
+            newInvitee = await createCalendlyInvitee(creds.pat, {
+                eventTypeUri: row.calendly_event_type_uri,
+                startTime: start_at.toISOString(),
+                inviteeName: row.candidate_name,
+                inviteeEmail: row.candidate_email,
+                inviteeTimezone: "UTC",
+            });
+        } catch (err) {
+            // The old booking is already cancelled at this point — say so
+            // plainly, with the real error, so the recruiter knows to
+            // re-book (cancel this row first, then schedule a new one)
+            // instead of assuming the interview still exists in Calendly.
+            const detail =
+                err instanceof CalendlyApiError
+                    ? err.message
+                    : (err as Error).message;
+            throw new Error(
+                `${detail} The previous Calendly booking was already cancelled, so this interview has no live Calendly booking — cancel it here and schedule a new one.`
+            );
+        }
+
+        calendly_event_uri = newInvitee.event;
+        calendly_invitee_uri = newInvitee.uri;
+        try {
+            const event = await getCalendlyScheduledEvent(
+                creds.pat,
+                newInvitee.event
+            );
+            meet_link = event.location?.join_url ?? undefined;
+        } catch {
+            // Best-effort join-URL read (same as booking): the booking
+            // exists, so keep going without a join link rather than fail.
+            meet_link = undefined;
+        }
+        reschedule_extra_text = meet_link
+            ? `Join link: ${meet_link}\nReschedule or cancel: ${newInvitee.reschedule_url}`
+            : `Reschedule: ${newInvitee.reschedule_url}\nCancel: ${newInvitee.cancel_url}`;
+    } else {
     // Server-side availability re-check against the scheduler's own calendar,
-    // excluding this interview's own event.
+    // excluding this interview's own event. (Google path only — Calendly
+    // interviews branch above and never reach this gate.)
     const availability = await check_calendar_conflicts(
         userId,
         start_at,
@@ -829,12 +955,6 @@ export const reschedule_interview_action = async (
             .join("; ");
         throw new Error(`That time conflicts with your calendar: ${list}`);
     }
-
-    const type = parsed.data.type ?? row.type ?? "VIDEO";
-    const location = parsed.data.location ?? row.locations;
-    const summary = `Interview: ${row.candidate_name ?? "Candidate"} — ${row.job_name ?? "Interview"}`;
-    let calendar_event_id = row.calendar_event_id ?? undefined;
-    let meet_link = row.link ?? undefined;
 
     if (row.hold_status === "TENTATIVE") {
         // Tentative hold: release the old event and place a new tentative
@@ -930,6 +1050,7 @@ export const reschedule_interview_action = async (
     // No calendar event on file (direct-scheduled interviews don't store
     // one): the DB row is still moved. A stale Google event, if one exists,
     // can't be located from here.
+    } // end Google path — the Calendly branch above sets its own URIs/link
 
     await update_interview_schedule_db(interviewId, orgId, {
         start_at,
@@ -938,6 +1059,8 @@ export const reschedule_interview_action = async (
         location,
         calendar_event_id: calendar_event_id ?? null,
         link: meet_link ?? null,
+        calendly_event_uri: calendly_event_uri ?? null,
+        calendly_invitee_uri: calendly_invitee_uri ?? null,
     });
 
     await record_activity({
@@ -964,6 +1087,7 @@ export const reschedule_interview_action = async (
             end_at,
             meetingLink: meet_link,
             location,
+            extraText: reschedule_extra_text,
             sentBy: userId,
         });
     }
@@ -1001,10 +1125,37 @@ export const cancel_interview_action = async (
         throw new Error("This interview is already cancelled or its hold has ended.");
     }
 
-    // Release the calendar event first. Transient failure → fail closed so
-    // the user can retry; permanent failure (owner disconnected Google) →
-    // proceed and record the cancel anyway.
-    if (row.calendar_event_id && row.calendar_owner_id) {
+    if (row.scheduling_provider === "calendly") {
+        // Calendly interviews cancel in Calendly FIRST — a failed cancel
+        // surfaces the real Calendly error and the interview stays live
+        // (fail closed, like the Google hold-release path below). No
+        // Google event exists for these rows, so the release block below
+        // is skipped entirely.
+        if (row.calendly_event_uri) {
+            const creds = await getCalendlyPatForOrg(orgId);
+            if (!creds) {
+                throw new Error(
+                    "Calendly is not connected — reconnect it to cancel this interview"
+                );
+            }
+            try {
+                await cancelCalendlyScheduledEvent(
+                    creds.pat,
+                    row.calendly_event_uri,
+                    reason
+                );
+            } catch (err) {
+                throw new Error(
+                    err instanceof CalendlyApiError
+                        ? err.message
+                        : `Could not cancel the Calendly booking: ${(err as Error).message}`
+                );
+            }
+        }
+    } else if (row.calendar_event_id && row.calendar_owner_id) {
+        // Release the calendar event first. Transient failure → fail closed so
+        // the user can retry; permanent failure (owner disconnected Google) →
+        // proceed and record the cancel anyway.
         const released = await releaseCalendarHold({
             clerkUserId: row.calendar_owner_id,
             eventId: row.calendar_event_id,
