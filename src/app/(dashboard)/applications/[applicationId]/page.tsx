@@ -13,6 +13,14 @@ import ApplicationInterviewCard from './_components/application-interview-card';
 import InterviewPrepCard from './_components/interview-prep-card';
 import CheckrBackgroundCheckCard from './_components/checkr-background-check-card';
 import { get_checkr_check_action } from "@/server/actions/checkr-actions";
+import TwilioSmsCard from './_components/twilio-sms-card';
+import { get_twilio_sms_state_action } from "@/server/actions/twilio-actions";
+import DocuSignOfferLetterCard from './_components/docusign-offer-letter-card';
+import { get_docusign_envelope_action } from "@/server/actions/docusign-actions";
+import WhatsappMessageCard from './_components/whatsapp-message-card';
+import { get_whatsapp_state_action } from "@/server/actions/whatsapp-actions";
+import SterlingBackgroundCheckCard from './_components/sterling-background-check-card';
+import { get_sterling_check_action } from "@/server/actions/sterling-actions";
 import JobQuickViewCard from '@/components/job-quick-view-card';
 
 type Props = {
@@ -43,6 +51,44 @@ const Page = async ({ params }: Props) => {
         checkrState = await get_checkr_check_action(applicationResult.id);
     } catch (err) {
         console.error("[application] Failed to load Checkr state:", err);
+    }
+
+    // Twilio SMS state for the card. Guarded like Checkr: if the
+    // sms_consents table doesn't exist yet (migration 0019 not run),
+    // the card is omitted instead of breaking the page.
+    let twilioState: Awaited<ReturnType<typeof get_twilio_sms_state_action>> | null = null;
+    try {
+        twilioState = await get_twilio_sms_state_action(applicationResult.id);
+    } catch (err) {
+        console.error("[application] Failed to load Twilio SMS state:", err);
+    }
+    // DocuSign offer-letter state for the card. Guarded: if the
+    // docusign_envelopes table doesn't exist yet (migration 0020
+    // not run), the card is omitted instead of breaking the page.
+    let docusignState: Awaited<ReturnType<typeof get_docusign_envelope_action>> | null = null;
+    try {
+        docusignState = await get_docusign_envelope_action(applicationResult.id);
+    } catch (err) {
+        console.error("[application] Failed to load DocuSign state:", err);
+    }
+    // WhatsApp messaging state for the card. Guarded the same way: if
+    // the whatsapp_consents / whatsapp_messages tables don't exist yet
+    // (migration 0022 not run), the card is omitted instead of breaking
+    // the page.
+    let whatsappState: Awaited<ReturnType<typeof get_whatsapp_state_action>> | null = null;
+    try {
+        whatsappState = await get_whatsapp_state_action(applicationResult.id);
+    } catch (err) {
+        console.error("[application] Failed to load WhatsApp state:", err);
+    }
+    // Sterling background-check state for the card. Guarded: if the
+    // sterling_background_checks table doesn't exist yet (migration 0023
+    // not run), the card is omitted instead of breaking the page.
+    let sterlingState: Awaited<ReturnType<typeof get_sterling_check_action>> | null = null;
+    try {
+        sterlingState = await get_sterling_check_action(applicationResult.id);
+    } catch (err) {
+        console.error("[application] Failed to load Sterling state:", err);
     }
 
     return (
@@ -115,6 +161,60 @@ const Page = async ({ params }: Props) => {
                                         pluginEnabled={checkrState.pluginEnabled}
                                         environment={checkrState.environment}
                                         defaultPackage={checkrState.defaultPackage}
+                                    />
+                                )}
+
+                                {/* Twilio SMS */}
+                                {twilioState && (
+                                    <TwilioSmsCard
+                                        applicationId={applicationResult.id}
+                                        candidateName={twilioState.candidateName}
+                                        candidatePhone={twilioState.candidatePhone}
+                                        jobTitle={twilioState.jobTitle}
+                                        initialConsent={twilioState.consent}
+                                        pluginEnabled={twilioState.pluginEnabled}
+                                        fromNumber={twilioState.fromNumber}
+                                    />
+                                )}
+                                {/* DocuSign Offer Letter */}
+                                {docusignState && (
+                                    <DocuSignOfferLetterCard
+                                        applicationId={applicationResult.id}
+                                        currentStage={applicationResult.current_stage}
+                                        candidateName={applicationResult.candidate_name}
+                                        initialEnvelope={docusignState.envelope}
+                                        pluginEnabled={docusignState.pluginEnabled}
+                                        environment={docusignState.environment}
+                                        defaultTemplateId={docusignState.defaultTemplateId}
+                                        defaultRoleName={docusignState.defaultRoleName}
+                                        defaultEmailSubject={docusignState.defaultEmailSubject}
+                                    />
+                                )}
+                                {/* WhatsApp Business (Twilio) */}
+                                {whatsappState && (
+                                    <WhatsappMessageCard
+                                        applicationId={applicationResult.id}
+                                        candidateName={applicationResult.candidate_name}
+                                        jobTitle={job?.job_name ?? null}
+                                        initialConsent={whatsappState.consent}
+                                        initialMessages={whatsappState.messages}
+                                        pluginEnabled={whatsappState.pluginEnabled}
+                                        fromNumber={whatsappState.fromNumber}
+                                        defaultTemplateSid={whatsappState.defaultTemplateSid}
+                                        candidatePhone={whatsappState.candidatePhone}
+                                        candidatePhoneE164={whatsappState.candidatePhoneE164}
+                                    />
+                                )}
+                                {/* Sterling Background Check */}
+                                {sterlingState && (
+                                    <SterlingBackgroundCheckCard
+                                        applicationId={applicationResult.id}
+                                        currentStage={applicationResult.current_stage}
+                                        candidateName={applicationResult.candidate_name}
+                                        initialCheck={sterlingState.check}
+                                        pluginEnabled={sterlingState.pluginEnabled}
+                                        environment={sterlingState.environment}
+                                        defaultPackage={sterlingState.defaultPackage}
                                     />
                                 )}
 

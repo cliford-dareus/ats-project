@@ -1,6 +1,7 @@
 import { Queue } from 'bullmq';
 import redis from './redis';
 import {ATSContext, AutomationRule, TriggerEvent} from "@/types";
+import type { WebhookEventData, WebhookEventType } from "@/lib/webhooks/events";
 
 export interface TriggerJobData {
     event:   TriggerEvent;
@@ -23,7 +24,29 @@ export interface DelayedAutomationJobData {
     };
 }
 
-export type QueueJobData = TriggerJobData | DelayedAutomationJobData;
+/**
+ * Outbound-webhook delivery (feat/plugin-webhooks): one BullMQ job per
+ * (event occurrence, subscription). The signing secret is NOT in the job
+ * payload — the delivery worker loads the subscription row and decrypts
+ * it at send time, so secrets never sit in Redis. `deliveryId` groups
+ * the attempts of one logical delivery and is sent as the
+ * X-Applico-Delivery-Id header so receivers can dedupe an at-least-once
+ * redelivery. Distinct shape (no `event` key) so the worker can tell it
+ * apart from trigger jobs.
+ */
+export interface WebhookDeliveryJobData {
+    webhookDelivery: {
+        deliveryId: string;
+        subscriptionId: number;
+        orgId: string;
+        event: WebhookEventType;
+        eventId: string;
+        occurredAt: string;
+        data: WebhookEventData;
+    };
+}
+
+export type QueueJobData = TriggerJobData | DelayedAutomationJobData | WebhookDeliveryJobData;
 
 // Create a queue instance
 export const taskQueue = new Queue<QueueJobData>('aplico_queue', {

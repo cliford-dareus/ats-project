@@ -127,6 +127,48 @@
       "when": 1795885587041,
       "tag": "0017_checkr_background_checks",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1795893743911,
+      "tag": "0018_zoom_meetings",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1795889000000,
+      "tag": "0019_twilio_sms",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1795893900329,
+      "tag": "0020_docusign_envelopes",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "5",
+      "when": 1795894160996,
+      "tag": "0021_outbound_webhooks",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "5",
+      "when": 1795893745041,
+      "tag": "0022_whatsapp_messaging",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "5",
+      "when": 1795893934007,
+      "tag": "0023_sterling_background_checks",
+      "breakpoints": true
     }
   ]
 }

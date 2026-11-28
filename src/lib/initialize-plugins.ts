@@ -21,12 +21,22 @@ async function getFactory(pluginId: string) {
             return (await import("@/plugins/providers/openai")).createOpenAIProvider;
         case "calendly":
             return (await import("@/plugins/providers/calendly")).createCalendlyProvider;
+        case "zoom":
+            return (await import("@/plugins/providers/zoom")).createZoomProvider;
         case "anthropic-screening":
             return (await import("@/plugins/providers/anthropic")).createAnthropicProvider;
         case "checkr":
             return (await import("@/plugins/providers/checkr")).createCheckrProvider;
+        case "docusign":
+            return (await import("@/plugins/providers/docusign")).createDocuSignProvider;
+        case "sterling":
+            return (await import("@/plugins/providers/sterling")).createSterlingProvider;
         case "slack-notify":
             return (await import("@/plugins/providers/slack")).createSlackProvider;
+        case "teams-notify":
+            return (await import("@/plugins/providers/teams")).createTeamsProvider;
+        case "twilio":
+            return (await import("@/plugins/providers/twilio")).createTwilioProvider;
         case "resend":
             return (await import("@/plugins/providers/resend")).createResendProvider;
         case "google":
@@ -35,6 +45,8 @@ async function getFactory(pluginId: string) {
             return (await import("@/plugins/providers/indeed")).createIndeedProvider;
         case "linkedin":
             return (await import("@/plugins/providers/linkedin")).createLinkedInProvider;
+        case "whatsapp":
+            return (await import("@/plugins/providers/whatsapp")).createWhatsappProvider;
         default:
             console.warn(`[PluginSystem] No factory for plugin "${pluginId}"`);
             return null;

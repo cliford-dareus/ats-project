@@ -666,6 +666,7 @@ export const get_job_by_id_db = async (jobId: number, org_id: string): Promise<J
                     calendly_event_type_name: row.interview.calendly_event_type_name,
                     calendly_event_uri: row.interview.calendly_event_uri,
                     calendly_invitee_uri: row.interview.calendly_invitee_uri,
+                    zoom_meeting_id: row.interview.zoom_meeting_id,
                     hold_status: row.interview.hold_status,
                     hold_expires_at: row.interview.hold_expires_at,
                 } satisfies InterviewType;

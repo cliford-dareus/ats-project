@@ -27,6 +27,9 @@ export const ACTION_LABELS: Record<string, string> = {
     "plugin.credentials_updated": "Plugin credentials updated",
     "plugin.dispatch_failed": "Plugin dispatch failed",
     "automation.execution_failed": "Automation failed",
+    "twilio_sms_sent": "SMS sent",
+    "twilio_sms_consent_recorded": "SMS consent recorded",
+    "twilio_sms_consent_revoked": "SMS consent revoked",
 };
 
 export const time_ago = (date: Date): string => {

@@ -46,6 +46,7 @@ export const create_interview_db = async (data: z.infer<typeof newInterviewSchem
         calendly_event_type_name: data.calendly_event_type_name,
         calendly_event_uri: data.calendly_event_uri,
         calendly_invitee_uri: data.calendly_invitee_uri,
+        zoom_meeting_id: data.zoom_meeting_id,
     }).$returningId();
 
     revalidateDbCache({
@@ -200,6 +201,7 @@ const interview_detail_select = {
     calendly_event_type_name: interviews.calendly_event_type_name,
     calendly_event_uri: interviews.calendly_event_uri,
     calendly_invitee_uri: interviews.calendly_invitee_uri,
+    zoom_meeting_id: interviews.zoom_meeting_id,
     interviewer_ids: interviews.interviewer_ids,
     reminder_sent_at: interviews.reminder_sent_at,
     cancel_reason: interviews.cancel_reason,
@@ -276,6 +278,7 @@ export type RescheduleInterviewInput = {
     calendly_invitee_uri?: string | null;
     calendly_event_type_uri?: string | null;
     calendly_event_type_name?: string | null;
+    zoom_meeting_id?: string | null;
 };
 
 /**
@@ -311,6 +314,9 @@ export const update_interview_schedule_db = async (
                 : {}),
             ...(updates.calendly_event_type_name !== undefined
                 ? { calendly_event_type_name: updates.calendly_event_type_name }
+                : {}),
+            ...(updates.zoom_meeting_id !== undefined
+                ? { zoom_meeting_id: updates.zoom_meeting_id }
                 : {}),
             reminder_sent_at: null,
         })

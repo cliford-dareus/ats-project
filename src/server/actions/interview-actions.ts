@@ -39,6 +39,12 @@ import {
     getCalendlyPatForOrg,
     getCalendlyScheduledEvent,
 } from "../calendly";
+import {
+    ZoomApiError,
+    deleteZoomMeeting,
+    getZoomCredentialsForOrg,
+    updateZoomMeeting,
+} from "../zoom";
 import { format_interview_time } from "../holds/hold-service";
 import { get_org_profile, render_org_template, send_org_email } from "../email/org-mailer";
 import {
@@ -48,6 +54,7 @@ import {
     hasPermission,
 } from "../permissions";
 import { record_activity } from "@/server/activity/record-activity";
+import { fire_interview_webhooks } from "@/lib/webhooks/enqueue";
 
 const holdSchema = z.object({
     applicationId: z.number(),
@@ -485,6 +492,15 @@ export const create_interview_action = async (
         );
     }
 
+    // ── Outbound webhooks (feat/plugin-webhooks) ─────────────────────────
+    // interview_scheduled never reaches the BullMQ worker, so the
+    // delivery jobs are enqueued here, from the action that created the
+    // interview. Fire-and-forget: the helper never throws, so a webhook
+    // failure can never break the booking.
+    if (typeof result === "number") {
+        void fire_interview_webhooks(orgId, result, "interview_scheduled");
+    }
+
     return result;
 };
 
@@ -835,7 +851,45 @@ export const reschedule_interview_action = async (
     // the system template has no {{meetingLink}} placeholder.
     let reschedule_extra_text: string | undefined;
 
-    if (row.scheduling_provider === "calendly") {
+    if (row.scheduling_provider === "zoom") {
+        // Zoom interviews move the Zoom meeting (PATCH start_time +
+        // duration) — the meeting id and join URL are unchanged, so the
+        // candidate keeps the same link. A failed move surfaces the real
+        // Zoom error and changes NOTHING.
+        if (!row.zoom_meeting_id) {
+            throw new Error(
+                "This Zoom interview has no meeting on file, so it can't be moved. Cancel it and schedule a new one instead."
+            );
+        }
+        const creds = await getZoomCredentialsForOrg(orgId);
+        if (!creds) {
+            throw new Error(
+                "Zoom is not connected — reconnect it to reschedule this interview"
+            );
+        }
+        try {
+            await updateZoomMeeting(creds.creds, row.zoom_meeting_id, {
+                topic: summary,
+                startTime: start_at.toISOString(),
+                durationMinutes: Math.round(
+                    (end_at.getTime() - start_at.getTime()) / 60000
+                ),
+            });
+        } catch (err) {
+            if (err instanceof ZoomApiError && err.isNotFound) {
+                throw new Error(
+                    "That Zoom meeting no longer exists in Zoom, so it can't be moved. Cancel this interview here and schedule a new one instead."
+                );
+            }
+            throw new Error(
+                err instanceof ZoomApiError
+                    ? err.message
+                    : `Could not move the Zoom meeting: ${(err as Error).message}`
+            );
+        }
+        // Join link is unchanged (same meeting id) — meet_link already
+        // holds row.link.
+    } else if (row.scheduling_provider === "calendly") {
         // Calendly interviews NEVER hit the Google gate above: no Google
         // Calendar is involved in them at all. The old booking is
         // cancelled via the Calendly API, then a new invitee booking is
@@ -1092,6 +1146,11 @@ export const reschedule_interview_action = async (
         });
     }
 
+    // ── Outbound webhooks (feat/plugin-webhooks) ─────────────────────────
+    // A reschedule is a new scheduled time, so it fires
+    // interview_scheduled with the new times. Fire-and-forget.
+    void fire_interview_webhooks(orgId, interviewId, "interview_scheduled");
+
     return { success: true as const, email_sent };
 };
 
@@ -1125,7 +1184,36 @@ export const cancel_interview_action = async (
         throw new Error("This interview is already cancelled or its hold has ended.");
     }
 
-    if (row.scheduling_provider === "calendly") {
+    if (row.scheduling_provider === "zoom") {
+        // Zoom interviews delete the Zoom meeting FIRST — a failed delete
+        // surfaces the real Zoom error and the interview stays live (fail
+        // closed, like the Calendly path). A 404 means the meeting is
+        // already gone in Zoom, so the cancel proceeds and the row is
+        // still recorded as cancelled.
+        if (row.zoom_meeting_id) {
+            const creds = await getZoomCredentialsForOrg(orgId);
+            if (!creds) {
+                throw new Error(
+                    "Zoom is not connected — reconnect it to cancel this interview"
+                );
+            }
+            try {
+                await deleteZoomMeeting(creds.creds, row.zoom_meeting_id);
+            } catch (err) {
+                if (err instanceof ZoomApiError && err.isNotFound) {
+                    console.error(
+                        `[interview] Zoom meeting ${row.zoom_meeting_id} already gone for cancelled interview ${interviewId}; proceeding with the cancel`
+                    );
+                } else {
+                    throw new Error(
+                        err instanceof ZoomApiError
+                            ? err.message
+                            : `Could not delete the Zoom meeting: ${(err as Error).message}`
+                    );
+                }
+            }
+        }
+    } else if (row.scheduling_provider === "calendly") {
         // Calendly interviews cancel in Calendly FIRST — a failed cancel
         // surfaces the real Calendly error and the interview stays live
         // (fail closed, like the Google hold-release path below). No
@@ -1204,6 +1292,12 @@ export const cancel_interview_action = async (
             sentBy: userId,
         });
     }
+
+    // ── Outbound webhooks (feat/plugin-webhooks) ─────────────────────────
+    // interview_cancelled is webhook-only (no TriggerEvent, no plugin
+    // dispatch) and never reaches the BullMQ worker, so the delivery
+    // jobs are enqueued here. Fire-and-forget.
+    void fire_interview_webhooks(orgId, interviewId, "interview_cancelled");
 
     return { success: true as const, email_sent };
 };

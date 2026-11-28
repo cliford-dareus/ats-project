@@ -118,6 +118,9 @@ function interview_type_label(interview: InterviewType): string {
             ? `Calendly · ${interview.calendly_event_type_name}`
             : "Calendly";
     }
+    if (interview.scheduling_provider === "zoom") {
+        return "Zoom";
+    }
     switch (interview.type) {
         case "VIDEO":
             return interview.link ? "Video via link" : "Video";
@@ -311,7 +314,9 @@ const ApplicationInterviewCard = ({ applicationResult }: Props) => {
                                     <Video className="w-4 h-4" />
                                     {applicationResult.interview.scheduling_provider === "calendly"
                                         ? "Join via Calendly"
-                                        : "Join Interview"}
+                                        : applicationResult.interview.scheduling_provider === "zoom"
+                                            ? "Join via Zoom"
+                                            : "Join Interview"}
                                 </a>
                             )}
 

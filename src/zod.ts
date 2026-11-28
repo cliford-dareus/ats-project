@@ -263,11 +263,15 @@ export const newInterviewSchema = z.object({
     // Calendly bookings (migration 0015): the provider that booked this
     // interview plus Calendly's own identifiers. calendar_event_id /
     // calendar_owner_id stay Google-typed and are never overloaded.
-    scheduling_provider: z.enum(["google", "calendly"]).optional(),
+    scheduling_provider: z.enum(["google", "calendly", "zoom"]).optional(),
     calendly_event_type_uri: z.string().optional(),
     calendly_event_type_name: z.string().optional(),
     calendly_event_uri: z.string().optional(),
     calendly_invitee_uri: z.string().optional(),
+    // Zoom bookings (migration 0018): the Zoom meeting id, stored as a
+    // string — Zoom meeting ids can exceed 10 digits. The join URL
+    // lives in `link` (its exact meaning).
+    zoom_meeting_id: z.string().optional(),
 });
 
 // FILTER SCHEMA
@@ -452,6 +456,8 @@ export const KNOWN_INTEGRATION_IDS = [
     "resume-score-openai",
     "slack-stage-changed",
     "slack-candidate-applied",
+    "teams-stage-changed",
+    "teams-candidate-applied",
 ] as const;
 const KNOWN_INTEGRATION_ID_SET: ReadonlySet<string> = new Set(KNOWN_INTEGRATION_IDS);
 
@@ -462,6 +468,8 @@ const FIRE_INTEGRATION_TARGETS: Record<string, string> = {
     "resume-score-openai": "openai-scoring",
     "slack-stage-changed": "slack-notify",
     "slack-candidate-applied": "slack-notify",
+    "teams-stage-changed": "teams-notify",
+    "teams-candidate-applied": "teams-notify",
 };
 
 /** pluginId must be one of the manifest ids in src/plugins/registry.ts. */
@@ -481,8 +489,14 @@ export const PLUGIN_CREDENTIAL_KEYS: Record<string, readonly string[]> = {
     "openai-scoring": ["apiKey"],
     "anthropic-screening": ["apiKey"],
     calendly: ["apiKey", "webhookSigningKey"],
+    zoom: ["accountId", "clientId", "clientSecret"],
     checkr: ["apiKey"],
+    sterling: ["clientId", "clientSecret"],
     "slack-notify": ["webhookUrl"],
+    "teams-notify": ["webhookUrl"],
+    twilio: ["accountSid", "authToken"],
+    docusign: ["integrationKey", "userId", "privateKey"],
+    whatsapp: ["accountSid", "authToken"],
 };
 
 /** Known config keys per plugin, with per-field typing. */
@@ -493,8 +507,14 @@ const PLUGIN_CONFIG_KEYS: Record<string, readonly string[]> = {
     indeed: ["indeedAccountEmail"],
     linkedin: ["pageUrl"],
     calendly: ["userName", "userEmail", "userUri", "webhookSubscriptionUri", "webhookEnabled"],
+    zoom: ["userName", "userEmail", "userId"],
     checkr: ["environment", "package"],
+    sterling: ["environment", "package", "inviteMethod"],
     "slack-notify": ["channel"],
+    "teams-notify": ["channel"],
+    twilio: ["fromNumber"],
+    docusign: ["environment", "templateId", "roleName", "emailSubject", "accountId", "baseUri"],
+    whatsapp: ["fromNumber", "defaultTemplateSid"],
 };
 
 const emailFieldIssue = (
@@ -560,8 +580,11 @@ export const orgPluginSettingsSchema = (pluginId: string) =>
                 emailFieldIssue(ctx, cfg, "userEmail", "Calendly user email");
                 // Checkr environment is load-bearing (test vs live selects
                 // the Checkr host) — reject anything but the two values.
+                // Gated to the checkr plugin: other plugins store their
+                // own environment values (e.g. DocuSign "demo").
                 const checkrEnv = cfg["environment"];
                 if (
+                    pluginId === "checkr" &&
                     checkrEnv !== undefined &&
                     checkrEnv !== "" &&
                     checkrEnv !== "test" &&
@@ -571,6 +594,71 @@ export const orgPluginSettingsSchema = (pluginId: string) =>
                         code: z.ZodIssueCode.custom,
                         path: ["environment"],
                         message: `Checkr environment must be "test" or "live"`,
+                    });
+                }
+                // Twilio sender number must be E.164 (+country code) —
+                // Twilio rejects anything else with a 21211 at send time.
+                const twilioFrom = cfg["fromNumber"];
+                if (
+                    typeof twilioFrom === "string" &&
+                    twilioFrom !== "" &&
+                    !/^\+[1-9]\d{9,14}$/.test(twilioFrom.trim())
+                ) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        path: ["fromNumber"],
+                        message: `Twilio sender number must be E.164 (e.g. +13055550100)`,
+                    });
+                }
+                // DocuSign environment is load-bearing the same way (demo
+                // vs production selects the OAuth host and the account's
+                // base URI) — reject anything but the two values. The
+                // check only applies to the docusign plugin; other
+                // plugins never store a demo/production environment.
+                if (pluginId === "docusign") {
+                    const docusignEnv = cfg["environment"];
+                    if (
+                        docusignEnv !== undefined &&
+                        docusignEnv !== "" &&
+                        docusignEnv !== "demo" &&
+                        docusignEnv !== "production"
+                    ) {
+                        ctx.addIssue({
+                            code: z.ZodIssueCode.custom,
+                            path: ["environment"],
+                            message: `DocuSign environment must be "demo" or "production"`,
+                        });
+                    }
+                }
+                // Sterling environment is load-bearing the same way (test
+                // vs live selects the Sterling host) — and its invite
+                // method must be one of the two documented workflows.
+                const sterlingEnv = cfg["environment"];
+                if (
+                    pluginId === "sterling" &&
+                    sterlingEnv !== undefined &&
+                    sterlingEnv !== "" &&
+                    sterlingEnv !== "test" &&
+                    sterlingEnv !== "live"
+                ) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        path: ["environment"],
+                        message: `Sterling environment must be "test" or "live"`,
+                    });
+                }
+                const sterlingInvite = cfg["inviteMethod"];
+                if (
+                    pluginId === "sterling" &&
+                    sterlingInvite !== undefined &&
+                    sterlingInvite !== "" &&
+                    sterlingInvite !== "email" &&
+                    sterlingInvite !== "link"
+                ) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        path: ["inviteMethod"],
+                        message: `Sterling invite method must be "email" or "link"`,
                     });
                 }
                 const companyName = cfg["companyName"];

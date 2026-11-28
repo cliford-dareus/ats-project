@@ -17,6 +17,7 @@ import { db } from "@/drizzle/db";
 import { applications, candidates, stages } from "@/drizzle/schema";
 import { send_application_confirmation_with_portal_link } from "@/server/portal/portal-service";
 import { and, eq } from "drizzle-orm";
+import { fire_stage_changed_webhooks } from "@/lib/webhooks/enqueue";
 
 /** Candidate + target-stage display names for a stage-move log entry. */
 const get_stage_move_context = async (applicationId: number, stageId: number, orgId: string) => {
@@ -223,6 +224,18 @@ export const moveApplicationAndReorder = async (unsafeData: z.infer<typeof moveA
     // only record when the stage actually changed.
     if (result.success && unsafeData.sourceStageId && unsafeData.sourceStageId !== unsafeData.newStageId) {
         await record_stage_move(unsafeData.applicationId, unsafeData.newStageId, orgId);
+        // ── Outbound webhooks (feat/plugin-webhooks) ─────────────────────
+        // stage_changed never reaches the BullMQ worker (the kanban only
+        // evaluates automation rules client-side), so the delivery jobs
+        // are enqueued here, from the server action that performed the
+        // move. Fire-and-forget: the helper never throws, so a webhook
+        // failure can never break the move.
+        void fire_stage_changed_webhooks(
+            orgId,
+            unsafeData.applicationId,
+            unsafeData.sourceStageId,
+            unsafeData.newStageId,
+        );
     }
     return result;
 };

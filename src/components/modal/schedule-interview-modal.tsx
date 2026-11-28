@@ -54,6 +54,10 @@ import {
     list_calendly_event_types_action,
     type CalendlyEventTypeDTO,
 } from "@/server/actions/calendly-actions";
+import {
+    create_zoom_interview_action,
+    get_zoom_status_action,
+} from "@/server/actions/zoom-actions";
 import { newInterviewSchema } from "@/zod";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -124,7 +128,7 @@ const ScheduleInterviewModal = ({
     // booking lives in Calendly (no Google event, no hold); availability
     // comes from Calendly's offered times, and there is no "schedule
     // anyway" on this path — the API would fail.
-    const [provider, setProvider] = useState<"google" | "calendly">("google");
+    const [provider, setProvider] = useState<"google" | "calendly" | "zoom">("google");
     const [calendlyEventTypes, setCalendlyEventTypes] = useState<
         CalendlyEventTypeDTO[]
     >([]);
@@ -147,6 +151,13 @@ const ScheduleInterviewModal = ({
         null
     );
     const [fallbackCopied, setFallbackCopied] = useState(false);
+
+    // Zoom — offered only when the org has Zoom connected AND the
+    // interview type is VIDEO. The meeting lives in Zoom (no Google
+    // event, no hold); the join link is stored on the interview row.
+    const [zoomConnected, setZoomConnected] = useState(false);
+    const [zoomLoadError, setZoomLoadError] = useState<string | null>(null);
+    const [zoomHostName, setZoomHostName] = useState<string | null>(null);
 
     const selectedEventType = calendlyEventTypes.find(
         (et) => et.uri === selectedEventTypeUri
@@ -229,6 +240,32 @@ const ScheduleInterviewModal = ({
                     );
                 }
             });
+        // Zoom status (live) — a load failure degrades to Google-only
+        // scheduling; the modal never claims Zoom is available when it
+        // couldn't be verified.
+        get_zoom_status_action()
+            .then((result) => {
+                if (cancelled) return;
+                if (result.success && result.connected) {
+                    setZoomConnected(true);
+                    setZoomHostName(result.userName);
+                    setZoomLoadError(null);
+                } else if (result.connected === false) {
+                    setZoomConnected(false);
+                    setZoomHostName(null);
+                } else {
+                    setZoomLoadError(result.message);
+                }
+            })
+            .catch((err) => {
+                if (!cancelled) {
+                    setZoomLoadError(
+                        err instanceof Error
+                            ? err.message
+                            : "Couldn't load Zoom status"
+                    );
+                }
+            });
         return () => {
             cancelled = true;
         };
@@ -250,13 +287,25 @@ const ScheduleInterviewModal = ({
     const watchedDate = form.watch("date");
     const watchedTime = form.watch("time");
     const watchedDuration = form.watch("duration");
+    const watchedType = form.watch("type");
+
+    // Zoom is VIDEO-only: switching the type away from VIDEO while Zoom
+    // is selected drops back to Google (the server refuses non-VIDEO
+    // Zoom bookings too).
+    useEffect(() => {
+        if (provider === "zoom" && watchedType !== "VIDEO") {
+            setProvider("google");
+        }
+    }, [provider, watchedType]);
 
     // D8 — debounced availability check as date/time/duration change.
     // Never claims a check happened when it didn't: missing/invalid inputs
     // leave the status idle, and a failed check surfaces as "error".
     useEffect(() => {
-        if (provider === "calendly") {
-            // Calendly availability is checked by the effect below, not Google.
+        if (provider === "calendly" || provider === "zoom") {
+            // Calendly/Zoom availability is checked by their own effects
+            // (Calendly) or not at all (Zoom — Zoom has no offered-slot
+            // concept); never Google's.
             setAvailability({ status: "idle" });
             return;
         }
@@ -403,6 +452,36 @@ const ScheduleInterviewModal = ({
                           interviewer_emails: selectedInterviewerEmails,
                       }
                     : {};
+
+            // Zoom path — server-side meeting creation (the credentials
+            // never leave the server). No hold, no Google event: Applico
+            // creates a real Zoom meeting and stores its join link on the
+            // interview row. VIDEO only — the server refuses anything else.
+            if (provider === "zoom") {
+                if (data.type !== "VIDEO") {
+                    setError("Zoom meetings are only available for video interviews.");
+                    return;
+                }
+                try {
+                    await create_zoom_interview_action({
+                        applicationId: application.id,
+                        job_id: application.job_id,
+                        job_name: jobDetails.jobName,
+                        candidate_name: candidateName,
+                        candidate_email: candidateEmail,
+                        start_at: startDateTime,
+                        end_at: endDateTime,
+                        type: data.type,
+                        location: data.type,
+                        interviewer_ids: selectedInterviewerIds,
+                    });
+                    setIsOpen(false);
+                } catch (zoomErr) {
+                    // The real Zoom error is surfaced, nothing was created.
+                    setError((zoomErr as Error).message);
+                }
+                return;
+            }
 
             // Calendly path — server-side booking (the PAT never leaves
             // the server). No hold, no Google event: the recruiter picks a
@@ -627,7 +706,9 @@ const ScheduleInterviewModal = ({
                                     <p className="text-[11px] text-zinc-500">
                                         {provider === "calendly"
                                             ? "Holds use Google Calendar — Calendly bookings go straight to the candidate's chosen slot"
-                                            : "Tentative calendar block until candidate confirms"}
+                                            : provider === "zoom"
+                                                ? "Holds use Google Calendar — Zoom meetings go straight into Zoom"
+                                                : "Tentative calendar block until candidate confirms"}
                                     </p>
                                 </div>
                                 <FormField
@@ -636,20 +717,20 @@ const ScheduleInterviewModal = ({
                                     render={({ field }) => (
                                         <Switch
                                             id="use_hold"
-                                            checked={provider === "calendly" ? false : field.value}
-                                            disabled={provider === "calendly"}
+                                            checked={provider === "calendly" || provider === "zoom" ? false : field.value}
+                                            disabled={provider === "calendly" || provider === "zoom"}
                                             onCheckedChange={field.onChange}
                                         />
                                     )}
                                 />
                             </div>
 
-                            {(calendlyConnected || calendlyLoadError) && (
+                            {(calendlyConnected || calendlyLoadError || zoomConnected || zoomLoadError) && (
                                 <div className="space-y-2">
                                     <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5 ml-1">
                                         Book with
                                     </label>
-                                    <div className="grid grid-cols-2 gap-2">
+                                    <div className={`grid gap-2 ${calendlyConnected && zoomConnected && watchedType === "VIDEO" ? "grid-cols-3" : "grid-cols-2"}`}>
                                         <button
                                             type="button"
                                             onClick={() => setProvider("google")}
@@ -660,23 +741,53 @@ const ScheduleInterviewModal = ({
                                                 Meet link + optional hold
                                             </span>
                                         </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setProvider("calendly");
-                                                form.setValue("use_hold", false);
-                                            }}
-                                            className={`rounded-xl border px-3 py-2.5 text-sm font-semibold text-left ${provider === "calendly" ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-200 bg-zinc-50 text-zinc-700"}`}
-                                        >
-                                            Calendly
-                                            <span className="block text-[11px] font-normal opacity-70">
-                                                Books straight into Calendly
-                                            </span>
-                                        </button>
+                                        {calendlyConnected && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setProvider("calendly");
+                                                    form.setValue("use_hold", false);
+                                                }}
+                                                className={`rounded-xl border px-3 py-2.5 text-sm font-semibold text-left ${provider === "calendly" ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-200 bg-zinc-50 text-zinc-700"}`}
+                                            >
+                                                Calendly
+                                                <span className="block text-[11px] font-normal opacity-70">
+                                                    Books straight into Calendly
+                                                </span>
+                                            </button>
+                                        )}
+                                        {zoomConnected && watchedType === "VIDEO" && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setProvider("zoom");
+                                                    form.setValue("use_hold", false);
+                                                }}
+                                                className={`rounded-xl border px-3 py-2.5 text-sm font-semibold text-left ${provider === "zoom" ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-200 bg-zinc-50 text-zinc-700"}`}
+                                            >
+                                                Zoom
+                                                <span className="block text-[11px] font-normal opacity-70">
+                                                    Creates a Zoom meeting
+                                                </span>
+                                            </button>
+                                        )}
                                     </div>
                                     {calendlyLoadError && (
                                         <p className="text-[11px] text-amber-600">
                                             Couldn&apos;t load Calendly event types ({calendlyLoadError}) — Google scheduling still works.
+                                        </p>
+                                    )}
+                                    {zoomLoadError && (
+                                        <p className="text-[11px] text-amber-600">
+                                            Couldn&apos;t load Zoom status ({zoomLoadError}) — Google scheduling still works.
+                                        </p>
+                                    )}
+                                    {provider === "zoom" && (
+                                        <p className="mt-1 ml-1 text-[11px] text-zinc-500">
+                                            The meeting is created under the connected Zoom account
+                                            {zoomHostName ? ` (hosted by ${zoomHostName})` : ""} — selected
+                                            interviewers are recorded on the interview and emailed, but they
+                                            don&apos;t host their own Zoom meeting.
                                         </p>
                                     )}
                                 </div>
@@ -906,7 +1017,9 @@ const ScheduleInterviewModal = ({
                                     <Users className="w-3.5 h-3.5 shrink-0 mt-px" />
                                     {provider === "calendly"
                                         ? "Selected interviewers are recorded on the interview and emailed. The booking itself is under the connected Calendly account."
-                                        : "Selected interviewers are added as calendar attendees. You already own the event, so you don't need to add yourself."}
+                                        : provider === "zoom"
+                                            ? "Selected interviewers are recorded on the interview and emailed. The meeting itself is hosted by the connected Zoom account."
+                                            : "Selected interviewers are added as calendar attendees. You already own the event, so you don't need to add yourself."}
                                 </p>
                             </div>
 
@@ -1060,14 +1173,21 @@ const ScheduleInterviewModal = ({
                                             <Loader2 className="w-4 h-4 animate-spin" />
                                             {provider === "calendly"
                                                 ? "Booking…"
-                                                : useHold
-                                                  ? "Holding…"
-                                                  : "Scheduling…"}
+                                                : provider === "zoom"
+                                                    ? "Creating Zoom meeting…"
+                                                    : useHold
+                                                      ? "Holding…"
+                                                      : "Scheduling…"}
                                         </>
                                     ) : provider === "calendly" ? (
                                         <>
                                             <Send className="w-4 h-4" />
                                             Book via Calendly
+                                        </>
+                                    ) : provider === "zoom" ? (
+                                        <>
+                                            <Send className="w-4 h-4" />
+                                            Create Zoom meeting
                                         </>
                                     ) : useHold ? (
                                         <>

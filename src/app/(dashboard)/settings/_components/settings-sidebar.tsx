@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Building2, ChevronRight, Puzzle, SettingsIcon } from 'lucide-react';
+import { Building2, ChevronRight, Puzzle, SettingsIcon, Webhook } from 'lucide-react';
 import { motion, } from 'framer-motion';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -19,6 +19,11 @@ const settingsData = [
         title: "General Settings",
         url: "/settings/general-settings",
         icon: SettingsIcon
+    },
+    {
+        title: "Webhooks",
+        url: "/settings/webhooks",
+        icon: Webhook
     }
 ]
 

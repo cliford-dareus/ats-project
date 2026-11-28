@@ -202,6 +202,7 @@ export const get_candidate_by_id_db = async (unsafedata: number, orgId: string) 
             scheduling_provider: interviews.scheduling_provider,
             calendly_event_type_name: interviews.calendly_event_type_name,
             calendly_event_uri: interviews.calendly_event_uri,
+            zoom_meeting_id: interviews.zoom_meeting_id,
             hold_status: interviews.hold_status,
             hold_expires_at: interviews.hold_expires_at,
             interviewer_ids: interviews.interviewer_ids,

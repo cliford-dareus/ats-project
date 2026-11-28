@@ -279,6 +279,7 @@ export const candidates_relations = relations(candidates, ({ many }) => ({
     applications: many(applications),
     attachments: many(attachments),
     portal_tokens: many(candidate_portal_tokens),
+    sms_consents: many(sms_consents),
 }));
 
 // ── Candidate portal tokens ─────────────────────────────────────────────
@@ -420,6 +421,261 @@ export const checkr_background_checks_relations = relations(checkr_background_ch
     }),
 }));
 
+// ── Twilio SMS consent ────────────────────────────────────────────────────
+// One row per (candidate, organization): whether this org may text the
+// candidate about their applications. Consent is an auditable EVENT
+// (who recorded it, when, how) — not a static attribute — so it lives
+// in its own table rather than as a boolean on `candidate`: a column
+// would conflate "never asked" with "declined", lose the opt-out
+// history (a STOP reply or recruiter-recorded opt-out must not erase
+// who recorded the original opt-in), and the candidates table is
+// written by the public apply flow, which has no SMS opt-in yet.
+//   • source 'recruiter' — a recruiter recorded it on the application
+//     page (the only writable source today; who/when is the audit trail).
+//   • source 'apply_form' — reserved: the apply form gains an SMS
+//     opt-in checkbox, which writes here with recorded_by NULL.
+//   • source 'sms_reply' — reserved: an inbound Twilio webhook for
+//     STOP/START replies (no webhook receiver exists yet).
+// No consent row = no consent: the automation send_sms action and the
+// manual send card both refuse to text the candidate until a row with
+// status 'consented' exists. One row per candidate+org (upsert on
+// change) — the current status is the row; history beyond the latest
+// change is the activity log (twilio_sms_consent_recorded/revoked).
+export const sms_consents = mysqlTable('sms_consents', {
+    id: int('id').primaryKey().autoincrement(),
+    candidate_id: int('candidate_id').notNull().references(() => candidates.id, { onDelete: 'cascade' }),
+    // Denormalized Clerk org id (same pattern as checkr_background_checks)
+    // so a consent row is provably org-scoped without joining candidates.
+    organization: varchar('organization', { length: 255 }).notNull(),
+    status: mysqlEnum('status', ['consented', 'opted_out']).notNull().default('consented'),
+    source: mysqlEnum('source', ['apply_form', 'recruiter', 'sms_reply']).notNull().default('recruiter'),
+    // Clerk user id that recorded this status (NULL for apply_form /
+    // sms_reply sources, which have no staff actor).
+    recorded_by: varchar('recorded_by', { length: 255 }),
+    recorded_at: timestamp('recorded_at').defaultNow().notNull(),
+    note: varchar('note', { length: 500 }),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+    updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+    // One consent row per candidate per org: re-recording (opt-out,
+    // re-opt-in) updates this row instead of creating a second one.
+    candidate_org_unique: uniqueIndex('sms_consents_candidate_org_unique').on(table.candidate_id, table.organization),
+    org_idx: index('sms_consents_org_idx').on(table.organization),
+}));
+
+export const sms_consents_relations = relations(sms_consents, ({ one }) => ({
+    candidate: one(candidates, {
+        fields: [sms_consents.candidate_id],
+        references: [candidates.id],
+    }),
+}));
+// ── DocuSign offer-letter envelopes (migration 0020) ──────────────────
+// One row per application: the outcome of the single offer letter sent
+// for e-signature for that application. envelope_status and
+// recipient_status are stored EXACTLY as DocuSign reports them — as
+// free-text varchar, not an enum, so a status DocuSign adds later is
+// stored verbatim instead of failing the write. Envelope: created /
+// sent / delivered / signed / completed / declined / voided. Signer:
+// sent / delivered / completed / declined / authenticationfailed /
+// autofailed. Nothing here is polled live:
+// refresh_docusign_envelope_action re-reads DocuSign on demand.
+//
+// The offer letter itself lives in DocuSign as a template (template_id
+// + template_role_name): Applico never generates offer-letter PDFs and
+// never invents document content. The template's signer role is bound
+// to the candidate's name/email at send time; DocuSign emails the
+// candidate the signing link.
+//
+// Consent: sending is a deliberate recruiter action from the Offer
+// stage, confirmed in the UI (sent_by/at records who confirmed and
+// when). Never set an envelope status here except from a real DocuSign
+// API response — "completed" is only ever DocuSign's word for it.
+export const docusign_envelopes = mysqlTable('docusign_envelopes', {
+    id: int('id').primaryKey().autoincrement(),
+    application_id: int('application_id').notNull().references(() => applications.id, { onDelete: 'cascade' }),
+    // Denormalized Clerk org id (same pattern as interviews.organization)
+    // so an envelope row is provably org-scoped without joining applications.
+    organization: varchar('organization', { length: 255 }).notNull(),
+    // 'demo' = account-d.docusign.com / demo.docusign.net (test
+    // signatures, no legal weight); 'production' = account.docusign.com
+    // (real, legally-binding signatures). Stored per envelope so a row
+    // can never be misread as production when it ran in demo.
+    environment: mysqlEnum('environment', ['demo', 'production']).notNull().default('demo'),
+    template_id: varchar('template_id', { length: 128 }).notNull(),
+    template_role_name: varchar('template_role_name', { length: 128 }).notNull().default('Candidate'),
+    envelope_id: varchar('envelope_id', { length: 128 }),
+    // DocuSign's verbatim envelope status (see header comment).
+    envelope_status: varchar('envelope_status', { length: 32 }),
+    // DocuSign's verbatim status of the first signer (the candidate).
+    recipient_status: varchar('recipient_status', { length: 32 }),
+    recipient_name: varchar('recipient_name', { length: 255 }),
+    recipient_email: varchar('recipient_email', { length: 255 }),
+    email_subject: varchar('email_subject', { length: 500 }),
+    sent_by: varchar('sent_by', { length: 255 }),
+    sent_at: timestamp('sent_at'),
+    completed_at: timestamp('completed_at'),
+    declined_at: timestamp('declined_at'),
+    // DocuSign truncates voidedReason to 200 characters.
+    voided_reason: varchar('voided_reason', { length: 200 }),
+    error_message: text('error_message'),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+    updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+    // One envelope per application: re-sending (e.g. after a decline)
+    // updates this row instead of creating a second one.
+    application_unique: uniqueIndex('docusign_application_unique').on(table.application_id),
+    org_idx: index('docusign_org_idx').on(table.organization),
+}));
+
+export const docusign_envelopes_relations = relations(docusign_envelopes, ({ one }) => ({
+    application: one(applications, {
+        fields: [docusign_envelopes.application_id],
+        references: [applications.id],
+    }),
+}));
+// ── WhatsApp messaging (plugin `whatsapp`, migration 0022) ────────────────
+// Consent and delivery log for WhatsApp messages sent via Twilio's
+// WhatsApp API. Consent is per (organization, candidate): a candidate
+// may only be messaged while a consent row exists with consented_at set
+// and revoked_at NULL. There is NO shared consent with the Twilio SMS
+// plugin (built in parallel, no shared storage in the tree) — WhatsApp
+// consent is recorded here, explicitly, and never inferred from SMS
+// consent or from the candidate merely having a phone number.
+// Statuses on whatsapp_messages are Twilio's verbatim message statuses
+// (queued / sent / delivered / undelivered / failed) — never invented:
+// a row's status is only ever set from a real Twilio API response.
+export const whatsapp_consents = mysqlTable('whatsapp_consents', {
+    id: int('id').primaryKey().autoincrement(),
+    organization: varchar('organization', { length: 255 }).notNull(),
+    candidate_id: int('candidate_id').notNull().references(() => candidates.id, { onDelete: 'cascade' }),
+    // E.164 phone the consent covers, as normalized at record time.
+    phone_e164: varchar('phone_e164', { length: 32 }).notNull(),
+    // How consent was obtained ('manual' = recruiter confirmed it out of
+    // band, e.g. on a call or on the apply form; 'application_form' =
+    // candidate opted in on the application). The signed/opt-in record
+    // itself lives with the org — Applico stores who/when, not the form.
+    source: varchar('source', { length: 64 }).notNull().default('manual'),
+    consented_by: varchar('consented_by', { length: 255 }),
+    consented_at: timestamp('consented_at'),
+    revoked_by: varchar('revoked_by', { length: 255 }),
+    revoked_at: timestamp('revoked_at'),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+    updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+    // One consent record per candidate per org: re-consenting (e.g. after
+    // a revoke) updates this row instead of creating a second one.
+    org_candidate_unique: uniqueIndex('whatsapp_consents_org_candidate_unique').on(table.organization, table.candidate_id),
+    org_idx: index('whatsapp_consents_org_idx').on(table.organization),
+}));
+
+export const whatsapp_consents_relations = relations(whatsapp_consents, ({ one }) => ({
+    candidate: one(candidates, {
+        fields: [whatsapp_consents.candidate_id],
+        references: [candidates.id],
+    }),
+}));
+
+export const whatsapp_messages = mysqlTable('whatsapp_messages', {
+    id: int('id').primaryKey().autoincrement(),
+    application_id: int('application_id').notNull().references(() => applications.id, { onDelete: 'cascade' }),
+    // Denormalized Clerk org id (same pattern as interviews.organization
+    // and checkr_background_checks.organization) so a message row is
+    // provably org-scoped without joining applications.
+    organization: varchar('organization', { length: 255 }).notNull(),
+    candidate_id: int('candidate_id').notNull().references(() => candidates.id, { onDelete: 'cascade' }),
+    to_phone: varchar('to_phone', { length: 32 }).notNull(),
+    // Twilio Content Template SID (HX…) actually sent — the template
+    // itself lives in Twilio's Content Template Builder and must be
+    // approved by Meta before it can deliver.
+    template_content_sid: varchar('template_content_sid', { length: 64 }).notNull(),
+    // Template variables as sent ({"1": "...", "2": "..."}).
+    template_variables: json('template_variables').notNull().default({}),
+    twilio_message_sid: varchar('twilio_message_sid', { length: 64 }),
+    // Twilio's verbatim status, refreshed on demand from the card.
+    status: varchar('status', { length: 32 }),
+    error_message: text('error_message'),
+    sent_by: varchar('sent_by', { length: 255 }),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+    updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+    org_idx: index('whatsapp_messages_org_idx').on(table.organization),
+    application_idx: index('whatsapp_messages_application_idx').on(table.application_id),
+}));
+
+export const whatsapp_messages_relations = relations(whatsapp_messages, ({ one }) => ({
+    application: one(applications, {
+        fields: [whatsapp_messages.application_id],
+        references: [applications.id],
+    }),
+    candidate: one(candidates, {
+        fields: [whatsapp_messages.candidate_id],
+        references: [candidates.id],
+    }),
+}));
+
+// ── Sterling background checks (migration 0023) ─────────────────────────
+// One row per application: the outcome of the single background check
+// ordered for that application. Statuses/results are stored EXACTLY as
+// Sterling reports them (see src/server/sterling.ts header for the
+// verbatim lists) — status / sub_status / result are varchar, not enums,
+// because Sterling's list is long, contains spaces, and may grow per
+// account configuration (CMA scoring, adverse-action states). Nothing
+// here is polled live: refresh_sterling_check_action re-reads Sterling
+// on demand (GET /screenings/{id}).
+//
+// Consent: a check may only be initiated after a recruiter confirms the
+// candidate's FCRA disclosure + written authorization was obtained
+// (consent_confirmed_by/at). Applico does NOT store the signed form —
+// the org retains it, and Sterling's Candidate Hub collects the
+// candidate's consent again before any screening runs. Never set a
+// status/result here except from a real Sterling API response.
+// There is no cancel column: Sterling documents no DELETE /screenings
+// endpoint — cancellation happens in the Sterling portal.
+export const sterling_background_checks = mysqlTable('sterling_background_checks', {
+    id: int('id').primaryKey().autoincrement(),
+    application_id: int('application_id').notNull().references(() => applications.id, { onDelete: 'cascade' }),
+    // Denormalized Clerk org id (same pattern as interviews.organization)
+    // so a check row is provably org-scoped without joining applications.
+    organization: varchar('organization', { length: 255 }).notNull(),
+    // 'test' = api.us.int.sterlingcheck.app (Integration, no real checks,
+    // no charges); 'live' = api.us.sterlingcheck.app (real checks,
+    // billable). Stored per check so a row can never be misread as live
+    // when it ran in Integration.
+    environment: mysqlEnum('environment', ['test', 'live']).notNull().default('test'),
+    package_id: varchar('package_id', { length: 128 }).notNull(),
+    package_name: varchar('package_name', { length: 255 }),
+    sterling_candidate_id: varchar('sterling_candidate_id', { length: 128 }),
+    sterling_screening_id: varchar('sterling_screening_id', { length: 128 }),
+    status: varchar('status', { length: 64 }),
+    sub_status: varchar('sub_status', { length: 64 }),
+    result: varchar('result', { length: 32 }),
+    // Sterling's admin interactive-summary link (links.admin.web).
+    report_url: varchar('report_url', { length: 500 }),
+    // Candidate Hub form URL — only when Sterling returned one
+    // (invite.method "link"); null otherwise. Never synthesized.
+    invite_url: varchar('invite_url', { length: 500 }),
+    invite_method: mysqlEnum('invite_method', ['email', 'link']).notNull().default('email'),
+    submitted_at: timestamp('submitted_at'),
+    estimated_completion_at: timestamp('estimated_completion_at'),
+    consent_confirmed_by: varchar('consent_confirmed_by', { length: 255 }),
+    consent_confirmed_at: timestamp('consent_confirmed_at'),
+    error_message: text('error_message'),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+    updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+    // One check per application: re-initiating (e.g. after an expired
+    // invite) updates this row instead of creating a second one.
+    application_unique: uniqueIndex('sterling_application_unique').on(table.application_id),
+    org_idx: index('sterling_org_idx').on(table.organization),
+}));
+
+export const sterling_background_checks_relations = relations(sterling_background_checks, ({ one }) => ({
+    application: one(applications, {
+        fields: [sterling_background_checks.application_id],
+        references: [applications.id],
+    }),
+}));
+
 export const applications_relations = relations(applications, ({ one, many }) => ({
     interviews: many(interviews),
     score: many(score_cards),
@@ -428,6 +684,15 @@ export const applications_relations = relations(applications, ({ one, many }) =>
     checkr_check: one(checkr_background_checks, {
         fields: [applications.id],
         references: [checkr_background_checks.application_id],
+    }),
+    docusign_envelope: one(docusign_envelopes, {
+        fields: [applications.id],
+        references: [docusign_envelopes.application_id],
+    }),
+    whatsapp_messages: many(whatsapp_messages),
+    sterling_check: one(sterling_background_checks, {
+        fields: [applications.id],
+        references: [sterling_background_checks.application_id],
     }),
     candidates: one(candidates, { fields: [applications.candidate], references: [candidates.id] }),
     job: one(job_listings, { fields: [applications.job_id], references: [job_listings.id] }),
@@ -533,13 +798,20 @@ export const interviews = mysqlTable(
         // calendar_event_id / calendar_owner_id are Google-typed and are
         // NOT overloaded for Calendly — Calendly identifiers live in
         // their own columns below.
-        scheduling_provider: mysqlEnum('scheduling_provider', ['google', 'calendly']).notNull().default('google'),
+        scheduling_provider: mysqlEnum('scheduling_provider', ['google', 'calendly', 'zoom']).notNull().default('google'),
         calendly_event_type_uri: varchar('calendly_event_type_uri', { length: 255 }),
         // Display name of the event type, stored at booking time so the
         // card can show it without a live Calendly API call.
         calendly_event_type_name: varchar('calendly_event_type_name', { length: 255 }),
         calendly_event_uri: varchar('calendly_event_uri', { length: 255 }),
         calendly_invitee_uri: varchar('calendly_invitee_uri', { length: 255 }),
+        // Zoom scheduling (migration 0018): the Zoom meeting id for this
+        // interview, stored at booking time so cancel/reschedule can
+        // address the meeting without a live lookup. Stored as a STRING:
+        // Zoom meeting ids can exceed 10 digits, so an int column would
+        // overflow. The join URL lives in `link` (its exact meaning) —
+        // no separate join-url column.
+        zoom_meeting_id: varchar('zoom_meeting_id', { length: 64 }),
         interviewer_ids: json('interviewer_ids').$type<string[]>().default([]),
         created_at: timestamp('created_at').defaultNow().notNull(),
         updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
@@ -681,6 +953,92 @@ export const report_history = mysqlTable('report_history', {
 export const report_history_relations = relations(report_history, ({ one }) => ({
     organization: one(organization, {
         fields: [report_history.organization],
+        references: [organization.clerk_id],
+    }),
+}));
+
+// ── Outbound webhooks (migration 0021, feat/plugin-webhooks) ─────────────────
+// Org-level Zapier-style subscriptions. This is org infrastructure, NOT a
+// plugin-manifest provider: there is no third-party credential to configure
+// and no provider factory — subscriptions are destination URLs + an event
+// filter, signed with a per-subscription HMAC secret.
+//
+// `signing_secret` holds the AES-256-GCM ciphertext (`enc:v1:…`, see
+// src/lib/plugin-encryption.ts) — the plaintext is generated server-side
+// at creation, shown ONCE in the create response, and never stored or
+// returned again. `events` is the JSON array of subscribed
+// WebhookEventType values (see src/lib/webhooks/events.ts).
+export const webhook_subscriptions = mysqlTable('webhook_subscriptions', {
+    id: int('id').primaryKey().autoincrement(),
+    organization: varchar('organization', { length: 255 })
+        .notNull()
+        .references(() => organization.clerk_id, { onDelete: 'cascade' }),
+    url: varchar('url', { length: 2048 }).notNull(),
+    events: json('events').$type<string[]>().notNull(),
+    // AES-256-GCM ciphertext of the HMAC signing secret. Never plaintext.
+    signing_secret: text('signing_secret').notNull(),
+    active: boolean('active').notNull().default(true),
+    created_by: varchar('created_by', { length: 255 }),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+    updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+    // Subscription management reads one org's subscriptions; the delivery
+    // worker loads one org's active subscriptions per event.
+    org_active_idx: index('webhook_subscriptions_org_active_idx').on(table.organization, table.active),
+}));
+
+export const webhook_subscriptions_relations = relations(webhook_subscriptions, ({ one, many }) => ({
+    organization: one(organization, {
+        fields: [webhook_subscriptions.organization],
+        references: [organization.clerk_id],
+    }),
+    deliveries: many(webhook_deliveries),
+}));
+
+// One row per delivery ATTEMPT (not per delivery): BullMQ retries a failed
+// POST up to 3×, and every attempt is visible — a failed delivery is never
+// silently swallowed. `delivery_id` groups the attempts of one logical
+// delivery (it is also sent as the X-Applico-Delivery-Id header so a
+// receiver can dedupe an at-least-once redelivery). `status` is
+// 'delivered' (2xx), 'failed' (non-2xx response) or 'error' (no response:
+// timeout / DNS / connection failure). `response_snippet` is the first
+// 500 chars of the response body — never the request body (it could
+// contain candidate PII beyond what the log needs) and never a secret.
+export const webhook_deliveries = mysqlTable('webhook_deliveries', {
+    id: int('id').primaryKey().autoincrement(),
+    delivery_id: varchar('delivery_id', { length: 36 }).notNull(),
+    subscription_id: int('subscription_id')
+        .notNull()
+        .references(() => webhook_subscriptions.id, { onDelete: 'cascade' }),
+    organization: varchar('organization', { length: 255 })
+        .notNull()
+        .references(() => organization.clerk_id, { onDelete: 'cascade' }),
+    event: varchar('event', { length: 64 }).notNull(),
+    // The per-occurrence id of the event (payload.event_id), so a delivery
+    // can be traced back to the exact application/interview event.
+    event_id: varchar('event_id', { length: 36 }).notNull(),
+    attempt: int('attempt').notNull().default(1),
+    status: mysqlEnum('status', ['delivered', 'failed', 'error']).notNull(),
+    status_code: int('status_code'),
+    response_snippet: text('response_snippet'),
+    error_message: varchar('error_message', { length: 512 }),
+    duration_ms: int('duration_ms'),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+    // The delivery log reads one org's attempts newest first; per-
+    // subscription filtering is the same query with subscription_id.
+    org_created_idx: index('webhook_deliveries_org_created_idx').on(table.organization, table.created_at),
+    subscription_created_idx: index('webhook_deliveries_subscription_created_idx').on(table.subscription_id, table.created_at),
+    delivery_idx: index('webhook_deliveries_delivery_idx').on(table.delivery_id),
+}));
+
+export const webhook_deliveries_relations = relations(webhook_deliveries, ({ one }) => ({
+    subscription: one(webhook_subscriptions, {
+        fields: [webhook_deliveries.subscription_id],
+        references: [webhook_subscriptions.id],
+    }),
+    organization: one(organization, {
+        fields: [webhook_deliveries.organization],
         references: [organization.clerk_id],
     }),
 }));

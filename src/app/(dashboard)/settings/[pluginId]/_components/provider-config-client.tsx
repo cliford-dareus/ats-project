@@ -7,9 +7,15 @@ import OpenAIConfig from './openai-config';
 import IndeedConfig from './indeed-config';
 import LinkedInConfig from './linkedin-config';
 import CalendlyConfig from './calendly-config';
+import ZoomConfig from './zoom-config';
 import AnthropicConfig from './anthropic-config';
 import CheckrConfig from './checkr-config';
+import DocuSignConfig from './docusign-config';
+import SterlingConfig from './sterling-config';
 import SlackConfig from './slack-config';
+import TeamsConfig from './teams-config';
+import TwilioConfig from './twilio-config';
+import WhatsappConfig from './whatsapp-config';
 import { InstalledPlugin, OrgPluginSettings } from '@/types';
 import { update_organization_plugins_action } from "@/server/actions/organization_actions";
 
@@ -136,6 +142,22 @@ export default function PluginConfigClient({
                 />
             )}
 
+            {plugin.id === 'teams-notify' && (
+                <TeamsConfig
+                    pluginId={plugin.id}
+                    settings={settings}
+                    onSave={handleSave}
+                />
+            )}
+
+            {plugin.id === 'zoom' && (
+                <ZoomConfig
+                    pluginId={plugin.id}
+                    settings={settings}
+                    onSave={handleSave}
+                />
+            )}
+
             {plugin.id === 'checkr' && (
                 <CheckrConfig
                     pluginId={plugin.id}
@@ -144,7 +166,36 @@ export default function PluginConfigClient({
                 />
             )}
 
-            {plugin.id !== 'resend' && plugin.id !== 'google' && plugin.id !== 'openai-scoring' && plugin.id !== 'indeed' && plugin.id !== 'linkedin' && plugin.id !== 'calendly' && plugin.id !== 'anthropic-screening' && plugin.id !== 'checkr' && plugin.id !== 'slack-notify' && (
+            {plugin.id === 'twilio' && (
+                <TwilioConfig
+                    pluginId={plugin.id}
+                    settings={settings}
+                    onSave={handleSave}
+                />
+            )}
+            {plugin.id === 'docusign' && (
+                <DocuSignConfig
+                    pluginId={plugin.id}
+                    settings={settings}
+                    onSave={handleSave}
+                />
+            )}
+            {plugin.id === 'whatsapp' && (
+                <WhatsappConfig
+                    pluginId={plugin.id}
+                    settings={settings}
+                    onSave={handleSave}
+                />
+            )}
+            {plugin.id === 'sterling' && (
+                <SterlingConfig
+                    pluginId={plugin.id}
+                    settings={settings}
+                    onSave={handleSave}
+                />
+            )}
+
+            {plugin.id !== 'resend' && plugin.id !== 'google' && plugin.id !== 'openai-scoring' && plugin.id !== 'indeed' && plugin.id !== 'linkedin' && plugin.id !== 'calendly' && plugin.id !== 'zoom' && plugin.id !== 'anthropic-screening' && plugin.id !== 'checkr' && plugin.id !== 'docusign' && plugin.id !== 'slack-notify' && plugin.id !== 'teams-notify' && plugin.id !== 'twilio' && plugin.id !== 'whatsapp' && plugin.id !== 'sterling' && (
                 <div className="rounded-md border p-6">
                     <h2 className="text-lg font-semibold">{plugin.name} is coming soon</h2>
                     <p className="text-sm text-muted-foreground mt-1">

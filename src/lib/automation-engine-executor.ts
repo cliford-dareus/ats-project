@@ -37,7 +37,7 @@ interface ResolvedAutomationTarget {
     userId: string;
     applicationId: number;
     candidateId: number;
-    candidate: { id: number; name: string; email: string };
+    candidate: { id: number; name: string; email: string; phone: string };
     job: { job_id: number; job_name: string; job_department: string };
     /** Context rebuilt from DB-resolved values (safe to hand to integrations). */
     trustedContext: ATSContext;
@@ -124,7 +124,7 @@ async function resolveAutomationTarget(
     const { and, eq, isNull } = await import("drizzle-orm");
 
     const [candidate] = await db
-        .select({ id: candidates.id, name: candidates.name, email: candidates.email })
+        .select({ id: candidates.id, name: candidates.name, email: candidates.email, phone: candidates.phone })
         .from(candidates)
         .where(and(eq(candidates.id, application.candidate_id), isNull(candidates.deleted_at)))
         .limit(1);
@@ -278,18 +278,51 @@ export async function executeActionInternal(
         }
 
         case "send_sms": {
-            // No SMS provider (e.g. Twilio) is configured in this project yet.
-            // Log the intended message so it can be audited, and return a stub
-            // result so the automation rule still counts as executed.
+            // Twilio SMS, via the shared send core
+            // (src/server/twilio-messaging.ts): the candidate + phone
+            // come from the DB-resolved target above — never caller
+            // input — and the core refuses to send without a
+            // 'consented' sms_consents row, a usable E.164 phone, and
+            // a connected Twilio account. Every refusal throws with a
+            // message naming the fix, so the engine records it as
+            // automation.execution_failed — never a silent skip.
+            // Staff recipients are NOT supported: Applico holds emails
+            // for the recruiter/hiring manager, not phone numbers, so
+            // there is no DB-resolved number to text. Use send_email
+            // for staff.
+            if (action.to !== "candidate") {
+                throw new Error(
+                    `Cannot send SMS to "${action.to}": no phone number is on file for staff — SMS goes to the candidate only (their phone comes from the candidate record). Use the send_email action for staff.`,
+                );
+            }
             const message = interpolate(action.message, vars);
-            console.warn(
-                `[AutomationEngine] send_sms (NOT SENT — no SMS provider configured) → ${action.to}: "${message.slice(0, 60)}…"`,
-            );
-            return {
-                to: action.to,
+            const { send_candidate_sms } = await import("@/server/twilio-messaging");
+            const sent = await send_candidate_sms({
+                orgId,
+                candidateId: target.candidateId,
                 message,
-                status: "skipped",
-                reason: "No SMS provider (Twilio) configured",
+            });
+
+            // Worker-safe activity record (no Clerk session in the
+            // worker): the org + system actor are explicit.
+            const { record_activity_system } = await import(
+                "@/server/activity/record-activity-system"
+            );
+            await record_activity_system({
+                orgId,
+                action: "twilio_sms_sent",
+                entity_type: "application",
+                entity_id: target.applicationId,
+                summary: `SMS sent to ${target.candidate.name} (${sent.to}) via Twilio (SID ${sent.messageSid}, status: ${sent.status}): "${message.slice(0, 80)}${message.length > 80 ? "…" : ""}"`,
+            });
+
+            console.log(`[AutomationEngine] send_sms → ${target.candidate.name} (${sent.to}) via Twilio (SID ${sent.messageSid}, status ${sent.status})`);
+            return {
+                to: sent.to,
+                from: sent.from,
+                message,
+                messageSid: sent.messageSid,
+                status: sent.status,
             };
         }
 

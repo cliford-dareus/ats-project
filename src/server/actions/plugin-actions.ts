@@ -6,7 +6,9 @@ import {db_get_job_automation_rules, db_get_org_plugin_state_for_client, db_get_
 import {automationRuleSchema} from "@/zod";
 import {decrypt_plugin_secret} from "@/lib/plugin-encryption";
 import {buildTestMessage, isSlackWebhookUrl, postSlackWebhook} from "@/lib/slack";
+import {buildTestMessage as buildTeamsTestMessage, isTeamsWebhookUrl, postTeamsWebhook} from "@/lib/teams";
 import { getCalendlyCurrentUser } from "@/server/calendly";
+import { getZoomCurrentUser } from "@/server/zoom";
 import {Resend} from "resend";
 import {assertJobBelongsToOrg, AuthzError, getAuthOrThrow, hasPermission, requirePermission} from "@/server/permissions";
 
@@ -323,6 +325,70 @@ export async function verifyCalendly(apiKey: string): Promise<{
 }
 
 /**
+ * Verify Zoom Server-to-Server OAuth credentials with a live call —
+ * mint a token, then GET /users/me returns 200 for valid credentials,
+ * 401 for invalid ones. Called from the client-side Zoom provider auth
+ * flow (mirrors verifyCalendly above). The credentials are sent only to
+ * Zoom, over HTTPS — never logged, never stored here (saving is a
+ * separate, encrypting step). Returns the connected user (the Zoom
+ * account owner — the "me" for a Server-to-Server app) on success so
+ * the config UI can display who hosts the meetings.
+ */
+export async function verifyZoom(
+    accountId: string,
+    clientId: string,
+    clientSecret: string
+): Promise<{
+    success: boolean;
+    message: string;
+    user?: { name: string; email: string; id: string };
+}> {
+    // Plugin credential setup is plugin management (admin-only).
+    const allowed = await hasPermission("plugin:manage");
+    if (!allowed) {
+        return { success: false, message: "Missing permission: plugin:manage" };
+    }
+
+    const account = accountId?.trim();
+    const client = clientId?.trim();
+    const secret = clientSecret?.trim();
+    if (!account || !client || !secret) {
+        return {
+            success: false,
+            message: "Account ID, Client ID, and Client Secret are all required",
+        };
+    }
+
+    try {
+        const user = await getZoomCurrentUser({
+            accountId: account,
+            clientId: client,
+            clientSecret: secret,
+        });
+        const name = [user.first_name, user.last_name]
+            .filter(Boolean)
+            .join(" ");
+        return {
+            success: true,
+            message: "Credentials are valid",
+            user: {
+                name: name || user.email || "Zoom account owner",
+                email: user.email ?? "",
+                id: user.id,
+            },
+        };
+    } catch (err) {
+        console.error("Zoom credential verification error:", err);
+        return {
+            success: false,
+            message:
+                (err as Error).message ||
+                "Failed to verify Zoom credentials",
+        };
+    }
+}
+
+/**
  * Verify a Slack incoming webhook URL by posting a REAL test message to
  * it and reporting Slack's real answer. Called from the client-side Slack
  * provider auth flow (mirrors verifyGoogle / verifyCalendly above). The
@@ -396,6 +462,95 @@ export async function testSlackWebhook(): Promise<{ success: boolean; message: s
         return {
             success: false,
             message: (err as Error).message || "Failed to test Slack webhook",
+        };
+    }
+}
+
+/**
+ * Verify a Teams webhook URL by posting a REAL test card to it and
+ * reporting Teams' real answer. Called from the client-side Teams
+ * provider auth flow (mirrors verifySlackWebhook above). The URL is
+ * sent only to Teams, over HTTPS — never logged, never stored here
+ * (saving is a separate, encrypting step).
+ *
+ * Success semantics differ by endpoint — see src/lib/teams.ts: a
+ * Workflows webhook answers 202, which means the workflow ACCEPTED the
+ * request, not that the card is in the channel. That is reported as
+ * "accepted", never as "posted".
+ */
+export async function verifyTeamsWebhook(webhookUrl: string): Promise<{ success: boolean; message: string }> {
+    // Plugin credential setup is plugin management (admin-only).
+    const allowed = await hasPermission("plugin:manage");
+    if (!allowed) {
+        return { success: false, message: "Missing permission: plugin:manage" };
+    }
+
+    const url = webhookUrl?.trim();
+    if (!url) {
+        return { success: false, message: "Webhook URL is required" };
+    }
+    if (!isTeamsWebhookUrl(url)) {
+        return { success: false, message: "Enter a Teams webhook URL — from the Workflows app (…logic.azure.com…) or a classic Incoming Webhook (…webhook.office.com…)" };
+    }
+
+    try {
+        const result = await postTeamsWebhook(url, buildTeamsTestMessage());
+        if (result.ok) {
+            return {
+                success: true,
+                message: result.accepted
+                    ? "Test card accepted by the Teams workflow — delivery is async, check the channel"
+                    : "Test card posted to Teams",
+            };
+        }
+        return { success: false, message: `Teams rejected the test card: ${result.error}` };
+    } catch (err) {
+        console.error("Teams webhook verification error:", err);
+        return {
+            success: false,
+            message: (err as Error).message || "Failed to verify Teams webhook",
+        };
+    }
+}
+
+/**
+ * Post a test card through the org's SAVED webhook (decrypted
+ * server-side) — the browser never sees the URL. Requires plugin:manage.
+ * Used by the settings "Send test message" button after connect.
+ */
+export async function testTeamsWebhook(): Promise<{ success: boolean; message: string }> {
+    const { orgId } = await getAuthOrThrow();
+    await requirePermission("plugin:manage");
+
+    try {
+        // Decrypt ONLY Teams' webhook (not the whole org blob): another
+        // plugin's undecryptable key must not break this test.
+        const record = await db_get_organization_plugins_raw(orgId);
+        const stored = record.settings?.["teams-notify"]?.credentials?.webhookUrl;
+        if (!stored) {
+            return { success: false, message: "Connect a Teams webhook URL first" };
+        }
+        const webhookUrl = decrypt_plugin_secret(stored);
+        if (!isTeamsWebhookUrl(webhookUrl)) {
+            return { success: false, message: "The saved Teams webhook URL is not a valid Teams URL — re-enter it" };
+        }
+        const result = await postTeamsWebhook(webhookUrl, buildTeamsTestMessage());
+        if (result.ok) {
+            return {
+                success: true,
+                message: result.accepted
+                    ? "Test card accepted by the Teams workflow — delivery is async, check the channel"
+                    : "Test card posted to Teams",
+            };
+        }
+        return { success: false, message: `Teams rejected the test card: ${result.error}` };
+    } catch (err) {
+        // Decryption failures (e.g. key rotated without a re-encryption
+        // pass) surface as a test failure, not a crash.
+        console.error("Failed to test Teams webhook:", err);
+        return {
+            success: false,
+            message: (err as Error).message || "Failed to test Teams webhook",
         };
     }
 }

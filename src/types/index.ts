@@ -192,11 +192,14 @@ export type InterviewType = {
     // Scheduling provider (migration 0015): 'google' is the default for
     // every pre-Calendly row. Calendly rows carry their own identifiers
     // below; calendar_event_id is Google-typed and never overloaded.
-    scheduling_provider?: "google" | "calendly" | null;
+    // Zoom rows (migration 0018) carry zoom_meeting_id; the join URL
+    // lives in `link`.
+    scheduling_provider?: "google" | "calendly" | "zoom" | null;
     calendly_event_type_uri?: string | null;
     calendly_event_type_name?: string | null;
     calendly_event_uri?: string | null;
     calendly_invitee_uri?: string | null;
+    zoom_meeting_id?: string | null;
     // Smart interview holds (nullable when the interview was scheduled directly)
     hold_status?: "NONE" | "TENTATIVE" | "CONFIRMED" | "DECLINED" | "EXPIRED" | "RELEASED" | null;
     hold_expires_at?: Date | string | null;
@@ -392,6 +395,7 @@ export type PluginCapability =
     | "analytics"
     | "sourcing"
     | "syndication"
+    | "e_signature"
     | "compliance";
 
 // ── Job-board syndication ───────────────────────────────────────────────────
@@ -421,6 +425,46 @@ export interface SyndicationBoardState {
 // production, billable) and is always surfaced in the UI.
 export type CheckrEnvironment = "test" | "live";
 
+// ── Sterling background check state (one row per application) ─────────────
+// Statuses/results are Sterling's verbatim values (apidocs.sterlingcheck.app,
+// "Statuses & Results") — status: PreDraft / Draft / NotStarted /
+// InProgress / Pending / Complete / ActionNeeded / ReadyForReview / Review /
+// AdverseAction / Pre-Adverse Action Initiated / Pre-Adverse Action Sent /
+// Adverse Action Paused / Adverse Action Cancelled / Adverse Action Resumed /
+// Adverse Action Sent / Dispute / Archive / Hold / Pending Adjudication /
+// Expired Invite / Deleted (+ Queued / Error under async processing);
+// result: Pending / Clear / Consider / Passed / Review / Cancelled /
+// Level1 / Level2 / Level3 (null while pending). `environment` is the
+// Sterling environment the check actually ran in ('test' = Integration
+// host, no real checks; 'live' = production, billable) and is always
+// surfaced in the UI. `reportUrl` is Sterling's admin interactive-summary
+// link (links.admin.web); `inviteUrl` is the Candidate Hub form URL,
+// only when Sterling returned one (invite.method "link").
+export type SterlingEnvironment = "test" | "live";
+
+export type SterlingInviteMethod = "email" | "link";
+
+export interface SterlingCheckState {
+    applicationId: number;
+    environment: SterlingEnvironment;
+    packageId: string;
+    packageName: string | null;
+    sterlingCandidateId: string | null;
+    sterlingScreeningId: string | null;
+    status: string | null;
+    subStatus: string | null;
+    result: string | null;
+    reportUrl: string | null;
+    inviteUrl: string | null;
+    inviteMethod: SterlingInviteMethod;
+    submittedAt: string | null;
+    estimatedCompletionAt: string | null;
+    consentConfirmedBy: string | null;
+    consentConfirmedAt: string | null;
+    errorMessage: string | null;
+    updatedAt: string | null;
+}
+
 export interface CheckrCheckState {
     applicationId: number;
     environment: CheckrEnvironment;
@@ -438,6 +482,95 @@ export interface CheckrCheckState {
     consentConfirmedBy: string | null;
     consentConfirmedAt: string | null;
     errorMessage: string | null;
+    updatedAt: string | null;
+}
+
+// ── Twilio SMS consent state (one row per candidate per org) ─────────────
+// `status` is the current consent: 'consented' (the org may text the
+// candidate) or 'opted_out'. NO ROW means no consent was ever recorded —
+// the automation send_sms action and the manual send card both refuse
+// to send in that case. `source` is how consent was obtained:
+// 'recruiter' (recorded by staff on the application page — the only
+// writable source today), 'apply_form' and 'sms_reply' are reserved
+// for the apply-form checkbox and an inbound STOP webhook, which do
+// not exist yet.
+export type SmsConsentStatus = "consented" | "opted_out";
+export type SmsConsentSource = "apply_form" | "recruiter" | "sms_reply";
+
+export interface TwilioSmsConsentState {
+    candidateId: number;
+    status: SmsConsentStatus;
+    source: SmsConsentSource;
+    recordedBy: string | null;
+    recordedAt: string | null;
+    note: string | null;
+    updatedAt: string | null;
+}
+
+// ── DocuSign offer-letter envelope state (one row per application) ─────
+// Statuses are DocuSign's verbatim values, stored as free text (not an
+// enum) so a status DocuSign adds later is stored exactly as reported
+// instead of failing the write. Envelope: created / sent / delivered /
+// signed / completed / declined / voided (per the eSignature REST API
+// v2.1 Envelopes resource). Recipient (signer): sent / delivered /
+// completed / declined / authenticationfailed / autofailed. `environment`
+// is the DocuSign environment the envelope actually ran in ('demo' =
+// account-d.docusign.com / demo.docusign.net, no legal weight; 'production'
+// = account.docusign.com, real legally-binding signatures) and is always
+// surfaced in the UI.
+export type DocuSignEnvironment = "demo" | "production";
+
+export interface DocuSignEnvelopeState {
+    applicationId: number;
+    environment: DocuSignEnvironment;
+    templateId: string;
+    templateRoleName: string;
+    envelopeId: string | null;
+    envelopeStatus: string | null;
+    recipientStatus: string | null;
+    recipientName: string | null;
+    recipientEmail: string | null;
+    emailSubject: string | null;
+    sentBy: string | null;
+    sentAt: string | null;
+    completedAt: string | null;
+    declinedAt: string | null;
+    voidedReason: string | null;
+    errorMessage: string | null;
+    updatedAt: string | null;
+}
+
+
+// ── WhatsApp messaging state (plugin `whatsapp`, migration 0022) ─────────
+// Consent is per (organization, candidate): hasConsent is true only
+// while a consent row exists with consented_at set and revoked_at NULL.
+// Message statuses are Twilio's verbatim message statuses (queued /
+// sent / delivered / undelivered / failed …) — a row's status is only
+// ever set from a real Twilio API response, never invented.
+export interface WhatsappConsentState {
+    candidateId: number;
+    phoneE164: string;
+    source: string;
+    consentedBy: string | null;
+    consentedAt: string | null;
+    revokedBy: string | null;
+    revokedAt: string | null;
+    hasConsent: boolean;
+    updatedAt: string | null;
+}
+
+export interface WhatsappMessageState {
+    id: number;
+    applicationId: number;
+    candidateId: number;
+    toPhone: string;
+    templateContentSid: string;
+    templateVariables: Record<string, string>;
+    twilioMessageSid: string | null;
+    status: string | null;
+    errorMessage: string | null;
+    sentBy: string | null;
+    createdAt: string | null;
     updatedAt: string | null;
 }
 

@@ -1,0 +1,2 @@
+ALTER TABLE `interviews` MODIFY COLUMN `scheduling_provider` enum('google','calendly','zoom') NOT NULL DEFAULT 'google';--> statement-breakpoint
+ALTER TABLE `interviews` ADD `zoom_meeting_id` varchar(64);

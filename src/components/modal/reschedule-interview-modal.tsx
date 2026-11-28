@@ -150,7 +150,9 @@ const RescheduleInterviewModal = ({ isOpen, setIsOpen, interview }: Props) => {
                         <DialogDescription>
                             {interview.scheduling_provider === "calendly"
                                 ? "Pick a new time. The Calendly booking is cancelled and re-booked at the new time, and the candidate is emailed the new details."
-                                : "Pick a new time. The calendar event moves with it and the candidate is emailed the new time."}
+                                : interview.scheduling_provider === "zoom"
+                                    ? "Pick a new time. The Zoom meeting moves with it — the join link stays the same — and the candidate is emailed the new time."
+                                    : "Pick a new time. The calendar event moves with it and the candidate is emailed the new time."}
                         </DialogDescription>
                     </div>
                 </DialogHeader>

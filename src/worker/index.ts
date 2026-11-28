@@ -1,7 +1,7 @@
 import "dotenv/config";
 import {Worker, type Job} from "bullmq";
 import redis from "@/lib/redis";
-import {QueueJobData, taskQueue, type DelayedAutomationJobData} from "@/lib/queue";
+import {QueueJobData, taskQueue, type DelayedAutomationJobData, type WebhookDeliveryJobData} from "@/lib/queue";
 import { ATSPluginRegistry } from "@/lib/plugin-registry";
 import {automationEngine, type AutomationExecutionResult} from "@/lib/automation-engine";
 import {executeActionInternal} from "@/lib/automation-engine-executor";
@@ -14,6 +14,9 @@ import {get_stale_holds_db, mark_hold_expired_db} from "@/server/queries/drizzle
 import {releaseCalendarHold} from "@/server/google-calenda";
 import {notify_hold_expired} from "@/server/holds/hold-service";
 import {send_interview_reminders} from "@/server/interviews/reminder-service";
+import { build_worker_webhook_data } from "@/lib/webhooks/events";
+import { enqueue_webhook_deliveries } from "@/lib/webhooks/enqueue";
+import { deliver_webhook_attempt } from "@/lib/webhooks/deliver";
 
 interface ScorePayload {
     score: number;
@@ -141,6 +144,28 @@ async function handleDelayedAutomationJob(job: Job<QueueJobData>) {
     };
 }
 
+/**
+ * Outbound webhooks — one delivery job per (event occurrence,
+ * subscription) (feat/plugin-webhooks). deliver_webhook_attempt records
+ * the attempt row and THROWS on delivery failure, so BullMQ retries with
+ * the queue's bounded policy (3 attempts, exponential backoff); the
+ * throw propagates here so the job is marked failed and retried. A
+ * skipped delivery (bad URL / missing or inactive subscription) does not
+ * throw — retrying it cannot help.
+ */
+async function handleWebhookDeliveryJob(job: Job<QueueJobData>) {
+    const { webhookDelivery } = job.data as WebhookDeliveryJobData;
+    console.log(`[Worker] Delivering webhook ${webhookDelivery.event} to subscription ${webhookDelivery.subscriptionId} (delivery ${webhookDelivery.deliveryId}, attempt ${job.attemptsMade + 1})`);
+    const outcome = await deliver_webhook_attempt(webhookDelivery, job.attemptsMade + 1);
+    return {
+        webhook: true,
+        deliveryId: webhookDelivery.deliveryId,
+        subscriptionId: webhookDelivery.subscriptionId,
+        event: webhookDelivery.event,
+        ...outcome,
+    };
+}
+
 const worker = new Worker<QueueJobData>(
     'aplico_queue',
 
@@ -150,6 +175,13 @@ const worker = new Worker<QueueJobData>(
         // legacy-job skip below.
         if ("delayedAutomation" in job.data) {
             return handleDelayedAutomationJob(job);
+        }
+
+        // Outbound webhooks (feat/plugin-webhooks): a delivery job carries
+        // `webhookDelivery` and no `event` — deliver it, don't fall
+        // through to the legacy-job skip below.
+        if ("webhookDelivery" in job.data) {
+            return handleWebhookDeliveryJob(job);
         }
 
         // Legacy smart-trigger jobs carry a different payload (no `event`)
@@ -226,6 +258,23 @@ const worker = new Worker<QueueJobData>(
         } catch (err) {
             console.error("[Worker] Plugin dispatch failed:", err);
             // Don't rethrow — automation rules should still run
+        }
+
+        // ── 3b. Outbound webhooks (feat/plugin-webhooks) ──────────────────────
+        // Fan out to the org's subscribed webhook URLs. Only the events
+        // that actually reach this worker have a payload builder
+        // (candidate_applied, resume_uploaded — see
+        // build_worker_webhook_data); stage/interview events never reach
+        // the queue and enqueue their deliveries directly from their
+        // server actions instead. Best-effort: enqueueing never fails
+        // this job — the event already happened.
+        const webhookEvent = build_worker_webhook_data(event, context);
+        if (webhookEvent) {
+            await enqueue_webhook_deliveries({
+                orgId: org_id,
+                event: webhookEvent.event,
+                data: webhookEvent.data,
+            });
         }
 
         // ── 4. Resume score (candidate_applied only) ──────────────────────────
