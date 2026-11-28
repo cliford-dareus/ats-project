@@ -31,6 +31,10 @@ async function getFactory(pluginId: string) {
             return (await import("@/plugins/providers/resend")).createResendProvider;
         case "google":
             return (await import("@/plugins/providers/google")).createGoogleProvider;
+        case "indeed":
+            return (await import("@/plugins/providers/indeed")).createIndeedProvider;
+        case "linkedin":
+            return (await import("@/plugins/providers/linkedin")).createLinkedInProvider;
         default:
             console.warn(`[PluginSystem] No factory for plugin "${pluginId}"`);
             return null;

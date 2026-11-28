@@ -9,7 +9,129 @@ import {
     resolvePrimaryColor,
     resolveTagline,
 } from "@/lib/org-branding";
+import { ROOT_DOMAIN } from "@/lib/marketing";
+import type { OpenJobResponseType } from "@/types";
 import OpenJobList from "./_components/open-job-list";
+
+// ── Google for Jobs (JobPosting JSON-LD) ────────────────────────────────────
+// One JobPosting entry per OPEN, non-trashed job listed on this page.
+// There is no per-job detail page — cards link to /apply/[id] — so the
+// entries live on this listing page, which Google accepts. Every field
+// comes from a real job/org field; nothing is invented:
+//   • title / description / datePosted — job name, description (tags
+//     stripped), created_at. Description omitted when empty.
+//   • url — the apply page, built exactly like
+//     get_job_career_url_action (`https://<subdomain>.<ROOT_DOMAIN>/apply/<id>`).
+//   • hiringOrganization — the org name; logo only when a logo is set
+//     (absolute URL built from the resolved logo path).
+//   • jobLocation — parsed from the stored location string ("City,
+//     Region" → locality/region; a bare token → locality only). A REMOTE
+//     job (or a location of "Remote") gets jobLocationType TELECOMMUTE
+//     and no address, per Google's remote-job guidance.
+//   • employmentType — mapped from the real type enum. REMOTE is a
+//     location mode, not an employment type, so it is omitted rather
+//     than guessed as FULL_TIME.
+//   • baseSalary — only when the job carries a usable salary (same
+//     rule as the cards: parses to a number > 0; a stored "0" is not a
+//     salary). Currency USD follows the `$` formatting in
+//     formatSalaryRange; unitText YEAR follows the job form's
+//     "Salary Range (Annual)" label.
+//   • validThrough — omitted: job_listings has no expiry field.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const EMPLOYMENT_TYPE_MAP: Record<string, string> = {
+    FULL_TIME: "FULL_TIME",
+    PART_TIME: "PART_TIME",
+    CONTRACT: "CONTRACT",
+    INTERNSHIP: "INTERN",
+    // REMOTE intentionally absent — see above.
+};
+
+/** Plain-text description: strip any markup, collapse whitespace. */
+const plainText = (value: string): string =>
+    value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+
+/** A stored salary string counts only when it parses to a number > 0. */
+const usableSalary = (value: string | null): number | null => {
+    if (value === null || value === "") return null;
+    const n = Number(value);
+    return Number.isNaN(n) || n <= 0 ? null : n;
+};
+
+/**
+ * Honest parse of the free-text location ("City, Region[, Country]").
+ * Returns null when there is nothing usable to put in an address.
+ */
+const jobLocationJsonLd = (location: string): Record<string, unknown> | null => {
+    const parts = location.split(",").map((p) => p.trim()).filter(Boolean);
+    if (parts.length === 0) return null;
+    const address: Record<string, string> = {
+        "@type": "PostalAddress",
+        addressLocality: parts[0],
+    };
+    if (parts[1]) address.addressRegion = parts[1];
+    if (parts[2]) address.addressCountry = parts[2];
+    return { "@type": "Place", address };
+};
+
+const toJobPostingEntry = (
+    job: OpenJobResponseType,
+    domain: string,
+    companyName: string,
+    logoUrl: string | null,
+): Record<string, unknown> => {
+    const entry: Record<string, unknown> = {
+        "@type": "JobPosting",
+        title: job.name,
+        url: `https://${job.subdomain}.${ROOT_DOMAIN}/apply/${job.id}`,
+        identifier: {
+            "@type": "PropertyValue",
+            name: companyName,
+            value: String(job.id),
+        },
+        datePosted: job.created_at.toISOString().slice(0, 10),
+        hiringOrganization: {
+            "@type": "Organization",
+            name: companyName,
+            ...(logoUrl
+                ? { logo: `https://${domain}.${ROOT_DOMAIN}${logoUrl}` }
+                : {}),
+        },
+    };
+
+    const description = plainText(job.description);
+    if (description) entry.description = description;
+
+    const isRemote =
+        job.type === "REMOTE" || job.location.trim().toLowerCase() === "remote";
+    if (isRemote) {
+        entry.jobLocationType = "TELECOMMUTE";
+    } else {
+        const place = jobLocationJsonLd(job.location);
+        if (place) entry.jobLocation = place;
+    }
+
+    if (job.type && EMPLOYMENT_TYPE_MAP[job.type]) {
+        entry.employmentType = EMPLOYMENT_TYPE_MAP[job.type];
+    }
+
+    const minSalary = usableSalary(job.salary_from);
+    const maxSalary = usableSalary(job.salary_up_to);
+    if (minSalary !== null || maxSalary !== null) {
+        entry.baseSalary = {
+            "@type": "MonetaryAmount",
+            currency: "USD",
+            value: {
+                "@type": "QuantitativeValue",
+                ...(minSalary !== null ? { minValue: minSalary } : {}),
+                ...(maxSalary !== null ? { maxValue: maxSalary } : {}),
+                unitText: "YEAR",
+            },
+        };
+    }
+
+    return entry;
+};
 
 const CareerPage = async ({ params }: { params: Promise<{ domain: string }> }) => {
     const { domain } = await params;
@@ -59,6 +181,22 @@ const CareerPage = async ({ params }: { params: Promise<{ domain: string }> }) =
 
     return (
         <main style={{ fontFamily: resolveFontFamily(tenant.font_family) }}>
+            {/* JobPosting structured data for Google for Jobs — one entry
+                per OPEN job below. The `<` escape keeps a description from
+                ever closing the script tag. */}
+            {openRoleCount > 0 && (
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{
+                        __html: JSON.stringify({
+                            "@context": "https://schema.org",
+                            "@graph": openJobs.map((job) =>
+                                toJobPostingEntry(job, domain, companyName, logoUrl),
+                            ),
+                        }).replace(/</g, "\\u003c"),
+                    }}
+                />
+            )}
             {/* ── Hero: brand-led, full-width ─────────────────────────────── */}
             <section
                 className="relative overflow-hidden border-b border-zinc-100"

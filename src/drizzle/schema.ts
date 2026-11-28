@@ -141,9 +141,38 @@ export const job_listings_relations = relations(job_listings, ({ many, one }) =>
         references: [organization.clerk_id],
     }),
     automation: many(automation_rules),
+    syndication: many(job_syndication),
 }));
 
 export const job_listingsRelations = job_listings_relations;
+
+// ── Job-board syndication ───────────────────────────────────────────────────
+// One row per (job, board): the recruiter's publish intent + the outcome
+// for that board. Indeed is feed-based — a row with status 'syndicated'
+// puts the job in the org's public Indeed XML feed (see
+// src/lib/indeed-feed.ts); 'posted' is only ever set for LinkedIn, by a
+// human marking a manual post live with its URL. Rows are deleted with
+// the job (ON DELETE CASCADE); a trashed job is never in the feed even
+// while its row survives.
+export const job_syndication = mysqlTable('job_syndication', {
+    id: int('id').primaryKey().autoincrement(),
+    job_id: int('job_id').notNull().references(() => job_listings.id, { onDelete: 'cascade' }),
+    board_id: varchar('board_id', { length: 32 }).notNull(),
+    status: mysqlEnum('status', ['not_syndicated', 'syndicated', 'failed', 'posted']).default('not_syndicated').notNull(),
+    external_url: varchar('external_url', { length: 500 }),
+    error_message: text('error_message'),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+    updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+    job_board_unique: uniqueIndex('job_syndication_job_board_unique').on(table.job_id, table.board_id),
+}));
+
+export const job_syndication_relations = relations(job_syndication, ({ one }) => ({
+    job: one(job_listings, {
+        fields: [job_syndication.job_id],
+        references: [job_listings.id],
+    }),
+}));
 
 export const technologies = mysqlTable('technologies', {
     id: int('id').primaryKey().autoincrement(),

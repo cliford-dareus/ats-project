@@ -470,6 +470,8 @@ export const PLUGIN_CREDENTIAL_KEYS: Record<string, readonly string[]> = {
 const PLUGIN_CONFIG_KEYS: Record<string, readonly string[]> = {
     resend: ["fromAddress", "companyName", "hiringManagerEmail", "recruiterEmail", "offerSigningUrl"],
     google: [],
+    indeed: ["indeedAccountEmail"],
+    linkedin: ["pageUrl"],
 };
 
 const emailFieldIssue = (
@@ -531,6 +533,7 @@ export const orgPluginSettingsSchema = (pluginId: string) =>
                 emailFieldIssue(ctx, cfg, "fromAddress", "From address");
                 emailFieldIssue(ctx, cfg, "hiringManagerEmail", "Hiring manager email");
                 emailFieldIssue(ctx, cfg, "recruiterEmail", "Recruiter email");
+                emailFieldIssue(ctx, cfg, "indeedAccountEmail", "Indeed account email");
                 const companyName = cfg["companyName"];
                 if (companyName !== undefined && companyName !== "" && typeof companyName !== "string") {
                     ctx.addIssue({

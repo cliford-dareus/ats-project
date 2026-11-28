@@ -15,6 +15,7 @@ import {Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger} fr
 import {Input} from "@/components/ui/input";
 import {formatSalaryRange} from "@/lib/format-salary-range";
 import {formatJobTypeLabel} from "@/lib/job-display";
+import JobSyndicationPanel from "./job-syndication-panel";
 
 type Props = {
     data: JobResponseType[];
@@ -160,6 +161,8 @@ const JobOptions = ({data, stages, job_id}: Props) => {
                         </Dialog>
                     </div>
                 </div>
+
+                <JobSyndicationPanel jobId={job_id} />
             </div>
             <div className="w-[40%] h-full border rounded p-4 flex flex-col gap-4">
                 <div>

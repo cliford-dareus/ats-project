@@ -67,7 +67,7 @@ export interface PluginManifestEntry {
      * src/lib/initialize-plugins.ts + a config UI). Entries without one are
      * "Coming soon": the UI must not offer Install for them and
      * build_org_plugin_state must not report them as installed.
-     * Only "resend" and "google" have providers today.
+     * Only "resend", "google", "indeed" and "linkedin" have providers today.
      */
     hasProvider?: boolean;
 }

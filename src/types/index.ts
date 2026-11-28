@@ -352,7 +352,26 @@ export type PluginCapability =
     | "communication"
     | "analytics"
     | "sourcing"
+    | "syndication"
     | "compliance";
+
+// ── Job-board syndication ───────────────────────────────────────────────────
+// One row of `job_syndication` per (job, board), as the dashboard reads it.
+// `boardId` is the board this row is about; `enabled` is whether the org
+// has that board's plugin installed + enabled (a disabled board can never
+// be published from the UI, whatever its stored row says).
+export type SyndicationBoardId = "indeed" | "linkedin";
+
+export type SyndicationBoardStatus = "not_syndicated" | "syndicated" | "failed" | "posted";
+
+export interface SyndicationBoardState {
+    boardId: SyndicationBoardId;
+    enabled: boolean;
+    status: SyndicationBoardStatus;
+    externalUrl: string | null;
+    errorMessage: string | null;
+    updatedAt: string | null;
+}
 
 export interface PluginAuthState {
     status: "unauthenticated" | "authenticating" | "authenticated" | "error";

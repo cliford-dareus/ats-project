@@ -6,9 +6,9 @@
 import type { PluginManifestEntry } from "@/lib/plugin-interfaces";
 
 export const AVAILABLE_PLUGINS: PluginManifestEntry[] = [
-    // NOTE: only "resend" and "google" have a real provider (factory +
-    // config UI) — see hasProvider. The other five are "Coming soon":
-    // installable-looking but with no provider, they used to offer an
+    // NOTE: "resend", "google", "indeed" and "linkedin" have a real provider
+    // (factory + config UI) — see hasProvider. The other five are "Coming
+    // soon": installable-looking but with no provider, they used to offer an
     // Install button that silently did nothing useful. Do not set
     // hasProvider here until the provider + config UI actually exist.
     {
@@ -66,6 +66,24 @@ export const AVAILABLE_PLUGINS: PluginManifestEntry[] = [
         description: "Uses Gemini to score resumes 0–100 on fit, skills, and experience.",
         capabilities: ["llm_scoring"],
         providerColor: "#4285F4",
+        icon: "Zap",
+        hasProvider: true,
+    },
+    {
+        id: "indeed",
+        name: "Indeed",
+        description: "Publishes open roles to Indeed through your public XML feed — no API key needed. Publish a job and it appears in the feed Indeed crawls.",
+        capabilities: ["syndication"],
+        providerColor: "#2557a7",
+        icon: "Zap",
+        hasProvider: true,
+    },
+    {
+        id: "linkedin",
+        name: "LinkedIn",
+        description: "Prepare LinkedIn posts for open roles by hand — LinkedIn has no free job-posting API, so Applico never posts automatically.",
+        capabilities: ["syndication"],
+        providerColor: "#0A66C2",
         icon: "Zap",
         hasProvider: true,
     }
