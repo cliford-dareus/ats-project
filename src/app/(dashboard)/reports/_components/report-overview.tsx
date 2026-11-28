@@ -9,10 +9,9 @@ import {
     CheckCircle2,
 } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { cn } from '@/lib/utils';
+import { cn, REPORT_RANGE_LABELS, ReportRange } from '@/lib/utils';
 import { format } from 'date-fns';
-import type { ReportDataset, ReportRange } from '@/server/actions/reports-actions';
-import { REPORT_RANGE_LABELS } from '@/server/actions/reports-actions';
+import type { ReportDataset } from '@/server/actions/reports-actions';
 
 interface Props {
     reportData: ReportDataset;

@@ -1,7 +1,8 @@
 import React from 'react';
 import ReportsComponent from './_components/reports-component';
-import { getReportData, isReportRange } from '@/server/actions/reports-actions';
+import { getReportData } from '@/server/actions/reports-actions';
 import ReportHeader from './_components/report-header';
+import { isReportRange } from '@/lib/utils';
 
 interface Props {
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>;

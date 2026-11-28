@@ -200,7 +200,7 @@ const CareerPage = async ({ params }: { params: Promise<{ domain: string }> }) =
             {/* ── Hero: brand-led, full-width ─────────────────────────────── */}
             <section
                 className="relative overflow-hidden border-b border-zinc-100"
-                style={{ backgroundColor: `${primaryColor}0f` }}
+                style={{ backgroundColor: `${primaryColor}` }}
             >
                 {/* Soft brand glow, decorative only */}
                 <div

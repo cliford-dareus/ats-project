@@ -1,13 +1,12 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { cn, REPORT_RANGES, ReportRange } from "@/lib/utils";
 import { Download } from "lucide-react";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { ExportUtils } from "@/lib/export-utils";
-import type { ReportDataset, ReportRange } from "@/server/actions/reports-actions";
-import { REPORT_RANGES } from "@/server/actions/reports-actions";
+import type { ReportDataset } from "@/server/actions/reports-actions";
 
 interface Props {
     reportData: ReportDataset;

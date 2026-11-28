@@ -254,9 +254,6 @@ export async function getJobPipelineData() {
 
 export type TrendRange = '7d' | '30d';
 
-export const parse_trend_range = (value: string | undefined): TrendRange =>
-    value === '30d' ? '30d' : '7d';
-
 /**
  * Daily application counts for the last 7 or 30 days, zero-filled so days
  * with no applications still show on the chart. Previously this read

@@ -7,10 +7,12 @@ import {
     getRecruitmentFunnel,
     getApplicationTrends,
     getAttentionStats,
-    parse_trend_range
 } from "@/server/actions/dashboard-actions";
 import { get_activity_log_action } from "@/server/actions/activity-actions";
 import type { ActivityLogEntry } from "@/server/queries/drizzle/activity";
+
+export const parse_trend_range = (value: string | undefined): TrendRange =>
+    value === '30d' ? '30d' : '7d';
 
 type Props = {
     searchParams: Promise<{

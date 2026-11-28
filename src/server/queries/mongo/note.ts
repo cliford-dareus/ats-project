@@ -14,8 +14,8 @@ import { create_note_record } from "./note-core";
 // Re-exported for compatibility — the implementation lives in ./note-core
 // (no "use server" there, so the automation executor can use it without
 // a Clerk session). Kept here so existing import paths keep working.
-export { notify_mentioned_users } from "./note-core";
-export type { NoteMentionNotificationInput } from "./note-core";
+// export { notify_mentioned_users } from "./note-core";
+// export type { NoteMentionNotificationInput } from "./note-core";
 
 type CompletedNotes = {
     note_text: string;

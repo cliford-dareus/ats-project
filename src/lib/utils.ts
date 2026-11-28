@@ -324,3 +324,18 @@ export const getPriorityColor = (priority: string) => {
 export const applyPlaceholders = (text: string, vars: Record<string, string | undefined>) => {
     return text.replace(/\{\{(\w+)\}\}/g, (_, key) => vars[key] ?? `{{${key}}}`);
 }
+
+export type ReportRange = "7d" | "30d" | "90d" | "1y";
+
+export const REPORT_RANGES: ReportRange[] = ["7d", "30d", "90d", "1y"];
+
+export const REPORT_RANGE_LABELS: Record<ReportRange, string> = {
+    "7d": "Last 7 days",
+    "30d": "Last 30 days",
+    "90d": "Last 90 days",
+    "1y": "Last 12 months",
+};
+
+export function isReportRange(value: unknown): value is ReportRange {
+    return typeof value === "string" && (REPORT_RANGES as string[]).includes(value);
+}
